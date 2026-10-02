@@ -37,12 +37,12 @@ const COLUMNS = [
   { key: 'tanggal', label: 'Date', w: 'w-[8%]' },
   { key: 'departemen', label: 'Department', w: 'w-[9%]' },
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
-  { key: 'nama_pemohon', label: 'Name Requestor', w: 'w-[13%]' },
+  { key: 'nama_pemohon', label: 'PIC Name', w: 'w-[13%]' },
   { key: 'tujuan', label: 'Purpose / Details', w: 'w-[22%]' },
   { key: 'tanda_pemohon', label: 'Requestor Sign', w: 'w-[8%]', sign: true },
   { key: 'pic_isd', label: 'PIC by ISD', w: 'w-[8%]' },
-  { key: 'pic_mulai', label: 'Start Search', w: 'w-[8%]' },
-  { key: 'pic_selesai', label: 'End Search', w: 'w-[8%]' },
+  { key: 'pic_mulai', label: 'Start Time', w: 'w-[9%]' },
+  { key: 'pic_selesai', label: 'End Time', w: 'w-[9%]' },
   { key: 'tanda_isd', label: 'ISD Sign', w: 'w-[8%]', sign: true }
 ] as const
 
@@ -144,7 +144,7 @@ function openEdit(row: Row) {
 async function save() {
   if (!entity.value) return
   if (!form.tujuan?.trim()) { notify('Purpose / Details wajib diisi.', 'error'); return }
-  if (!form.nama_pemohon?.trim()) { notify('Name Requestor wajib diisi.', 'error'); return }
+  if (!form.nama_pemohon?.trim()) { notify('PIC Name wajib diisi.', 'error'); return }
 
   saving.value = true
   try {
@@ -255,40 +255,68 @@ watch(search, () => {
       {{ toast.msg }}
     </div>
 
-    <div class="rounded-lg border border-default bg-elevated">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[1600px] border-collapse text-xs">
-          <thead>
-            <tr class="bg-default/40">
+    <!-- Logbook table.
+         Professional look without losing the printed sheet: the grid uses `border-default`
+         so the @media print block can force it to solid black, the header is sticky for
+         long scrolls, and zebra striping + hover give row tracking on screen. Type is
+         slightly larger than the old text-xs, and numeric-ish columns are tabular-nums
+         so digits line up down the column. -->
+    <div class="overflow-hidden rounded-xl border border-default bg-elevated">
+      <div class="max-h-[70vh] overflow-auto print:scroll-area">
+        <!-- min-w is sized so the whole logbook fits without horizontal scrolling on a
+             typical 1280px screen (measured: 11 columns + Actions needed ~1180px).
+             Horizontal scroll remains the graceful fallback on narrower screens rather
+             than squashing the signature columns until they are unreadable. -->
+        <table class="w-full min-w-[1180px] border-collapse text-sm">
+          <thead class="print:sticky-head sticky top-0 z-10">
+            <tr class="bg-default/60 backdrop-blur-sm">
               <th v-for="c in COLUMNS" :key="c.key"
-                  class="border border-default px-2 py-2 text-left align-bottom font-semibold"
+                  scope="col"
+                  class="border-b border-default px-3 py-2.5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted"
                   :class="c.w">
                 {{ c.label }}
               </th>
-              <th class="w-[4%] border border-default px-2 py-2 print:hidden">Actions</th>
+              <th scope="col"
+                  class="w-[5%] border-b border-default px-2 py-2.5 text-center align-middle text-xs font-semibold uppercase tracking-wide text-muted print:hidden">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="loading">
-              <td :colspan="COLUMNS.length + 1" class="border border-default px-3 py-6 text-center text-muted">
-                Loading...
+              <td :colspan="COLUMNS.length + 1" class="px-4 py-10 text-center text-muted">
+                <UIcon name="i-lucide-loader-circle" class="mx-auto mb-2 size-5 animate-spin" />
+                <p class="text-sm">Loading...</p>
               </td>
             </tr>
             <tr v-else-if="!rows.length">
-              <td :colspan="COLUMNS.length + 1" class="border border-default px-3 py-6 text-center text-muted">
-                No rows yet.
+              <td :colspan="COLUMNS.length + 1" class="px-4 py-12 text-center">
+                <UIcon name="i-lucide-inbox" class="mx-auto mb-2 size-7 text-dimmed" />
+                <p class="text-sm font-medium">No rows yet</p>
+                <p class="mt-0.5 text-xs text-muted">Use “Add Row” to record the first entry.</p>
               </td>
             </tr>
-            <tr v-for="r in rows" :key="r.id" class="align-top hover:bg-default/30">
-              <td v-for="c in COLUMNS" :key="c.key" class="border border-default px-2 py-1.5">
+            <tr v-for="(r, i) in rows" :key="r.id"
+                class="align-middle transition-colors hover:bg-primary/5"
+                :class="i % 2 ? 'bg-default/20' : ''">
+              <td v-for="c in COLUMNS" :key="c.key"
+                  class="border-b border-default/60 px-3 py-2.5 align-middle">
                 <img v-if="c.sign && signSrc(r.values[c.key])" :src="signSrc(r.values[c.key])!"
-                     alt="signature" class="h-10 w-full object-contain" />
-                <span v-else-if="c.sign" class="text-muted">—</span>
-                <template v-else-if="c.key === 'tanggal'">{{ fmtDate(r.values[c.key]) }}</template>
-                <template v-else>{{ r.values[c.key] ?? '—' }}</template>
+                     alt="signature" class="h-9 w-full object-contain" />
+                <span v-else-if="c.sign" class="text-dimmed">—</span>
+                <template v-else-if="c.key === 'tanggal'">
+                  <span class="tabular-nums whitespace-nowrap">{{ fmtDate(r.values[c.key]) }}</span>
+                </template>
+                <template v-else-if="c.key === 'nomor'">
+                  <span class="font-medium tabular-nums whitespace-nowrap">{{ r.values[c.key] ?? '—' }}</span>
+                </template>
+                <template v-else>
+                  <span class="block break-words">{{ r.values[c.key] ?? '—' }}</span>
+                </template>
               </td>
-              <td class="border border-default px-1 py-1.5 text-center print:hidden">
-                <UButton icon="i-lucide-pencil" size="xs" variant="ghost" @click="openEdit(r)" />
+              <td class="border-b border-default/60 px-1 py-2 text-center whitespace-nowrap print:hidden">
+                <UButton icon="i-lucide-pencil" size="xs" variant="ghost" color="neutral"
+                         @click="openEdit(r)" />
                 <UButton icon="i-lucide-trash-2" size="xs" variant="ghost" color="error"
                          @click="remove(r)" />
               </td>
@@ -296,8 +324,10 @@ watch(search, () => {
           </tbody>
         </table>
       </div>
-      <div class="border-t border-default px-3 py-2 text-xs text-muted print:hidden">
-        {{ total }} rows
+
+      <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
+        <span>{{ total }} {{ total === 1 ? 'row' : 'rows' }}</span>
+        <span class="tabular-nums">Showing {{ rows.length }} of {{ total }}</span>
       </div>
     </div>
 
@@ -323,7 +353,7 @@ watch(search, () => {
           <UFormField label="Employee No" name="no_pegawai">
             <UInput v-model="form.no_pegawai" name="no_pegawai" />
           </UFormField>
-          <UFormField label="Name Requestor" name="nama_pemohon" required>
+          <UFormField label="PIC Name" name="nama_pemohon" required>
             <UInput v-model="form.nama_pemohon" name="nama_pemohon" />
           </UFormField>
           <UFormField label="Purpose / Details" name="tujuan" required class="md:col-span-2 xl:col-span-3">
@@ -333,10 +363,10 @@ watch(search, () => {
           <UFormField label="PIC by ISD" name="pic_isd">
             <UInput v-model="form.pic_isd" name="pic_isd" />
           </UFormField>
-          <UFormField label="Start Search" name="pic_mulai">
+          <UFormField label="Start Time" name="pic_mulai">
             <UInput v-model="form.pic_mulai" name="pic_mulai" placeholder="12/11/25 12:30" />
           </UFormField>
-          <UFormField label="End Search" name="pic_selesai">
+          <UFormField label="End Time" name="pic_selesai">
             <UInput v-model="form.pic_selesai" name="pic_selesai" placeholder="12/11/25 14:00" />
           </UFormField>
 
@@ -360,13 +390,23 @@ watch(search, () => {
 </template>
 
 <style>
-/* A4 landscape sheet: the form is 12 columns wide, portrait would be unreadable. */
+/* A4 landscape sheet: the form is 11 columns wide, portrait would be unreadable. */
 @media print {
   @page { size: A4 landscape; margin: 8mm; }
   body { background: #fff !important; }
   .print\:hidden { display: none !important; }
-  table { min-width: 0 !important; }
+
+  /* The screen table lives inside a max-h scroll container with a sticky header; on
+     paper both must go, or the sheet is clipped to one viewport-height and repeats the
+     header on every page. */
+  .print\:scroll-area { max-height: none !important; overflow: visible !important; }
+  .print\:sticky-head { position: static !important; }
+
+  /* On screen the grid is bottom-rules only (border-b) for a cleaner look; the printed
+     sheet needs a full grid so every cell is a distinct box. */
+  table { min-width: 0 !important; width: 100% !important; }
   table, td, th { border-color: #000 !important; }
+  th, td { border: 1px solid #000 !important; }
   tr { page-break-inside: avoid; }
 }
 </style>
