@@ -39,10 +39,12 @@ const COLUMNS = [
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
   { key: 'nama_pemohon', label: 'PIC Name', w: 'w-[13%]' },
   { key: 'tujuan', label: 'Purpose / Details', w: 'w-[22%]' },
-  { key: 'tanda_pemohon', label: 'Requestor Sign', w: 'w-[8%]', sign: true },
-  { key: 'pic_isd', label: 'PIC by ISD', w: 'w-[8%]' },
+  { key: 'tanda_pemohon', label: 'PIC Sign', w: 'w-[8%]', sign: true },
   { key: 'pic_mulai', label: 'Start Time', w: 'w-[9%]' },
   { key: 'pic_selesai', label: 'End Time', w: 'w-[9%]' },
+  // "PIC by ISD" moved here on 2026-10-02 at HIRO's request so it sits directly before
+  // the ISD signature it belongs to.
+  { key: 'pic_isd', label: 'PIC by ISD', w: 'w-[8%]' },
   { key: 'tanda_isd', label: 'ISD Sign', w: 'w-[8%]', sign: true }
 ] as const
 
@@ -360,9 +362,6 @@ watch(search, () => {
             <UTextarea v-model="form.tujuan" name="tujuan" :rows="2"
                       placeholder="CCTV record at 25/11/25 03:00 - 03:30" />
           </UFormField>
-          <UFormField label="PIC by ISD" name="pic_isd">
-            <UInput v-model="form.pic_isd" name="pic_isd" />
-          </UFormField>
           <UFormField label="Start Time" name="pic_mulai">
             <UInput v-model="form.pic_mulai" name="pic_mulai" placeholder="12/11/25 12:30" />
           </UFormField>
@@ -370,8 +369,13 @@ watch(search, () => {
             <UInput v-model="form.pic_selesai" name="pic_selesai" placeholder="12/11/25 14:00" />
           </UFormField>
 
-          <UFormField label="Requestor Sign" name="tanda_pemohon">
+          <!-- Field order mirrors COLUMNS above: PIC Sign, then the two times, then
+               PIC by ISD immediately before the ISD signature. -->
+          <UFormField label="PIC Sign" name="tanda_pemohon">
             <SignaturePad v-model="form.tanda_pemohon" :height="80" />
+          </UFormField>
+          <UFormField label="PIC by ISD" name="pic_isd">
+            <UInput v-model="form.pic_isd" name="pic_isd" />
           </UFormField>
           <UFormField label="ISD Sign" name="tanda_isd">
             <SignaturePad v-model="form.tanda_isd" :height="80" />
