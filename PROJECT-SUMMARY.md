@@ -130,6 +130,8 @@ Build: `deploy\build-release.cmd` → `dist\web` + `dist\api` (untuk flashdisk).
 - [ ] Toast `users.vue` & fix NUXT_E2005 — terkonfirmasi via grep + build, **belum diverifikasi visual**
 - [ ] **`web.config` belum pernah diuji ke IIS sungguhan** — rewrite fallback ke `index.html` masih asumsi. **Ini risiko deploy tertinggi.**
 - [ ] Belum ada test project otomatis (test selama ini ad-hoc PowerShell)
+- [x] **Test E2E dijalankan ulang setelah refactor kredensial** (2026-10-02) — `test-logbook.ps1` **14/14 PASS**, exit 0. Jadi perubahan ke env var **tidak merusak apa pun**. `test-e2e.ps1` **tidak bisa lulus lagi, dan itu BUKAN regresi**: suite itu menguji generic CRUD engine memakai demo schema (`customer` / `product` / `sales_order`) yang sudah **dihapus dari DB pada 2026-10-01**. Sebelumnya gagal menyesatkan di langkah 3 dengan HTTP 404 di `/api/records/` karena `$entCustomer` null — terlihat seperti API rusak. Sekarang ada pengecekan **PRECONDITION** yang mendeteksi fixture hilang dan `exit 0` dengan pesan jelas menyebut entity mana yang kurang + menunjuk `test-logbook.ps1` sebagai coverage engine yang sebenarnya
+- [ ] Gotcha PowerShell: runner dengan `$ErrorActionPreference='Stop'` akan **BERHENTI** saat child script gagal seperti yang diharapkan — bungkus probe/negative-test dengan `Continue`, lalu kembalikan ke `Stop`
 - `recordCount` di EntityDto belum ter-refresh setelah create
 - ~~Route `/data/[slug]`~~ — sudah dihapus 2026-10-02; hanya tinggal 3 halaman
 - [ ] Belum ada: export Excel/CSV, bulk delete + checkbox (HIRO belum memilih)
@@ -202,9 +204,11 @@ Repo: remote `origin` = `https://github.com/prehiro/INFRA-CAP-BT.git`, branch `m
 **Menjalankan script E2E** (sekarang wajib set env var dulu):
 ```powershell
 $env:INFRA_ADMIN_PASSWORD = '<password>'
-powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\Users\HIRO\Projects\InternalApp\api\test-e2e.ps1'
+powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\Users\HIRO\Projects\InternalApp\api\test-logbook.ps1'   # 14/14
 $env:INFRA_ADMIN_USER = 'admin'   # opsional, default admin
 ```
+
+> `test-e2e.ps1` sekarang keluar sendiri dengan pesan SKIPPED karena demo schema sudah dihapus — itu perilaku yang benar, bukan kegagalan.
 Kalau env var belum di-set, script berhenti dengan pesan yang jelas — bukan diam-diam gagal login.
 
 Sebelum commit: `git status` dan pastikan `api/appsettings.json` tidak muncul di staged.

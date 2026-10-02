@@ -22,6 +22,28 @@ $ents = Invoke-RestMethod -Uri "$base/api/entities" -Headers $hdr
 Show "2. ENTITIES seeded" (($ents | ForEach-Object { $_.slug }) -join ', ')
 Show "   fields per entity" (($ents | ForEach-Object { "$($_.slug)=$($_.fields.Count)" }) -join ' ')
 
+# PRECONDITION. This suite exercises the generic CRUD engine against the demo schema
+# (customer / product / sales_order). Those entities were deliberately purged from the
+# database on 2026-10-01 at HIRO's request — only cctv_log_book remains. Without this
+# check the script used to fail deep in step 3 with an opaque HTTP 404 on
+# /api/records/ (an empty entityId), which looked like a broken API rather than a
+# missing fixture. Fail fast and say why instead.
+$required = @('customer', 'product', 'sales_order')
+$missing = $required | Where-Object { $_ -notin ($ents | ForEach-Object { $_.slug }) }
+if ($missing) {
+    Show "0. PRECONDITION" "SKIPPED - this suite needs the demo schema"
+    Write-Output ""
+    Write-Output "  Missing entities : $($missing -join ', ')"
+    Write-Output "  Present entities : $((($ents | ForEach-Object { $_.slug }) -join ', '))"
+    Write-Output ""
+    Write-Output "  The generic CRUD engine itself is covered by test-logbook.ps1 (14/14),"
+    Write-Output "  which runs against cctv_log_book and needs no demo fixtures."
+    Write-Output "  To exercise this suite again, recreate the demo schema (see"
+    Write-Output "  PROJECT-SUMMARY.md section 6b) or delete this file."
+    exit 0
+}
+Show "0. PRECONDITION" "OK - demo schema present ($($required -join ', '))"
+
 # 3. create a customer
 $custBody = @{ values = @{ kode="C$run"; nama='PT Contoh Jaya'; email='info@contoh.co.id'; telpon='021-5551234'; status=$true } } | ConvertTo-Json -Depth 5
 $entCustomer = $ents | Where-Object { $_.slug -eq 'customer' }
