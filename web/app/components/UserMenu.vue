@@ -1,0 +1,156 @@
+<script setup lang="ts">
+import type { DropdownMenuItem } from '@nuxt/ui'
+
+/**
+ * Sidebar footer user menu, adapted from the Nuxt dashboard template.
+ *
+ * Two deviations from the template, both deliberate:
+ *  - the avatar is generated from the initials instead of a remote image URL, because
+ *    the production server has no internet access and a remote avatar renders blank;
+ *  - "Templates" / "Deploy to Vercel" entries are dropped; they link to nuxt.com pages
+ *    that mean nothing in an internal app.
+ *
+ * What was kept is what HIRO asked for: free primary-colour switching and a
+ * light/dark toggle, both applied to the live appConfig so they take effect instantly.
+ */
+defineProps<{ collapsed?: boolean }>()
+
+const colorMode = useColorMode()
+const appConfig = useAppConfig()
+const { user, logout } = useAuth()
+const router = useRouter()
+
+const colors = ['green', 'red', 'orange', 'amber', 'yellow', 'lime', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
+const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive']
+
+// Initials for the sidebar avatar; no external image request.
+const initials = computed(() => {
+  const name = user.value?.fullName || user.value?.username || '?'
+  const parts = String(name).trim().split(/\s+/)
+  if (parts.length > 1) return (parts[0]![0]! + parts[parts.length - 1]![0]!)
+  return String(name).slice(0, 2).toUpperCase()
+})
+
+const { restore, setPrimary, setNeutral } = useThemeChoice()
+
+// Applied on every page load so a colour picked earlier survives a refresh.
+onMounted(() => { restore() })
+
+const displayName = computed(() => user.value?.fullName || user.value?.username || 'User')
+const roleLabel = computed(() => (user.value?.roles?.[0]?.name) || '')
+
+function doLogout() {
+  logout()
+  router.push('/login')
+}
+
+const items = computed<DropdownMenuItem[][]>(() => ([
+  [{
+    type: 'label',
+    label: displayName.value,
+    // Rendered as the button content instead of an avatar image.
+    description: roleLabel.value
+  }],
+  [{
+    label: 'Accent Color',
+    icon: 'i-lucide-palette',
+    children: colors.map(color => ({
+      label: color,
+      chip: color,
+      slot: 'chip',
+      checked: appConfig.ui.colors.primary === color,
+      type: 'checkbox',
+      onSelect: (e: Event) => {
+        e.preventDefault()
+        setPrimary(color)
+      }
+    }))
+  }, {
+    label: 'Neutral Color',
+    icon: 'i-lucide-contrast',
+    children: neutrals.map(color => ({
+      label: color,
+      chip: color === 'neutral' ? 'old-neutral' : color,
+      slot: 'chip',
+      type: 'checkbox',
+      checked: appConfig.ui.colors.neutral === color,
+      onSelect: (e: Event) => {
+        e.preventDefault()
+        setNeutral(color)
+      }
+    }))
+  }],
+  [{
+    label: 'Appearance',
+    icon: 'i-lucide-sun-moon',
+    children: [{
+      label: 'Light',
+      icon: 'i-lucide-sun',
+      type: 'checkbox',
+      checked: colorMode.value === 'light',
+      onSelect(e: Event) {
+        e.preventDefault()
+        colorMode.preference = 'light'
+      }
+    }, {
+      label: 'Dark',
+      icon: 'i-lucide-moon',
+      type: 'checkbox',
+      checked: colorMode.value === 'dark',
+      onSelect(e: Event) {
+        e.preventDefault()
+        colorMode.preference = 'dark'
+      }
+    }]
+  }],
+  [{
+    label: 'Sign Out',
+    icon: 'i-lucide-log-out',
+    onSelect: doLogout
+  }]
+]))
+</script>
+
+<template>
+  <UDropdownMenu
+    :items="items"
+    :content="{ align: 'center', collisionPadding: 12 }"
+    :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+  >
+    <UButton
+      color="neutral"
+      variant="ghost"
+      block
+      :square="collapsed"
+      class="data-[state=open]:bg-elevated"
+      :ui="{ trailingIcon: 'text-dimmed' }"
+    >
+      <UAvatar
+        :alt="displayName"
+        size="sm"
+        class="bg-primary text-inverted"
+      >
+        {{ initials }}
+      </UAvatar>
+
+      <span v-if="!collapsed" class="truncate text-left">
+        <span class="block truncate text-sm font-medium">{{ displayName }}</span>
+        <span v-if="roleLabel" class="block truncate text-xs text-dimmed">{{ roleLabel }}</span>
+      </span>
+
+      <UIcon v-if="!collapsed" name="i-lucide-chevrons-up-down" class="ml-auto size-3.5 text-dimmed" />
+    </UButton>
+
+    <template #chip-leading="{ item }">
+      <div class="inline-flex items-center justify-center shrink-0 size-5">
+        <span
+          class="rounded-full ring ring-bg bg-(--chip-light) dark:bg-(--chip-dark) size-2"
+          :style="{
+            '--chip-light': `var(--color-${(item as any).chip}-500)`,
+            '--chip-dark': `var(--color-${(item as any).chip}-400)`
+          }"
+        />
+      </div>
+    </template>
+  </UDropdownMenu>
+</template>

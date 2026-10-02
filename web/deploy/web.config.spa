@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  IIS config for the INFRA-CAP static SPA.
+
+  This file is deployed as an IIS Web.config INSIDE the published .output/public
+  folder. It is NOT the ASP.NET Core Web.config and must not contain <system.webServer>
+  handler mappings for aspNetCore - the SPA is served as plain static files.
+
+  The critical rule: every unmatched request falls back to index.html, so that
+  client-side routes like /INFRA-CAP/data/customer survive a browser refresh.
+  Without this rule, refreshing any deep link returns IIS 404.
+-->
+<configuration>
+  <system.webServer>
+    <rewrite>
+      <rules>
+        <rule name="Static files" stopProcessing="true">
+          <match url="^_nuxt/.*" />
+          <action type="None" />
+        </rule>
+
+        <rule name="Existing files and dirs" stopProcessing="true">
+          <match url="^(?!_nuxt/).*\.(js|css|map|jpg|jpeg|png|gif|ico|svg|webp|woff2?|ttf|eot|json|xml|txt|webmanifest)$" />
+          <action type="None" />
+        </rule>
+
+        <rule name="SPA history fallback" stopProcessing="true">
+          <match url=".*" />
+          <conditions logicalGrouping="MatchAll">
+            <add input="{REQUEST_FILENAME}" matchType="IsFile" negate="true" />
+            <add input="{REQUEST_FILENAME}" matchType="IsDirectory" negate="true" />
+          </conditions>
+          <action type="Rewrite" url="index.html" />
+        </rule>
+      </rules>
+    </rewrite>
+
+    <staticContent>
+      <!-- Fingerprinted assets under _nuxt/ are safe to cache forever. -->
+      <remove fileExtension=".json" />
+      <mimeMap fileExtension=".json" mimeType="application/json" />
+      <mimeMap fileExtension=".webmanifest" mimeType="application/manifest+json" />
+      <mimeMap fileExtension=".woff2" mimeType="font/woff2" />
+      <mimeMap fileExtension=".woff" mimeType="font/woff" />
+      <clientCache cacheControlMode="UseMaxAge" cacheControlMaxAge="365.00:00:00" />
+    </staticContent>
+
+    <httpProtocol>
+      <customHeaders>
+        <add name="X-Content-Type-Options" value="nosniff" />
+        <add name="X-Frame-Options" value="SAMEORIGIN" />
+      </customHeaders>
+    </httpProtocol>
+
+    <security>
+      <requestFiltering>
+        <!-- Deny access to dotfiles and the Nuxt source folder if accidentally deployed. -->
+        <fileExtensions allowUnlisted="true">
+          <add fileExtension=".config" allowed="false" />
+          <add fileExtension=".env" allowed="false" />
+        </fileExtensions>
+        <hiddenSegments>
+          <add segment="node_modules" />
+          <add segment=".nuxt" />
+          <add segment=".output" />
+        </hiddenSegments>
+      </requestFiltering>
+    </security>
+  </system.webServer>
+</configuration>

@@ -1,0 +1,26 @@
+@import "@fontsource/public-sans/400.css";
+@import "@fontsource/public-sans/500.css";
+@import "@fontsource/public-sans/600.css";
+@import "@fontsource/public-sans/700.css";
+
+@import "tailwindcss" theme(static);
+@import "@nuxt/ui";
+
+@theme static {
+  /* Bundled from node_modules, NOT a CDN: the production server (10.89.6.237) has no
+     internet access, so a remote @font-face would silently fall back to the system
+     sans and shift every measurement. Same reasoning as the offline icon bundle. */
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --color-green-50: #EFFDF5;
+  --color-green-100: #D9FBE8;
+  --color-green-200: #B3F5D1;
+  --color-green-300: #75EDAE;
+  --color-green-400: #00DC82;
+  --color-green-500: #00C16A;
+  --color-green-600: #00A155;
+  --color-green-700: #007F45;
+  --color-green-800: #016538;
+  --color-green-900: #0A5331;
+  --color-green-950: #052E16;
+}
