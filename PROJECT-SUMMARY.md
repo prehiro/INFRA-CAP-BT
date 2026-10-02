@@ -187,6 +187,28 @@ Reset dilakukan lewat `PUT /api/users/2` memakai JWT admin yang sudah aktif di s
 
 > Catatan keamanan: role berasal dari JWT, jadi user tanpa role sama sekali **tidak bisa login** — `/api/auth/me` balas 401.
 
+## 7c. Git & secret hygiene (2026-10-02)
+Repo: remote `origin` = `https://github.com/prehiro/INFRA-CAP-BT.git`, branch `main`, commit awal `6336674` (57 file). `gh` CLI **tidak terpasang** di mesin ini dan tidak ada global `credential.helper`, tapi `git push` HTTPS tetap berhasil (kredensial tersimpan).
+
+**Aturan yang wajib dijaga saat commit berikutnya:**
+
+| File | Status | Alasan |
+|---|---|---|
+| `api/appsettings.json` | **git-ignore, jangan pernah di-commit** | berisi password `sa` SQL Server asli (192.168.4.3) + password admin aktif |
+| `api/appsettings.example.json` | aman di-commit | template dengan placeholder |
+| `api/appsettings.Production.json` | aman di-commit | hanya berisi placeholder `GANTI_*` |
+| `api/*.ps1` (4 script test/utility) | aman | password admin dibaca dari env var |
+
+**Menjalankan script E2E** (sekarang wajib set env var dulu):
+```powershell
+$env:INFRA_ADMIN_PASSWORD = '<password>'
+powershell -NoProfile -ExecutionPolicy Bypass -File 'C:\Users\HIRO\Projects\InternalApp\api\test-e2e.ps1'
+$env:INFRA_ADMIN_USER = 'admin'   # opsional, default admin
+```
+Kalau env var belum di-set, script berhenti dengan pesan yang jelas — bukan diam-diam gagal login.
+
+Sebelum commit: `git status` dan pastikan `api/appsettings.json` tidak muncul di staged.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
