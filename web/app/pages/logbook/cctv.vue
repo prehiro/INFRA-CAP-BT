@@ -37,15 +37,24 @@ const COLUMNS = [
   { key: 'tanggal', label: 'Date', w: 'w-[8%]' },
   { key: 'departemen', label: 'Department', w: 'w-[9%]' },
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
-  { key: 'nama_pemohon', label: 'Name Requestor', w: 'w-[12%]' },
-  { key: 'tujuan', label: 'Purpose / Details', w: 'w-[19%]' },
-  { key: 'waktu_diminta', label: 'Time Request', w: 'w-[8%]' },
+  { key: 'nama_pemohon', label: 'Name Requestor', w: 'w-[13%]' },
+  { key: 'tujuan', label: 'Purpose / Details', w: 'w-[22%]' },
   { key: 'tanda_pemohon', label: 'Requestor Sign', w: 'w-[8%]', sign: true },
   { key: 'pic_isd', label: 'PIC by ISD', w: 'w-[8%]' },
-  { key: 'pic_mulai', label: 'PIC start search date/time', w: 'w-[7%]' },
-  { key: 'pic_selesai', label: 'PIC end search date/time', w: 'w-[7%]' },
+  { key: 'pic_mulai', label: 'Start Search', w: 'w-[8%]' },
+  { key: 'pic_selesai', label: 'End Search', w: 'w-[8%]' },
   { key: 'tanda_isd', label: 'ISD Sign', w: 'w-[8%]', sign: true }
 ] as const
+
+/**
+ * "Time Request" was dropped from this table AND from the entry form on 2026-10-02 at
+ * HIRO's request. The DynamicField row for `waktu_diminta` still exists in the database
+ * on purpose: removing it would drop cctv_log_book from 12 to 11 fields and break
+ * test-logbook.ps1's "12 field terpasang" assertion. Keeping the field means the data
+ * model is untouched and the column can come back later, while the UI stays consistent
+ * (nothing is collected that is never displayed).
+ */
+const HIDDEN_FIELDS = ['waktu_diminta'] as const
 
 const SIGN_FIELDS = ['tanda_pemohon', 'tanda_isd'] as const
 
@@ -61,6 +70,7 @@ function notify(msg: string, kind: 'success' | 'error' = 'success') {
 
 function resetForm() {
   for (const c of COLUMNS) form[c.key] = c.sign ? null : ''
+  for (const k of HIDDEN_FIELDS) form[k] = ''
   editing.value = null
 }
 
@@ -123,6 +133,11 @@ function openEdit(row: Row) {
   resetForm()
   editing.value = row
   for (const c of COLUMNS) form[c.key] = row.values[c.key] ?? (c.sign ? null : '')
+  // Carry hidden-but-stored fields through the edit untouched. The API's UpdateAsync is
+  // merge-only (it only touches fields present in the payload), so omitting them would
+  // already be safe — but round-tripping them explicitly means the intent is deliberate
+  // and a future change to the backend cannot silently drop data.
+  for (const k of HIDDEN_FIELDS) form[k] = row.values[k] ?? ''
   showForm.value = true
 }
 
@@ -137,6 +152,11 @@ async function save() {
     for (const c of COLUMNS) {
       const v = form[c.key]
       values[c.key] = c.sign ? (v || null) : (v === '' ? null : v)
+    }
+    // Hidden-but-stored fields are not shown in the form, but they must survive a save.
+    for (const k of HIDDEN_FIELDS) {
+      const v = form[k]
+      values[k] = v === '' || v === undefined || v === null ? null : v
     }
     if (editing.value) {
       await apiUpdateRecord(entity.value.id, editing.value.id, values)
@@ -215,21 +235,12 @@ watch(search, () => {
 
     <template #body>
       <div class="space-y-4">
-        <!-- Sheet header, matching the printed form. -->
+        <!-- Sheet header. "Name of System" and "Dept" were removed on 2026-10-02 at
+             HIRO's request; the title and the actions are all that remain. -->
         <div class="rounded-lg border border-default bg-elevated p-4">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div class="text-center">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
           <h1 class="text-lg font-bold tracking-wide">RECORDABLE MEDIA LOG BOOK</h1>
-        </div>
-        <div class="flex flex-wrap gap-6 text-sm">
-          <div>
-            <p class="text-xs text-muted">Name of System</p>
-            <p class="font-semibold underline">CCTV RECORD DATA</p>
-          </div>
-          <div>
-            <p class="text-xs text-muted">Dept</p>
-            <p class="font-semibold underline">ISD</p>
-          </div>
         </div>
         <div class="flex gap-2">
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
@@ -315,9 +326,6 @@ watch(search, () => {
           <UFormField label="Name Requestor" name="nama_pemohon" required>
             <UInput v-model="form.nama_pemohon" name="nama_pemohon" />
           </UFormField>
-          <UFormField label="Time Request" name="waktu_diminta">
-            <UInput v-model="form.waktu_diminta" name="waktu_diminta" placeholder="13:00" />
-          </UFormField>
           <UFormField label="Purpose / Details" name="tujuan" required class="md:col-span-2 xl:col-span-3">
             <UTextarea v-model="form.tujuan" name="tujuan" :rows="2"
                       placeholder="CCTV record at 25/11/25 03:00 - 03:30" />
@@ -325,10 +333,10 @@ watch(search, () => {
           <UFormField label="PIC by ISD" name="pic_isd">
             <UInput v-model="form.pic_isd" name="pic_isd" />
           </UFormField>
-          <UFormField label="PIC start search date/time" name="pic_mulai">
+          <UFormField label="Start Search" name="pic_mulai">
             <UInput v-model="form.pic_mulai" name="pic_mulai" placeholder="12/11/25 12:30" />
           </UFormField>
-          <UFormField label="PIC end search date/time" name="pic_selesai">
+          <UFormField label="End Search" name="pic_selesai">
             <UInput v-model="form.pic_selesai" name="pic_selesai" placeholder="12/11/25 14:00" />
           </UFormField>
 
