@@ -119,7 +119,9 @@ function isDirty(): boolean {
     </UButton>
 
     <template #content>
-      <div v-if="isDirty()" class="p-4">
+      <!-- Fixed height: a nested USelect renders its list inside this box, and letting the
+           panel size to its content made the whole popover jump every time one opened. -->
+      <div v-if="isDirty()" class="min-h-[24rem] p-4">
         <!-- Quick ranges first: these are what people actually reach for, and they should be
              one click rather than two date pickers. -->
         <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">Quick range</p>
@@ -148,13 +150,13 @@ function isDirty(): boolean {
         <div class="mt-2 space-y-2">
           <UFormField label="Section" name="f-section">
             <USelect
-              v-model="draft.section" :items="sections" value-key="" class="w-full"
+              v-model="draft.section" :items="sections" class="w-full"
               placeholder="All sections"
             />
           </UFormField>
           <UFormField label="PIC Name" name="f-pic">
             <USelect
-              v-model="draft.pic" :items="pics" searchable value-key="" class="w-full"
+              v-model="draft.pic" :items="pics" searchable class="w-full"
               placeholder="All requesters"
             />
           </UFormField>
