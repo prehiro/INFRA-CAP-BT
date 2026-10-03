@@ -157,10 +157,19 @@ const selectedIndex = computed(() => {
   return Math.round(Number(minute.value) / props.minuteStep) % (60 / props.minuteStep)
 })
 
-const handEnd = computed(() => point(selectedIndex.value, R_HAND))
+const handEnd = computed(() => point(selectedIndex.value, Math.max(markerR.value - 14, 30)))
 
 /** True while the hour half of the dial is on screen (the minute half reuses the same ring). */
 const hourSelected = computed(() => step.value === 'hour')
+
+/**
+ * The selection marker must sit on the ring the value ACTUALLY CAME FROM.
+ * It used to be pinned to the outer radius, so an hour that only exists on the inner ring
+ * (e.g. 01) drew its marker out on the outer ring, directly on top of the outer "13" label -
+ * which read as if the outer ring still said 01. Both the marker and the hand now follow
+ * selRing.
+ */
+const markerR = computed(() => (hourSelected.value && selRing.value === 'inner' ? R_INNER : R))
 
 /** Push the draft out to the parent on every pick - there is no OK button to defer it. */
 function commit() {
@@ -273,9 +282,9 @@ function display(): string {
           <circle cx="100" cy="100" r="4" :style="{ fill: C.primary }" />
 
           <!-- selection marker on the chosen spoke -->
-          <circle :cx="point(selectedIndex, R).x" :cy="point(selectedIndex, R).y"
-                  r="14" :style="{ fill: C.primary }" />
-          <text :x="point(selectedIndex, R).x" :y="point(selectedIndex, R).y"
+          <circle :cx="point(selectedIndex, markerR).x" :cy="point(selectedIndex, markerR).y"
+                  r="13" :style="{ fill: C.primary }" />
+          <text :x="point(selectedIndex, markerR).x" :y="point(selectedIndex, markerR).y"
                 text-anchor="middle" dominant-baseline="central"
                 class="font-mono text-[15px]"
                 :style="{ fill: C.onPrimary }" font-weight="600"
