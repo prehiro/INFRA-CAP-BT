@@ -84,10 +84,17 @@ function start(e: PointerEvent) {
   c.strokeStyle = INK
   c.lineWidth = 1.6
   drawing.value = true
-  // A fresh stroke discards whatever was loaded before, otherwise editing a signed
-  // row would keep the old signature underneath the new one.
-  c.clearRect(0, 0, canvasEl.value!.width, canvasEl.value!.height)
-  hasInk.value = false
+  // Strokes ACCUMULATE (HIRO, 2026-10-04): signing is naturally done in several passes -
+  // a name, then a date, then a flourish - and this used to erase everything on every
+  // pointerdown, so the second stroke silently destroyed the first. Clearing is now the
+  // job of the explicit Clear button, which is the only way to start over.
+  // Note this also fixes editing an existing signed row: the stored signature is redrawn by
+  // paint() and further strokes now sit alongside it instead of replacing it, which is what
+  // you want when someone adds a date under a name.
+  //
+  // hasInk is deliberately NOT set here: it still flips in move() on the first real pixel,
+  // so the "Sign here" placeholder and the Clear button only appear once something was
+  // actually drawn, and a stray click that moves nothing does not emit an unchanged PNG.
 }
 
 function move(e: PointerEvent) {
