@@ -3,7 +3,9 @@ import { apiListRecords, apiCreateRecord, apiUpdateRecord, apiDeleteRecord, apiG
 
 /**
  * CCTV Access Log Book — dedicated page that mirrors the paper form
- * "RECORDABLE MEDIA LOG BOOK".
+ * "CCTV ACCESS REQUEST LOG" (renamed from "RECORDABLE MEDIA LOG BOOK" on 2026-10-02).
+ * The "request" wording is deliberate: the sheet carries TWO signatures - the requester's and
+ * ISD's - so it records an approved request to access footage, not a passive access log.
  *
  * Route is /logbook/cctvacc (renamed from /logbook/cctv on 2026-10-02 when the Log Book
  * menu group was introduced alongside Handover).
@@ -217,7 +219,7 @@ watch(search, () => {
         <div class="rounded-lg border border-default bg-elevated p-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 class="text-lg font-bold tracking-wide">RECORDABLE MEDIA LOG BOOK</h1>
+          <h1 class="text-lg font-bold tracking-wide">CCTV ACCESS REQUEST LOG</h1>
         </div>
         <div class="flex gap-2">
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
