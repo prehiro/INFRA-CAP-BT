@@ -35,12 +35,22 @@ const groups = computed(() => [
 
 <template>
   <UDashboardGroup unit="rem">
-    <!-- Width. UDashboardGroup is unit="rem", and the vendor's own defaultSize is 15, so
-         the stock sidebar renders at 15rem = 240px. That is wider than this app needs —
-         the nav labels are short and 208px (13rem) reads better. min 11rem still fits the
-         longest label ("User Management"); max 18rem stops it eating the content area.
-         Note the collapsed width is NOT controlled here: it comes from the theme's
-         `min-w-16` (64px) on the sidebar root. -->
+    <!-- Width: 13rem = 208px. The vendor default is defaultSize 15, so stock renders at
+         240px, which is wider than this app needs. min 11rem still fits the longest label
+         ("User Management"); max 18rem stops it eating the content area.
+
+         IMPORTANT — why a stale width survives a hard refresh: useResizable defaults to
+         `storage: "cookie", persistent: true` and keys that cookie as
+         `${storageKey}-sidebar-${id}` -> "dashboard-sidebar-app". The cookie holds
+         `{size, collapsed}`, and `size` is read from it INSTEAD of defaultSize whenever
+         the cookie exists. So changing :default-size has NO effect on a browser that has
+         already been here — that is not an HMR artifact and no amount of refreshing will
+         clear it.
+
+         `id` is bumped to "app-v2" so the old cookie is simply never read again. Bump it
+         again (v3, v4, ...) whenever the intended default width changes, OR clear the
+         `dashboard-sidebar-app` cookie in devtools. The collapsed width is NOT controlled
+         here: it comes from the theme's `min-w-16` (64px) on the sidebar root. -->
 
     <!-- `resizable` is deliberately OFF. It was removed on the belief that it caused the
          "ResizeObserver loop completed with undelivered notifications" errors; that was
@@ -49,7 +59,7 @@ const groups = computed(() => [
          drag-to-resize is wanted. What is lost without it is only the width drag; the
          sidebar still collapses via the button in each page's navbar. -->
     <UDashboardSidebar
-      id="app"
+      id="app-v2"
       collapsible
       class="anim-slide-left bg-elevated/25"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
