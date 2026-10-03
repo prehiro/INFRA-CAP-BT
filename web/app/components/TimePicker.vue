@@ -94,6 +94,9 @@ function loadFromModel() {
   minute.value = t ? snap(t.m) : '00'
   step.value = 'hour'
   pendingInner.value = false
+  // Highlight whichever ring actually holds this hour. Without this, opening the picker at,
+  // say, 01:45 (an hour that only exists on the inner ring) would light up the outer ring.
+  selRing.value = OUTER.includes(Number(hour.value)) ? 'outer' : 'inner' 
 }
 
 watch(open, (v) => { if (v) loadFromModel() })
@@ -104,14 +107,35 @@ function point(i: number, r: number) {
   return { x: 100 + r * Math.cos(a), y: 100 + r * Math.sin(a) }
 }
 
-/** Outer label: the 12-hour face. */
+/**
+ * WHICH HOURS, AND WHY THE DIAL IS LAYED OUT THIS WAY (HIRO, 2026-10-04):
+ * footage can only be searched between 07:00 and 18:00, so the OUTER ring carries exactly
+ * those twelve hours - it reads 12, 13, 14, 15, 16, 17, 18, 7, 8, 9, 10, 11 clockwise,
+ * which keeps the familiar clock layout (12 stays at the top) while every reachable hour is
+ * in the working window.
+ * The INNER ring keeps the rest of the 24-hour day on the same spokes: 00, 1, 2, 3, 4, 5,
+ * 6, 19, 20, 21, 22, 23. Together the two rings still cover all 24 hours, so a genuinely
+ * out-of-hours search (say 03:00) is still recordable - just not the first thing a finger
+ * lands on.
+ * Note what this replaced: the rings used to be a 12-hour face plus an inferred AM/PM, so
+ * picking the inner "14" meant "two o'clock, but PM". Now each ring is a literal value and
+ * selection is a straight lookup - the AM/PM inference is gone and cannot disagree with
+ * what is printed on the dial.
+ */
+const OUTER = [12, 13, 14, 15, 16, 17, 18, 7, 8, 9, 10, 11]
+const INNER = [0, 1, 2, 3, 4, 5, 6, 19, 20, 21, 22, 23]
+
+/** Which ring the current selection came from, so only that ring highlights. */
+const selRing = ref<'outer' | 'inner'>('outer')
+
+/** Outer label: the working window 07:00-18:00. */
 function outerLabel(i: number): string {
-  return i === 0 ? '12' : String(i)
+  return String(OUTER[i])
 }
 
-/** Inner label: the 24-hour equivalent of the same spoke (00 above 12, then 13..23). */
+/** Inner label: the remaining hours of the 24-hour day. */
 function innerLabel(i: number): string {
-  return i === 0 ? '00' : String(i + 12)
+  return String(INNER[i]).padStart(2, '0')
 }
 
 /** Minute label for the same spoke. */
@@ -121,11 +145,22 @@ function minuteLabel(i: number): string {
 
 /** Which of the twelve spokes is selected right now. */
 const selectedIndex = computed(() => {
-  if (step.value === 'hour') return Number(hour.value) % 12
+  if (step.value === 'hour') {
+    const h = Number(hour.value)
+    // A legacy or out-of-window value still has to land somewhere on the dial: fall back
+    // to the inner ring so the hand is never pointing at nothing.
+    const oi = OUTER.indexOf(h)
+    if (oi >= 0) return oi
+    const ii = INNER.indexOf(h)
+    return ii >= 0 ? ii : 0
+  }
   return Math.round(Number(minute.value) / props.minuteStep) % (60 / props.minuteStep)
 })
 
 const handEnd = computed(() => point(selectedIndex.value, R_HAND))
+
+/** True while the hour half of the dial is on screen (the minute half reuses the same ring). */
+const hourSelected = computed(() => step.value === 'hour')
 
 /** Push the draft out to the parent on every pick - there is no OK button to defer it. */
 function commit() {
@@ -134,15 +169,9 @@ function commit() {
 
 function select(i: number) {
   if (step.value === 'hour') {
-    // The dial is 12-hour but the model is 24-hour, so resolve which half the user meant
-    // from the ring they actually pressed: the outer ring keeps the current AM/PM, the
-    // inner ring means the opposite one.
-    const target12 = i === 0 ? 12 : i
-    const currentlyPm = Number(hour.value) >= 12
-    let h: number
-    if (pendingInner.value) h = target12 === 12 ? 0 : target12 + 12
-    else h = currentlyPm ? target12 : (target12 === 12 ? 0 : target12)
-    hour.value = String(h).padStart(2, '0')
+    // Each ring is a literal value, so the press maps straight across - no AM/PM inference.
+    hour.value = String(pendingInner.value ? INNER[i] : OUTER[i]).padStart(2, '0')
+    selRing.value = pendingInner.value ? 'inner' : 'outer'
     pendingInner.value = false
     step.value = 'minute'
     commit()
@@ -226,15 +255,16 @@ function display(): string {
                 :x="point(i - 1, R_INNER).x" :y="point(i - 1, R_INNER).y"
                 text-anchor="middle" dominant-baseline="central"
                 class="font-mono text-[11px]"
-                :style="{ fill: step === 'hour' ? C.dim : 'transparent' }">{{ innerLabel(i - 1) }}</text>
+                :style="{ fill: !hourSelected ? 'transparent' : (selRing === 'inner' && selectedIndex === i - 1 ? C.primary : C.dim) }"
+          >{{ innerLabel(i - 1) }}</text>
 
           <!-- outer ring: minutes while editing minutes, the 12-hour face otherwise -->
           <text v-for="i in 12" :key="'o' + i"
                 :x="point(i - 1, R).x" :y="point(i - 1, R).y"
                 text-anchor="middle" dominant-baseline="central"
                 class="font-mono text-[15px]"
-                :style="{ fill: selectedIndex === i - 1 ? C.primary : C.strong }"
-                :font-weight="selectedIndex === i - 1 ? 600 : 400"
+                :style="{ fill: hourSelected && selRing === 'outer' && selectedIndex === i - 1 ? C.primary : C.strong }"
+                :font-weight="hourSelected && selRing === 'outer' && selectedIndex === i - 1 ? 600 : 400"
           >{{ step === 'minute' ? minuteLabel(i - 1) : outerLabel(i - 1) }}</text>
 
           <!-- hand, from the centre dot out to the selection -->
@@ -249,7 +279,7 @@ function display(): string {
                 text-anchor="middle" dominant-baseline="central"
                 class="font-mono text-[15px]"
                 :style="{ fill: C.onPrimary }" font-weight="600"
-          >{{ step === 'minute' ? minuteLabel(selectedIndex) : outerLabel(selectedIndex) }}</text>
+          >{{ step === 'minute' ? minuteLabel(selectedIndex) : hour }}</text>
         </svg>
       </div>
     </template>
