@@ -117,6 +117,14 @@ function openEdit(row: Row) {
   editing.value = row
   for (const c of COLUMNS) form[c.key] = row.values[c.key] ?? (c.sign ? null : '')
   // Nothing to load for hidden fields: they are not part of the form at all.
+
+  // The API hands back dates as full ISO timestamps ("2026-10-03T00:00:00"), but
+  // <input type="date"> only accepts a bare "yyyy-mm-dd" and silently renders EMPTY for
+  // anything else. Because Date is required, that empty box then failed UForm validation and
+  // blocked the submit entirely - so Edit appeared to do nothing at all, with no error shown.
+  // Trimming to the date part is what makes Edit work; openCreate already did this by hand.
+  form.tanggal = String(form.tanggal ?? '').slice(0, 10)
+
   showForm.value = true
 }
 
@@ -134,11 +142,17 @@ async function save() {
     }
     // Hidden-but-stored fields are not shown in the form.
     //  - 'nomor' is filled by the backend on create (DynamicRecordService.FillAutoNumberAsync),
-    //    so sending null here is what triggers the auto-number. On edit we must NOT send it
-    //    either: the API's UpdateAsync is merge-only, so an omitted key leaves the existing
-    //    value untouched.
-    //  - 'waktu_diminta' has no value anywhere, so null is harmless.
-    for (const k of HIDDEN_FIELDS) values[k] = null
+    //    so sending null here is what triggers the auto-number.
+    //  - On EDIT we must OMIT the hidden fields entirely. The API's UpdateAsync is merge-only,
+    //    so an absent key leaves the stored value untouched - but sending an explicit null
+    //    OVERWRITES it, which trips the required+unique check on `nomor` and makes every edit
+    //    fail with "Validation failed". This was the actual cause of Edit silently doing
+    //    nothing while Create worked fine.
+    if (editing.value) {
+      for (const k of HIDDEN_FIELDS) delete values[k]
+    } else {
+      for (const k of HIDDEN_FIELDS) values[k] = null
+    }
     if (editing.value) {
       await apiUpdateRecord(entity.value.id, editing.value.id, values)
       notify('Row updated.')
@@ -230,10 +244,19 @@ watch(search, () => {
       </div>
     </div>
 
-    <div v-if="toast" class="rounded border px-3 py-2 text-sm"
-         :class="toast.kind === 'error' ? 'border-error bg-error/10 text-error' : 'border-success bg-success/10 text-success'">
-      {{ toast.msg }}
-    </div>
+    <!-- Save feedback is TELEPORTED to <body> on purpose. Rendered inline it sat inside
+         #__nuxt, which carries `isolate` and therefore forms its own stacking context: no
+         z-index on any descendant of it can ever paint above a UModal, because the modal is
+         teleported to a LATER sibling of #__nuxt. That is why "Validation failed" was
+         invisible behind the open modal. Teleporting to body makes the toast a sibling of the
+         modal, and since it is appended later, z-[60] (over UModal's z-50) puts it on top.
+         top-20 clears the 64px sticky navbar. -->
+    <Teleport to="body">
+      <div v-if="toast" class="pointer-events-none fixed left-1/2 top-20 z-[60] -translate-x-1/2 rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur"
+           :class="toast.kind === 'error' ? 'border-error bg-error/15 text-error' : 'border-success bg-success/15 text-success'">
+        {{ toast.msg }}
+      </div>
+    </Teleport>
 
     <!-- Logbook table.
          Professional look without losing the printed sheet: the grid uses `border-default`
@@ -308,16 +331,22 @@ watch(search, () => {
       </div>
     </div>
 
-    <!-- Entry form: inline panel, not UModal. The #footer slot of UModal swallows
-         @click on the submit button, which was verified in this codebase before. -->
-    <div v-if="showForm" class="rounded-lg border border-default bg-elevated p-4">
-      <div class="mb-3 flex items-center justify-between">
-        <h2 class="font-semibold">{{ editing ? 'Edit Row' : 'New Row' }}</h2>
-        <UButton icon="i-lucide-x" variant="ghost" size="sm" @click="showForm = false" />
-      </div>
-
+    <!-- Entry form lives in a UModal (converted from an inline panel on 2026-10-02).
+         UModal brings its own smooth enter/leave transition plus backdrop blur and an
+         ESC-to-close, all of which the inline panel could not do.
+         DO NOT move the Save/Cancel buttons into UModal's #footer slot: that slot swallows
+         @click on a submit button in this codebase, which is exactly why this form was an
+         inline panel to begin with. They stay inside the <UForm> in the #body slot so the
+         native form submit path stays intact. -->
+    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-3xl' }"
+            :title="editing ? 'Edit Row' : 'New Row'"
+            :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
+      <template #body>
       <UForm :state="form" @submit="save">
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <!-- Field area scrolls independently so the action bar below stays reachable
+             without scrolling the whole modal. max-h is a viewport-relative cap so the
+             dialog never grows taller than the window on short screens. -->
+        <div class="max-h-[52vh] grid grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
           <UFormField label="Date" name="tanggal" required>
             <UInput v-model="form.tanggal" name="tanggal" type="date" />
           </UFormField>
@@ -330,7 +359,7 @@ watch(search, () => {
           <UFormField label="PIC Name" name="nama_pemohon" required>
             <UInput v-model="form.nama_pemohon" name="nama_pemohon" />
           </UFormField>
-          <UFormField label="Purpose / Details" name="tujuan" required class="md:col-span-2 xl:col-span-3">
+          <UFormField label="Purpose / Details" name="tujuan" required class="md:col-span-2">
             <UTextarea v-model="form.tujuan" name="tujuan" :rows="2"
                       placeholder="CCTV record at 25/11/25 03:00 - 03:30" />
           </UFormField>
@@ -354,12 +383,14 @@ watch(search, () => {
           </UFormField>
         </div>
 
-        <div class="mt-4 flex gap-2">
-          <UButton type="submit" :loading="saving" icon="i-lucide-check" label="Save" />
+        <div class="mt-4 flex items-center justify-end gap-2 border-t border-default pt-4">
           <UButton type="button" variant="ghost" label="Cancel" @click="showForm = false" />
+          <UButton type="submit" :loading="saving" icon="i-lucide-check"
+                   :label="editing ? 'Save Changes' : 'Save Row'" />
         </div>
       </UForm>
-    </div>
+      </template>
+    </UModal>
       </div>
     </template>
   </UDashboardPanel>

@@ -139,7 +139,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
         v-if="!hasInk"
         class="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-muted"
       >
-        Tanda tangan di sini
+        Sign here
       </p>
       <button
         v-if="!disabled && modelValue"
