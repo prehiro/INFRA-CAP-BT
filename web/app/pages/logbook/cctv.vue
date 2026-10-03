@@ -33,7 +33,6 @@ const editing = ref<Row | null>(null)
 
 /** Column order and width of the printed sheet. */
 const COLUMNS = [
-  { key: 'nomor', label: 'NO', w: 'w-[7%]' },
   { key: 'tanggal', label: 'Date', w: 'w-[8%]' },
   { key: 'departemen', label: 'Department', w: 'w-[9%]' },
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
@@ -56,14 +55,12 @@ const COLUMNS = [
  * model is untouched and the column can come back later, while the UI stays consistent
  * (nothing is collected that is never displayed).
  */
-const HIDDEN_FIELDS = ['waktu_diminta'] as const
+const HIDDEN_FIELDS = ['waktu_diminta', 'nomor'] as const
 
 const SIGN_FIELDS = ['tanda_pemohon', 'tanda_isd'] as const
 
 /** Draft of the row currently being entered. */
 const form = reactive<Record<string, any>>({})
-const nextNo = ref('')
-const formDate = computed(() => (form.tanggal ? String(form.tanggal).slice(0, 10) : ''))
 
 function notify(msg: string, kind: 'success' | 'error' = 'success') {
   toast.value = { msg, kind }
@@ -103,31 +100,9 @@ async function loadRows() {
   total.value = page.total
 }
 
-/** Preview the next sequential NO for the year of the row's date. */
-async function fetchNextNo(date?: string) {
-  try {
-    const qs = date ? `?date=${encodeURIComponent(date)}` : ''
-    const r = await $fetch<{ nomor: string }>(
-      `${useRuntimeConfig().public.apiBase}/logbook/cctv/next-no${qs}`,
-      { headers: authHeadersFor() }
-    )
-    nextNo.value = r.nomor
-  } catch {
-    // A failed preview must not block manual entry; the field stays editable.
-    nextNo.value = ''
-  }
-}
-
-function authHeadersFor(): Record<string, string> {
-  const t = useToken().value
-  return t ? { Authorization: `Bearer ${t}` } : {}
-}
-
 async function openCreate() {
   resetForm()
   form.tanggal = new Date().toISOString().slice(0, 10)
-  await fetchNextNo(form.tanggal)
-  form.nomor = nextNo.value
   showForm.value = true
 }
 
@@ -135,11 +110,7 @@ function openEdit(row: Row) {
   resetForm()
   editing.value = row
   for (const c of COLUMNS) form[c.key] = row.values[c.key] ?? (c.sign ? null : '')
-  // Carry hidden-but-stored fields through the edit untouched. The API's UpdateAsync is
-  // merge-only (it only touches fields present in the payload), so omitting them would
-  // already be safe — but round-tripping them explicitly means the intent is deliberate
-  // and a future change to the backend cannot silently drop data.
-  for (const k of HIDDEN_FIELDS) form[k] = row.values[k] ?? ''
+  // Nothing to load for hidden fields: they are not part of the form at all.
   showForm.value = true
 }
 
@@ -155,11 +126,13 @@ async function save() {
       const v = form[c.key]
       values[c.key] = c.sign ? (v || null) : (v === '' ? null : v)
     }
-    // Hidden-but-stored fields are not shown in the form, but they must survive a save.
-    for (const k of HIDDEN_FIELDS) {
-      const v = form[k]
-      values[k] = v === '' || v === undefined || v === null ? null : v
-    }
+    // Hidden-but-stored fields are not shown in the form.
+    //  - 'nomor' is filled by the backend on create (DynamicRecordService.FillAutoNumberAsync),
+    //    so sending null here is what triggers the auto-number. On edit we must NOT send it
+    //    either: the API's UpdateAsync is merge-only, so an omitted key leaves the existing
+    //    value untouched.
+    //  - 'waktu_diminta' has no value anywhere, so null is harmless.
+    for (const k of HIDDEN_FIELDS) values[k] = null
     if (editing.value) {
       await apiUpdateRecord(entity.value.id, editing.value.id, values)
       notify('Row updated.')
@@ -219,7 +192,6 @@ function printSheet() {
   if (typeof window !== 'undefined') window.print()
 }
 
-watch(formDate, d => { if (!editing.value) fetchNextNo(d) })
 let searchTimer: any
 watch(search, () => {
   clearTimeout(searchTimer)
@@ -236,7 +208,7 @@ watch(search, () => {
     </template>
 
     <template #body>
-      <div class="space-y-4">
+      <div class="anim-stagger space-y-4">
         <!-- Sheet header. "Name of System" and "Dept" were removed on 2026-10-02 at
              HIRO's request; the title and the actions are all that remain. -->
         <div class="rounded-lg border border-default bg-elevated p-4">
@@ -309,9 +281,6 @@ watch(search, () => {
                 <template v-else-if="c.key === 'tanggal'">
                   <span class="tabular-nums whitespace-nowrap">{{ fmtDate(r.values[c.key]) }}</span>
                 </template>
-                <template v-else-if="c.key === 'nomor'">
-                  <span class="font-medium tabular-nums whitespace-nowrap">{{ r.values[c.key] ?? '—' }}</span>
-                </template>
                 <template v-else>
                   <span class="block break-words">{{ r.values[c.key] ?? '—' }}</span>
                 </template>
@@ -343,9 +312,6 @@ watch(search, () => {
 
       <UForm :state="form" @submit="save">
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          <UFormField label="NO" name="nomor" required>
-            <UInput v-model="form.nomor" name="nomor" placeholder="1/2026/001" />
-          </UFormField>
           <UFormField label="Date" name="tanggal" required>
             <UInput v-model="form.tanggal" name="tanggal" type="date" />
           </UFormField>

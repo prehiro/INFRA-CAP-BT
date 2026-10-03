@@ -27,6 +27,9 @@ builder.Services.AddScoped<DynamicRecordService>();
 builder.Services.AddScoped<DynamicSchemaService>();
 builder.Services.AddScoped<SeedService>();
 builder.Services.AddScoped<LogbookNumberService>();
+// The generic CRUD engine fills the CCTV Log Book's required+unique `nomor` field on
+// create when the UI omits it, so the interface is registered alongside the concrete type.
+builder.Services.AddScoped<ISequentialNumberProvider>(sp => sp.GetRequiredService<LogbookNumberService>());
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>

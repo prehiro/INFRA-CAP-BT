@@ -29,9 +29,9 @@ const cctvCount = computed(() => cctv.value?.recordCount ?? 0)
     <template #body>
       <div class="space-y-6">
         <!-- Greeting lives in the body, not the navbar: the navbar is locked to 64px. -->
-        <WelcomeBanner />
+        <WelcomeBanner class="anim-fade-up" />
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="anim-stagger mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <UCard to="/logbook/cctv" class="cursor-pointer transition-colors hover:border-primary">
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
@@ -46,7 +46,7 @@ const cctvCount = computed(() => cctv.value?.recordCount ?? 0)
           </UCard>
         </div>
 
-        <UCard>
+        <UCard class="anim-fade-up mt-6">
           <template #header>
             <h2 class="font-semibold">Modules</h2>
           </template>

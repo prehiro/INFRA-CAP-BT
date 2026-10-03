@@ -25,7 +25,12 @@ public class NotFoundException : Exception
 public class DynamicRecordService
 {
     private readonly AppDbContext _db;
-    public DynamicRecordService(AppDbContext db) => _db = db;
+    private readonly ISequentialNumberProvider? _numbers;
+    public DynamicRecordService(AppDbContext db, ISequentialNumberProvider? numbers = null)
+    {
+        _db = db;
+        _numbers = numbers;
+    }
 
     // ---------- metadata ----------
 
@@ -169,11 +174,53 @@ public class DynamicRecordService
         return list[0];
     }
 
+    /// <summary>
+    /// Injects the sequential NO into the raw input dictionary when the UI omitted it.
+    ///
+    /// This MUST run BEFORE <see cref="MaterializeAsync"/>, because MaterializeAsync throws
+    /// immediately for any missing REQUIRED field (see its `if (!has)` branch), so a
+    /// post-materialize fix-up never gets a chance to run — that was the original bug:
+    /// saving without a NO returned 400 "NO wajib diisi" even with the auto-number code in
+    /// place. Working on the input dictionary means the value flows through the normal
+    /// materialize/validate path unchanged, including the unique check.
+    ///
+    /// The CCTV Log Book's `nomor` field is required+unique in the database but its column
+    /// was hidden from the table and the form on 2026-10-02.
+    /// </summary>
+    private async Task InjectAutoNumberAsync(DynamicEntity entity, Dictionary<string, object?> input)
+    {
+        if (_numbers is null) return;
+
+        var noField = entity.Fields.FirstOrDefault(f => f.Name == LogbookNumberService.NO_FIELD);
+        if (noField is null) return;
+
+        input ??= new Dictionary<string, object?>();
+
+        // Only fill when absent OR blank. Look ONLY at the NO field: an earlier version
+        // bailed out when ANY value was non-empty, which was almost always true
+        // (Department "ISD", PIC name, ...) so the auto-number never fired.
+        bool has = input.TryGetValue(noField.Name, out var raw);
+        if (!has) has = input.TryGetValue(noField.Id.ToString(), out raw);
+        if (has && !string.IsNullOrWhiteSpace(raw?.ToString())) return;
+
+        var (handled, next) = await _numbers.TryNextAsync(entity.Slug, null, default);
+        if (!handled) return;
+
+        input[noField.Name] = next;
+    }
+
     public async Task<RecordDto> CreateAsync(int entityId, SaveRecordRequest req, string username)
     {
         var entity = await GetEntityAsync(entityId);
-        var values = await MaterializeAsync(entity, req.Values);
 
+        // Copy into a mutable dictionary: SaveRecordRequest.Values is init-only, so the
+        // auto-number has to be injected into a local copy and passed down explicitly.
+        var input = req.Values is null
+            ? new Dictionary<string, object?>()
+            : new Dictionary<string, object?>(req.Values);
+        await InjectAutoNumberAsync(entity, input);
+
+        var values = await MaterializeAsync(entity, input);
         await ValidateAsync(entity, values, null);
 
         var rec = new Record
@@ -197,7 +244,42 @@ public class DynamicRecordService
             .FirstOrDefaultAsync(r => r.Id == recordId && r.EntityId == entityId && !r.IsDeleted)
             ?? throw new NotFoundException($"Record {recordId} not found");
 
-        var values = await MaterializeAsync(entity, req.Values);
+        // Same auto-number handling as CreateAsync, but DIFFERENT intent: on create we
+        // generate the next number, on edit we must PRESERVE the one the row already has.
+        // MaterializeAsync throws on any missing required field, so an edit from the UI
+        // (which no longer sends `nomor`) would 400 without this.
+        //
+        // The value is read from the stored RecordValue, NOT regenerated — generating here
+        // would renumber the row on every save and break the printed logbook.
+        // Copy to a mutable dictionary because SaveRecordRequest.Values is init-only.
+        var input = req.Values is null
+            ? new Dictionary<string, object?>()
+            : new Dictionary<string, object?>(req.Values);
+
+        var noField = entity.Fields.FirstOrDefault(f => f.Name == LogbookNumberService.NO_FIELD);
+        if (noField is not null)
+        {
+            bool present = input.TryGetValue(noField.Name, out _)
+                          || input.TryGetValue(noField.Id.ToString(), out _);
+            if (!present)
+            {
+                var storedNo = rec.Values.FirstOrDefault(v => v.FieldId == noField.Id)?.TextValue;
+                if (!string.IsNullOrWhiteSpace(storedNo))
+                {
+                    // Keep the existing number.
+                    input[noField.Name] = storedNo;
+                }
+                else
+                {
+                    // No number stored at all (legacy row): generate one.
+                    var (handled, next) = await (_numbers?.TryNextAsync(entity.Slug, null, default)
+                                               ?? Task.FromResult((false, "")));
+                    if (handled) input[noField.Name] = next;
+                }
+            }
+        }
+
+        var values = await MaterializeAsync(entity, input);
         await ValidateAsync(entity, values, recordId);
 
         foreach (var incoming in values)

@@ -145,7 +145,7 @@ onMounted(() => {
     </template>
 
     <template #body>
-      <div class="space-y-4">
+      <div class="anim-fade-up space-y-4">
     <UAlert
       v-if="!isAdmin"
       color="warning"

@@ -24,3 +24,71 @@
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
 }
+
+/* ---------------------------------------------------------------------------
+   Page-load motion.
+
+   One system, defined once, applied via the `.anim-*` utility classes below. Two
+   rules matter:
+
+   1. It must be non-blocking and unobtrusive: short durations, small offsets, and
+      opacity-only fades. Anything longer or with a big translate reads as "slow"
+      rather than "smooth", which is the opposite of the goal.
+   2. It must respect prefers-reduced-motion. A user who asks the OS to reduce
+      motion must never get animation, so the reduced-motion block below cancels
+      everything rather than just shortening it.
+
+   Applied in layouts/default.vue (shell: sidebar + navbar) and on each page's
+   body content.
+--------------------------------------------------------------------------- */
+
+@keyframes infra-fade-up {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes infra-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes infra-slide-left {
+  from { opacity: 0; transform: translate3d(-12px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@layer utilities {
+  .anim-fade-up {
+    animation: infra-fade-up 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .anim-fade-in {
+    animation: infra-fade-in 300ms ease-out both;
+  }
+  .anim-slide-left {
+    animation: infra-slide-left 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  /* Staggered children: apply to a parent and let the nth-child delays cascade.
+     Kept small (60ms steps, 6 children) so a long list never feels sluggish. */
+  .anim-stagger > * { animation: infra-fade-up 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .anim-stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .anim-stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .anim-stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .anim-stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .anim-stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .anim-stagger > *:nth-child(n + 7) { animation-delay: 360ms; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Cancel outright rather than shorten: a partial fade can still trigger
+     vestibular discomfort, which is exactly what the OS setting is asking us
+     to avoid. */
+  .anim-fade-up,
+  .anim-fade-in,
+  .anim-slide-left,
+  .anim-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

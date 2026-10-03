@@ -51,7 +51,7 @@ const groups = computed(() => [
     <UDashboardSidebar
       id="app"
       collapsible
-      class="bg-elevated/25"
+      class="anim-slide-left bg-elevated/25"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
       :default-size="13"
       :min-size="11"

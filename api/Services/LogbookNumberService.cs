@@ -4,6 +4,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Api.Services;
 
 /// <summary>
+/// Supplies an automatic sequence number to the generic CRUD engine. Injected into
+/// <see cref="DynamicRecordService"/> so that an entity whose number field is required
+/// and unique can be filled server-side when the UI no longer sends it — the CCTV
+/// Log Book's NO column was hidden from the table and the form on 2026-10-02, but the
+/// field itself stays required+unique in the database.
+/// </summary>
+public interface ISequentialNumberProvider
+{
+    /// <returns>false when the entity has no auto-numbered field; value is then unset.</returns>
+    Task<(bool handled, string value)> TryNextAsync(string entitySlug, DateTime? forDate, CancellationToken ct);
+}
+
+/// <summary>
 /// Generates the sequential "NO" column of the CCTV Log Book as a plain integer string:
 /// 1, 2, 3, ... (2026-10-02, at HIRO's request — the earlier 1/2026/001 format was
 /// dropped because the year component is already carried by the Date column).
@@ -14,7 +27,7 @@ namespace Api.Services;
 /// number, so deleting the tail row frees its NO for reuse and the sheet stays gapless.
 /// Two live rows can never share a NO.
 /// </summary>
-public class LogbookNumberService
+public class LogbookNumberService : ISequentialNumberProvider
 {
     private readonly AppDbContext _db;
     public LogbookNumberService(AppDbContext db) => _db = db;
@@ -59,5 +72,11 @@ public class LogbookNumberService
 
         max++;
         return max.ToString();
+    }
+
+    public async Task<(bool handled, string value)> TryNextAsync(string entitySlug, DateTime? forDate, CancellationToken ct)
+    {
+        if (entitySlug != CCTV_SLUG) return (false, "");
+        return (true, await NextCctvNumberAsync(forDate, ct));
     }
 }
