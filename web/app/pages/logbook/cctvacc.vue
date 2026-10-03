@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { apiListRecords, apiCreateRecord, apiUpdateRecord, apiDeleteRecord, apiGetEntity, apiListEntities } from '~/composables/useApi'
+import { exportLogbookToExcel } from '~/composables/useExcelExport'
 
 /**
  * CCTV Access Log Book — dedicated page that mirrors the paper form
@@ -296,6 +297,39 @@ function signSrc(v: any): string | null {
   return typeof v === 'string' && v.startsWith('data:image/png;base64,') ? v : null
 }
 
+/**
+ * Export to Excel. Exports exactly what is on screen - i.e. the current search/filter - so
+ * what the user sees and what lands in the file cannot disagree.
+ */
+const exporting = ref(false)
+
+async function exportExcel() {
+  if (!rows.value.length) { notify('Nothing to export.', 'error'); return }
+  exporting.value = true
+  try {
+    // NO is included here even though it is hidden on screen: a spreadsheet is a register,
+    // and a register without its sequence number is not one.
+    const columns = [
+      { key: 'nomor', label: 'NO' },
+      ...COLUMNS.map((c) => ({ key: c.key as string, label: c.label as string, sign: !!c.sign }))
+    ]
+    const d = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
+    await exportLogbookToExcel({
+      rows: rows.value,
+      columns,
+      sheetTitle: 'CCTV Access Request Log',
+      fileName: `CCTV-Access-Log-${stamp}.xlsx`
+    })
+    notify(`Exported ${rows.value.length} rows to Excel.`)
+  } catch (e: any) {
+    notify(e?.message || 'Export failed.', 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
 async function init() {
   loading.value = true
   try {
@@ -341,6 +375,10 @@ watch(search, () => {
         <div class="flex gap-2">
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
           <UButton icon="i-lucide-plus" label="Add Row" @click="openCreate" />
+          <!-- Export sits immediately left of Print: both are "get the data out of here"
+               actions, and Print stays the rightmost so it is where the muscle memory is. -->
+          <UButton icon="i-lucide-file-spreadsheet" label="Export Excel"
+                   :loading="exporting" @click="exportExcel" />
           <UButton icon="i-lucide-printer" label="Print" variant="soft" @click="printSheet" />
         </div>
       </div>
