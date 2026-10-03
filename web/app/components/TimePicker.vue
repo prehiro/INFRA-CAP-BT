@@ -18,7 +18,7 @@
  * because a minute still has to be chosen.
  *
  * FIXED SIZE (HIRO, "size nya konsisten jangan berubah-ubah"): the popover is pinned to
- * w-64 and the dial to size-52, and the inner 24-hour ring - which only exists in the
+ * w-64 and the dial to size-[190px], and the inner 24-hour ring - which only exists in the
  * hour step - is drawn inside the SAME circle rather than replacing the outer ring. That
  * matters because the inner ring's labels are a smaller font on a smaller radius, so the
  * minute step used to render visibly shorter and the whole dialog jumped in height when
@@ -182,7 +182,7 @@ function display(): string {
 </script>
 
 <template>
-  <UPopover v-model:open="open" :content="{ align: 'start' }" :_ui="{ content: 'p-0 overflow-hidden' }">
+  <UPopover v-model:open="open" :content="{ align: 'start', sideOffset: 6, avoidCollisions: true, collisionPadding: 8 }" :_ui="{ content: 'p-0 overflow-hidden' }">
     <UButton
       :name="name"
       type="button"
@@ -200,9 +200,9 @@ function display(): string {
 
     <template #content>
       <!-- Fixed width, and the dial keeps one footprint in both steps. -->
-      <div class="w-64 pb-4" @keydown.esc="open = false">
+      <div class="w-64 pb-2" @keydown.esc="open = false">
         <!-- The two boxes. Clicking one decides which half of the dial you are editing. -->
-        <div class="flex items-center justify-center gap-1 px-4 pt-4 pb-2">
+        <div class="flex items-center justify-center gap-1 px-4 pt-3 pb-1">
           <button type="button"
                   class="w-16 rounded-lg py-1.5 text-center font-mono text-2xl tabular-nums transition-colors"
                   :class="step === 'hour' ? 'bg-primary/15 text-primary' : 'bg-elevated text-muted hover:text-default'"
@@ -216,7 +216,7 @@ function display(): string {
                   @click="focus('minute')">{{ minute }}</button>
         </div>
 
-        <svg viewBox="0 0 200 200" class="mx-auto block size-52 touch-none select-none"
+        <svg viewBox="0 0 200 200" class="mx-auto block size-[190px] touch-none select-none"
              role="presentation" @pointerdown="onDialPointer">
           <circle cx="100" cy="100" :r="R + 10" :style="{ fill: C.face }" />
 
