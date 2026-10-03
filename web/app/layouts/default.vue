@@ -149,9 +149,17 @@ main[data-dashboard] {
    edge because the sidebar is anchored left and grows rightwards.
    The width transition is declared here too: without it the vendor's instant width swap
    would make the spring look like a glitch instead of a motion. */
+/* NO width transition — deliberately.
+   The spring earlier animated `width` over 320ms, which made the browser re-layout and
+   re-rasterise every nav label on EVERY frame (measured: the nav row width stepped
+   129 -> 165 -> 174px across three frames of one transition). That per-frame re-raster is
+   what produced the "ghost text" on the labels - it was never page-specific, it just looked
+   worst on whichever item the eye was on.
+   Letting the width snap instantly (the stock behaviour) means the labels are laid out
+   once, and the bounce is a pure transform on already-rasterised pixels, so every menu
+   item transitions identically and the text stays sharp. */
 .sidebar-spring {
   transform-origin: left center;
-  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* TRANSLATE ONLY — no scaleX.
@@ -188,7 +196,6 @@ main[data-dashboard] {
 #dashboard-sidebar-app-v2[data-collapsed='true']  { animation: infra-sidebar-open  360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
 
 @media (prefers-reduced-motion: reduce) {
-  .sidebar-spring { transition: none !important; }
   #dashboard-sidebar-app-v2[data-collapsed] { animation: none !important; }
 }
 </style>
