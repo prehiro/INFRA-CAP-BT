@@ -69,7 +69,7 @@ public class SeedService
             {
                 new DynamicField { Name = "nomor",              Label = "NO",                          Type = FieldType.Text,     IsRequired = true, IsUnique = true,  MaxLength = 30,  SortOrder = 0 },
                 new DynamicField { Name = "tanggal",            Label = "Date",                        Type = FieldType.Date,     IsRequired = true, SortOrder = 1 },
-                new DynamicField { Name = "departemen",         Label = "Department",                  Type = FieldType.Text,     MaxLength = 100, SortOrder = 2 },
+                new DynamicField { Name = "departemen",         Label = "Section",                  Type = FieldType.Text,     MaxLength = 100, SortOrder = 2 },
                 new DynamicField { Name = "no_pegawai",         Label = "Employee No",                 Type = FieldType.Text,     MaxLength = 50,  SortOrder = 3 },
                 new DynamicField { Name = "nama_pemohon",       Label = "Name Requestor",              Type = FieldType.Text,     IsRequired = true, MaxLength = 200, SortOrder = 4 },
                 new DynamicField { Name = "tujuan",             Label = "Purpose / Details",          Type = FieldType.TextArea, IsRequired = true, MaxLength = 1000, SortOrder = 5 },

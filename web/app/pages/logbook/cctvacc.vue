@@ -40,7 +40,7 @@ const editing = ref<Row | null>(null)
 /** Column order and width of the printed sheet. */
 const COLUMNS = [
   { key: 'tanggal', label: 'Date', w: 'w-[8%]' },
-  { key: 'departemen', label: 'Department', w: 'w-[9%]' },
+  { key: 'departemen', label: 'Section', w: 'w-[9%]' },
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
   { key: 'nama_pemohon', label: 'PIC Name', w: 'w-[13%]' },
   { key: 'tujuan', label: 'Purpose / Details', w: 'w-[22%]' },
@@ -64,6 +64,40 @@ const COLUMNS = [
 const HIDDEN_FIELDS = ['waktu_diminta', 'nomor'] as const
 
 const SIGN_FIELDS = ['tanda_pemohon', 'tanda_isd'] as const
+
+/** The signed-in user, used to prefill "PIC by ISD" so nobody has to type their own name. */
+const { user: me } = useAuth()
+
+/** yyyy-mm-dd for today, in LOCAL time. */
+function todayIso(): string {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** dd/MM/yy for today - the paper form's date shape. */
+function todayDisplay(): string {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`
+}
+
+/** The display name of whoever is signed in, falling back to the username. */
+function currentUserName(): string {
+  const u = me.value as any
+  return String(u?.fullName || u?.username || '')
+}
+
+/**
+ * Build the stored Start/End value: the date is ALWAYS today, so only the time comes from
+ * the picker. Stored as "dd/MM/yy HH:mm", matching the paper sheet. A blank picker yields
+ * '' rather than a bare date, so an untouched field stays genuinely empty.
+ */
+function composeDateTime(time: unknown): string {
+  const t = String(time ?? '').trim()
+  if (!t) return ''
+  return `${todayDisplay()} ${t}`
+}
 
 /** Draft of the row currently being entered. */
 const form = reactive<Record<string, any>>({})
@@ -108,7 +142,16 @@ async function loadRows() {
 
 async function openCreate() {
   resetForm()
-  form.tanggal = new Date().toISOString().slice(0, 10)
+  // Date is fixed to today and the time fields are pre-seeded with the current clock, so the
+  // common case (logging an access that is happening right now) needs no typing at all.
+  // Everything stays editable - auto-filled is not the same as locked.
+  form.tanggal = todayIso()
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(Math.floor(now.getMinutes() / 5) * 5).padStart(2, '0')
+  form.pic_mulai = `${hh}:${mm}`
+  form.pic_selesai = `${hh}:${mm}`
+  form.pic_isd = currentUserName()
   showForm.value = true
 }
 
@@ -125,6 +168,13 @@ function openEdit(row: Row) {
   // Trimming to the date part is what makes Edit work; openCreate already did this by hand.
   form.tanggal = String(form.tanggal ?? '').slice(0, 10)
 
+  // The pickers own the TIME only; the stored value carries the date too, so strip it off
+  // before handing it to TimePicker, otherwise it would show the whole "03/10/26 09:00".
+  for (const k of ['pic_mulai', 'pic_selesai']) {
+    const m = String(form[k] ?? '').match(/(\d{1,2}):(\d{2})/)
+    form[k] = m ? `${m[1]!.padStart(2, '0')}:${m[2]}` : ''
+  }
+
   showForm.value = true
 }
 
@@ -138,7 +188,9 @@ async function save() {
     const values: Record<string, any> = {}
     for (const c of COLUMNS) {
       const v = form[c.key]
-      values[c.key] = c.sign ? (v || null) : (v === '' ? null : v)
+      // Start/End are stored with today's date glued onto the picked time.
+      if (c.key === 'pic_mulai' || c.key === 'pic_selesai') values[c.key] = composeDateTime(v) || null
+      else values[c.key] = c.sign ? (v || null) : (v === '' ? null : v)
     }
     // Hidden-but-stored fields are not shown in the form.
     //  - 'nomor' is filled by the backend on create (DynamicRecordService.FillAutoNumberAsync),
@@ -338,48 +390,57 @@ watch(search, () => {
          @click on a submit button in this codebase, which is exactly why this form was an
          inline panel to begin with. They stay inside the <UForm> in the #body slot so the
          native form submit path stays intact. -->
-    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-3xl' }"
+    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl', body: 'p-4 sm:p-5' }"
             :title="editing ? 'Edit Row' : 'New Row'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
       <template #body>
       <UForm :state="form" @submit="save">
-        <!-- Field area scrolls independently so the action bar below stays reachable
-             without scrolling the whole modal. max-h is a viewport-relative cap so the
-             dialog never grows taller than the window on short screens. -->
-        <div class="max-h-[52vh] grid grid-cols-1 gap-3 overflow-y-auto pr-1 md:grid-cols-2">
+        <!-- Five rows on a 3-column grid, no scroll area: the dialog is sized to fit its
+             content (see the :ui below) and the two signature pads sit side by side in the
+             last row, which is what keeps the whole form inside a 1080p window. -->
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- Row 1: who/when/where. Date is prefilled with today and stays editable. -->
           <UFormField label="Date" name="tanggal" required>
             <UInput v-model="form.tanggal" name="tanggal" type="date" />
           </UFormField>
-          <UFormField label="Department" name="departemen">
+          <UFormField label="Section" name="departemen">
             <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" />
           </UFormField>
           <UFormField label="Employee No" name="no_pegawai">
-            <UInput v-model="form.no_pegawai" name="no_pegawai" />
-          </UFormField>
-          <UFormField label="PIC Name" name="nama_pemohon" required>
-            <UInput v-model="form.nama_pemohon" name="nama_pemohon" />
-          </UFormField>
-          <UFormField label="Purpose / Details" name="tujuan" required class="md:col-span-2">
-            <UTextarea v-model="form.tujuan" name="tujuan" :rows="2"
-                      placeholder="CCTV record at 25/11/25 03:00 - 03:30" />
-          </UFormField>
-          <UFormField label="Start Time" name="pic_mulai">
-            <UInput v-model="form.pic_mulai" name="pic_mulai" placeholder="12/11/25 12:30" />
-          </UFormField>
-          <UFormField label="End Time" name="pic_selesai">
-            <UInput v-model="form.pic_selesai" name="pic_selesai" placeholder="12/11/25 14:00" />
+            <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" />
           </UFormField>
 
-          <!-- Field order mirrors COLUMNS above: PIC Sign, then the two times, then
-               PIC by ISD immediately before the ISD signature. -->
-          <UFormField label="PIC Sign" name="tanda_pemohon">
-            <SignaturePad v-model="form.tanda_pemohon" :height="80" />
+          <!-- Row 2: the requester and the searched window. Pickers take the TIME only;
+               today's date is glued on at save time, so nobody types a date. -->
+          <UFormField label="PIC Name" name="nama_pemohon" required>
+            <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full" />
           </UFormField>
+          <UFormField label="Start Time" name="pic_mulai">
+            <TimePicker v-model="form.pic_mulai" name="pic_mulai" />
+          </UFormField>
+          <UFormField label="End Time" name="pic_selesai">
+            <TimePicker v-model="form.pic_selesai" name="pic_selesai" />
+          </UFormField>
+
+          <!-- Row 3: purpose spans the full width. w-full is required as well as the
+               col-span: UTextarea sizes to its content otherwise and ignores the span. -->
+          <UFormField label="Purpose / Details" name="tujuan" required class="sm:col-span-2 lg:col-span-3">
+            <UTextarea v-model="form.tujuan" name="tujuan" :rows="2" class="w-full"
+                      placeholder="What is the footage being retrieved for?" />
+          </UFormField>
+
+          <!-- Row 4: the ISD officer prefilled from the session, then the two signature pads
+               side by side. Giving both pads one grid column each is what keeps them
+               adjacent - a col-span on the second one pushed it onto a row of its own. -->
           <UFormField label="PIC by ISD" name="pic_isd">
-            <UInput v-model="form.pic_isd" name="pic_isd" />
+            <UInput v-model="form.pic_isd" name="pic_isd" class="w-full" />
+            <template #description>From your account.</template>
+          </UFormField>
+          <UFormField label="PIC Sign" name="tanda_pemohon">
+            <SignaturePad v-model="form.tanda_pemohon" :height="64" />
           </UFormField>
           <UFormField label="ISD Sign" name="tanda_isd">
-            <SignaturePad v-model="form.tanda_isd" :height="80" />
+            <SignaturePad v-model="form.tanda_isd" :height="64" />
           </UFormField>
         </div>
 
