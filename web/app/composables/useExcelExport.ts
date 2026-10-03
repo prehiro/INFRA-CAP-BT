@@ -44,6 +44,11 @@ export async function exportLogbookToExcel(opts: {
   // Row height leaves room for the embedded signature images (drawn 64px tall on screen).
   for (const r of opts.rows) {
     const values = opts.columns.map((c) => {
+      // Signature cells must stay EMPTY. The stored value is a data-URL
+      // ("data:image/png;base64,iVBORw0KGgo..."), and writing it as cell text put a wall of
+      // base64 in the spreadsheet while the real image was merely floating on top of it -
+      // so the export showed both. The image is the content; the cell carries no text.
+      if (c.sign) return ''
       const v = r.values[c.key]
       return v === null || v === undefined ? '' : v
     })
