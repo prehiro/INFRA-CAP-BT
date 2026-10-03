@@ -154,18 +154,28 @@ main[data-dashboard] {
   transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* TRANSLATE ONLY — no scaleX.
+   The spring originally used scaleX for a squash-and-stretch feel, but scaling forces the
+   browser to re-rasterise the sidebar's text at a different size mid-animation, which left a
+   visible "ghost" of the previous text frame for a moment (reported on the User Management
+   label). translateX moves the already-rasterised pixels and never re-rasterises, so the
+   motion still reads as a bounce but the text stays rock solid. Do not reintroduce scale
+   here; if a squash is ever wanted again, apply it to a decorative layer, not to the
+   sidebar root that contains the labels. */
 @keyframes infra-sidebar-close {
-  0%   { transform: translateX(0) scaleX(1); }
-  30%  { transform: translateX(4px) scaleX(0.94); }
-  65%  { transform: translateX(-2px) scaleX(1.02); }
-  100% { transform: translateX(0) scaleX(1); }
+  0%   { transform: translateX(0); }
+  30%  { transform: translateX(5px); }
+  65%  { transform: translateX(-2px); }
+  85%  { transform: translateX(1px); }
+  100% { transform: translateX(0); }
 }
 
 @keyframes infra-sidebar-open {
-  0%   { transform: translateX(0) scaleX(1); }
-  30%  { transform: translateX(-6px) scaleX(1.04); }
-  65%  { transform: translateX(2px) scaleX(0.98); }
-  100% { transform: translateX(0) scaleX(1); }
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-8px); }
+  60%  { transform: translateX(3px); }
+  85%  { transform: translateX(-1px); }
+  100% { transform: translateX(0); }
 }
 
 /* Driven by the vendor's own data-collapsed attribute rather than by a JS-bound class.
