@@ -434,7 +434,6 @@ watch(search, () => {
                adjacent - a col-span on the second one pushed it onto a row of its own. -->
           <UFormField label="PIC by ISD" name="pic_isd">
             <UInput v-model="form.pic_isd" name="pic_isd" class="w-full" />
-            <template #description>From your account.</template>
           </UFormField>
           <UFormField label="PIC Sign" name="tanda_pemohon">
             <SignaturePad v-model="form.tanda_pemohon" :height="64" />

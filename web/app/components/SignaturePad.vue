@@ -141,14 +141,24 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
       >
         Sign here
       </p>
+      <!-- Clear control. It was a 14px eraser icon on bg-white/90 sitting on a WHITE canvas,
+           which made it effectively invisible - same colour as the pad behind it. It is now a
+           labelled pill in the error tone: it reads as a real action, and the destructive
+           colour means nobody clears a signature by accident. Hidden entirely when there is
+           no ink, so it never clutters an empty pad. -->
       <button
         v-if="!disabled && modelValue"
         type="button"
-        class="absolute right-1 top-1 rounded bg-white/90 p-1 text-default shadow-sm hover:bg-default"
+        class="absolute right-1.5 top-1.5 inline-flex select-none items-center gap-1 rounded-full
+               border border-error/40 bg-white/95 px-2 py-1 text-[11px] font-medium text-error
+               shadow-sm backdrop-blur transition-colors hover:bg-error hover:text-white
+               focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2
+               focus-visible:outline-error dark:bg-default/95"
         title="Clear signature"
         @click="clear"
       >
-        <UIcon name="i-lucide-eraser" class="size-3.5" />
+        <UIcon name="i-lucide-eraser" class="size-3 shrink-0" />
+        Clear
       </button>
     </div>
   </div>
