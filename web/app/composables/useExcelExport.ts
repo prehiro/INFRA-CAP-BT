@@ -16,8 +16,17 @@
  */
 type ExportRow = { values: Record<string, any> }
 
-/** Column widths, roughly matched to the on-screen table. */
-const WIDTHS = [6, 12, 10, 12, 20, 40, 12, 18, 18, 20, 12, 12]
+/**
+ * Column widths, roughly matched to the on-screen table. Headers are UPPERCASE with
+ * wrapText, so a width that looks adequate in mixed case still wraps and makes Excel
+ * auto-grow the header row - which is exactly what "EMPLOYEE NO" (11 characters, with a
+ * space) did at width 12. Widths are therefore sized against the UPPERCASE label, and
+ * the extra room is taken from PURPOSE / DETAILS, which had 40 to spare.
+ *
+ *   NO | DATE | SECTION | EMPLOYEE NO | PIC NAME | PURPOSE / DETAILS | PIC SIGN |
+ *   START TIME | END TIME | PIC BY ISD | ISD SIGN
+ */
+const WIDTHS = [7, 12, 11, 17, 20, 36, 13, 18, 18, 20, 13]
 
 export async function exportLogbookToExcel(opts: {
   rows: ExportRow[]
