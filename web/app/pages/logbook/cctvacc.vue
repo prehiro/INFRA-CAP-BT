@@ -137,6 +137,76 @@ function fieldInvalid(key: string): boolean {
   return showErrors.value && REQUIRED.some((f) => f.key === key) && isBlank(form[key])
 }
 
+/* ---------------------------------------------------------------------------------------
+   FILTERING
+   Applied in the browser over the loaded rows, so it is instant and the table, the row
+   counter and the Excel export can never disagree - they all read the same computed value.
+   --------------------------------------------------------------------------------------- */
+const filters = ref({
+  from: '', to: '', section: '', pic: '', unsignedOnly: false
+})
+
+const EMPTY_FILTERS = { from: '', to: '', section: '', pic: '', unsignedOnly: false }
+
+function clearFilters() { filters.value = { ...EMPTY_FILTERS } }
+
+/** Distinct values for the dropdowns, taken from the data itself so the lists are never stale. */
+const sectionOptions = computed(() =>
+  [...new Set(rows.value.map((r) => String(r.values.departemen ?? '').trim()).filter(Boolean))].sort()
+)
+const picOptions = computed(() =>
+  [...new Set(rows.value.map((r) => String(r.values.nama_pemohon ?? '').trim()).filter(Boolean))].sort()
+)
+
+/** The date a row falls on, as yyyy-mm-dd, compared in LOCAL time to match the date pickers. */
+function rowDate(v: any): string {
+  if (!v) return ''
+  const d = new Date(v)
+  if (Number.isNaN(d.getTime())) return String(v).slice(0, 10)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+
+/** Rows actually shown: the API's text search, then the filters. */
+const visibleRows = computed(() => {
+  const f = filters.value
+  const q = search.value.trim().toLowerCase()
+  return rows.value.filter((r) => {
+    if (q && !JSON.stringify(r.values).toLowerCase().includes(q)) return false
+    const d = rowDate(r.values.tanggal)
+    if (f.from && (!d || d < f.from)) return false
+    if (f.to && (!d || d > f.to)) return false
+    if (f.section && String(r.values.departemen ?? '') !== f.section) return false
+    if (f.pic && String(r.values.nama_pemohon ?? '') !== f.pic) return false
+    if (f.unsignedOnly && (signSrc(r.values.tanda_pemohon) || signSrc(r.values.tanda_isd))) return false
+    return true
+  })
+})
+
+/** One removable chip per active filter, so the current view is never ambiguous. */
+const activeChips = computed(() => {
+  const f = filters.value
+  const out: { key: string; label: string; text: string }[] = []
+  if (f.from || f.to) {
+    const label = f.from && f.to ? 'Date' : (f.from ? 'From' : 'To')
+    const text = f.from && f.to ? `${f.from} → ${f.to}` : (f.from || f.to)
+    out.push({ key: 'date', label, text: String(text) })
+  }
+  if (f.section) out.push({ key: 'section', label: 'Section', text: f.section })
+  if (f.pic) out.push({ key: 'pic', label: 'PIC Name', text: f.pic })
+  if (f.unsignedOnly) out.push({ key: 'unsigned', label: '', text: 'Unsigned only' })
+  return out
+})
+
+function removeChip(key: string) {
+  const f = { ...filters.value }
+  if (key === 'date') { f.from = ''; f.to = '' }
+  if (key === 'section') f.section = ''
+  if (key === 'pic') f.pic = ''
+  if (key === 'unsigned') f.unsignedOnly = false
+  filters.value = f
+}
+
 /** Draft of the row currently being entered. */
 const form = reactive<Record<string, any>>({})
 
@@ -170,9 +240,13 @@ async function loadEntity() {
 
 async function loadRows() {
   if (!entity.value) return
+  // pageSize is deliberately generous because the FILTER runs on this set in the browser.
+  // With a server-side date filter this would not matter, but it does today: a logbook larger
+  // than this many rows would be silently truncated and the filter would look like it "lost"
+  // entries. Raise this when the row count outgrows it.
   const page = await apiListRecords(entity.value.id, {
     page: 1,
-    pageSize: 200,
+    pageSize: 1000,
     search: search.value || undefined
   })
   rows.value = page.items as unknown as Row[]
@@ -304,7 +378,7 @@ function signSrc(v: any): string | null {
 const exporting = ref(false)
 
 async function exportExcel() {
-  if (!rows.value.length) { notify('Nothing to export.', 'error'); return }
+  if (!visibleRows.value.length) { notify('Nothing to export.', 'error'); return }
   exporting.value = true
   try {
     // NO is included here even though it is hidden on screen: a spreadsheet is a register,
@@ -317,12 +391,12 @@ async function exportExcel() {
     const p = (n: number) => String(n).padStart(2, '0')
     const stamp = `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`
     await exportLogbookToExcel({
-      rows: rows.value,
+      rows: visibleRows.value,
       columns,
       sheetTitle: 'CCTV Access Request Log',
       fileName: `CCTV-Access-Log-${stamp}.xlsx`
     })
-    notify(`Exported ${rows.value.length} rows to Excel.`)
+    notify(`Exported ${visibleRows.value.length} rows to Excel.`)
   } catch (e: any) {
     notify(e?.message || 'Export failed.', 'error')
   } finally {
@@ -374,6 +448,14 @@ watch(search, () => {
         </div>
         <div class="flex gap-2">
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
+          <LogbookFilterPopover
+            v-model="filters"
+            :sections="sectionOptions"
+            :pics="picOptions"
+            :match-count="visibleRows.length"
+            :total-count="rows.length"
+            @clear="clearFilters"
+          />
           <UButton icon="i-lucide-plus" label="Add Row" @click="openCreate" />
           <!-- Export sits immediately left of Print: both are "get the data out of here"
                actions, and Print stays the rightmost so it is where the muscle memory is. -->
@@ -397,6 +479,25 @@ watch(search, () => {
         {{ toast.msg }}
       </div>
     </Teleport>
+
+    <!-- Active filters, as removable chips. These exist so the current view is never
+         ambiguous: without them a user can forget a filter is on, print the wrong thing or
+         export the wrong thing and not notice until afterwards. -->
+    <div v-if="activeChips.length" class="anim-fade-up mb-2 flex flex-wrap items-center gap-1.5">
+      <span class="mr-0.5 text-xs font-medium text-muted">Filtered by</span>
+      <button
+        v-for="c in activeChips" :key="c.key"
+        type="button"
+        class="group inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 py-1 pl-2.5 pr-1.5 text-xs text-primary transition-colors hover:bg-primary/20"
+        :title="`Remove filter: ${c.label || c.text}`"
+        @click="removeChip(c.key)"
+      >
+        <span v-if="c.label" class="font-semibold">{{ c.label }}:</span>
+        <span>{{ c.text }}</span>
+        <UIcon name="i-lucide-x" class="size-3 opacity-60 transition-opacity group-hover:opacity-100" />
+      </button>
+      <UButton size="xs" variant="ghost" color="error" label="Clear all" class="ml-1" @click="clearFilters" />
+    </div>
 
     <!-- Logbook table.
          Professional look without losing the printed sheet: the grid uses `border-default`
@@ -432,14 +533,20 @@ watch(search, () => {
                 <p class="text-sm">Loading...</p>
               </td>
             </tr>
-            <tr v-else-if="!rows.length">
+            <tr v-else-if="!visibleRows.length">
               <td :colspan="COLUMNS.length + 1" class="px-4 py-12 text-center">
                 <UIcon name="i-lucide-inbox" class="mx-auto mb-2 size-7 text-dimmed" />
-                <p class="text-sm font-medium">No rows yet</p>
-                <p class="mt-0.5 text-xs text-muted">Use “Add Row” to record the first entry.</p>
+                <p class="text-sm font-medium">
+                  {{ activeChips.length || search ? 'No rows match your filter' : 'No rows yet' }}
+                </p>
+                <p class="mt-0.5 text-xs text-muted">
+                  {{ activeChips.length || search
+                    ? 'Adjust or clear the filters to see the rest.'
+                    : 'Use “Add Row” to record the first entry.' }}
+                </p>
               </td>
             </tr>
-            <tr v-for="(r, i) in rows" :key="r.id"
+            <tr v-for="(r, i) in visibleRows" :key="r.id"
                 class="align-middle transition-colors hover:bg-primary/5"
                 :class="i % 2 ? 'bg-default/20' : ''">
               <td v-for="c in COLUMNS" :key="c.key"
@@ -466,8 +573,11 @@ watch(search, () => {
       </div>
 
       <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
-        <span>{{ total }} {{ total === 1 ? 'row' : 'rows' }}</span>
-        <span class="tabular-nums">Showing {{ rows.length }} of {{ total }}</span>
+        <!-- Left count follows the FILTERS, so it agrees with the "Showing X of Y" beside it.
+             Previously it printed the raw DB total, which read "1 row / Showing 0 of 1" and
+             looked like a bug. -->
+        <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'row' : 'rows' }}</span>
+        <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ total }}</span>
       </div>
     </div>
 
