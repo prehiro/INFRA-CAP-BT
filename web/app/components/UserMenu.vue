@@ -112,45 +112,57 @@ const items = computed<DropdownMenuItem[][]>(() => ([
 </script>
 
 <template>
-  <UDropdownMenu
-    :items="items"
-    :content="{ align: 'center', collisionPadding: 12 }"
-    :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
-  >
-    <UButton
-      color="neutral"
-      variant="ghost"
-      block
-      :square="collapsed"
-      class="data-[state=open]:bg-elevated"
-      :ui="{ trailingIcon: 'text-dimmed' }"
+  <!-- Fixes the avatar shifting sideways when the sidebar collapses.
+       MEASURED before/after: in the 64px collapsed sidebar the avatar's centre sat at
+       x=36 while the sidebar's centre is x=32 — 4px off, because the footer has px-4
+       (16px) and the button's own p-1.5 is not fully absorbed by `:square`. Expanded, the
+       avatar is correctly left-aligned at x=26, so nothing changes there.
+
+       A -ms-1 (4px) shift on the wrapper is the whole fix. Bigger corrections were tried
+       and made it worse: -mx-4 + p-0 + justify-center pushed the avatar to x=14, because
+       the avatar is not in a centring flex context inside UButton, so justify-center does
+       nothing and the negative margin just drags it off to the left. -->
+  <div :class="collapsed ? '-ms-1' : ''">
+    <UDropdownMenu
+      :items="items"
+      :content="{ align: 'center', collisionPadding: 12 }"
+      :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
     >
-      <UAvatar
-        :alt="displayName"
-        size="sm"
-        class="bg-primary text-inverted"
+      <UButton
+        color="neutral"
+        variant="ghost"
+        block
+        :square="collapsed"
+        class="data-[state=open]:bg-elevated"
+        :ui="{ trailingIcon: 'text-dimmed' }"
       >
-        {{ initials }}
-      </UAvatar>
+        <UAvatar
+          :alt="displayName"
+          size="sm"
+          class="bg-primary text-inverted"
+        >
+          {{ initials }}
+        </UAvatar>
 
       <span v-if="!collapsed" class="truncate text-left">
-        <span class="block truncate text-sm font-medium">{{ displayName }}</span>
-        <span v-if="roleLabel" class="block truncate text-xs text-dimmed">{{ roleLabel }}</span>
-      </span>
+          <span class="block truncate text-sm font-medium">{{ displayName }}</span>
+          <span v-if="roleLabel" class="block truncate text-xs text-dimmed">{{ roleLabel }}</span>
+        </span>
 
-      <UIcon v-if="!collapsed" name="i-lucide-chevrons-up-down" class="ml-auto size-3.5 text-dimmed" />
-    </UButton>
+        <UIcon v-if="!collapsed" name="i-lucide-chevrons-up-down" class="ml-auto size-3.5 text-dimmed" />
+      </UButton>
 
-    <template #chip-leading="{ item }">
-      <div class="inline-flex items-center justify-center shrink-0 size-5">
-        <span
-          class="rounded-full ring ring-bg bg-(--chip-light) dark:bg-(--chip-dark) size-2"
-          :style="{
-            '--chip-light': `var(--color-${(item as any).chip}-500)`,
-            '--chip-dark': `var(--color-${(item as any).chip}-400)`
-          }"
-        />
-      </div>
-    </template>
-  </UDropdownMenu>
+      <template #chip-leading="{ item }">
+        <div class="inline-flex items-center justify-center shrink-0 size-5">
+          <span
+            class="rounded-full ring ring-bg bg-(--chip-light) dark:bg-(--chip-dark) size-2"
+            :style="{
+              '--chip-light': `var(--color-${(item as any).chip}-500)`,
+              '--chip-dark': `var(--color-${(item as any).chip}-400)`
+            }"
+          />
+        </div>
+      </template>
+    </UDropdownMenu>
+  </div>
 </template>

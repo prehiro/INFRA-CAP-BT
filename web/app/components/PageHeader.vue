@@ -20,15 +20,53 @@
  * were dropped: the navbar has a fixed h-(--ui-header-height) of 4rem = 64px, so a second
  * line left almost no breathing room, and inline read as noise next to the title.
  */
-defineProps<{
+const props = defineProps<{
   title: string
 }>()
+
+/**
+ * Tooltip + bounce for the collapse button.
+ *
+ * The collapsed state is read from the button's own aria-label rather than from
+ * useDashboard(): that composable is an internal, non-auto-imported util, and the vendor
+ * already maintains this exact string ("Collapse sidebar" / "Expand sidebar"), so reading
+ * it avoids depending on internals while staying perfectly in sync.
+ */
+const collapseBtn = ref<HTMLElement | null>(null)
+const collapsed = ref(false)
+
+function syncCollapsedState() {
+  const label = collapseBtn.value?.getAttribute('aria-label') ?? ''
+  collapsed.value = /expand/i.test(label)
+}
+
+// The vendor mutates aria-label after this component renders, so observing that attribute
+// is what catches the flip; no reactive prop is exposed for the collapsed state.
+let observer: MutationObserver | undefined
+onMounted(() => {
+  syncCollapsedState()
+  if (!collapseBtn.value || typeof MutationObserver === 'undefined') return
+  observer = new MutationObserver(syncCollapsedState)
+  observer.observe(collapseBtn.value, { attributes: true, attributeFilter: ['aria-label'] })
+})
+// The :key below remounts this button on every flip, so the observer has to be torn down
+// and re-created with the new element or it keeps watching a detached node.
+onBeforeUnmount(() => observer?.disconnect())
+
+/** Changing :key remounts the button, which restarts the CSS animation on every click. */
+const bounceKey = computed(() => (collapsed.value ? 'expanded' : 'collapsed'))
 </script>
 
 <template>
   <UDashboardNavbar>
     <template #leading>
-      <UDashboardSidebarCollapse />
+      <UDashboardSidebarCollapse
+        :key="bounceKey"
+        :ref="(el: any) => { collapseBtn = el?.$el ?? el ?? null }"
+        :class="collapsed ? 'anim-collapse-open' : 'anim-collapse-closed'"
+        :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+        :ui="{ base: 'sidebar-collapse-btn hidden lg:flex' }"
+      />
     </template>
 
     <template #trailing>
@@ -40,3 +78,33 @@ defineProps<{
     </template>
   </UDashboardNavbar>
 </template>
+
+<style>
+/* Bounce on the collapse button. Two separate keyframes rather than one direction-agnostic
+   animation, so closing and opening each get their own movement. Duration is short (260ms):
+   a longer spring reads as sluggish rather than lively. */
+@keyframes infra-collapse-closed {
+  0%   { transform: translateX(0) scale(1); }
+  35%  { transform: translateX(3px) scale(0.88); }
+  70%  { transform: translateX(-1.5px) scale(1.06); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+@keyframes infra-collapse-open {
+  0%   { transform: translateX(0) scale(1); }
+  35%  { transform: translateX(-3px) scale(0.88); }
+  70%  { transform: translateX(1.5px) scale(1.06); }
+  100% { transform: translateX(0) scale(1); }
+}
+
+.sidebar-collapse-btn.anim-collapse-closed { animation: infra-collapse-closed 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+.sidebar-collapse-btn.anim-collapse-open  { animation: infra-collapse-open  260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  /* Cancel outright, consistent with the page-load animations in main.css. */
+  .sidebar-collapse-btn.anim-collapse-closed,
+  .sidebar-collapse-btn.anim-collapse-open {
+    animation: none !important;
+  }
+}
+</style>
