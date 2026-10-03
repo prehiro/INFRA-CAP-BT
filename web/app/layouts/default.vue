@@ -85,7 +85,7 @@ const groups = computed(() => [
     <UDashboardSidebar
       id="app-v2"
       collapsible
-      class="anim-slide-left bg-elevated/25"
+      class="bg-elevated/25 sidebar-spring"
       :ui="{ footer: 'lg:border-t lg:border-default' }"
       :default-size="13"
       :min-size="11"
@@ -140,5 +140,45 @@ const groups = computed(() => [
    padding that appears once a page renders its own panel. */
 main[data-dashboard] {
   padding: 0;
+}
+
+/* Sidebar bounce.
+   The width itself is animated by the vendor switching --width, so the transform here
+   only adds the spring. scaleX slightly squashes the panel on collapse and overshoots on
+   open, which reads as a bounce rather than a plain slide. transform-origin is the LEFT
+   edge because the sidebar is anchored left and grows rightwards.
+   The width transition is declared here too: without it the vendor's instant width swap
+   would make the spring look like a glitch instead of a motion. */
+.sidebar-spring {
+  transform-origin: left center;
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes infra-sidebar-close {
+  0%   { transform: translateX(0) scaleX(1); }
+  30%  { transform: translateX(4px) scaleX(0.94); }
+  65%  { transform: translateX(-2px) scaleX(1.02); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+
+@keyframes infra-sidebar-open {
+  0%   { transform: translateX(0) scaleX(1); }
+  30%  { transform: translateX(-6px) scaleX(1.04); }
+  65%  { transform: translateX(2px) scaleX(0.98); }
+  100% { transform: translateX(0) scaleX(1); }
+}
+
+/* Driven by the vendor's own data-collapsed attribute rather than by a JS-bound class.
+   An earlier version tracked the state in a composable and toggled a class; that silently
+   stopped updating (the MutationObserver ended up watching a detached node after a
+   re-mount), leaving the spring stuck on one side. Keying the animation off the attribute
+   the vendor already maintains removes the state tracking entirely — and because the
+   matched selector changes on every flip, the animation restarts by itself. */
+#dashboard-sidebar-app-v2[data-collapsed='false'] { animation: infra-sidebar-close 360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+#dashboard-sidebar-app-v2[data-collapsed='true']  { animation: infra-sidebar-open  360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-spring { transition: none !important; }
+  #dashboard-sidebar-app-v2[data-collapsed] { animation: none !important; }
 }
 </style>
