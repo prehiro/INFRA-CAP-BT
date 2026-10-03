@@ -40,10 +40,11 @@ if ($null -eq $cctv) { Write-Output "GAGAL: entity tidak ada"; exit 1 }
 Check '12 field terpasang' ($cctv.fields.Count -eq 12) "actual=$($cctv.fields.Count)"
 Check 'Kind = Transaction' ($cctv.kind -eq 'Transaction') "actual=$($cctv.kind)"
 
-# --- next-no, format 1/2026/001 ---
+# --- next-no, plain integer (1, 2, 3, ...). Format changed from 1/2026/001 on 2026-10-02.
 $year = (Get-Date).Year
 $n1 = (Invoke-RestMethod -Uri "$base/logbook/cctv/next-no" -Headers $hdr).nomor
-Check "Next-no format 1/$year/001" ($n1 -eq "1/$year/001") "actual=$n1"
+Check 'Next-no format integer' ($n1 -match '^\d+$') "actual=$n1"
+Check 'Next-no mulai dari angka > 0' ([int]$n1 -gt 0) "actual=$n1"
 
 # --- create a row (mirrors row 1 of the paper form) ---
 $body = @{
@@ -69,12 +70,14 @@ Check 'Nilai tujuan tersimpan' ($created.values.tujuan -like '*07.00am*') "actua
 
 # --- numbering advanced ---
 $n2 = (Invoke-RestMethod -Uri "$base/logbook/cctv/next-no" -Headers $hdr).nomor
-Check "Next-no jadi 2/$year/002" ($n2 -eq "2/$year/002") "actual=$n2"
+Check "Next-no jadi $n1 + 1" ([int]$n2 -eq ([int]$n1 + 1)) "actual=$n2 (prev=$n1)"
 
-# --- second row, previous year: numbering must reset for that year ---
+# --- previous-year date: the number no longer embeds a year, so the date parameter
+#     must not change the counter. It is compared against $n2 (taken AFTER the row was
+#     created), not $n1 - the counter legitimately advanced by one in between. ---
 $py = $year - 1
 $npy = (Invoke-RestMethod -Uri "$base/logbook/cctv/next-no?date=$py-06-01" -Headers $hdr).nomor
-Check "Nomor reset utk tahun $py" ($npy -eq "1/$py/001") "actual=$npy"
+Check 'Nomor tidak dipengaruhi tanggal (tanpa komponen tahun)' ($npy -eq $n2) "actual=$npy (expected=$n2)"
 
 # --- signature round-trip (data-URL PNG) ---
 # PUT has replace semantics: MaterializeAsync re-validates every required field, so the
@@ -126,7 +129,7 @@ Check 'Delete (soft) menyembunyikan baris' $gone
 
 # numbering reuses the freed number: acceptable (gap only appears on delete of the tail)
 $n3 = (Invoke-RestMethod -Uri "$base/logbook/cctv/next-no" -Headers $hdr).nomor
-Check 'Next-no setelah delete' ($n3 -eq "1/$year/001") "actual=$n3"
+Check 'Next-no setelah delete' ($n3 -eq $n1) "actual=$n3 (expected=$n1)"
 
 Write-Output ""
 Write-Output "PASS=$pass FAIL=$fail"
