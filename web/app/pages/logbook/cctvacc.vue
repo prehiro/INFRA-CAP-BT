@@ -2,8 +2,11 @@
 import { apiListRecords, apiCreateRecord, apiUpdateRecord, apiDeleteRecord, apiGetEntity, apiListEntities } from '~/composables/useApi'
 
 /**
- * CCTV Log Book — dedicated page that mirrors the paper form
- * "RECORDABLE MEDIA LOG BOOK / Name of System / Dept".
+ * CCTV Access Log Book — dedicated page that mirrors the paper form
+ * "RECORDABLE MEDIA LOG BOOK".
+ *
+ * Route is /logbook/cctvacc (renamed from /logbook/cctv on 2026-10-02 when the Log Book
+ * menu group was introduced alongside Handover).
  *
  * Data lives in the generic metadata-driven engine (entity slug cctv_log_book), so
  * storage, validation and audit are the same code path as every other entity. Only the
@@ -204,7 +207,7 @@ watch(search, () => {
     <template #header>
       <!-- PageHeader carries the sidebar collapse control in the navbar's #leading slot,
            exactly as the Nuxt dashboard template does on every page. -->
-      <PageHeader title="CCTV Log Book" />
+      <PageHeader title="CCTV Access" />
     </template>
 
     <template #body>

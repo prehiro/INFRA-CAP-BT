@@ -5,10 +5,13 @@ import type { NavigationMenuItem } from '@nuxt/ui'
  * App shell, rebuilt on the Nuxt dashboard template (UDashboardGroup + collapsible
  * UDashboardSidebar + command palette).
  *
- * The nav is a fixed list of the app's three pages. It no longer reads the entity tree
- * from the API: the Master Data / Transaksi groups and the Entity Designer were removed,
- * so there is nothing dynamic to enumerate. Note that `route`, the token and the entity
- * fetch were dropped with it — nothing in this layout used them.
+ * The nav is a fixed list; it no longer reads the entity tree from the API (the Master
+ * Data / Transaksi groups and the Entity Designer were removed, so there is nothing
+ * dynamic to enumerate). Note that `route`, the token and the entity fetch were dropped
+ * with it — nothing in this layout used them.
+ *
+ * The "Log Book" entry is a `type: 'trigger'` group with `defaultOpen: true`, so it
+ * renders as a collapsible section that starts open, holding CCTV Access and Handover.
  *
  * The sidebar collapse control is NOT here. It lives in each page's navbar (#leading slot
  * of UDashboardNavbar) via the shared PageHeader component, exactly as the template does
@@ -17,19 +20,40 @@ import type { NavigationMenuItem } from '@nuxt/ui'
  */
 const links = computed<NavigationMenuItem[][]>(() => [
   [
-    { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
-    { label: 'CCTV Log Book', icon: 'i-lucide-video', to: '/logbook/cctv' }
+    { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' }
+  ],
+  [
+    {
+      label: 'Log Book',
+      icon: 'i-lucide-book-open',
+      type: 'trigger',
+      defaultOpen: true,
+      children: [
+        { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
+        { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' }
+      ]
+    }
   ],
   [
     { label: 'User Management', icon: 'i-lucide-users', to: '/users' }
   ] as NavigationMenuItem[][]
 ])
 
-// Command palette (Cmd/Ctrl+K). The runtime entity tree is deliberately NOT included:
-// the Master Data / Transaksi groups are gone from the nav, so listing entities here
-// would offer destinations that no longer have a way to be reached from the sidebar.
+// Command palette (Cmd/Ctrl+K). Listed explicitly rather than derived from links.value
+// because links.value.flat() would include the Log Book trigger item itself, which is not
+// a destination. Keeping it explicit also guarantees the palette and the sidebar never
+// disagree about where things live.
 const groups = computed(() => [
-  { id: 'nav', label: 'Navigation', items: links.value.flat() }
+  {
+    id: 'nav',
+    label: 'Navigation',
+    items: [
+      { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
+      { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
+      { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
+      { label: 'User Management', icon: 'i-lucide-users', to: '/users' }
+    ]
+  }
 ])
 </script>
 
@@ -74,21 +98,30 @@ const groups = computed(() => [
       <template #default="{ collapsed }">
         <UDashboardSearchButton :collapsed="collapsed" class="bg-transparent ring-default" />
 
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="links[0]"
-          orientation="vertical"
-          tooltip
-          popover
-        />
+        <!-- Rendered with v-for rather than links[0] / links[1] so adding a group to the
+             nav list cannot be silently forgotten here.
 
+             Long labels: the vendor already sets `truncate` on linkLabel/childLinkLabel,
+             so an over-long label ellipsises instead of wrapping and breaking the sidebar
+             rhythm. The `item-label` slot adds the native `title` attribute so hovering a
+             truncated label still reveals the full text - the vendor has no per-item title
+             support of its own. `min-w-0` on the link is what lets the truncation actually
+             kick in inside the flex row; without it the text would push the sidebar wider
+             than its configured size instead of shrinking. -->
         <UNavigationMenu
+          v-for="(group, i) in links"
+          :key="`nav-${i}`"
           :collapsed="collapsed"
-          :items="links[1]"
+          :items="group"
           orientation="vertical"
           tooltip
-          class="mt-auto"
-        />
+          :class="i === links.length - 1 ? 'mt-auto' : ''"
+          :ui="{ link: 'min-w-0' }"
+        >
+          <template #item-label="{ item }">
+            <span :title="item.label" class="truncate">{{ item.label }}</span>
+          </template>
+        </UNavigationMenu>
       </template>
 
       <template #footer="{ collapsed }">

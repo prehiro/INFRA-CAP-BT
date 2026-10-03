@@ -32,13 +32,13 @@ const cctvCount = computed(() => cctv.value?.recordCount ?? 0)
         <WelcomeBanner class="anim-fade-up" />
 
         <div class="anim-stagger mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <UCard to="/logbook/cctv" class="cursor-pointer transition-colors hover:border-primary">
+          <UCard to="/logbook/cctvacc" class="cursor-pointer transition-colors hover:border-primary">
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3">
                 <UIcon name="i-lucide-video" class="size-8 shrink-0 text-success" />
                 <div class="min-w-0">
                   <p class="text-2xl font-bold">{{ cctvCount }}</p>
-                  <p class="truncate text-xs text-muted">CCTV Log Book</p>
+                  <p class="truncate text-xs text-muted">CCTV Access</p>
                 </div>
               </div>
               <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted" />
@@ -51,11 +51,11 @@ const cctvCount = computed(() => cctv.value?.recordCount ?? 0)
             <h2 class="font-semibold">Modules</h2>
           </template>
           <NuxtLink
-            to="/logbook/cctv"
+            to="/logbook/cctvacc"
             class="flex items-center justify-between rounded-lg border border-default p-3 transition-colors hover:border-primary"
           >
             <div class="min-w-0">
-              <p class="truncate font-medium">CCTV Log Book</p>
+              <p class="truncate font-medium">CCTV Access</p>
               <p class="text-xs text-muted">{{ cctvCount }} rows</p>
             </div>
             <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted" />
