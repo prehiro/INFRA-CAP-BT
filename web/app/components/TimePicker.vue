@@ -1,17 +1,30 @@
 <script setup lang="ts">
 /**
  * Time picker styled as an analogue clock face, modelled on the design HIRO supplied:
- * two boxes (hour / minute) above a circular dial, a hand pointing at the chosen position,
- * a filled marker on the selection, and Cancel / OK at the foot.
+ * two boxes (hour / minute) above a circular dial, a hand pointing at the chosen
+ * position, and a filled marker on the selection.
  *
  * The dial is DUAL-LABELLED, exactly like the reference image: the OUTER ring is the
- * familiar 12-hour face (12 at the top, then 1..11 clockwise) and the INNER ring shows the
- * 24-hour equivalent at the same position (00 above 12, then 13..23). So a user thinking in
- * 24-hour terms reads 14 off the inner ring while their finger is on the "2" of the outer
- * one - no mental conversion needed. Minute positions reuse the same twelve spokes at
- * 5-minute increments.
+ * familiar 12-hour face (12 at the top, then 1..11 clockwise) and the INNER ring shows
+ * the 24-hour equivalent at the same position (00 above 12, then 13..23). So a user
+ * thinking in 24-hour terms reads 14 off the inner ring while their finger is on the "2"
+ * of the outer one - no mental conversion needed. Minute positions reuse the same twelve
+ * spokes at 5-minute increments.
  *
- * THEME — READ THIS BEFORE "FIXING" THE COLOURS:
+ * FLOW (HIRO, 2026-10-03): open -> press an hour -> dial switches to minutes -> press a
+ * minute and the popover CLOSES ITSELF. There is no OK, no Cancel and no hint line
+ * (all three were removed at HIRO's request), so the only way out is to finish or click
+ * away, and every pick is committed as it happens. Selecting an hour does NOT close,
+ * because a minute still has to be chosen.
+ *
+ * FIXED SIZE (HIRO, "size nya konsisten jangan berubah-ubah"): the popover is pinned to
+ * w-64 and the dial to size-52, and the inner 24-hour ring - which only exists in the
+ * hour step - is drawn inside the SAME circle rather than replacing the outer ring. That
+ * matters because the inner ring's labels are a smaller font on a smaller radius, so the
+ * minute step used to render visibly shorter and the whole dialog jumped in height when
+ * you moved from hours to minutes.
+ *
+ * THEME - READ THIS BEFORE "FIXING" THE COLOURS:
  * the SVG fills are bound to Nuxt UI's CSS variables through :style, NOT to Tailwind
  * `fill-*` utility classes. Tailwind v4 emits NO `.fill-primary` / `.fill-elevated` /
  * `.fill-default` rules for Nuxt UI's semantic colour names, so writing them silently does
@@ -54,7 +67,6 @@ const C = {
   face: 'var(--ui-bg-elevated)',
   strong: 'var(--ui-text-highlighted)',
   dim: 'var(--ui-text-dimmed)',
-  muted: 'var(--ui-text-muted)',
   primary: 'var(--ui-color-primary-500)',
   onPrimary: 'var(--ui-text-inverted)'
 }
@@ -75,7 +87,7 @@ function snap(value: string): string {
   return String(Math.min(snapped, 59)).padStart(2, '0')
 }
 
-/** Draft is copied from the model on open so Cancel can discard the whole session. */
+/** Opening always starts on the hour, seeded from the current value. */
 function loadFromModel() {
   const t = parseTime(props.modelValue)
   hour.value = t ? t.h : '09'
@@ -115,6 +127,11 @@ const selectedIndex = computed(() => {
 
 const handEnd = computed(() => point(selectedIndex.value, R_HAND))
 
+/** Push the draft out to the parent on every pick - there is no OK button to defer it. */
+function commit() {
+  emit('update:modelValue', `${hour.value}:${minute.value}`)
+}
+
 function select(i: number) {
   if (step.value === 'hour') {
     // The dial is 12-hour but the model is 24-hour, so resolve which half the user meant
@@ -128,8 +145,12 @@ function select(i: number) {
     hour.value = String(h).padStart(2, '0')
     pendingInner.value = false
     step.value = 'minute'
+    commit()
   } else {
     minute.value = minuteLabel(i)
+    commit()
+    // Picking a minute is the end of the interaction - close without needing an outside click.
+    open.value = false
   }
 }
 
@@ -143,7 +164,7 @@ function onDialPointer(e: PointerEvent) {
   const y = (e.clientY - box.top) * scale - 100
   const dist = Math.hypot(x, y)
   if (dist < 14) return                     // dead zone around the centre dot
-  pendingInner.value = dist < (R_INNER + R) / 2
+  pendingInner.value = step.value === 'hour' && dist < (R_INNER + R) / 2
   let deg = (Math.atan2(y, x) * 180) / Math.PI + 90
   if (deg < 0) deg += 360
   select(Math.round(deg / 30) % 12)
@@ -152,16 +173,6 @@ function onDialPointer(e: PointerEvent) {
 function focus(which: 'hour' | 'minute') {
   step.value = which
   pendingInner.value = false
-}
-
-function ok() {
-  emit('update:modelValue', `${hour.value}:${minute.value}`)
-  open.value = false
-}
-
-function cancel() {
-  loadFromModel()   // discard the draft
-  open.value = false
 }
 
 function display(): string {
@@ -188,7 +199,8 @@ function display(): string {
     </UButton>
 
     <template #content>
-      <div class="w-64" @keydown.esc="cancel">
+      <!-- Fixed width, and the dial keeps one footprint in both steps. -->
+      <div class="w-64 pb-4" @keydown.esc="open = false">
         <!-- The two boxes. Clicking one decides which half of the dial you are editing. -->
         <div class="flex items-center justify-center gap-1 px-4 pt-4 pb-2">
           <button type="button"
@@ -208,30 +220,22 @@ function display(): string {
              role="presentation" @pointerdown="onDialPointer">
           <circle cx="100" cy="100" :r="R + 10" :style="{ fill: C.face }" />
 
-          <!-- minute spokes (only while editing minutes) -->
-          <template v-if="step === 'minute'">
-            <text v-for="i in 12" :key="'m' + i"
-                  :x="point(i - 1, R).x" :y="point(i - 1, R).y"
-                  text-anchor="middle" dominant-baseline="central"
-                  class="font-mono text-[15px]"
-                  :style="{ fill: selectedIndex === i - 1 ? C.primary : C.strong }"
-                  :font-weight="selectedIndex === i - 1 ? 600 : 400">{{ minuteLabel(i - 1) }}</text>
-          </template>
+          <!-- The inner 24-hour ring is ALWAYS drawn, in both steps, so the dial keeps one
+               footprint and the dialog never changes size between hour and minute. -->
+          <text v-for="i in 12" :key="'i' + i"
+                :x="point(i - 1, R_INNER).x" :y="point(i - 1, R_INNER).y"
+                text-anchor="middle" dominant-baseline="central"
+                class="font-mono text-[11px]"
+                :style="{ fill: step === 'hour' ? C.dim : 'transparent' }">{{ innerLabel(i - 1) }}</text>
 
-          <!-- hour face: outer 12-hour ring + inner 24-hour ring -->
-          <template v-else>
-            <text v-for="i in 12" :key="'o' + i"
-                  :x="point(i - 1, R).x" :y="point(i - 1, R).y"
-                  text-anchor="middle" dominant-baseline="central"
-                  class="font-mono text-[15px]"
-                  :style="{ fill: selectedIndex === i - 1 ? C.primary : C.strong }"
-                  :font-weight="selectedIndex === i - 1 ? 600 : 400">{{ outerLabel(i - 1) }}</text>
-            <text v-for="i in 12" :key="'i' + i"
-                  :x="point(i - 1, R_INNER).x" :y="point(i - 1, R_INNER).y"
-                  text-anchor="middle" dominant-baseline="central"
-                  class="font-mono text-[11px]"
-                  :style="{ fill: C.dim }">{{ innerLabel(i - 1) }}</text>
-          </template>
+          <!-- outer ring: minutes while editing minutes, the 12-hour face otherwise -->
+          <text v-for="i in 12" :key="'o' + i"
+                :x="point(i - 1, R).x" :y="point(i - 1, R).y"
+                text-anchor="middle" dominant-baseline="central"
+                class="font-mono text-[15px]"
+                :style="{ fill: selectedIndex === i - 1 ? C.primary : C.strong }"
+                :font-weight="selectedIndex === i - 1 ? 600 : 400"
+          >{{ step === 'minute' ? minuteLabel(i - 1) : outerLabel(i - 1) }}</text>
 
           <!-- hand, from the centre dot out to the selection -->
           <line x1="100" y1="100" :x2="handEnd.x" :y2="handEnd.y"
@@ -247,15 +251,6 @@ function display(): string {
                 :style="{ fill: C.onPrimary }" font-weight="600"
           >{{ step === 'minute' ? minuteLabel(selectedIndex) : outerLabel(selectedIndex) }}</text>
         </svg>
-
-        <p class="px-4 pb-1 text-center text-[11px] text-muted">
-          {{ step === 'hour' ? 'Pick the hour - inner ring is 24-hour' : 'Pick the minute' }}
-        </p>
-
-        <div class="flex items-center justify-between gap-2 px-4 pb-3 pt-1">
-          <UButton type="button" variant="ghost" size="sm" label="Cancel" class="text-primary" @click="cancel" />
-          <UButton type="button" size="sm" label="OK" @click="ok" />
-        </div>
       </div>
     </template>
   </UPopover>

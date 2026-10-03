@@ -151,7 +151,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
       <button
         v-if="!disabled && modelValue"
         type="button"
-        class="absolute right-1.5 top-1.5 inline-flex size-7 items-center justify-center rounded-lg
+        class="absolute right-1 top-1 inline-flex size-6 items-center justify-center rounded-md
                border border-error/40 bg-elevated text-error shadow-sm transition-colors
                hover:bg-error hover:text-white
                focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2
@@ -160,7 +160,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
         aria-label="Clear signature"
         @click="clear"
       >
-        <UIcon name="i-lucide-eraser" class="size-4" />
+        <UIcon name="i-lucide-eraser" class="size-3.5" />
       </button>
     </div>
   </div>
