@@ -14,11 +14,14 @@ const props = withDefaults(defineProps<{
   label?: string
   height?: number
   disabled?: boolean
+  /** Red outline when a mandatory signature has not been drawn yet. */
+  invalid?: boolean
 }>(), {
   modelValue: null,
   label: '',
   height: 90,
-  disabled: false
+  disabled: false,
+  invalid: false
 })
 
 const emit = defineEmits<{ 'update:modelValue': [string | null] }>()
@@ -123,7 +126,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
 <template>
   <div>
     <p v-if="label" class="mb-1 text-xs font-medium text-muted">{{ label }}</p>
-    <div class="relative inline-block">
+    <div class="relative inline-block" :class="invalid ? 'rounded ring-2 ring-error' : ''">
       <canvas
         ref="canvasEl"
         class="block w-full cursor-crosshair rounded border border-default bg-white touch-none dark:bg-white"

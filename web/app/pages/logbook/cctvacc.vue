@@ -99,6 +99,43 @@ function composeDateTime(time: unknown): string {
   return `${todayDisplay()} ${t}`
 }
 
+/**
+ * MANDATORY FIELDS (HIRO, 2026-10-04): every field on the sheet is required - only the
+ * hidden NO is optional, because the server generates it. The order here is the order the
+ * warning message lists them in, i.e. the order they appear on the form.
+ *
+ * `required` on <UFormField> is used purely for the red asterisk - it renders
+ * `after:content-['*']` on the label. It deliberately does NOT drive validation: UForm's
+ * built-in submit validation is switched off below (`:validate-on="[]"`) so that this page
+ * owns the whole flow and can show one English warning naming every missing field at once,
+ * with the empty inputs outlined in red. Letting UForm validate would short-circuit the
+ * submit handler and show its own per-field errors instead.
+ */
+const REQUIRED = [
+  { key: 'tanggal', label: 'Date' },
+  { key: 'departemen', label: 'Section' },
+  { key: 'no_pegawai', label: 'Employee No' },
+  { key: 'nama_pemohon', label: 'PIC Name' },
+  { key: 'tujuan', label: 'Purpose / Details' },
+  { key: 'pic_mulai', label: 'Start Time' },
+  { key: 'pic_selesai', label: 'End Time' },
+  { key: 'pic_isd', label: 'PIC by ISD' },
+  { key: 'tanda_pemohon', label: 'PIC Sign' },
+  { key: 'tanda_isd', label: 'ISD Sign' }
+] as const
+
+/** Only turn the red outline on after a failed save attempt, never while first typing. */
+const showErrors = ref(false)
+
+function isBlank(v: unknown): boolean {
+  return v === '' || v === null || v === undefined
+}
+
+/** True when this field is mandatory, still empty, and the user has already tried to save. */
+function fieldInvalid(key: string): boolean {
+  return showErrors.value && REQUIRED.some((f) => f.key === key) && isBlank(form[key])
+}
+
 /** Draft of the row currently being entered. */
 const form = reactive<Record<string, any>>({})
 
@@ -111,6 +148,7 @@ function resetForm() {
   for (const c of COLUMNS) form[c.key] = c.sign ? null : ''
   for (const k of HIDDEN_FIELDS) form[k] = ''
   editing.value = null
+  showErrors.value = false
 }
 
 async function loadEntity() {
@@ -180,8 +218,20 @@ function openEdit(row: Row) {
 
 async function save() {
   if (!entity.value) return
-  if (!form.tujuan?.trim()) { notify('Purpose / Details wajib diisi.', 'error'); return }
-  if (!form.nama_pemohon?.trim()) { notify('PIC Name wajib diisi.', 'error'); return }
+
+  // One English warning naming every missing mandatory field, plus red outlines on each
+  // empty input. Checked before anything else so a half-filled row never reaches the API.
+  const missing = REQUIRED.filter((f) => isBlank(form[f.key]))
+  showErrors.value = true
+  if (missing.length) {
+    notify(
+      missing.length === 1
+        ? `${missing[0]!.label} is required. Please complete the highlighted field.`
+        : `These fields are required: ${missing.map((f) => f.label).join(', ')}. Please complete all highlighted fields.`,
+      'error'
+    )
+    return
+  }
 
   saving.value = true
   try {
@@ -394,59 +444,76 @@ watch(search, () => {
             :title="editing ? 'Edit Row' : 'New Row'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
       <template #body>
-      <UForm :state="form" @submit="save">
+      <!-- `:validate-on="[]"` switches OFF UForm's own validation. It is off on purpose:
+           `required` on UFormField is kept only for the red asterisk, and this page does
+           the checking itself so it can raise ONE English warning listing every missing
+           field and outline them all in red. -->
+      <UForm :state="form" :validate-on="[]" @submit="save">
         <!-- Five rows on a 3-column grid, no scroll area: the dialog is sized to fit its
              content (see the :ui below) and the two signature pads sit side by side in the
              last row, which is what keeps the whole form inside a 1080p window. -->
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Row 1: who/when/where. Date is prefilled with today and stays editable. -->
           <UFormField label="Date" name="tanggal" required>
-            <UInput v-model="form.tanggal" name="tanggal" type="date" />
+            <UInput v-model="form.tanggal" name="tanggal" type="date" class="w-full"
+                     :ui="fieldInvalid('tanggal') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
-          <UFormField label="Section" name="departemen">
-            <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" />
+          <UFormField label="Section" name="departemen" required>
+            <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
+                     class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
-          <UFormField label="Employee No" name="no_pegawai">
-            <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" />
+          <UFormField label="Employee No" name="no_pegawai" required>
+            <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
+                     class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
 
           <!-- Row 2: the requester and the searched window. Pickers take the TIME only;
                today's date is glued on at save time, so nobody types a date. -->
           <UFormField label="PIC Name" name="nama_pemohon" required>
-            <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full" />
+            <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
+                     :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
-          <UFormField label="Start Time" name="pic_mulai">
-            <TimePicker v-model="form.pic_mulai" name="pic_mulai" />
+          <UFormField label="Start Time" name="pic_mulai" required>
+            <TimePicker v-model="form.pic_mulai" name="pic_mulai" :invalid="fieldInvalid('pic_mulai')" />
           </UFormField>
-          <UFormField label="End Time" name="pic_selesai">
-            <TimePicker v-model="form.pic_selesai" name="pic_selesai" />
+          <UFormField label="End Time" name="pic_selesai" required>
+            <TimePicker v-model="form.pic_selesai" name="pic_selesai" :invalid="fieldInvalid('pic_selesai')" />
           </UFormField>
 
           <!-- Row 3: purpose spans the full width. w-full is required as well as the
                col-span: UTextarea sizes to its content otherwise and ignores the span. -->
           <UFormField label="Purpose / Details" name="tujuan" required class="sm:col-span-2 lg:col-span-3">
             <UTextarea v-model="form.tujuan" name="tujuan" :rows="2" class="w-full"
-                      placeholder="What is the footage being retrieved for?" />
+                      placeholder="What is the footage being retrieved for?"
+                      :ui="fieldInvalid('tujuan') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
 
           <!-- Row 4: the ISD officer prefilled from the session, then the two signature pads
                side by side. Giving both pads one grid column each is what keeps them
                adjacent - a col-span on the second one pushed it onto a row of its own. -->
-          <UFormField label="PIC by ISD" name="pic_isd">
-            <UInput v-model="form.pic_isd" name="pic_isd" class="w-full" />
+          <UFormField label="PIC by ISD" name="pic_isd" required>
+            <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
+                     :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
           </UFormField>
-          <UFormField label="PIC Sign" name="tanda_pemohon">
-            <SignaturePad v-model="form.tanda_pemohon" :height="64" />
+          <UFormField label="PIC Sign" name="tanda_pemohon" required>
+            <SignaturePad v-model="form.tanda_pemohon" :height="64" :invalid="fieldInvalid('tanda_pemohon')" />
           </UFormField>
-          <UFormField label="ISD Sign" name="tanda_isd">
-            <SignaturePad v-model="form.tanda_isd" :height="64" />
+          <UFormField label="ISD Sign" name="tanda_isd" required>
+            <SignaturePad v-model="form.tanda_isd" :height="64" :invalid="fieldInvalid('tanda_isd')" />
           </UFormField>
         </div>
 
-        <div class="mt-4 flex items-center justify-end gap-2 border-t border-default pt-4">
+        <div class="mt-4 flex items-center justify-between gap-2 border-t border-default pt-4">
+          <!-- Footnote on the LEFT, action buttons on the right: the legend for the red
+               asterisks, which is where a reader looks first when a save is rejected. -->
+          <p class="text-xs text-muted">
+            <span class="font-semibold text-error">*</span> Mandatory — all fields must be completed.
+          </p>
+          <div class="flex items-center gap-2">
           <UButton type="button" variant="ghost" label="Cancel" @click="showForm = false" />
           <UButton type="submit" :loading="saving" icon="i-lucide-check"
                    :label="editing ? 'Save Changes' : 'Save Row'" />
+          </div>
         </div>
       </UForm>
       </template>

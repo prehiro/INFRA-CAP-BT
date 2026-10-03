@@ -46,7 +46,9 @@ const props = withDefaults(defineProps<{
    *  wall clock; the original default of 15 was too coarse for a logbook. */
   minuteStep?: number
   name?: string
-}>(), { placeholder: 'Select time', minuteStep: 5, name: undefined })
+  /** Red outline when a mandatory time has not been chosen yet. */
+  invalid?: boolean
+}>(), { placeholder: 'Select time', minuteStep: 5, name: undefined, invalid: false })
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
@@ -227,7 +229,7 @@ function display(): string {
       block
       variant="outline"
       class="justify-start gap-2 font-normal"
-      :class="display() ? '' : 'text-muted'"
+      :class="[display() ? '' : 'text-muted', invalid ? 'ring-2 ring-error' : '']"
       :aria-label="`${placeholder}: ${display() || 'not set'}`"
     >
       <UIcon name="i-lucide-clock" class="size-4 shrink-0 text-muted" />
