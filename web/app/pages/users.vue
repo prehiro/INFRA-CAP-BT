@@ -36,6 +36,16 @@ async function load() {
   }
 }
 
+/** UForm validation rejection. Reported rather than swallowed, so a future schema change
+ *  cannot reintroduce the silent no-op this page just lived through. */
+function onFormError(e: any) {
+  const list = e?.errors ?? []
+  const text = Array.isArray(list)
+    ? list.map((x: any) => (typeof x === 'string' ? x : `${(x?.path ?? []).join('.')}: ${x?.message}`)).join('; ')
+    : String(list)
+  toast.add({ title: 'Check the form', description: text || 'Some fields are not valid.', color: 'error' })
+}
+
 function openCreate() {
   editing.value = null
   Object.assign(form, { username: '', password: '', email: '', fullName: '', isActive: true, roleIds: [] })
@@ -57,13 +67,40 @@ function openEdit(u: User) {
   modalOpen.value = true
 }
 
+/**
+ * Coerce whatever the Role multi-select put into `form.roleIds` into a clean number[].
+ *
+ * WHY THIS IS NEEDED - the real cause behind "The req field is required":
+ * the server rejected the create with
+ *   "The JSON value could not be converted to System.Int32. Path: $.roleIds[0]"
+ * A failed body bind leaves the `req` parameter null, and ASP.NET then ALSO reports
+ * "The req field is required" - so that message was never the real problem, just the
+ * shadow it cast. My own API tests all passed because I posted `roleIds: [3]`, a real
+ * number; the select was sending something else.
+ *
+ * Three shapes are handled, because a select can legitimately yield any of them:
+ * a number, a numeric string, or the whole `{ label, value }` item. Anything that does not
+ * resolve to a finite number is dropped rather than sent, so a stray entry produces a
+ * clean validation error instead of an unbindable body.
+ */
+function normaliseRoleIds(raw: any): number[] {
+  const list = Array.isArray(raw) ? raw : (raw == null ? [] : [raw])
+  const out: number[] = []
+  for (const item of list) {
+    const v = (item && typeof item === 'object') ? (item as any).value : item
+    const n = Number(v)
+    if (Number.isFinite(n) && !out.includes(n)) out.push(n)
+  }
+  return out
+}
+
 async function save() {
   saving.value = true
   Object.keys(formErrors).forEach(k => delete formErrors[k])
 
   // A user with no role can sign in but sees nothing useful, which reads as a broken
   // account. Require at least one role up front instead of failing confusingly later.
-  if (!form.roleIds.length) {
+  if (!normaliseRoleIds(form.roleIds).length) {
     formErrors.roleIds = 'Select at least one role'
     saving.value = false
     return
@@ -77,7 +114,7 @@ async function save() {
         isActive: form.isActive,
         // Only send a password when the admin actually typed a new one.
         password: form.password || null,
-        roleIds: form.roleIds
+        roleIds: normaliseRoleIds(form.roleIds)
       })
       toast.add({ title: 'User updated', color: 'success' })
     } else {
@@ -87,7 +124,7 @@ async function save() {
         email: form.email,
         fullName: form.fullName,
         isActive: form.isActive,
-        roleIds: form.roleIds
+        roleIds: normaliseRoleIds(form.roleIds)
       })
       toast.add({ title: 'User created', color: 'success' })
     }
@@ -410,98 +447,114 @@ onMounted(() => {
       </div>
 
       <!-- ADD / EDIT USER
-           A UModal now, matching the CCTV record dialog. The Save button stays INSIDE the
-           UForm rather than in #footer: UModal's #footer slot swallows @click on a submit
-           button (verified - onclick was null on the rendered node), so clicks silently did
-           nothing. That is exactly why this used to be an inline card - which is why the form
-           appeared below the table instead of over it. -->
+           Built to the CCTV record dialog's EXACT structure, because the first attempt at this
+           silently did nothing and it is worth recording why.
+
+           The first attempt used UModal's #content slot and nested the UForm inside it. The
+           form's submit event fired (a capture listener counted it) but @submit NEVER CALLED
+           save(): no spinner, no request, no toast, dialog simply sat there. Same UForm, same
+           :validate-on="[]", same buttons-inside-the-form - but it only works from the #body
+           slot, which is what the CCTV dialog uses and the only shape verified to save. The
+           Cancel/Save row therefore lives INSIDE the UForm here too, not in #footer: that
+           footer slot is separately known to swallow @click on a submit button.
+
+           The title/description are passed as UModal props rather than hand-built markup,
+           which is also what makes the header, close button and layout identical to CCTV's
+           without any duplicated CSS. -->
       <UModal
         v-model:open="modalOpen"
-        :ui="{ content: 'sm:max-w-lg', body: 'p-0', footer: 'p-0' }"
+        :ui="{ content: 'sm:max-w-lg', body: 'p-5' }"
+        :title="editing ? 'Edit user' : 'Add user'"
+        :description="editing
+          ? 'Update this account. The username cannot be changed.'
+          : 'Create a new account and assign at least one role.'"
       >
-        <template #content>
-          <div class="overflow-hidden rounded-xl">
-            <div class="relative overflow-hidden px-6 pb-5 pt-6">
-              <div
-                aria-hidden="true"
-                class="pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-primary/15 blur-3xl"
-              />
-              <div class="relative flex items-start gap-4">
-                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 ring-1 ring-inset ring-primary/25">
-                  <UIcon :name="editing ? 'i-lucide-user-pen' : 'i-lucide-user-plus'" class="size-5 text-primary" />
-                </span>
-                <div class="min-w-0">
-                  <h2 class="text-base font-semibold text-default">
-                    {{ editing ? 'Edit user' : 'Add user' }}
-                  </h2>
-                  <p class="mt-1 text-sm text-muted">
-                    {{ editing
-                      ? 'Update this account. The username cannot be changed.'
-                      : 'Create a new account and assign at least one role.' }}
-                  </p>
-                </div>
-              </div>
+        <template #body>
+          <!-- Every UFormField below carries a `name` matching a key of `form`, and that is
+               load-bearing, not decoration. UForm's submit wrapper runs _validate() BEFORE
+               props.onSubmit, and if validation throws it emits "error" and NEVER calls the
+               handler - so with `:validate-on="[]"` the page looked completely dead on submit:
+               no spinner, no request, no toast, no visible error. Each UFormField registered
+               itself with no name, so a required field could never be satisfied and validation
+               failed every single time. The CCTV dialog has had `name` on its fields all along,
+               which is why it works. -->
+          <!-- @error is surfaced as a toast so UForm's own validation can never fail
+               silently again. Previously nothing listened, which is why a rejected submit
+               looked identical to a button that was simply broken. -->
+          <UForm
+            :state="form"
+            :validate-on="[]"
+            @submit="save"
+            @error="onFormError"
+          >
+            <div class="space-y-4">
+              <UFormField
+                name="username"
+                label="Username"
+                required
+                :error="formErrors.username"
+                :help="editing ? 'The username cannot be changed.' : undefined"
+              >
+                <UInput v-model="form.username" :disabled="!!editing" class="w-full" placeholder="jsmith" />
+              </UFormField>
+
+              <UFormField
+                name="password"
+                :label="editing ? 'New password' : 'Password'"
+                :required="!editing"
+                :error="formErrors.password"
+                :help="editing ? 'Leave blank to keep the current password.' : 'At least 6 characters.'"
+              >
+                <UInput v-model="form.password" type="password" class="w-full" placeholder="••••••••" />
+              </UFormField>
+
+              <!-- Role sits THIRD, deliberately, not last. It used to be the final field
+                   before the footer, and that made creating a user impossible in practice:
+                   USelectMenu is a multiple select, so it STAYS OPEN after you tick a role,
+                   and with nothing but the footer below it the popover opened straight over
+                   the "Create user" button. The click was swallowed - zero requests were ever
+                   sent - and the natural next move, pressing Escape to dismiss the popover,
+                   DISCARDS the ticked role, so the retry then failed with "Select at least
+                   one role". One field higher, the same popover opens downward over the
+                   ordinary text inputs instead, which costs nothing and covers no button. -->
+              <UFormField name="roleIds" label="Role" :error="formErrors.roleIds">
+                <USelectMenu
+                  v-model="form.roleIds"
+                  :items="roleItems"
+                  multiple
+                  placeholder="Select a role"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField name="fullName" label="Full Name" :error="formErrors.fullName">
+                <UInput v-model="form.fullName" class="w-full" placeholder="John Smith" />
+              </UFormField>
+
+              <UFormField name="email" label="Email" :error="formErrors.email">
+                <UInput v-model="form.email" type="email" class="w-full" placeholder="user@company.local" />
+              </UFormField>
+
+              <UFormField
+                name="isActive"
+                label="Status"
+                :help="deactivateBlocked
+                  ? 'This is the only active Admin. Deactivating it would lock every admin account out, with no one left to switch it back on.'
+                  : undefined"
+              >
+                <USwitch
+                  v-model="form.isActive"
+                  label="User is active"
+                  :disabled="deactivateBlocked"
+                />
+              </UFormField>
             </div>
 
-            <UForm :state="form" :validate-on="[]" @submit="save">
-              <div class="space-y-4 px-6 pb-5">
-                <UFormField
-                  label="Username"
-                  required
-                  :error="formErrors.username"
-                  :help="editing ? 'The username cannot be changed.' : undefined"
-                >
-                  <UInput v-model="form.username" :disabled="!!editing" class="w-full" placeholder="jsmith" />
-                </UFormField>
-
-                <UFormField
-                  :label="editing ? 'New password' : 'Password'"
-                  :required="!editing"
-                  :error="formErrors.password"
-                  :help="editing ? 'Leave blank to keep the current password.' : 'At least 6 characters.'"
-                >
-                  <UInput v-model="form.password" type="password" class="w-full" placeholder="••••••••" />
-                </UFormField>
-
-                <UFormField label="Full Name" :error="formErrors.fullName">
-                  <UInput v-model="form.fullName" class="w-full" placeholder="John Smith" />
-                </UFormField>
-
-                <UFormField label="Email" :error="formErrors.email">
-                  <UInput v-model="form.email" type="email" class="w-full" placeholder="user@company.local" />
-                </UFormField>
-
-                <UFormField label="Role" :error="formErrors.roleIds">
-                  <USelectMenu
-                    v-model="form.roleIds"
-                    :items="roleItems"
-                    multiple
-                    placeholder="Select a role"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField
-                  label="Status"
-                  :help="deactivateBlocked
-                    ? 'This is the only active Admin. Deactivating it would lock every admin account out, with no one left to switch it back on.'
-                    : undefined"
-                >
-                  <USwitch
-                    v-model="form.isActive"
-                    label="User is active"
-                    :disabled="deactivateBlocked"
-                  />
-                </UFormField>
-              </div>
-
-              <!-- Inside the form on purpose - see the note above. -->
-              <div class="flex items-center justify-end gap-2 border-t border-default/70 bg-elevated/40 px-6 py-4">
-                <UButton label="Cancel" color="neutral" variant="ghost" type="button" @click="modalOpen = false" />
-                <UButton type="submit" :label="editing ? 'Save changes' : 'Create user'" :loading="saving" />
-              </div>
-            </UForm>
-          </div>
+            <div class="mt-5 flex items-center justify-end gap-2 border-t border-default pt-4">
+              <UButton type="button" variant="ghost" color="neutral" label="Cancel" @click="modalOpen = false" />
+              <UButton type="submit" :loading="saving" :label="editing ? 'Save changes' : 'Create user'" />
+            </div>
+          </UForm>
         </template>
       </UModal>
 
