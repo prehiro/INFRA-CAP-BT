@@ -108,11 +108,19 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
     </div>
 
     <div class="relative z-10 flex flex-wrap items-center gap-5 p-5 sm:p-6">
-      <!-- Avatar: initials only, no remote image — the office server has no internet. -->
-      <UAvatar :alt="displayName" size="xl"
-               class="shrink-0 bg-primary text-inverted ring-4 ring-primary/15">
-        {{ initials }}
-      </UAvatar>
+      <!-- Avatar: initials only, no remote image — the office server has no internet.
+           The breathing glow lives on THIS WRAPPER, not on the avatar itself, and that is
+           load-bearing rather than cosmetic: the avatar carries `ring-4 ring-primary/15`,
+           and Tailwind's ring is implemented as a box-shadow. Animating box-shadow on the
+           avatar would therefore wipe the ring out on the very first frame of the pulse. A
+           wrapper gets its own stacking box, so the glow breathes around a ring that stays
+           intact. -->
+      <span class="infra-avatar-glow relative inline-flex shrink-0 rounded-full">
+        <UAvatar :alt="displayName" size="xl"
+                 class="bg-primary text-inverted ring-4 ring-primary/15">
+          {{ initials }}
+        </UAvatar>
+      </span>
 
       <div class="min-w-0 flex-1">
         <p class="text-sm text-muted">{{ greeting }},</p>
@@ -163,10 +171,47 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 /* Under the OS "reduce motion" setting the stars stop twinkling but stay visible at a fixed
    opacity, so the banner keeps its texture instead of blinking - the same rule the .anim-*
    utilities in main.css already follow. */
+/* Breathing glow around the welcome avatar.
+   "Breathing" means the halo expands outward and fades back in, on a slow cycle, rather than
+   blinking — the easing is a symmetric ease-in-out so the inhale and the exhale take the same
+   time and the loop has no visible seam.
+
+   THE COLOUR IS NOT HARDCODED. `color-mix()` is fed `var(--ui-primary)`, the same variable
+   the stars and the glow orb use, so the halo follows the user's accent automatically. A
+   literal hex here would have been the one thing in this banner that stopped matching the
+   theme. */
+.infra-avatar-glow {
+  animation: infra-breathe 4.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes infra-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0.25rem color-mix(in oklab, var(--ui-primary) 16%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--ui-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 0.3rem color-mix(in oklab, var(--ui-primary) 28%, transparent),
+      0 0 26px 9px color-mix(in oklab, var(--ui-primary) 42%, transparent);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .infra-star {
     animation: none !important;
     opacity: 0.55;
+  }
+
+  /* The avatar keeps a STATIC halo rather than losing the glow entirely - the accent ring
+     still reads as intentional, it just stops pulsing. Verified with
+     cdp Emulation.setEmulatedMedia: animationName must read 'none' under this media query. */
+  .infra-avatar-glow {
+    animation: none !important;
+    box-shadow:
+      0 0 0 0.25rem color-mix(in oklab, var(--ui-primary) 20%, transparent),
+      0 0 16px 4px color-mix(in oklab, var(--ui-primary) 32%, transparent);
   }
 }
 </style>
