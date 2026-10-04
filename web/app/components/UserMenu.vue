@@ -115,9 +115,16 @@ const items = computed<DropdownMenuItem[][]>(() => ([
     // `text-default data-highlighted:text-highlighted` with the leading icon at
     // `text-dimmed group-data-highlighted:text-default`, so without an override the item would
     // turn white-ish on hover and the "destructive" reading would be lost exactly when the
-    // pointer is over it. `[&_svg]` is used for the icon because it has its own colour class
-    // and would otherwise win on specificity.
-    class: 'text-error data-highlighted:text-error data-[state=open]:text-error [&_svg]:text-error data-highlighted:before:bg-error/10',
+    // pointer is over it.
+    //
+    // `signout-item` is a marker, not styling: the ICON is coloured by a NON-scoped rule at
+    // the bottom of this file. An earlier attempt used `[&_svg]:text-error` here, which
+    // silently did nothing - Iconify renders `<span class="iconify ...">`, never an `<svg>`,
+    // so the selector matched no element at all. Beating the vendor's hover rule also needs
+    // more than a plain descendant selector: `group-data-highlighted:text-default` compiles
+    // with the group attribute in the chain and outranks `[&_.iconify]`, hence `!important`
+    // on the rule rather than another attempt at specificity arithmetic.
+    class: 'signout-item text-error data-highlighted:text-error data-[state=open]:text-error data-highlighted:before:bg-error/10',
     onSelect: doLogout
   }]
 ]))
@@ -179,3 +186,20 @@ const items = computed<DropdownMenuItem[][]>(() => ([
     </UDropdownMenu>
   </div>
 </template>
+
+<style>
+/* Sign Out icon colour.
+   Iconify renders `<span class="iconify i-lucide:log-out ...">`, not an `<svg>` - so the
+   obvious `[&_svg]` selector matches nothing. The rule targets `.iconify` instead, and uses
+   `!important` because the vendor's own `group-data-highlighted:text-default` on the icon
+   compiles to a selector with the group attribute in the chain, which outranks any plain
+   descendant selector written from here.
+   Non-scoped on purpose: the dropdown content is teleported to <body>, so a scoped rule
+   could never reach it. Keyed to the `signout-item` marker, so it cannot leak to any other
+   menu item in the app. */
+.signout-item .iconify,
+.signout-item[data-highlighted] .iconify,
+.signout-item[data-state='open'] .iconify {
+  color: var(--ui-error) !important;
+}
+</style>
