@@ -492,7 +492,12 @@ watch(search, () => {
          rather than to the content's intrinsic height. -->
     <div class="chips-slot" :class="activeChips.length ? 'is-open' : ''">
      <div class="chips-clip">
-      <div class="flex flex-wrap items-center gap-1.5 px-0.5 pb-2 pt-1">
+      <!-- v-if on the INNER row, not on the slot. The slot must always exist for the height
+           to animate, but the "Filtered by" label and the Clear all button must NOT survive
+           in the DOM at 0px height: a screen reader would still announce them and a keyboard
+           user could tab onto an invisible button. The track still animates because the
+           class and the content change in the same update. -->
+      <div v-if="activeChips.length" class="flex flex-wrap items-center gap-1.5 px-0.5 pb-2 pt-1">
       <span class="mr-0.5 text-xs font-medium text-muted">Filtered by</span>
       <button
         v-for="c in activeChips" :key="c.key"

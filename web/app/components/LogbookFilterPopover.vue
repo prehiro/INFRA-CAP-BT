@@ -124,16 +124,26 @@ function applyPreset(key: string) {
 
         <div class="my-3 border-t border-default" />
 
+        <!-- Custom pickers instead of the native <input type="date">: the OS control cannot
+             be styled to match the app and shows the US mm/dd/yyyy order on this machine,
+             while the sheet is written dd/mm/yyyy. Each one is told the OTHER end of the
+             range so the days in between light up, which makes a From..To band readable at
+             a glance instead of two disconnected dates. -->
         <div class="grid grid-cols-2 gap-2">
           <UFormField label="From" name="f-from">
-            <UInput
-              :model-value="modelValue.from" type="date" class="w-full"
+            <!-- BOTH ends are passed to BOTH pickers. The `between` highlight needs the two
+                 endpoints to know what "in between" means; passing only the far end left the
+                 From picker with no start, so the days inside the band never lit up. -->
+            <DatePicker
+              :model-value="modelValue.from" placeholder="Start date"
+              :range-start="modelValue.from" :range-end="modelValue.to"
               @update:model-value="set('from', $event)"
             />
           </UFormField>
           <UFormField label="To" name="f-to">
-            <UInput
-              :model-value="modelValue.to" type="date" class="w-full"
+            <DatePicker
+              :model-value="modelValue.to" placeholder="End date"
+              :range-start="modelValue.from" :range-end="modelValue.to"
               @update:model-value="set('to', $event)"
             />
           </UFormField>
