@@ -547,7 +547,7 @@ await init()
          slightly larger than the old text-xs, and numeric-ish columns are tabular-nums
          so digits line up down the column. -->
     <div class="overflow-hidden rounded-xl border border-default bg-elevated">
-      <div class="logbook-scroll max-h-[70vh] overflow-auto print:scroll-area">
+      <div class="logbook-scroll max-h-[70vh] overflow-y-scroll overflow-x-auto print:scroll-area">
         <!-- min-w is sized so the whole logbook fits without horizontal scrolling on a
              typical 1280px screen (measured: 11 columns + Actions needed ~1180px).
              Horizontal scroll remains the graceful fallback on narrower screens rather
@@ -1030,6 +1030,51 @@ await init()
    ============================================================================================ */
 .logbook-scroll {
   scrollbar-gutter: stable;
+}
+
+/* THE SCROLLBAR ITSELF MUST NOT BLINK.
+   `scrollbar-gutter: stable` alone fixed the layout shift but NOT the visible blink: the
+   gutter stayed reserved while the scrollbar thumb still appeared and vanished as the row
+   count crossed the 70vh threshold, and that flicker on the right-hand edge of the table is
+   exactly what HIRO reported. So the track is now ALWAYS rendered via `overflow-y: scroll`
+   (applied as the Tailwind `overflow-y-scroll` utility on the element, rather than an
+   `overflow-y` declaration here, because a class selector would tie with Tailwind's
+   `.overflow-auto` utility on specificity and lose on source order - the utility in the class
+   attribute is unambiguous).
+
+   The cost is a permanent 15px strip down the right of the table. It is made unobtrusive
+   below by keeping it narrow and letting the thumb sit flush when there is nothing to
+   scroll, which reads as an empty track rather than a blinking control. */
+/* The thumb must stay VISIBLE, not just present. The first pass used a 3px transparent
+   border inside a 10px track, which left only a 4px sliver - measured as effectively
+   invisible in a 2x crop of the table's right edge, which trades a blink for the user not
+   knowing the table scrolls at all. 12px track with a 2px border gives an 8px thumb: quiet,
+   but unmistakably a scrollbar. */
+.logbook-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.logbook-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.logbook-scroll::-webkit-scrollbar-thumb {
+  background: var(--ui-border-strong);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.logbook-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--ui-text-dimmed);
+  background-clip: content-box;
+}
+
+/* Firefox honours the standard properties; the webkit rules above are ignored there. */
+.logbook-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ui-border) transparent;
 }
 
 </style>
