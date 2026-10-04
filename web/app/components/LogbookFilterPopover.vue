@@ -214,30 +214,4 @@ function applyPreset(key: string) {
 
 <style scoped>
 
-/* Breathing glow around the welcome avatar.
-   "Breathing" means the halo expands outward and fades back in, on a slow cycle, rather than
-   blinking — the easing is a symmetric ease-in-out so the inhale and the exhale take the same
-   time and the loop has no visible seam.
-
-   THE COLOUR IS NOT HARDCODED. `color-mix()` is fed `var(--ui-primary)`, the same variable
-   the stars and the glow orb use, so the halo follows the user's accent automatically. A
-   literal hex here would have been the one thing in this banner that stopped matching the
-   theme. */
-.infra-avatar-glow {
-  animation: infra-breathe 4.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes infra-breathe {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 0.25rem color-mix(in oklab, var(--ui-primary) 16%, transparent),
-      0 0 0 0 color-mix(in oklab, var(--ui-primary) 0%, transparent);
-  }
-  50% {
-    box-shadow:
-      0 0 0 0.3rem color-mix(in oklab, var(--ui-primary) 28%, transparent),
-      0 0 26px 9px color-mix(in oklab, var(--ui-primary) 42%, transparent);
-  }
-}
 </style>

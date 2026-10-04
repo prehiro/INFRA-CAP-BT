@@ -50,11 +50,4 @@ public class RecordsController : ControllerBase
         await _svc.DeleteAsync(entityId, recordId, Username);
         return NoContent();
     }
-
-    [HttpPost("bulk-delete")]
-    public async Task<IActionResult> BulkDelete([FromRoute] int entityId, [FromBody] List<long> ids)
-    {
-        var n = await _svc.BulkDeleteAsync(entityId, ids ?? new List<long>(), Username);
-        return Ok(new { deleted = n });
-    }
 }

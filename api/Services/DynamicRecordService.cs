@@ -41,13 +41,6 @@ public class DynamicRecordService
         return e;
     }
 
-    public async Task<DynamicEntity> GetEntityBySlugAsync(string slug)
-    {
-        var e = await _db.Entities.Include(x => x.Fields).FirstOrDefaultAsync(x => x.Slug == slug)
-            ?? throw new NotFoundException($"Entity '{slug}' not found");
-        return e;
-    }
-
     public async Task<List<EntityDto>> ListEntitiesAsync(bool activeOnly = true)
     {
         var q = _db.Entities
@@ -318,21 +311,6 @@ public class DynamicRecordService
         rec.UpdatedAt = DateTime.UtcNow;
         rec.UpdatedBy = username;
         await _db.SaveChangesAsync();
-    }
-
-    public async Task<int> BulkDeleteAsync(int entityId, List<long> ids, string username)
-    {
-        var rows = await _db.Records
-            .Where(r => r.EntityId == entityId && ids.Contains(r.Id) && !r.IsDeleted)
-            .ToListAsync();
-        foreach (var r in rows)
-        {
-            r.IsDeleted = true;
-            r.UpdatedAt = DateTime.UtcNow;
-            r.UpdatedBy = username;
-        }
-        await _db.SaveChangesAsync();
-        return rows.Count;
     }
 
     // ---------- value materialisation / validation ----------
