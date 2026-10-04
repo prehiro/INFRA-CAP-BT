@@ -19,8 +19,22 @@ const shift = computed(() => (props.collapsed ? '-ms-1' : ''))
 
 <template>
   <div class="flex items-center gap-2 px-1 py-2" :class="shift">
-    <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-inverted font-bold">
-      IC
+    <!-- Brand mark. HIRO asked for the Iconify icon 'streamline-cyber:network' in place of
+         the old "IC" letters (2026-10-04).
+
+         OFFLINE NOTE, because this is not the usual situation. nuxt.config.ts sets
+         clientBundle.scan so icons referenced in the source are resolved AT BUILD TIME and
+         embedded, and clientBundleFallback: '' so nothing is ever fetched from
+         api.iconify.design at runtime - the office server 10.89.6.237 has no internet and
+         would silently drop anything fetched live. 'streamline' is NOT among the locally
+         installed collections (only @iconify-json/lucide is), so this icon is bundled from
+         the network by the build machine rather than read from node_modules. That is fine for
+         a build here, but it means a `npm install` on a machine without internet could not
+         re-resolve it. If the icon ever fails to appear, check the clientBundle `size`
+         budget in nuxt.config.ts before anything else - it is 200000 and overrunning it drops
+         icons silently. -->
+    <span class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-inverted">
+      <UIcon name="i-streamline-cyber:network" class="size-5" />
     </span>
 
     <span v-if="!collapsed" class="min-w-0 flex-1">
