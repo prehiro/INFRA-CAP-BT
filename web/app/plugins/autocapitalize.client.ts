@@ -28,6 +28,32 @@
  * attribute is honoured when it says "off" or "none".
  */
 
+/**
+ * Pages where NOTHING may be capitalised, whatever the input type is.
+ *
+ * HIRO's instruction: "jangan terapkan plugin ini pada halaman login dan user
+ * management. bahaya!" This is applied to the whole PAGE rather than to individual
+ * fields, on purpose. Both of these pages deal with IDENTITIES rather than with free
+ * prose, and the username is a credential, not a caption:
+ *
+ * - /login   - the account name is an identifier. Silently rewriting what the user types
+ *              into "Admin" means the app stops comparing what was typed with what was
+ *              stored. It happened to work only because the API compares case-insensitively,
+ *              which is a coincidence, not a guarantee.
+ * - /users   - the Add/Edit User form. Capitalising there does not merely look wrong, it
+ *              CHANGES DATA: creating "budi" would save "Budi", and from then on that
+ *              person cannot sign in with the username they were given.
+ *
+ * Excluding the whole page also covers any field added to these screens later, which a
+ * per-field opt-out would not.
+ */
+const EXCLUDED_PATHS = ['/login', '/users']
+
+function onExcludedPage() {
+  const path = window.location.pathname.toLowerCase()
+  return EXCLUDED_PATHS.some((p) => path === p || path.startsWith(`${p}/`))
+}
+
 const SKIP_TYPES = new Set([
   'password',
   'email',
@@ -61,6 +87,8 @@ export default defineNuxtPlugin(() => {
 
       const el = event.target as HTMLInputElement | HTMLTextAreaElement | null
       if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) return
+
+      if (onExcludedPage()) return
 
       const type = (el.getAttribute('type') ?? 'text').toLowerCase()
       if (SKIP_TYPES.has(type)) return
