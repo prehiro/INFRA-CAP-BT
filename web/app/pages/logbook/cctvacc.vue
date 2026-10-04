@@ -167,12 +167,45 @@ function rowDate(v: any): string {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
 
-/** Rows actually shown: the API's text search, then the filters. */
+/**
+ * Fields that are NOT part of a text search.
+ *
+ * THE SIGNATURE COLUMNS MUST STAY OUT. Each stored signature is a base64 PNG data-URL of
+ * roughly 2000 characters, and the previous search matched with
+ * `JSON.stringify(r.values).includes(q)` - i.e. it searched the base64 itself. Any short
+ * term turns up inside random base64, so searching "sya" returned 4 rows instead of 1,
+ * "06" returned 10 instead of 2, and "zzz" returned 2 rows when it should return none at
+ * all. That is what made the search feel arbitrary.
+ */
+const NON_SEARCHABLE = new Set(['tanda_pemohon', 'tanda_isd'])
+
+/** One lower-cased string per row, built from real field values only. */
+function searchHaystack(values: Record<string, any>): string {
+  let out = ''
+  for (const k in values) {
+    if (NON_SEARCHABLE.has(k)) continue
+    const v = values[k]
+    if (v === null || v === undefined) continue
+    out += ' ' + String(v)
+  }
+  return out.toLowerCase()
+}
+
+/**
+ * Rows actually shown: the text search, then the filters.
+ *
+ * Search and filtering both run in the browser over the already-loaded rows, on purpose.
+ * Searching used to ALSO re-query the API on a 300ms debounce while this computed
+ * re-filtered the same rows, so every keystroke downloaded the whole register again - up to
+ * 500 rows, each carrying about 4KB of base64 signatures - and two requests racing could
+ * land out of order and leave stale rows on screen. One mechanism, one source of truth, no
+ * round trip, no race.
+ */
 const visibleRows = computed(() => {
   const f = filters.value
   const q = search.value.trim().toLowerCase()
   return rows.value.filter((r) => {
-    if (q && !JSON.stringify(r.values).toLowerCase().includes(q)) return false
+    if (q && !searchHaystack(r.values).includes(q)) return false
     const d = rowDate(r.values.tanggal)
     if (f.from && (!d || d < f.from)) return false
     if (f.to && (!d || d > f.to)) return false
@@ -237,15 +270,14 @@ async function loadEntity() {
 
 async function loadRows() {
   if (!entity.value) return
-  // pageSize is deliberately generous because the FILTER runs on this set in the browser.
-  // With a server-side date filter this would not matter, but it does today: a logbook larger
-  // than this many rows would be silently truncated and the filter would look like it "lost"
-  // entries. Raise this when the row count outgrows it.
-  const page = await apiListRecords(entity.value.id, {
-    page: 1,
-    pageSize: 1000,
-    search: search.value || undefined
-  })
+  // No `search` term here any more - search is a client-side computed over these rows, so
+  // the register is fetched ONCE instead of on every keystroke.
+  // pageSize 500 is the API's hard ceiling (DynamicRecordService clamps to 1..500), so the
+  // previous request for 1000 was silently clamped to 500 and the comment claiming 1000 was
+  // misleading. The search and the filters both run over this set in the browser, so a larger
+  // register WOULD be silently truncated - raise the API clamp first if the rows ever
+  // outgrow 500.
+  const page = await apiListRecords(entity.value.id, { page: 1, pageSize: 500 })
   rows.value = page.items as unknown as Row[]
   total.value = page.total
 }
@@ -413,11 +445,9 @@ async function init() {
 }
 await init()
 
-let searchTimer: any
-watch(search, () => {
-  clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => { loadRows().catch(() => {}) }, 300)
-})
+// No watcher on `search`: the search is a client-side computed over the loaded rows, so it
+// reacts instantly. Re-fetching here was both slow (the whole register plus ~4KB of base64
+// per row, on every keystroke) and racy (out-of-order responses could leave stale rows).
 </script>
 
 <template>
