@@ -109,16 +109,39 @@ function applyPreset(key: string) {
 
 <template>
   <UPopover v-model:open="open" :content="{ align: 'start' }" :_ui="{ content: 'p-0 w-80' }">
-    <UButton
-      icon="i-lucide-list-filter"
-      label="Filter"
-      variant="outline"
-      :class="activeCount ? 'border-primary text-primary' : ''"
-    >
-      <template v-if="activeCount">
-        <UBadge color="primary" variant="solid" size="sm" class="ml-1">{{ activeCount }}</UBadge>
-      </template>
-    </UButton>
+    <!-- The trigger, wrapped so the counter can hang off the corner WITHOUT joining the flow.
+
+         WHY THE WRAPPER, from two bugs HIRO reported:
+         (1) "the Filter text disappeared". UButton renders its `label` into the DEFAULT slot,
+             so passing any default-slot content OVERWRITES the label. The old markup put a
+             UBadge in that slot, which is why the word vanished as soon as a filter was
+             active. The label is now left alone and the counter is a sibling, never a child
+             of the button.
+         (2) "make sure no CSS shifts". The old UBadge sat in the button's own flex row, so
+             activating a filter made the button grow wider and shoved Excel and Add Record
+             sideways. The counter is `position: absolute`, which removes it from the flow
+             entirely - the button is now exactly the same width whether the count is 0 or 3.
+         The wrapper is `relative inline-flex`, the counter is centred on the top-right corner
+         and carries a ring in the card's own colour so it reads as floating above the edge
+         rather than as a notch cut out of it. Opacity + translateY only, no scale, for the
+         same re-rasterisation reason as the rest of the app's animations. -->
+    <div class="relative inline-flex">
+      <UButton
+        icon="i-lucide-list-filter"
+        label="Filter"
+        variant="outline"
+        :class="activeCount ? 'border-primary text-primary' : ''"
+      />
+      <Transition name="infra-badge">
+        <span
+          v-if="activeCount"
+          aria-hidden="true"
+          class="infra-filter-count pointer-events-none absolute -right-1.5 -top-1.5 grid h-[18px] min-w-[18px]
+                 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold
+                 leading-none text-inverted ring-2 ring-elevated tabular-nums"
+        >{{ activeCount }}</span>
+      </Transition>
+    </div>
 
     <template #content>
       <!-- Fixed height: a nested USelect renders its list inside this box, and letting the
@@ -188,3 +211,33 @@ function applyPreset(key: string) {
     </template>
   </UPopover>
 </template>
+
+<style scoped>
+
+/* Breathing glow around the welcome avatar.
+   "Breathing" means the halo expands outward and fades back in, on a slow cycle, rather than
+   blinking — the easing is a symmetric ease-in-out so the inhale and the exhale take the same
+   time and the loop has no visible seam.
+
+   THE COLOUR IS NOT HARDCODED. `color-mix()` is fed `var(--ui-primary)`, the same variable
+   the stars and the glow orb use, so the halo follows the user's accent automatically. A
+   literal hex here would have been the one thing in this banner that stopped matching the
+   theme. */
+.infra-avatar-glow {
+  animation: infra-breathe 4.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes infra-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0.25rem color-mix(in oklab, var(--ui-primary) 16%, transparent),
+      0 0 0 0 color-mix(in oklab, var(--ui-primary) 0%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 0.3rem color-mix(in oklab, var(--ui-primary) 28%, transparent),
+      0 0 26px 9px color-mix(in oklab, var(--ui-primary) 42%, transparent);
+  }
+}
+</style>

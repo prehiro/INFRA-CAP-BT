@@ -16,6 +16,9 @@ import type { DropdownMenuItem } from '@nuxt/ui'
 defineProps<{ collapsed?: boolean }>()
 
 const colorMode = useColorMode()
+/** Bound so picking Light or Dark can close the whole menu - HIRO's request. Without this the
+ *  menu stayed open over the page after the theme flipped, hiding the change it just made. */
+const menuOpen = ref(false)
 const appConfig = useAppConfig()
 const { user, logout } = useAuth()
 const router = useRouter()
@@ -91,6 +94,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([
       onSelect(e: Event) {
         e.preventDefault()
         colorMode.preference = 'light'
+        menuOpen.value = false
       }
     }, {
       label: 'Dark',
@@ -100,12 +104,20 @@ const items = computed<DropdownMenuItem[][]>(() => ([
       onSelect(e: Event) {
         e.preventDefault()
         colorMode.preference = 'dark'
+        menuOpen.value = false
       }
     }]
   }],
   [{
     label: 'Sign Out',
     icon: 'i-lucide-log-out',
+    // Red, and it STAYS red on hover. The vendor's own classes are
+    // `text-default data-highlighted:text-highlighted` with the leading icon at
+    // `text-dimmed group-data-highlighted:text-default`, so without an override the item would
+    // turn white-ish on hover and the "destructive" reading would be lost exactly when the
+    // pointer is over it. `[&_svg]` is used for the icon because it has its own colour class
+    // and would otherwise win on specificity.
+    class: 'text-error data-highlighted:text-error data-[state=open]:text-error [&_svg]:text-error data-highlighted:before:bg-error/10',
     onSelect: doLogout
   }]
 ]))
@@ -124,6 +136,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([
        nothing and the negative margin just drags it off to the left. -->
   <div :class="collapsed ? '-ms-1' : ''">
     <UDropdownMenu
+      v-model:open="menuOpen"
       :items="items"
       :content="{ align: 'center', collisionPadding: 12 }"
       :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
