@@ -397,10 +397,28 @@ function askDelete(row: Row) {
   showDelete.value = true
 }
 
-const deleteNo = computed(() => {
+/**
+ * The identity shown in the delete dialog, in the order HIRO asked for on 2026-10-04:
+ * Employee No, PIC, Purpose, Date, Section.
+ *
+ * Note what is NOT here any more: the hidden auto-generated `nomor`. HIRO replaced it with
+ * Employee No, which is the field a person would actually recognise the row by - `nomor` is
+ * a hidden sequential key they never see in the UI.
+ *
+ * `wide: true` gives Purpose a full-width row of its own. Purpose is free text and can run to
+ * several sentences; squeezed into the same narrow value column as the other four it would
+ * wrap into an unreadable stub, so it gets the whole width and is clamped instead.
+ */
+const deleteDetails = computed(() => {
   const r = deleteTarget.value
-  if (!r) return ''
-  return String(r.values.nomor ?? r.id)
+  if (!r) return [] as { label: string, value: any, wide?: boolean }[]
+  return [
+    { label: 'Employee No', value: r.values.no_pegawai },
+    { label: 'PIC', value: r.values.nama_pemohon },
+    { label: 'Purpose', value: r.values.tujuan, wide: true },
+    { label: 'Date', value: fmtDate(r.values.tanggal) },
+    { label: 'Section', value: r.values.departemen }
+  ]
 })
 
 async function confirmDelete() {
@@ -863,23 +881,30 @@ await init()
               </div>
             </div>
 
-            <!-- Which row? -->
+            <!-- Which row? Field set and order per HIRO: Employee No, PIC, Purpose, Date, Section. -->
             <dl
               v-if="deleteTarget"
               class="infra-del-rise-3 relative mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg
                      bg-elevated/60 px-4 py-3 text-sm ring-1 ring-inset ring-default"
             >
-              <dt class="text-dimmed">No</dt>
-              <dd class="truncate font-medium text-default tabular-nums">{{ deleteNo }}</dd>
-
-              <dt class="text-dimmed">Date</dt>
-              <dd class="truncate text-default">{{ fmtDate(deleteTarget.values.tanggal) }}</dd>
-
-              <dt class="text-dimmed">Section</dt>
-              <dd class="truncate text-default">{{ deleteTarget.values.departemen || '-' }}</dd>
-
-              <dt class="text-dimmed">PIC</dt>
-              <dd class="truncate text-default">{{ deleteTarget.values.nama_pemohon || '-' }}</dd>
+              <!-- A <div> group per row is valid inside <dl> (HTML5 allows wrapping dt/dd
+                   pairs) and it is what lets Purpose keep a TIGHT label/value spacing while
+                   the grid's gap-y-2 still separates it from the row above. Leaving Purpose
+                   as two bare col-span-2 children put a full row-gap between its label and
+                   its value, which read as an orphaned caption rather than a field. -->
+              <div
+                v-for="d in deleteDetails"
+                :key="d.label"
+                :class="d.wide ? 'col-span-2' : 'contents'"
+              >
+                <dt class="text-dimmed">{{ d.label }}</dt>
+                <dd
+                  :title="d.value || undefined"
+                  :class="d.wide
+                    ? 'mt-0.5 line-clamp-3 text-default'
+                    : 'truncate text-default'"
+                >{{ d.value || '-' }}</dd>
+              </div>
             </dl>
           </div>
 
