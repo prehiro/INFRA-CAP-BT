@@ -688,7 +688,7 @@ await init()
          @click on a submit button in this codebase, which is exactly why this form was an
          inline panel to begin with. They stay inside the <UForm> in the #body slot so the
          native form submit path stays intact. -->
-    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl', body: 'p-4 sm:p-5' }"
+    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl cctv-record-modal', body: 'p-4 sm:p-5' }"
             :title="editing ? 'Edit Row' : 'New Record'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
       <template #body>
@@ -700,7 +700,7 @@ await init()
         <!-- Five rows on a 3-column grid, no scroll area: the dialog is sized to fit its
              content (see the :ui below) and the two signature pads sit side by side in the
              last row, which is what keeps the whole form inside a 1080p window. -->
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="cctv-record-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Row 1: who/when/where. Date is prefilled with today and stays editable. -->
           <!-- Same themed picker as the filter, not the native control: the OS date input
                cannot be styled to match the app and renders the US mm/dd/yyyy order on this
@@ -885,5 +885,88 @@ await init()
   table, td, th { border-color: #000 !important; }
   th, td { border: 1px solid #000 !important; }
   tr { page-break-inside: avoid; }
+}
+
+/* ============================================================================================
+   Smooth reveal for the New/Edit Record dialog (2026-10-04).
+
+   This lives inside the page's existing NON-scoped <style>, which is required rather than
+   stylistic: UModal teleports to <body>, so a scoped style could never reach the modal's own
+   content element. Both blocks are addressed through marker classes passed in via :ui /
+   class, so they cannot leak onto other dialogs.
+
+   MEASURED FIRST, because the obvious implementation is wrong here. The vendor centres this
+   dialog with `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`, and Tailwind v4 emits
+   those as the STANDALONE `translate` property - the computed style is `translate: -50% -50%`
+   together with `transform: none`. Animating `transform` therefore COMPOSES with `translate`
+   instead of overwriting it, so the dialog stays centred on every frame. Had the centring
+   been the older transform-based form, these keyframes would have flung the dialog into the
+   top-left corner mid-animation.
+
+   TRANSLATE + OPACITY ONLY, never scale. A scale re-rasterises text mid-animation, which is
+   the mechanism behind the sidebar ghost-text bug; a translate moves already-rasterised
+   pixels. The bounce comes from the overshooting easing curve, exactly as on the Add/Edit
+   User panel, so both dialogs feel like one family.
+
+   The vendor transition is `scale-in` at 200ms. This is a longer, softer reveal, and the
+   selector deliberately carries THREE components (specificity 0,3,0) so it beats the vendor
+   utility `data-[state=open]:animate-[scale-in...]` at (0,2,0) without having to disable the
+   vendor transition, which would also cost its focus-trap timing.
+   ============================================================================================ */
+
+@keyframes cctv-modal-reveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cctv-modal-dismiss {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(6px); }
+}
+
+.cctv-record-modal[data-slot='content'][data-state='open'] {
+  animation: cctv-modal-reveal 340ms cubic-bezier(0.34, 1.36, 0.52, 1) both;
+}
+
+.cctv-record-modal[data-slot='content'][data-state='closed'] {
+  animation: cctv-modal-dismiss 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* Staggered reveal of the form fields, so they arrive in reading order instead of the whole
+   form arriving as one slab. `both` keeps each field at its from-state while it waits its
+   turn, which is what makes the stagger read as a sequence rather than a flash. */
+@keyframes cctv-row-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cctv-record-grid > * {
+  animation: cctv-row-reveal 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cctv-record-grid > *:nth-child(1) { animation-delay: 40ms; }
+.cctv-record-grid > *:nth-child(2) { animation-delay: 85ms; }
+.cctv-record-grid > *:nth-child(3) { animation-delay: 130ms; }
+.cctv-record-grid > *:nth-child(4) { animation-delay: 175ms; }
+.cctv-record-grid > *:nth-child(5) { animation-delay: 220ms; }
+.cctv-record-grid > *:nth-child(6) { animation-delay: 265ms; }
+.cctv-record-grid > *:nth-child(n + 7) { animation-delay: 300ms; }
+
+/* No half-built animation may ever be captured, on paper or under the OS reduce-motion
+   setting. This mirrors the rule already used by the .anim-* utilities in main.css. */
+@media (prefers-reduced-motion: reduce) {
+  .cctv-record-modal[data-slot='content'][data-state],
+  .cctv-record-grid > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@media print {
+  .cctv-record-modal[data-slot='content'][data-state],
+  .cctv-record-grid > * {
+    animation: none !important;
+  }
 }
 </style>
