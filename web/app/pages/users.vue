@@ -200,20 +200,36 @@ onMounted(() => {
         />
 
         <template v-else>
-          <!-- Toolbar: search on the left, the primary action on the right. Same shape and
-               rhythm as the CCTV toolbar so the two pages read as one application. Add User
-               moved out of PageHeader's #actions into this row, which is where the other
-               data page keeps its primary action. -->
-          <div class="flex flex-wrap items-center gap-2">
-            <UInput
-              v-model="search"
-              icon="i-lucide-search"
-              placeholder="Search name, username, email or role..."
-              class="w-full sm:w-80"
-              :ui="{ base: 'rounded-lg' }"
-            />
-            <span class="text-sm tabular-nums text-muted">{{ visibleUsers.length }} of {{ users.length }}</span>
-            <UButton icon="i-lucide-plus" label="Add User" class="ms-auto" @click="openCreate" />
+          <!-- Sheet header, built to match the CCTV register's block exactly: the same
+               `rounded-lg border border-default bg-elevated p-4` card, the same
+               `justify-between` split with the title on the left and the actions on the right,
+               and the same `text-lg font-bold tracking-wide` h1.
+
+               Deliberately NOT a PageHeader subtitle. The navbar is locked to a fixed
+               h-(--ui-header-height) = 4rem = 64px, which is why PageHeader is title-only and
+               carries no subtitle prop at all - a stacked title plus subtitle measured a 0px
+               gap between the lines there and they touched. The sheet header lives in the
+               panel body instead, below the navbar, which is where the CCTV page puts its own.
+               That is also why the page still reads as two distinct things: "User Management"
+               in the navbar names the SCREEN, "User Directory" below names the REGISTER. -->
+          <div class="rounded-lg border border-default bg-elevated p-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h1 class="text-lg font-bold tracking-wide">User Directory</h1>
+              </div>
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="search"
+                  icon="i-lucide-search"
+                  placeholder="Search..."
+                  class="w-48"
+                />
+                <span class="whitespace-nowrap text-sm tabular-nums text-muted">
+                  {{ visibleUsers.length }} of {{ users.length }}
+                </span>
+                <UButton icon="i-lucide-plus" label="Add User" @click="openCreate" />
+              </div>
+            </div>
           </div>
 
           <!-- The table is capped in height and scrolls on its own, with a sticky header, so a
