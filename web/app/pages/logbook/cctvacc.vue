@@ -453,7 +453,7 @@ watch(search, () => {
             :total-count="rows.length"
             @clear="clearFilters"
           />
-          <UButton icon="i-lucide-plus" label="Add Row" @click="openCreate" />
+          <UButton icon="i-lucide-plus" label="Add Record" @click="openCreate" />
           <!-- Excel sits immediately left of Print: both are "get the data out of here"
                actions and share the `soft` variant so they read as a pair, with Print kept
                rightmost so it stays where the muscle memory is. Label shortened from
@@ -527,7 +527,32 @@ watch(search, () => {
              typical 1280px screen (measured: 11 columns + Actions needed ~1180px).
              Horizontal scroll remains the graceful fallback on narrower screens rather
              than squashing the signature columns until they are unreadable. -->
-        <table class="w-full min-w-[1180px] border-collapse text-sm">
+        <table class="w-full min-w-[1180px] table-fixed border-collapse text-sm">
+          <!-- Deterministic column widths. With the default (auto) layout the w-[n%] on each
+               <th> is only a HINT and the browser hands out leftover space unevenly, which is
+               why the two signature columns matched at a cramped 1280px viewport but drifted
+               apart on the office 1920px screen (PIC SIGN 175px vs ISD SIGN 132px) even though
+               both declared 11%. table-fixed + a colgroup makes the percentages authoritative;
+               because the two signature columns declare the SAME percentage they are scaled by
+               the same factor and therefore stay exactly equal at every viewport width.
+               The values sum to more than 100% on purpose - the browser then scales them all
+               proportionally, which preserves the 1:1 relationship between equal entries. -->
+          <!-- Exactly 11 <col> for 11 columns, in the same order as COLUMNS + Actions.
+               (An earlier version had 12, which silently gave Actions an 11% and stretched
+               the time columns - they were equal by accident, not by design.) -->
+          <colgroup>
+            <col style="width: 8%" />   <!-- Date -->
+            <col style="width: 9%" />   <!-- Section -->
+            <col style="width: 9%" />   <!-- Employee No -->
+            <col style="width: 13%" />  <!-- PIC Name -->
+            <col style="width: 18%" />  <!-- Purpose / Details -->
+            <col style="width: 11%" />  <!-- PIC Sign    <- same as ISD Sign -->
+            <col style="width: 9%" />   <!-- Start Time -->
+            <col style="width: 9%" />   <!-- End Time -->
+            <col style="width: 8%" />   <!-- PIC by ISD -->
+            <col style="width: 11%" />  <!-- ISD Sign    <- same as PIC Sign -->
+            <col style="width: 6%" />   <!-- Actions -->
+          </colgroup>
           <thead class="print:sticky-head sticky top-0 z-10">
             <tr class="bg-default/60 backdrop-blur-sm">
               <th v-for="c in COLUMNS" :key="c.key"
@@ -639,7 +664,7 @@ watch(search, () => {
          inline panel to begin with. They stay inside the <UForm> in the #body slot so the
          native form submit path stays intact. -->
     <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl', body: 'p-4 sm:p-5' }"
-            :title="editing ? 'Edit Row' : 'New Row'"
+            :title="editing ? 'Edit Row' : 'New Record'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
       <template #body>
       <!-- `:validate-on="[]"` switches OFF UForm's own validation. It is off on purpose:
