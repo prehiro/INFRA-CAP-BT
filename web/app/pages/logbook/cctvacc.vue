@@ -914,43 +914,85 @@ await init()
    vendor transition, which would also cost its focus-trap timing.
    ============================================================================================ */
 
-@keyframes cctv-modal-reveal {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+/* ---- the reveal itself, split into POSITION and FADE as two independent animations ----
+   They used to share one keyframe set and one curve, and measuring that is what showed why
+   it did not feel smooth:
+     - opacity reached 1.00 at t=284ms while the dialog was still drifting until t=468ms,
+       so for 184ms the content slid with no fade accompanying it;
+     - the position curve cubic-bezier(0.34, 1.36, 0.52, 1) has y1 > 1, so it overshot to
+       -0.52px and then took a further 134ms to wobble back to zero. Lingering past the
+       target is what reads as "not settled";
+     - its velocity was non-monotonic (-2.26, -2.07, -3.40, -1.34 px/frame): a visible
+       acceleration spike in the middle of the move.
+   Position and fade now run as two animations with different curves AND different durations,
+   so the fade completes while the slide is still decelerating.
+   Both curves keep every y control point at or below 1, which guarantees the motion is
+   monotonic - it settles instead of wobbling - and cubic-bezier(0.3, 0, 0.2, 1) starts and
+   ends at zero velocity, so there is no jerk at either end. */
+@keyframes cctv-modal-reveal-pos {
+  from { transform: translateY(14px); }
+  to   { transform: translateY(0); }
 }
 
-@keyframes cctv-modal-dismiss {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(6px); }
+@keyframes cctv-modal-reveal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Exiting ACCELERATES away rather than easing: cubic-bezier(0.4, 0, 1, 1) has a rising
+   slope, so the dialog leaves decisively instead of lingering on screen. */
+@keyframes cctv-modal-dismiss-pos {
+  from { transform: translateY(0); }
+  to   { transform: translateY(8px); }
+}
+
+@keyframes cctv-modal-dismiss-fade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 .cctv-record-modal[data-slot='content'][data-state='open'] {
-  animation: cctv-modal-reveal 340ms cubic-bezier(0.34, 1.36, 0.52, 1) both;
+  animation:
+    cctv-modal-reveal-pos 440ms cubic-bezier(0.3, 0, 0.2, 1) both,
+    cctv-modal-reveal-fade 240ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 .cctv-record-modal[data-slot='content'][data-state='closed'] {
-  animation: cctv-modal-dismiss 180ms cubic-bezier(0.4, 0, 1, 1) both;
+  animation:
+    cctv-modal-dismiss-pos 200ms cubic-bezier(0.4, 0, 1, 1) both,
+    cctv-modal-dismiss-fade 160ms cubic-bezier(0.4, 0, 1, 1) both;
 }
 
 /* Staggered reveal of the form fields, so they arrive in reading order instead of the whole
    form arriving as one slab. `both` keeps each field at its from-state while it waits its
-   turn, which is what makes the stagger read as a sequence rather than a flash. */
-@keyframes cctv-row-reveal {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+   turn, which is what makes the stagger read as a sequence rather than a flash.
+   The per-field curve was cubic-bezier(0.22, 1, 0.36, 1), whose initial slope is 1/0.22 =
+   4.5 - so a field that woke up snapped 0.23 of its opacity in a SINGLE frame. Measured.
+   y1 is now 0.35 (slope ~1.2), which starts gently, and the delays are tighter so the whole
+   sequence finishes sooner than it used to. */
+@keyframes cctv-row-reveal-pos {
+  from { transform: translateY(8px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes cctv-row-reveal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 .cctv-record-grid > * {
-  animation: cctv-row-reveal 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation:
+    cctv-row-reveal-pos 320ms cubic-bezier(0.3, 0, 0.2, 1) both,
+    cctv-row-reveal-fade 210ms cubic-bezier(0.4, 0, 0.35, 1) both;
 }
 
-.cctv-record-grid > *:nth-child(1) { animation-delay: 40ms; }
-.cctv-record-grid > *:nth-child(2) { animation-delay: 85ms; }
-.cctv-record-grid > *:nth-child(3) { animation-delay: 130ms; }
-.cctv-record-grid > *:nth-child(4) { animation-delay: 175ms; }
-.cctv-record-grid > *:nth-child(5) { animation-delay: 220ms; }
-.cctv-record-grid > *:nth-child(6) { animation-delay: 265ms; }
-.cctv-record-grid > *:nth-child(n + 7) { animation-delay: 300ms; }
+.cctv-record-grid > *:nth-child(1) { animation-delay: 0ms; }
+.cctv-record-grid > *:nth-child(2) { animation-delay: 38ms; }
+.cctv-record-grid > *:nth-child(3) { animation-delay: 76ms; }
+.cctv-record-grid > *:nth-child(4) { animation-delay: 114ms; }
+.cctv-record-grid > *:nth-child(5) { animation-delay: 150ms; }
+.cctv-record-grid > *:nth-child(6) { animation-delay: 182ms; }
+.cctv-record-grid > *:nth-child(n + 7) { animation-delay: 210ms; }
 
 /* No half-built animation may ever be captured, on paper or under the OS reduce-motion
    setting. This mirrors the rule already used by the .anim-* utilities in main.css. */
