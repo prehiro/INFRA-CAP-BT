@@ -64,6 +64,8 @@ const COLUMNS = [
  */
 const HIDDEN_FIELDS = ['waktu_diminta', 'nomor'] as const
 
+const SIGN_FIELDS = ['tanda_pemohon', 'tanda_isd'] as const
+
 /** The signed-in user, used to prefill "PIC by ISD" so nobody has to type their own name. */
 const { user: me } = useAuth()
 

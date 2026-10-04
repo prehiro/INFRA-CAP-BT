@@ -62,6 +62,7 @@ const pendingInner = ref(false)
 
 const R = 78          // outer ring radius (SVG viewBox is 0 0 200 200, centre 100,100)
 const R_INNER = 52    // inner 24-hour ring radius
+const R_HAND = 64     // where the hand stops, just inside the selection marker
 
 /* Theme tokens, bound inline because Tailwind emits no fill-* utilities for them. */
 const C = {

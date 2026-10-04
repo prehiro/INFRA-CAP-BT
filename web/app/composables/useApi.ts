@@ -7,6 +7,16 @@ import type {
  * server; in production /api is rewritten by IIS to the INFRA-CAP-api application.
  * Both cases are same-origin, so no CORS preflight is involved.
  */
+export class ApiError extends Error {
+  status: number
+  errors: Record<string, string>
+  constructor(status: number, message: string, errors: Record<string, string> = {}) {
+    super(message)
+    this.status = status
+    this.errors = errors
+  }
+}
+
 const TOKEN_KEY = 'infra-cap.token'
 
 export const useToken = () => useState<string | null>('auth-token', () => null)
