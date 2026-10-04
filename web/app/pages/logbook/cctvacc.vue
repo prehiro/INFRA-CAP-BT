@@ -44,14 +44,14 @@ const COLUMNS = [
   { key: 'departemen', label: 'Section', w: 'w-[9%]' },
   { key: 'no_pegawai', label: 'Employee No', w: 'w-[9%]' },
   { key: 'nama_pemohon', label: 'PIC Name', w: 'w-[13%]' },
-  { key: 'tujuan', label: 'Purpose / Details', w: 'w-[22%]' },
-  { key: 'tanda_pemohon', label: 'PIC Sign', w: 'w-[8%]', sign: true },
+  { key: 'tujuan', label: 'Purpose / Details', w: 'w-[18%]' },
+  { key: 'tanda_pemohon', label: 'PIC Sign', w: 'w-[11%]', sign: true },
   { key: 'pic_mulai', label: 'Start Time', w: 'w-[9%]' },
   { key: 'pic_selesai', label: 'End Time', w: 'w-[9%]' },
   // "PIC by ISD" moved here on 2026-10-02 at HIRO's request so it sits directly before
   // the ISD signature it belongs to.
   { key: 'pic_isd', label: 'PIC by ISD', w: 'w-[8%]' },
-  { key: 'tanda_isd', label: 'ISD Sign', w: 'w-[8%]', sign: true }
+  { key: 'tanda_isd', label: 'ISD Sign', w: 'w-[11%]', sign: true }
 ] as const
 
 /**
@@ -588,8 +588,19 @@ watch(search, () => {
                 :class="i % 2 ? 'bg-default/20' : ''">
               <td v-for="c in COLUMNS" :key="c.key"
                   class="border-b border-default/60 px-3 py-2.5 align-middle">
-                <img v-if="c.sign && signSrc(r.values[c.key])" :src="signSrc(r.values[c.key])!"
-                     alt="signature" class="h-9 w-full object-contain" />
+                <!-- A signature is ink on paper, so it is shown on paper in BOTH themes.
+                     The stored PNG is black ink on a TRANSPARENT background (the canvas CSS
+                     background is not part of toDataURL), which on the dark table became a
+                     pale smudge instead of a legible signature. A white chip restores the
+                     original ink-on-paper contrast without touching the stored data.
+                     The min-w also fixes the column: percentage widths on <th> are only
+                     hints, so the two signature columns had collapsed to 84px and 58px even
+                     though both declared w-[8%], squeezing the image to 60px wide. -->
+                <div v-if="c.sign && signSrc(r.values[c.key])"
+                     class="flex min-w-[104px] items-center justify-center rounded-md bg-white p-1 dark:bg-white">
+                  <img :src="signSrc(r.values[c.key])!" alt="signature"
+                       class="h-8 max-w-full object-contain" />
+                </div>
                 <span v-else-if="c.sign" class="text-dimmed">—</span>
                 <template v-else-if="c.key === 'tanggal'">
                   <span class="tabular-nums whitespace-nowrap">{{ fmtDate(r.values[c.key]) }}</span>

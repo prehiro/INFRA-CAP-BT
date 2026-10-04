@@ -32,25 +32,41 @@ const props = defineProps<{
  * already maintains this exact string ("Collapse sidebar" / "Expand sidebar"), so reading
  * it avoids depending on internals while staying perfectly in sync.
  */
-const collapseBtn = ref<HTMLElement | null>(null)
 const collapsed = ref(false)
 
 function syncCollapsedState() {
-  const label = collapseBtn.value?.getAttribute('aria-label') ?? ''
+  const label = current?.getAttribute('aria-label') ?? ''
   collapsed.value = /expand/i.test(label)
 }
 
 // The vendor mutates aria-label after this component renders, so observing that attribute
 // is what catches the flip; no reactive prop is exposed for the collapsed state.
 let observer: MutationObserver | undefined
-onMounted(() => {
-  syncCollapsedState()
-  if (!collapseBtn.value || typeof MutationObserver === 'undefined') return
+let current: HTMLElement | null = null
+
+/**
+ * Called from the template ref, i.e. EVERY time the button is (re)mounted.
+ *
+ * This is the fix for the tooltip freezing on "Expand" after a few clicks. The :key below
+ * remounts the button on every flip, and the observer used to be created once in onMounted -
+ * so from the first remount onwards it was watching a DETACHED node. aria-label changes on
+ * the live button were never seen, `collapsed` froze, and the tooltip got stuck. (Same
+ * failure mode as the old sidebar composable, and the reason the spring was rebuilt in pure
+ * CSS: remount + observer do not mix.)
+ */
+function setCollapseBtn(el: any) {
+  const node: HTMLElement | null = el?.$el ?? el ?? null
+  observer?.disconnect()
+  observer = undefined
+  current = node
+  if (!node || typeof MutationObserver === 'undefined') return
   observer = new MutationObserver(syncCollapsedState)
-  observer.observe(collapseBtn.value, { attributes: true, attributeFilter: ['aria-label'] })
-})
-// The :key below remounts this button on every flip, so the observer has to be torn down
-// and re-created with the new element or it keeps watching a detached node.
+  observer.observe(node, { attributes: true, attributeFilter: ['aria-label'] })
+  syncCollapsedState()
+  // The vendor may set aria-label a tick after mount, so read once more after the DOM settles.
+  nextTick(syncCollapsedState)
+}
+
 onBeforeUnmount(() => observer?.disconnect())
 
 /** Changing :key remounts the button, which restarts the CSS animation on every click. */
@@ -62,7 +78,7 @@ const bounceKey = computed(() => (collapsed.value ? 'expanded' : 'collapsed'))
     <template #leading>
       <UDashboardSidebarCollapse
         :key="bounceKey"
-        :ref="(el: any) => { collapseBtn = el?.$el ?? el ?? null }"
+        :ref="setCollapseBtn"
         :class="collapsed ? 'anim-collapse-open' : 'anim-collapse-closed'"
         :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         :ui="{ base: 'sidebar-collapse-btn hidden lg:flex' }"
