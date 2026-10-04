@@ -405,17 +405,20 @@ function askDelete(row: Row) {
  * Employee No, which is the field a person would actually recognise the row by - `nomor` is
  * a hidden sequential key they never see in the UI.
  *
- * `wide: true` gives Purpose a full-width row of its own. Purpose is free text and can run to
- * several sentences; squeezed into the same narrow value column as the other four it would
- * wrap into an unreadable stub, so it gets the whole width and is clamped instead.
+ * All five entries are deliberately SHAPED THE SAME. A first attempt gave Purpose a
+ * full-width row with the label above its value, so it was the one field that did not share
+ * the label-in-the-left-column rhythm of the other four - HIRO's verdict was "purpose nya
+ * jangan letak bawah". Purpose is still the longest value, but it now wraps INSIDE
+ * the right-hand column like everything else, clamped to two lines with the full text on
+ * `title`, so the layout stays uniform instead of special-casing one field.
  */
 const deleteDetails = computed(() => {
   const r = deleteTarget.value
-  if (!r) return [] as { label: string, value: any, wide?: boolean }[]
+  if (!r) return [] as { label: string, value: any }[]
   return [
     { label: 'Employee No', value: r.values.no_pegawai },
     { label: 'PIC', value: r.values.nama_pemohon },
-    { label: 'Purpose', value: r.values.tujuan, wide: true },
+    { label: 'Purpose', value: r.values.tujuan },
     { label: 'Date', value: fmtDate(r.values.tanggal) },
     { label: 'Section', value: r.values.departemen }
   ]
@@ -884,27 +887,23 @@ await init()
             <!-- Which row? Field set and order per HIRO: Employee No, PIC, Purpose, Date, Section. -->
             <dl
               v-if="deleteTarget"
-              class="infra-del-rise-3 relative mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg
-                     bg-elevated/60 px-4 py-3 text-sm ring-1 ring-inset ring-default"
+              class="infra-del-rise-3 relative mt-5 grid grid-cols-[7.5rem_1fr] items-baseline
+                     gap-x-5 gap-y-3 rounded-xl bg-elevated/60 px-5 py-4 ring-1 ring-inset
+                     ring-default"
             >
-              <!-- A <div> group per row is valid inside <dl> (HTML5 allows wrapping dt/dd
-                   pairs) and it is what lets Purpose keep a TIGHT label/value spacing while
-                   the grid's gap-y-2 still separates it from the row above. Leaving Purpose
-                   as two bare col-span-2 children put a full row-gap between its label and
-                   its value, which read as an orphaned caption rather than a field. -->
-              <div
-                v-for="d in deleteDetails"
-                :key="d.label"
-                :class="d.wide ? 'col-span-2' : 'contents'"
-              >
-                <dt class="text-dimmed">{{ d.label }}</dt>
+              <template v-for="d in deleteDetails" :key="d.label">
+                <dt class="text-xs font-medium uppercase tracking-wide text-dimmed">
+                  {{ d.label }}
+                </dt>
+                <!-- line-clamp-2 rather than truncate: Purpose is free text and can run to a
+                     sentence or two. It wraps WITHIN this column - the label stays put in the
+                     left one - so the row keeps the same shape as the other four. The full
+                     value stays on `title` for anything past two lines. -->
                 <dd
                   :title="d.value || undefined"
-                  :class="d.wide
-                    ? 'mt-0.5 line-clamp-3 text-default'
-                    : 'truncate text-default'"
+                  class="line-clamp-2 break-words text-sm font-medium text-default"
                 >{{ d.value || '-' }}</dd>
-              </div>
+              </template>
             </dl>
           </div>
 
