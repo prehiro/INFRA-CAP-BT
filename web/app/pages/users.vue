@@ -145,6 +145,34 @@ async function confirmDelete() {
 const roleItems = computed(() => roles.value.map(r => ({ label: r.name, value: r.id })))
 
 /**
+ * True when the account being edited is an ACTIVE Admin and the ONLY active Admin.
+ *
+ * WHY THIS IS NEEDED - the lockout it prevents:
+ *  - /api/users is gated by `[Authorize(Roles = "Admin")]`, so only an Admin can ever turn a
+ *    user back on.
+ *  - Login already rejects inactive users (AuthController checks `!user.IsActive`).
+ *  - Deactivating the last active Admin therefore locks EVERY admin account out permanently,
+ *    recoverable only by editing the database by hand.
+ *  - Worse, the UI could cause it silently: the delete button is hidden for `admin`, but the
+ *    Status switch in this very modal had no guard at all.
+ *
+ * Keyed on "last active admin" rather than on the username `admin`, so the restriction does
+ * not outlive its reason: the moment a second active Admin exists, either account can be
+ * deactivated freely.
+ *
+ * This is a UI guard only, which is what HIRO asked for. The API will still accept
+ * `isActive: false` from anything holding a valid Admin token, so this closes the accidental
+ * case rather than the deliberate one.
+ */
+const deactivateBlocked = computed(() => {
+  const u = editing.value
+  if (!u || !u.isActive) return false
+  const isAdmin = (x: User) => x.roles.some(r => String(r.name).toLowerCase() === 'admin')
+  if (!isAdmin(u)) return false
+  return !users.value.some(o => o.id !== u.id && o.isActive && isAdmin(o))
+})
+
+/**
  * Search runs entirely on the loaded list.
  *
  * The list is every user this admin can see - there is no paging and no per-keystroke fetch,
@@ -453,8 +481,17 @@ onMounted(() => {
                   />
                 </UFormField>
 
-                <UFormField label="Status">
-                  <USwitch v-model="form.isActive" label="User is active" />
+                <UFormField
+                  label="Status"
+                  :help="deactivateBlocked
+                    ? 'This is the only active Admin. Deactivating it would lock every admin account out, with no one left to switch it back on.'
+                    : undefined"
+                >
+                  <USwitch
+                    v-model="form.isActive"
+                    label="User is active"
+                    :disabled="deactivateBlocked"
+                  />
                 </UFormField>
               </div>
 
