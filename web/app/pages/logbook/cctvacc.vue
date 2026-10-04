@@ -588,18 +588,20 @@ watch(search, () => {
                 :class="i % 2 ? 'bg-default/20' : ''">
               <td v-for="c in COLUMNS" :key="c.key"
                   class="border-b border-default/60 px-3 py-2.5 align-middle">
-                <!-- A signature is ink on paper, so it is shown on paper in BOTH themes.
-                     The stored PNG is black ink on a TRANSPARENT background (the canvas CSS
-                     background is not part of toDataURL), which on the dark table became a
-                     pale smudge instead of a legible signature. A white chip restores the
-                     original ink-on-paper contrast without touching the stored data.
-                     The min-w also fixes the column: percentage widths on <th> are only
-                     hints, so the two signature columns had collapsed to 84px and 58px even
-                     though both declared w-[8%], squeezing the image to 60px wide. -->
+                <!-- The stored PNG is black ink on a TRANSPARENT background (the canvas CSS
+                     background is never part of toDataURL), which vanished on the dark table.
+                     Instead of the white chip HIRO rejected, the ink itself is flipped:
+                     `dark:invert` turns black pixels white and leaves the ALPHA channel
+                     alone, so the cell keeps the theme's own background and the signature
+                     simply reads as white ink on dark. Nothing stored is modified.
+                     The chip is a FIXED w-[108px], not min-w: percentage widths on <th> are
+                     only hints, so a column whose row happens to hold a signature rendered
+                     wider than its neighbour showing "—". A fixed-width container gives both
+                     signature columns identical content width and therefore identical columns. -->
                 <div v-if="c.sign && signSrc(r.values[c.key])"
-                     class="flex min-w-[104px] items-center justify-center rounded-md bg-white p-1 dark:bg-white">
+                     class="flex w-[108px] items-center justify-center rounded-md border border-default/50 p-1">
                   <img :src="signSrc(r.values[c.key])!" alt="signature"
-                       class="h-8 max-w-full object-contain" />
+                       class="h-8 max-w-full object-contain dark:invert" />
                 </div>
                 <span v-else-if="c.sign" class="text-dimmed">—</span>
                 <template v-else-if="c.key === 'tanggal'">
@@ -786,6 +788,16 @@ watch(search, () => {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* The dark-mode signature preview works by flipping the black ink to white with
+   `filter: invert(1)`. On paper the background is white, so white ink would be INVISIBLE -
+   and a blank signature column on a signed register is exactly the failure this register
+   exists to prevent. Print must therefore always use the original black ink. */
+@media print {
+  tbody img[alt="signature"] {
+    filter: none !important;
   }
 }
 
