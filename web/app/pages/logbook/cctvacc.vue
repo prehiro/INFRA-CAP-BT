@@ -376,16 +376,46 @@ async function save() {
   }
 }
 
-async function remove(row: Row) {
-  if (!entity.value) return
-  const no = row.values.nomor ?? row.id
-  if (!confirm(`Delete row NO ${no}?`)) return
+/**
+ * Delete confirmation.
+ *
+ * This used to be a bare `confirm()` - the browser's own grey dialog, which cannot be styled,
+ * shows no context about WHICH row is about to disappear, and looks like a 1995 popup in an
+ * otherwise carefully themed app. Replaced with a real UModal.
+ *
+ * The row's identity is repeated in the dialog (NO, date, section, PIC) on purpose. A
+ * destructive action on a register of numbered records has to make it obvious that the person
+ * is confirming the row they MEANT, and the table row is no longer visible behind the
+ * backdrop.
+ */
+const showDelete = ref(false)
+const deleteTarget = ref<Row | null>(null)
+const deleting = ref(false)
+
+function askDelete(row: Row) {
+  deleteTarget.value = row
+  showDelete.value = true
+}
+
+const deleteNo = computed(() => {
+  const r = deleteTarget.value
+  if (!r) return ''
+  return String(r.values.nomor ?? r.id)
+})
+
+async function confirmDelete() {
+  if (!entity.value || !deleteTarget.value) return
+  deleting.value = true
   try {
-    await apiDeleteRecord(entity.value.id, row.id)
+    await apiDeleteRecord(entity.value.id, deleteTarget.value.id)
     notify('Row deleted.')
+    showDelete.value = false
+    deleteTarget.value = null
     await loadRows()
   } catch (e: any) {
     notify(e?.data?.message || 'Gagal menghapus.', 'error')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -680,7 +710,7 @@ await init()
                 <UButton icon="i-lucide-pencil" size="xs" variant="ghost" color="neutral"
                          @click="openEdit(r)" />
                 <UButton icon="i-lucide-trash-2" size="xs" variant="ghost" color="error"
-                         @click="remove(r)" />
+                         @click="askDelete(r)" />
                          </td>
                          </tr>
                          </TransitionGroup>
@@ -788,6 +818,90 @@ await init()
       </div>
     </template>
   </UDashboardPanel>
+
+    <!-- DELETE CONFIRMATION - see remove/askDelete above for why this is not a native confirm(). -->
+    <UModal
+      v-model:open="showDelete"
+      :ui="{
+        content: 'sm:max-w-md',
+        body: 'p-0',
+        footer: 'p-0 border-t border-default/70'
+      }"
+    >
+      <template #content>
+        <!-- Staggered reveal: the icon lands first, then the title, then the row identity.
+             `verify-dom` is set on the content wrapper so the transition actually animates on
+             the outer dialog too, not only on our inner block. -->
+        <div class="overflow-hidden rounded-xl">
+          <div class="relative overflow-hidden px-6 pb-5 pt-6">
+            <!-- Soft danger wash bleeding in from the top, clipped by this panel's own
+                 overflow-hidden. The same trick as the dashboard welcome banner's accent orb,
+                 but sized for a dialog and keyed to `error` so it follows the theme. -->
+            <div
+              aria-hidden="true"
+              class="infra-del-wash pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl"
+            />
+
+            <div class="relative flex items-start gap-4">
+              <span
+                class="infra-del-icon grid size-11 shrink-0 place-items-center rounded-full
+                       bg-error/10 ring-1 ring-inset ring-error/25 dark:bg-error/15"
+              >
+                <UIcon
+                  name="i-lucide-trash-2"
+                  class="size-5 text-error"
+                />
+              </span>
+
+              <div class="min-w-0 flex-1">
+                <h2 class="infra-del-rise-1 text-base font-semibold text-default">
+                  Delete this record?
+                </h2>
+                <p class="infra-del-rise-2 mt-1 text-sm text-muted">
+                  This permanently removes the entry from the logbook. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <!-- Which row? -->
+            <dl
+              v-if="deleteTarget"
+              class="infra-del-rise-3 relative mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg
+                     bg-elevated/60 px-4 py-3 text-sm ring-1 ring-inset ring-default"
+            >
+              <dt class="text-dimmed">No</dt>
+              <dd class="truncate font-medium text-default tabular-nums">{{ deleteNo }}</dd>
+
+              <dt class="text-dimmed">Date</dt>
+              <dd class="truncate text-default">{{ fmtDate(deleteTarget.values.tanggal) }}</dd>
+
+              <dt class="text-dimmed">Section</dt>
+              <dd class="truncate text-default">{{ deleteTarget.values.departemen || '-' }}</dd>
+
+              <dt class="text-dimmed">PIC</dt>
+              <dd class="truncate text-default">{{ deleteTarget.values.nama_pemohon || '-' }}</dd>
+            </dl>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 bg-elevated/40 px-6 py-4">
+            <UButton
+              label="Cancel"
+              color="neutral"
+              variant="ghost"
+              :disabled="deleting"
+              @click="showDelete = false"
+            />
+            <UButton
+              label="Delete record"
+              icon="i-lucide-trash-2"
+              color="error"
+              :loading="deleting"
+              @click="confirmDelete"
+            />
+          </div>
+        </div>
+      </template>
+    </UModal>
 </template>
 
 <style>
@@ -1159,4 +1273,60 @@ await init()
   background: transparent;
 }
 
+
+/* ------------------------------------------------------------------------------------------
+   DELETE-CONFIRMATION MOTION
+
+   Written as plain CSS keyframe animations rather than <Transition> wrappers, because the
+   elements are always present once UModal mounts its content - a Vue transition needs a
+   v-if/appear to fire, and adding v-ifs purely for timing would put the row details on a
+   separate render path from the rest of the dialog.
+
+   Every curve is MONOTONIC (no overshoot, no back/forth). The app-wide rule about avoiding
+   scale is about TEXT: a scaled glyph rasterises at the intermediate size and reads soft,
+   and a non-monotonic curve can drag the final frame away from the settled state. Neither
+   applies to the 44px icon disc, so that one does scale - and it still uses a monotonic
+   curve so it lands exactly where it belongs.
+
+   transform here is safe even though the dialog is centred: Tailwind v4 emits the centring
+   as the standalone `translate` property, not as `transform`, so animating `transform` on a
+   child cannot compose with - or fight - the parent's centring.
+   ------------------------------------------------------------------------------------------ */
+@keyframes infra-del-icon-in {
+  from { opacity: 0; transform: scale(0.86); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes infra-del-rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Slow breath on the danger wash so the dialog reads as "destructive" before a word is read. */
+@keyframes infra-del-wash-breathe {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.08); }
+}
+
+.infra-del-icon {
+  animation: infra-del-icon-in 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.infra-del-rise-1 { animation: infra-del-rise 360ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both; }
+.infra-del-rise-2 { animation: infra-del-rise 360ms cubic-bezier(0.22, 1, 0.36, 1) 110ms both; }
+.infra-del-rise-3 { animation: infra-del-rise 420ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }
+
+.infra-del-wash {
+  animation: infra-del-wash-breathe 5.5s cubic-bezier(0.4, 0, 0.6, 1) 420ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .infra-del-icon,
+  .infra-del-rise-1,
+  .infra-del-rise-2,
+  .infra-del-rise-3,
+  .infra-del-wash {
+    animation: none !important;
+  }
+}
 </style>
