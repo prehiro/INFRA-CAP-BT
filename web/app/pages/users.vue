@@ -211,11 +211,11 @@ onMounted(() => {
                gap between the lines there and they touched. The sheet header lives in the
                panel body instead, below the navbar, which is where the CCTV page puts its own.
                That is also why the page still reads as two distinct things: "User Management"
-               in the navbar names the SCREEN, "User Directory" below names the REGISTER. -->
+               in the navbar names the SCREEN, "Registered User" below names the REGISTER. -->
           <div class="rounded-lg border border-default bg-elevated p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h1 class="text-lg font-bold tracking-wide">User Directory</h1>
+                <h1 class="text-lg font-bold tracking-wide">Registered User</h1>
               </div>
               <div class="flex items-center gap-2">
                 <UInput
