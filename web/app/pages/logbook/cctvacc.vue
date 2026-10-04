@@ -547,7 +547,7 @@ await init()
          slightly larger than the old text-xs, and numeric-ish columns are tabular-nums
          so digits line up down the column. -->
     <div class="overflow-hidden rounded-xl border border-default bg-elevated">
-      <div class="max-h-[70vh] overflow-auto print:scroll-area">
+      <div class="logbook-scroll max-h-[70vh] overflow-auto print:scroll-area">
         <!-- min-w is sized so the whole logbook fits without horizontal scrolling on a
              typical 1280px screen (measured: 11 columns + Actions needed ~1180px).
              Horizontal scroll remains the graceful fallback on narrower screens rather
@@ -1011,4 +1011,25 @@ await init()
     animation: none !important;
   }
 }
+
+/* ============================================================================================
+   Kill the scrollbar flicker when a filter changes the row count.
+
+   MEASURED, not assumed. Recording the container across a "Today" click:
+       t=0ms     inner scrollbar = 15px   PIC SIGN column x = 1079
+       t=281ms   inner scrollbar =  0px   PIC SIGN column x = 1086   <- everything jumped 7px
+   The table lives in `max-h-[70vh] overflow-auto`. Whenever filtering shrinks the rows below
+   that height the inner scrollbar disappears, the container becomes 15px WIDER, and because
+   the columns are `table-fixed` with percentage widths they redistribute - so the whole grid
+   slides sideways in a single frame. That is the flicker, and it also shows on the right edge
+   of the screen as a scrollbar blinking out of existence.
+
+   `scrollbar-gutter: stable` reserves the gutter permanently, so the content width no longer
+   depends on whether the scrollbar happens to be showing. The scrollbar still appears and
+   disappears as needed - it just no longer moves anything.
+   ============================================================================================ */
+.logbook-scroll {
+  scrollbar-gutter: stable;
+}
+
 </style>
