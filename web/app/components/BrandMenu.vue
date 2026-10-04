@@ -24,8 +24,8 @@ const shift = computed(() => (props.collapsed ? '-ms-1' : ''))
     </span>
 
     <span v-if="!collapsed" class="min-w-0 flex-1">
-      <span class="block truncate text-sm font-bold leading-tight">INFRA-CAP</span>
-      <span class="block truncate text-xs text-dimmed">Internal App</span>
+      <span class="block truncate text-sm font-bold leading-tight">INFRA-BTCAP</span>
+      <span class="block truncate text-xs text-dimmed">Information System Dept</span>
     </span>
   </div>
 </template>

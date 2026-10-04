@@ -84,10 +84,24 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 
 <template>
   <div class="relative overflow-hidden rounded-xl border border-default bg-elevated">
-    <!-- Star field. Decorative only, so it is hidden from assistive tech. The wrapper is the
-         same shape as the reference: absolute inset-0, pointer-events-none, overflow-hidden.
-         z-0 puts it behind the content, which sits at z-10. -->
+    <!-- Decorative layer. Decorative only, so it is hidden from assistive tech. The wrapper
+         matches the reference: absolute inset-0, pointer-events-none, overflow-hidden, at z-0
+         behind the content which sits at z-10. Two elements live here, in this order:
+         the glow first, then the stars, so the stars paint on top of the glow. -->
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <!-- The soft accent glow from the reference template. It is NOT a CSS gradient: it is a
+           plain circle of the accent colour with a very large blur, so the "gradient" is just
+           the blur falloff. Same recipe as the source: `absolute right-[-120px] top-1/2
+           -translate-y-1/2 size-[420px] rounded-full bg-primary blur-[300px]`.
+           The reference uses `-right-1/2`, which is `right: -50%` of the CONTAINING BLOCK, so
+           it only works because its panel is much wider than the orb. The banner is far
+           narrower, so the offset is given in pixels instead - otherwise the orb would sit
+           entirely outside the banner and be clipped into nothing. The banner's own
+           overflow-hidden does the clipping, which is what makes the glow read as light
+           bleeding in from the right edge rather than as a floating blob.
+           `bg-primary` is a semantic token, so the glow follows the user's accent exactly as
+           the stars do. -->
+      <div class="absolute right-[-120px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary blur-[300px]" />
       <span v-for="(s, i) in STARS" :key="i" class="infra-star"
             :style="{ left: s.left + '%', top: s.top + '%', '--star-size': s.size + 'px',
                       '--twinkle-delay': s.delay + 's', '--twinkle-duration': s.duration + 's' }" />
