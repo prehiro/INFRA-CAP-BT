@@ -38,6 +38,44 @@ const greeting = computed(() => {
   return 'Good night'
 })
 
+/**
+ * Twinkling star field, modelled on the hero panel of
+ * https://changelog-template.nuxt.dev/ - where `#__nuxt > div > section.relative.isolate`
+ * lays an absolutely-positioned, pointer-events-none layer of small round dots over the
+ * panel, each one twinkling on its own delay.
+ *
+ * COLOUR: every star uses `var(--ui-primary)`, exactly as the reference does. That is the
+ * variable Nuxt UI rewrites when the user picks a different accent, so the field follows the
+ * theme automatically - nothing here is a hard-coded colour.
+ *
+ * THE SEED IS FIXED, and that is not cosmetic. The positions are generated in setup(), which
+ * runs on the server for SSR and again in the browser on hydration. With `Math.random()` the
+ * two runs would disagree and Vue would report a hydration mismatch (and in dev, bloat the
+ * console or patch the DOM). A seeded PRNG produces the identical field both times.
+ */
+function mulberry32(seed: number) {
+  return () => {
+    seed |= 0
+    seed = (seed + 0x6d2b79f5) | 0
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const STARS = (() => {
+  const rnd = mulberry32(20261004)
+  return Array.from({ length: 46 }, () => ({
+    left: (rnd() * 100).toFixed(2),
+    top: (rnd() * 100).toFixed(2),
+    // 1px to 3px, matching the reference's measured range of 1.04 - 3.00
+    size: (1 + rnd() * 2).toFixed(2),
+    // 0 - 5s, against the reference's measured 0.93 - 4.88
+    delay: (rnd() * 5).toFixed(2),
+    duration: (1.6 + rnd() * 2.4).toFixed(2)
+  }))
+})()
+
 /** e.g. "Wednesday, 2 October 2026" — en-GB to match the rest of the English UI. */
 const today = computed(() => now.value.toLocaleDateString('en-GB', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -46,13 +84,16 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 
 <template>
   <div class="relative overflow-hidden rounded-xl border border-default bg-elevated">
-    <!-- Soft accent wash. Decorative only, so it is hidden from assistive tech. -->
-    <div aria-hidden="true"
-         class="pointer-events-none absolute -right-16 -top-24 size-64 rounded-full bg-primary/10 blur-3xl" />
-    <div aria-hidden="true"
-         class="pointer-events-none absolute -bottom-28 right-24 size-56 rounded-full bg-primary/5 blur-3xl" />
+    <!-- Star field. Decorative only, so it is hidden from assistive tech. The wrapper is the
+         same shape as the reference: absolute inset-0, pointer-events-none, overflow-hidden.
+         z-0 puts it behind the content, which sits at z-10. -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <span v-for="(s, i) in STARS" :key="i" class="infra-star"
+            :style="{ left: s.left + '%', top: s.top + '%', '--star-size': s.size + 'px',
+                      '--twinkle-delay': s.delay + 's', '--twinkle-duration': s.duration + 's' }" />
+    </div>
 
-    <div class="relative flex flex-wrap items-center gap-5 p-5 sm:p-6">
+    <div class="relative z-10 flex flex-wrap items-center gap-5 p-5 sm:p-6">
       <!-- Avatar: initials only, no remote image — the office server has no internet. -->
       <UAvatar :alt="displayName" size="xl"
                class="shrink-0 bg-primary text-inverted ring-4 ring-primary/15">
@@ -77,3 +118,41 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Twinkling star field, mirroring the hero panel of https://changelog-template.nuxt.dev/.
+   Deliberately opacity-only, like the reference: animating transform or size here would
+   re-rasterise 46 elements every frame for no visual gain, and opacity is compositor-only. */
+.infra-star {
+  position: absolute;
+  width: var(--star-size);
+  height: var(--star-size);
+  border-radius: 50%;
+  /* --ui-primary, NOT a literal colour: Nuxt UI rewrites this variable whenever the user
+     picks a different accent, so the whole field follows the theme on its own. */
+  background-color: var(--ui-primary);
+  transform: translate(-50%, -50%);
+  animation: infra-twinkle var(--twinkle-duration) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay);
+}
+
+@keyframes infra-twinkle {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Under the OS "reduce motion" setting the stars stop twinkling but stay visible at a fixed
+   opacity, so the banner keeps its texture instead of blinking - the same rule the .anim-*
+   utilities in main.css already follow. */
+@media (prefers-reduced-motion: reduce) {
+  .infra-star {
+    animation: none !important;
+    opacity: 0.55;
+  }
+}
+</style>
