@@ -92,11 +92,3 @@
     transform: none !important;
   }
 }
-
-/* Reserve the document scrollbar gutter permanently. The filter chips row grows and shrinks
-   the page (0 -> 38px measured), which on a window sized close to the content height makes
-   the page scrollbar appear and disappear and shoves the whole layout sideways. With the
-   gutter reserved the layout simply stays put. */
-html {
-  scrollbar-gutter: stable;
-}

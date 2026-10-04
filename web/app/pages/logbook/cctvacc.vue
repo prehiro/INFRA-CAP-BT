@@ -451,7 +451,22 @@ await init()
 </script>
 
 <template>
-  <UDashboardPanel>
+  <!-- The panel body is this page's own `flex-1 overflow-y-auto` scroll container, and it is
+       what actually flickers when the filter changes the row count: once the table passes
+       roughly nine records the panel content starts hovering around its own client height,
+       its 15px scrollbar comes and goes, the body changes width and the whole page content
+       slides sideways.
+
+       BOTH parts are needed, and the distinction is the lesson from two earlier rounds:
+       `scrollbar-gutter-stable` reserves the 15px so nothing MOVES but does not stop the
+       scrollbar BLINKING; `overflow-y-scroll` (overriding the vendor's `overflow-y-auto`)
+       renders the track permanently so it cannot appear and vanish.
+
+       Scoped to THIS page on purpose. A global `dashboardPanel` theme override in
+       app.config.ts was tried first and HIRO was right to reject it: it put a permanent
+       scrollbar on the Dashboard, User Management and Handover pages too, changing pages
+       that never had the bug. `:ui` is per-instance, so it cannot leak. -->
+  <UDashboardPanel :ui="{ body: 'overflow-y-scroll scrollbar-gutter-stable' }">
     <template #header>
       <!-- PageHeader carries the sidebar collapse control in the navbar's #leading slot,
            exactly as the Nuxt dashboard template does on every page. -->
