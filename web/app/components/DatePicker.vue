@@ -20,7 +20,9 @@ const props = withDefaults(defineProps<{
   rangeStart?: string
   rangeEnd?: string
   name?: string
-}>(), { placeholder: 'Pick a date', rangeStart: '', rangeEnd: '' })
+  /** Draws the red outline the logbook form puts on every empty mandatory field. */
+  invalid?: boolean
+}>(), { placeholder: 'Pick a date', rangeStart: '', rangeEnd: '', invalid: false })
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
@@ -117,7 +119,7 @@ function display(): string {
       block
       variant="outline"
       class="justify-start gap-2 font-normal"
-      :class="display() ? '' : 'text-muted'"
+      :class="[display() ? '' : 'text-muted', invalid ? 'ring-2 ring-error' : '']"
       :aria-label="`${placeholder}: ${display() || 'not set'}`"
     >
       <UIcon name="i-lucide-calendar" class="size-4 shrink-0 text-muted" />

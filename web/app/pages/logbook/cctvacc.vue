@@ -677,9 +677,13 @@ watch(search, () => {
              last row, which is what keeps the whole form inside a 1080p window. -->
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <!-- Row 1: who/when/where. Date is prefilled with today and stays editable. -->
+          <!-- Same themed picker as the filter, not the native control: the OS date input
+               cannot be styled to match the app and renders the US mm/dd/yyyy order on this
+               machine, while the sheet is written dd/mm/yyyy. v-model is a bare yyyy-mm-dd,
+               which is exactly the form's shape, and :name keeps it inside UForm's state. -->
           <UFormField label="Date" name="tanggal" required>
-            <UInput v-model="form.tanggal" name="tanggal" type="date" class="w-full"
-                     :ui="fieldInvalid('tanggal') ? { base: 'ring-2 ring-error' } : undefined" />
+            <DatePicker v-model="form.tanggal" name="tanggal" placeholder="Pick a date"
+                        :invalid="fieldInvalid('tanggal')" />
           </UFormField>
           <UFormField label="Section" name="departemen" required>
             <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
