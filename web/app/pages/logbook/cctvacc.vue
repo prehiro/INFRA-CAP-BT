@@ -142,11 +142,11 @@ function fieldInvalid(key: string): boolean {
    Applied in the browser over the loaded rows, so it is instant and the table, the row
    counter and the Excel export can never disagree - they all read the same computed value.
    --------------------------------------------------------------------------------------- */
-const filters = ref({
-  from: '', to: '', section: '', pic: '', unsignedOnly: false
-})
-
-const EMPTY_FILTERS = { from: '', to: '', section: '', pic: '', unsignedOnly: false }
+// "Unsigned only" was removed on 2026-10-04: both signatures are MANDATORY on the entry
+// form, so a row without them can only be a row still being filled in - and those should not
+// be searchable in the register at all.
+const filters = ref({ from: '', to: '', section: '', pic: '' })
+const EMPTY_FILTERS = { from: '', to: '', section: '', pic: '' }
 
 function clearFilters() { filters.value = { ...EMPTY_FILTERS } }
 
@@ -178,7 +178,6 @@ const visibleRows = computed(() => {
     if (f.to && (!d || d > f.to)) return false
     if (f.section && String(r.values.departemen ?? '') !== f.section) return false
     if (f.pic && String(r.values.nama_pemohon ?? '') !== f.pic) return false
-    if (f.unsignedOnly && (signSrc(r.values.tanda_pemohon) || signSrc(r.values.tanda_isd))) return false
     return true
   })
 })
@@ -194,7 +193,6 @@ const activeChips = computed(() => {
   }
   if (f.section) out.push({ key: 'section', label: 'Section', text: f.section })
   if (f.pic) out.push({ key: 'pic', label: 'PIC Name', text: f.pic })
-  if (f.unsignedOnly) out.push({ key: 'unsigned', label: '', text: 'Unsigned only' })
   return out
 })
 
@@ -203,7 +201,6 @@ function removeChip(key: string) {
   if (key === 'date') { f.from = ''; f.to = '' }
   if (key === 'section') f.section = ''
   if (key === 'pic') f.pic = ''
-  if (key === 'unsigned') f.unsignedOnly = false
   filters.value = f
 }
 
@@ -457,9 +454,12 @@ watch(search, () => {
             @clear="clearFilters"
           />
           <UButton icon="i-lucide-plus" label="Add Row" @click="openCreate" />
-          <!-- Export sits immediately left of Print: both are "get the data out of here"
-               actions, and Print stays the rightmost so it is where the muscle memory is. -->
-          <UButton icon="i-lucide-file-spreadsheet" label="Export Excel"
+          <!-- Excel sits immediately left of Print: both are "get the data out of here"
+               actions and share the `soft` variant so they read as a pair, with Print kept
+               rightmost so it stays where the muscle memory is. Label shortened from
+               "Export Excel" to "Excel" (HIRO) - the sheet icon plus the word Excel says it
+               already, and the longer label pushed the toolbar wider than it needed to be. -->
+          <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
                    :loading="exporting" @click="exportExcel" />
           <UButton icon="i-lucide-printer" label="Print" variant="soft" @click="printSheet" />
         </div>
