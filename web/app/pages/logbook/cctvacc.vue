@@ -526,14 +526,20 @@ watch(search, () => {
               </th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-if="loading">
+          <!-- Loading and empty live in their OWN <tbody>, so the data rows can sit inside a
+               <TransitionGroup tag="tbody">. A table allows several tbody elements, which is
+               the clean way to get a keyed, animatable row list without a wrapper that would
+               break the table layout. -->
+          <tbody v-if="loading">
+            <tr>
               <td :colspan="COLUMNS.length + 1" class="px-4 py-10 text-center text-muted">
                 <UIcon name="i-lucide-loader-circle" class="mx-auto mb-2 size-5 animate-spin" />
                 <p class="text-sm">Loading...</p>
               </td>
             </tr>
-            <tr v-else-if="!visibleRows.length">
+          </tbody>
+          <tbody v-else-if="!visibleRows.length">
+            <tr>
               <td :colspan="COLUMNS.length + 1" class="px-4 py-12 text-center">
                 <UIcon name="i-lucide-inbox" class="mx-auto mb-2 size-7 text-dimmed" />
                 <p class="text-sm font-medium">
@@ -546,6 +552,21 @@ watch(search, () => {
                 </p>
               </td>
             </tr>
+          </tbody>
+
+          <!-- Row transitions. Rows that survive a filter change slide to their new position
+               (FLIP move) instead of teleporting, and rows that newly match fade in from
+               slightly above. Rows being filtered OUT are removed immediately - see the
+               .row-* rules for why animating them in a table is more trouble than it is worth. -->
+          <TransitionGroup
+            v-else
+            tag="tbody"
+            name="row"
+            enter-active-class="row-enter-active"
+            enter-from-class="row-enter-from"
+            move-class="row-move"
+            move-active-class="row-move-active"
+          >
             <tr v-for="(r, i) in visibleRows" :key="r.id"
                 class="align-middle transition-colors hover:bg-primary/5"
                 :class="i % 2 ? 'bg-default/20' : ''">
@@ -566,10 +587,10 @@ watch(search, () => {
                          @click="openEdit(r)" />
                 <UButton icon="i-lucide-trash-2" size="xs" variant="ghost" color="error"
                          @click="remove(r)" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                         </td>
+                         </tr>
+                         </TransitionGroup>
+                         </table>
       </div>
 
       <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
@@ -672,6 +693,58 @@ watch(search, () => {
 </template>
 
 <style>
+/* ---------------------------------------------------------------------------------------
+   Row transitions for the logbook (filter / search changes).
+
+   Design notes:
+   - `transform` only, never a property that triggers layout. Animating width/height/table
+     cells re-rasterises and is exactly what caused the sidebar "ghost text" bug, so the same
+     rule applies here.
+   - NO leave transition. A <tr> that animates out still occupies its slot until the
+     transition ends, and taking it out of flow (position:absolute) on a table row drops the
+     borders and column alignment for the whole table mid-animation. Removing it instantly
+     while the surviving rows slide to their new positions reads cleanly and is far cheaper.
+   - 220ms with an ease-out curve: long enough to see the motion, short enough that the table
+     never feels like it is lagging behind the click.
+   --------------------------------------------------------------------------------------- */
+.row-enter-active {
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.row-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+/* FLIP: Vue measures the row before and after, so only the transform needs animating. */
+.row-move-active {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.row-move {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Printing must never capture a half-finished animation. */
+@media print {
+  .row-enter-active,
+  .row-move,
+  .row-move-active {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Respect the OS "reduce motion" setting outright, matching the rule already used by the
+   .anim-* utilities in main.css. */
+@media (prefers-reduced-motion: reduce) {
+  .row-enter-active,
+  .row-move,
+  .row-move-active {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* A4 landscape sheet: the form is 11 columns wide, portrait would be unreadable. */
 @media print {
   @page { size: A4 landscape; margin: 8mm; }
