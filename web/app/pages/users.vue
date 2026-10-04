@@ -216,7 +216,7 @@ onMounted(() => {
       handler on the submit button (verified: onclick was null on the rendered node),
       so clicks silently did nothing. UForm + type="submit" is the pattern that works.
     -->
-    <UCard v-if="modalOpen" class="mt-6">
+    <UCard v-if="modalOpen" class="modal-bounce mt-6">
       <template #header>
         <h2 class="font-semibold">{{ editing ? 'Edit User' : 'Add User' }}</h2>
       </template>
@@ -272,3 +272,40 @@ onMounted(() => {
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/* Gentle entrance for the Add/Edit User card.
+   NOTE this panel is a UCard, NOT a UModal - it has to be, because UModal's #footer slot
+   swallows the submit button's @click (verified: onclick was null on the rendered node).
+   The flip side is that it came with no transition at all: it simply snapped into existence.
+
+   TRANSLATE ONLY, no scale. The bounce comes from an overshooting easing curve
+   (back-out) on translateY rather than from scaling the element: scaling forces the
+   browser to re-rasterise the text, which is exactly what produced the "ghost text"
+   bug on the sidebar. A translate moves already-rasterised pixels, so the spring reads
+   the same and the text stays crisp.
+   14px of travel with a mild overshoot keeps it subtle - HIRO asked for a bounce that
+   is NOT strong. */
+@keyframes modal-bounce-in {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-bounce {
+  animation: modal-bounce-in 300ms cubic-bezier(0.34, 1.4, 0.52, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-bounce {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+</style>
