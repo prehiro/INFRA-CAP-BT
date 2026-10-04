@@ -1070,26 +1070,58 @@ await init()
   height: 12px;
 }
 
+/* THE BUG THIS FIXES, found by reading the computed values rather than guessing.
+   The thumb was declared `var(--ui-border-strong)`, and that token DOES NOT EXIST in Nuxt UI
+   v4 - the real names are --ui-border-muted and --ui-border-accented. An unresolvable var()
+   makes the whole declaration invalid, so the thumb fell back to no colour at all. The rule
+   still compiled, which is why nothing looked broken in dev-tools; it simply painted nothing.
+   Compounding it, the Firefox fallback used --ui-border, which in dark mode resolves to
+   oklch(27.9% 0.041 260.031) - the EXACT same value as --ui-bg-elevated, the surface the
+   scrollbar sits on. A thumb painted the same colour as its own background is invisible by
+   construction, in either theme. That is the real reason the scrollbar was "kurang terlihat
+   jelas" on the dark CCTV table.
+   --ui-text-dimmed is oklch(55.4%) in dark, a clear step above the 27.9% surface. */
 .logbook-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  background-color: color-mix(in oklab, var(--ui-text-dimmed) 10%, transparent);
 }
 
+/* background-COLOR, not the `background` shorthand: the shorthand would reset
+   background-clip back to its initial value and undo the rounded-pill thumb below. */
 .logbook-scroll::-webkit-scrollbar-thumb {
-  background: var(--ui-border-strong);
+  background-color: var(--ui-text-dimmed);
   border-radius: 9999px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
 .logbook-scroll::-webkit-scrollbar-thumb:hover {
-  background: var(--ui-text-dimmed);
+  background-color: var(--ui-text-muted);
   background-clip: content-box;
 }
 
-/* Firefox honours the standard properties; the webkit rules above are ignored there. */
+/* Dark mode needs a firmer thumb and a slightly brighter rail than light mode does, so the
+   two are set separately instead of hoping one token works on both surfaces. */
+.dark .logbook-scroll::-webkit-scrollbar-track {
+  background-color: color-mix(in oklab, var(--ui-text-dimmed) 14%, transparent);
+}
+
+.dark .logbook-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--ui-text-dimmed);
+}
+
+.dark .logbook-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ui-text-highlighted);
+}
+
+/* Firefox honours the standard properties and ignores the ::-webkit rules entirely, so it
+   needs the same dark/light split or it would stay invisible there. */
 .logbook-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--ui-border) transparent;
+  scrollbar-color: var(--ui-text-dimmed) transparent;
+}
+
+.dark .logbook-scroll {
+  scrollbar-color: var(--ui-text-muted) transparent;
 }
 
 /* -------------------------------------------------------------------------------------------
