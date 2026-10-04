@@ -483,7 +483,16 @@ watch(search, () => {
     <!-- Active filters, as removable chips. These exist so the current view is never
          ambiguous: without them a user can forget a filter is on, print the wrong thing or
          export the wrong thing and not notice until afterwards. -->
-    <div v-if="activeChips.length" class="anim-fade-up mb-2 flex flex-wrap items-center gap-1.5">
+    <!-- COLLAPSIBLE SLOT. The chips used to be `v-if`'d straight into the flow, so the moment
+         a chip appeared the table below was shoved down by a whole line-height in one frame -
+         a jump. Now the row is always present and only its HEIGHT animates (0fr -> 1fr), so
+         the table is pushed down progressively and lands exactly where it belongs. The chips
+         themselves still keep their own fade-up.
+         `min-height: 0` on the clip is what makes the 0fr track actually collapse to nothing
+         rather than to the content's intrinsic height. -->
+    <div class="chips-slot" :class="activeChips.length ? 'is-open' : ''">
+     <div class="chips-clip">
+      <div class="flex flex-wrap items-center gap-1.5 px-0.5 pb-2 pt-1">
       <span class="mr-0.5 text-xs font-medium text-muted">Filtered by</span>
       <button
         v-for="c in activeChips" :key="c.key"
@@ -497,6 +506,8 @@ watch(search, () => {
         <UIcon name="i-lucide-x" class="size-3 opacity-60 transition-opacity group-hover:opacity-100" />
       </button>
       <UButton size="xs" variant="ghost" color="error" label="Clear all" class="ml-1" @click="clearFilters" />
+      </div>
+     </div>
     </div>
 
     <!-- Logbook table.
@@ -693,6 +704,35 @@ watch(search, () => {
 </template>
 
 <style>
+/* ---------------------------------------------------------------------------------------
+   Collapsible filter-chip slot.
+
+   Animating `grid-template-rows` from 0fr to 1fr is the only way to transition to an
+   unknown content height in pure CSS: the track interpolates, and the table underneath is
+   pushed down progressively instead of being shoved a whole line in one frame. A plain
+   `v-if` gave an instant jump; a max-height would need a hard-coded number that breaks the
+   moment a second chip wraps to a new line. */
+.chips-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.chips-slot.is-open {
+  grid-template-rows: 1fr;
+}
+/* min-height:0 is required, otherwise the 0fr track still reserves the content's
+   intrinsic height and the row never collapses. */
+.chips-clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media print, (prefers-reduced-motion: reduce) {
+  .chips-slot {
+    transition: none !important;
+  }
+}
+
 /* ---------------------------------------------------------------------------------------
    Row transitions for the logbook (filter / search changes).
 
