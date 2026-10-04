@@ -466,7 +466,7 @@ await init()
        app.config.ts was tried first and HIRO was right to reject it: it put a permanent
        scrollbar on the Dashboard, User Management and Handover pages too, changing pages
        that never had the bug. `:ui` is per-instance, so it cannot leak. -->
-  <UDashboardPanel :ui="{ body: 'overflow-y-scroll scrollbar-gutter-stable' }">
+  <UDashboardPanel :ui="{ body: 'cctv-panel-body overflow-y-scroll scrollbar-gutter-stable' }">
     <template #header>
       <!-- PageHeader carries the sidebar collapse control in the navbar's #leading slot,
            exactly as the Nuxt dashboard template does on every page. -->
@@ -1090,6 +1090,41 @@ await init()
 .logbook-scroll {
   scrollbar-width: thin;
   scrollbar-color: var(--ui-border) transparent;
+}
+
+/* -------------------------------------------------------------------------------------------
+   HIDE the page scrollbar on the CCTV panel body - keep the scrolling.
+
+   HIRO asked to hide it, NOT remove it. So `overflow-y-scroll` stays exactly as it is: the
+   panel body remains a real, scrollable region and the mouse wheel, the keyboard and
+   trackpad all keep working. Only the scrollbar's APPEARANCE is suppressed, by giving it
+   zero width.
+
+   That also strengthens the flicker fix rather than weakening it. A zero-width scrollbar
+   occupies no layout space, so `scrollbar-gutter: stable` now reserves nothing and the
+   content width can never change at all - which is strictly more stable than reserving a
+   15px gutter.
+
+   Scoped to .cctv-panel-body, which exists only on this page's own UDashboardPanel. The
+   standard properties cover Firefox; the ::-webkit rules cover Chrome/Edge. Both are needed,
+   because a browser that supports neither would otherwise still paint a scrollbar.
+   ------------------------------------------------------------------------------------------- */
+.cctv-panel-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.cctv-panel-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.cctv-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cctv-panel-body::-webkit-scrollbar-thumb {
+  background: transparent;
 }
 
 </style>
