@@ -224,9 +224,6 @@ onMounted(() => {
                   placeholder="Search..."
                   class="w-48"
                 />
-                <span class="whitespace-nowrap text-sm tabular-nums text-muted">
-                  {{ visibleUsers.length }} of {{ users.length }}
-                </span>
                 <UButton icon="i-lucide-plus" label="Add User" @click="openCreate" />
               </div>
             </div>
@@ -240,7 +237,12 @@ onMounted(() => {
                users it drew a permanently visible, permanently useless scrollbar. `auto` shows
                the bar only when there is something to scroll to. The stable gutter stays so the
                column widths do not jump the moment the bar appears. -->
-          <div class="users-scroll max-h-[70vh] overflow-y-auto scrollbar-gutter-stable rounded-xl border border-default bg-elevated/40">
+          <!-- Outer card owns the border and radius; the scroll area sits inside it and the
+               footer below shares its bottom edge. This is the CCTV register's structure
+               verbatim - `overflow-hidden rounded-xl border border-default bg-elevated`
+               wrapping `.logbook-scroll` plus a footer div. -->
+          <div class="overflow-hidden rounded-xl border border-default bg-elevated">
+          <div class="users-scroll max-h-[70vh] overflow-y-auto scrollbar-gutter-stable">
             <table class="w-full table-fixed text-sm">
               <colgroup>
                 <col class="w-[26%]" />
@@ -364,6 +366,17 @@ onMounted(() => {
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Table footer, mirroring the CCTV register's: row count on the left, the
+               "Showing X of Y" pair on the right, separated by a top rule on a subtly
+             raised surface. BOTH numbers follow the SEARCH, so they can never disagree with
+               the rows on screen - the same reason the CCTV left count follows its filters
+               rather than the raw DB total. -->
+          <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+            <span>{{ visibleUsers.length }} {{ visibleUsers.length === 1 ? 'user' : 'users' }}</span>
+            <span class="tabular-nums">Showing {{ visibleUsers.length }} of {{ users.length }}</span>
+          </div>
           </div>
         </template>
       </div>
