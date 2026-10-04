@@ -34,6 +34,22 @@ const props = defineProps<{
 
 const emit = defineEmits<{ 'update:modelValue': [LogbookFilters]; clear: [] }>()
 
+/**
+ * The popover's open state, bound so "Clear all" can close it.
+ *
+ * The popover deliberately STAYS OPEN after every other control, so several filters can be
+ * combined without reopening it. "Clear all" is the one exception: once everything is
+ * cleared there is nothing left to combine, and leaving an empty panel floating over the
+ * restored table reads like the click missed. HIRO asked for this explicitly
+ * ("ketika user klik clear popup filter close").
+ */
+const open = ref(false)
+
+function clearAll() {
+  emit('clear')
+  open.value = false
+}
+
 /** The single write path. Every control funnels through here. */
 function set<K extends keyof LogbookFilters>(key: K, value: string) {
   emit('update:modelValue', { ...props.modelValue, [key]: value })
@@ -92,7 +108,7 @@ function applyPreset(key: string) {
 </script>
 
 <template>
-  <UPopover :content="{ align: 'start' }" :_ui="{ content: 'p-0 w-80' }">
+  <UPopover v-model:open="open" :content="{ align: 'start' }" :_ui="{ content: 'p-0 w-80' }">
     <UButton
       icon="i-lucide-list-filter"
       label="Filter"
@@ -165,7 +181,7 @@ function applyPreset(key: string) {
         </div>
 
         <div class="mt-3 flex items-center justify-between gap-2 border-t border-default pt-3">
-          <UButton size="xs" variant="ghost" color="error" label="Clear all" @click="emit('clear')" />
+          <UButton size="xs" variant="ghost" color="error" label="Clear all" @click="clearAll" />
           <span class="text-[11px] text-muted">{{ matchCount }} of {{ totalCount }} rows match</span>
         </div>
       </div>
