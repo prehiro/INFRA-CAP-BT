@@ -413,12 +413,6 @@ async function init() {
 }
 await init()
 
-// Re-preview the NO when the date changes, so numbering follows the year of the row.
-/** Print uses the browser dialog; the @media print block below shapes the sheet. */
-function printSheet() {
-  if (typeof window !== 'undefined') window.print()
-}
-
 let searchTimer: any
 watch(search, () => {
   clearTimeout(searchTimer)
@@ -453,15 +447,16 @@ watch(search, () => {
             :total-count="rows.length"
             @clear="clearFilters"
           />
-          <UButton icon="i-lucide-plus" label="Add Record" @click="openCreate" />
-          <!-- Excel sits immediately left of Print: both are "get the data out of here"
-               actions and share the `soft` variant so they read as a pair, with Print kept
-               rightmost so it stays where the muscle memory is. Label shortened from
-               "Export Excel" to "Excel" (HIRO) - the sheet icon plus the word Excel says it
-               already, and the longer label pushed the toolbar wider than it needed to be. -->
+          <!-- Excel BEFORE Add Record (HIRO). "Excel" is `soft` so the pair still reads as
+               one group, and the primary Add Record action stays rightmost where the eye
+               lands last. The Print button and its printSheet() helper were removed at
+               HIRO's request - the register is filed digitally, not on paper.
+               NOTE the @media print rules further down were KEPT: they are not dead code,
+               they style the sheet for a browser-initiated Ctrl+P, and deleting them would
+               make Ctrl+P emit an unboxed, clipped table. -->
           <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
                    :loading="exporting" @click="exportExcel" />
-          <UButton icon="i-lucide-printer" label="Print" variant="soft" @click="printSheet" />
+          <UButton icon="i-lucide-plus" label="Add Record" @click="openCreate" />
         </div>
       </div>
     </div>
