@@ -290,6 +290,35 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --no-build --no-launch-profile --u
 > Before build: **kill `Api.exe` dulu** (`Stop-Process`), kalau tidak MSB3021/MSB3027 file-lock.
 > `dotnet run` tidak hot-reload — perubahan backend baru terlihat setelah proses holding port 5099 di-restart.
 
+### JANGAN pakai `--no-launch-profile` tanpa `ASPNETCORE_ENVIRONMENT=Development` (2026-10-05)
+
+Ini adalah root cause dari "API tidak bisa konek ke SQL Server" yang sempat dikira Durante 2 sesi. Gejalanya: `Win32Exception 258 - The wait operation timed out` (lama-lama `1225 - connection refused`) saat `MigrateAsync`, padahal SQL Server sehat.
+
+Penyebabnya BUKAN SQL Server, BUKAN password, BUKAN firewall. `appsettings.Production.json` berisi connection string sendiri yang menimpa `appsettings.json`:
+
+```
+Server=localhost,1433;Database=InternalApp;User Id=<akun dedicated>;Password=***
+```
+
+Dan di mesin dev **tidak ada yang listen di localhost:1433** — SQL Server DEV ada di 192.168.4.3, jadi connectTimeout=30 habis lalu timeout. `Program.cs:13` membaca `GetConnectionString("Default")`, jadi file config yang menang menang.
+
+`--no-launch-profile` membuat `ASPNETCORE_ENVIRONMENT` **tidak di-set sama sekali**, yang berarti ASP.NET Core jatuh ke `Production` (default) dan memuat `appsettings.Production.json`. Profil `http` di `Properties/launchSettings.json` justru menyetel `ASPNETCORE_ENVIRONMENT=Development`.
+
+Gejalanya menipu karena errornya seolah-olah jaringan: timeout, refused, "server not found or not accessible" — semuanya konsisten dengan "SQL mati", padahal yang terjadi adalah konfigurasi menunjuk ke localhost.
+
+Cara start yang benar (sudah dipakai 2026-10-05, API jalan healthy di 5099):
+
+```bash
+cd /c/Users/HIRO/Projects/InternalApp/api
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS=http://localhost:5099 ./bin/Debug/net10.0/Api.exe
+```
+
+Menjalankan binary hasil build langsung (bukan `dotnet run`)yakni menghilangkan launchSettings sepenuhnya, jadi `ASPNETCORE_ENVIRONMENT=Development` yang kita set eksplisit itu yang benar-benar berlaku — tidak ada yang diam-diam menimpa.
+
+Cek cepat kalau API Connectivity Timeout dan tidak yakin: `curl -s -m 10 http://localhost:5099/api/entities` → **401** = sehat (belum auth). 000 = proses mati.
+
+> Di produzsi kantor file `appsettings.Production.json` memang itu yang BENAR (SQL lokal di 10.89.6.237), jadi file ini jangan dihapus — yang bahaya cuma membacanya di mesin dev.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
