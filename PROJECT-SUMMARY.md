@@ -1085,3 +1085,35 @@ Sweep: dialog 687px dengan overflow 0 di 1080/900/768, menyusut ke 656 di 720.
 
 Verifikasi end to end (baris probe): create (873 piksel tinta, Save Row, sepuluh field
 tersimpan) → dihapus → server kembali **0 baris handover, 11 baris CCTV, nol probe**.
+
+## Handover — Name tidak lagi ter-prefill, placeholder baru (2026-10-05)
+
+HIRO: *"employee no placeholder change to 939432. do not fill name to Administrator put
+placeholder Recepient"*.
+
+Prefill itu ada karena form grid rata-rata dulu menganggap "menyerahkan part ke diri sendiri"
+adali kasus umum — dan itu justru **bukan** apa yang ee登记 handover. Petugas IT adalah orang yang
+**menyerahkan**, bukan yang **menerima**, jadi prefill-nya mengarah ke pihak yang salah di baris
+itu, dan membuat field terlihat terjawab sebelum labelnya sempat dibaca.
+
+### Yang diubah
+
+- `form.nama = currentUserName()` dihapus dari `openCreate`.
+- Dua simbol jadi mati dan **dihapus**, tidak ditinggalkan: `currentUserName()` dan
+  `const { user: me } = useAuth()`. Halaman ini sekarang tidak lagi memakai `useAuth` sama
+  sekali — perlu dicek, karena `useAuth` tidak pernah ada di daftar import (itu auto-import),
+  jadi sisa referensinya mudah terlewat.
+- Placeholder Employee No `940900` → **`939432`**.
+- Placeholder Name `"Recipient's full name"` → **`Recipient`**.
+
+### Verifikasi
+
+Dibaca ulang semua input yang ter-render: `nama` EMPTY dengan `ph=Recipient`, `no_pegawai`
+EMPTY dengan `ph=939432`, `qty` masih ter-prefill `1`, `tanggal_ambil` masih hari ini.
+
+Validasi wajib dicek ulang **karena prefill lama menutupinya** — menekan Save Row pada form
+kosong kini melaporkan *"These fields are required: Part Name, Name, Signature"*, yang benar dan
+membuktikan Name sekarang benar-benar wajib diketik. Sebelumnya error Name tidak akan pernah
+terjevak di jalur create karena field-nya tidak pernah kosong.
+
+Dialog tetap 687px, data tidak tersentuh (0 handover, 11 CCTV).

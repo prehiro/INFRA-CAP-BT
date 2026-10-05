@@ -68,20 +68,11 @@ const COLUMNS = [
  */
 const HIDDEN_FIELDS = ['nomor'] as const
 
-/** The signed-in user, used to prefill "Name" so nobody has to type their own name. */
-const { user: me } = useAuth()
-
 /** yyyy-mm-dd for today, in LOCAL time. */
 function todayIso(): string {
   const d = new Date()
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
-}
-
-/** The display name of whoever is signed in, falling back to the username. */
-function currentUserName(): string {
-  const u = me.value as any
-  return String(u?.fullName || u?.username || '')
 }
 
 /**
@@ -242,11 +233,18 @@ async function loadRows() {
 
 async function openCreate() {
   resetForm()
-  // Taken Date defaults to today, Name to the signed-in user and QTY to 1 - the common case
-  // (handing one part to yourself right now) then needs no typing at all. Everything stays
-  // editable: auto-filled is not the same as locked.
+  // Taken Date defaults to today and QTY to 1, so the common case (handing one part over right
+  // now) needs almost no typing. Everything stays editable: auto-filled is not the same as
+  // locked.
+  //
+  // NAME IS DELIBERATELY NOT PREFILLED (HIRO, 2026-10-05: "do not fill name to Administrator
+  // put placeholder Recepient"). This is a register of what was handed to WHOM, and the whole
+  // point of the Recipient section is the recipient. Prefilling it with the signed-in user's own
+  // name made the field look answered before anybody had read the label - and on this specific
+  // form it was actively wrong: an IT admin is the person HANDING OVER the part, not the person
+  // receiving it, so the prefill pointed at the wrong party in the row. The field now starts
+  // empty with a placeholder.
   form.tanggal_ambil = todayIso()
-  form.nama = currentUserName()
   form.qty = '1'
   showForm.value = true
 }
@@ -750,10 +748,10 @@ await init()
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <UFormField label="Employee No" name="no_pegawai">
-                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
+                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="939432" class="w-full" />
               </UFormField>
               <UFormField label="Name" name="nama" required>
-                <UInput v-model="form.nama" name="nama" placeholder="Recipient's full name" class="w-full"
+                <UInput v-model="form.nama" name="nama" placeholder="Recipient" class="w-full"
                          :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
               <UFormField label="Section" name="departemen">
