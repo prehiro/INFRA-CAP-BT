@@ -449,6 +449,39 @@ Tidak ada endpoint API untuk mengubah role — `GET /api/users/roles` satu-satun
 
 Sudah diverifikasi: `GET /api/users/roles` mengembalikan teks Inggris, kartu RolePicker di render `"Admin | Full access: manage entities, fields, users, and all data"`, regex `/kelola|Akses penuh|Input dan lihat|transaksi/i` terhadap `innerText` modal return false, dan dialog tetap 582px tanpa scrollbar.
 
+## 7i. Animasi modal + page load di User Management (2026-10-05)
+
+HIRO minta animasi modal Add/Edit User sama seperti modal cctvacc, plus animasi saat page load. `web/app/pages/users.vue` sekarang mengikuti motion CCTV.
+
+### Fakta struktural penting: harus NON-SCOPED
+
+Style block users.vue tadinya **hanya `<style scoped>`**. Aturan scoped compiled menjadi `.users-record-modal[data-v-xxx]`, yang **tidak akan pernah match** elemen content dialog — karena `UModal` di-teleport ke `<body>` dan node hasil teleport tidak membawa scope id milik komponen ini.
+
+Jadi CSS animasi harus dipindah ke blok `<style>` **non-scoped** tersendiri yang ditambahkan setelah blok scoped — persis seperti yang sudah dilakukan cctvacc.vue (di sana ada dua `<style>` biasa). Setelah dipindah, file punya 1 blok scoped + 1 blok non-scoped.
+
+> Verifikasi dengan regex yang **hapus komentar HTML dulu**, karena komentar penjelas menyebut teks literal `<style>`. Pencarian `<style[^>]*>` yang naif melaporkan 3 hit untuk 2 blok asli.
+
+### Animasi
+
+Selector tiga komponen `.users-record-modal[data-slot='content'][data-state='open']` = specificity (0,3,0), mengalahkan utility vendor `data-[state=open]:animate-[scale-in...]` (0,2,0) **tanpa** mematikan transisi vendor (yang harus dimatikan juga akan menghilangkan timing focus trap).
+
+DIVERIFIKASI dengan rAF recorder, bukan asumsi:
+
+- `centreX` tetap tepat **960 di setiap frame** sementara `ty` berjalan 14 → 13.92 → 13.65 → 13.13 → 11.23 → 9.93 → 8.58 → 7.3 → 6.16 → 5.17 → 4.31 → 3.58 → 2.95 → 2.42 → 1.96 → 0 (monotonik, **tanpa overshoot**)
+- opacity 0 → 1 selesai **sebelum** slide selesai — itulah pemisahan dua animasi dengan durasi berbeda
+- enam field grid stagger: `0/0/0/0/0/0` → `0.01/0/0/0/0/0` → `0.48/0.13/0/0/0/0` → `0.85/0.6/0.22/0.02/0/0` → `1/1/0.94/0.78/0.48/0.17`
+- state akhir tetap `translate: -50% -50%` dengan `transform: matrix(1,0,0,1,0,0)`, dialog 576×582, tanpa scrollbar
+
+### Page load
+
+Target `.users-page-block` (ditambahkan ke kartu header **dan** kartu tabel), dengan `:nth-of-type(2)` delay 90ms; delay terverifikasi 0s dan 0.09s.
+
+Sengaja **tidak** dikaitkan dengan ref `loading`, jadi saat create/edit/delete memuat ulang, animasi tidak diputar ulang dan halaman tidak berkedut di bawah kursor. `prefers-reduced-motion` membatalkan semuanya.
+
+Form diverifikasi ulang setelah perubahan: buat zzanim(Manager) → "User created", server `['Manager']`, lalu dihapus (kembali ke admin/operator01/staf04).
+
+> Catatan: memory lama menyebut panel users adalah `<UCard v-if="modalOpen">` inline dengan animasi `modal-bounce-in`. Itu **sudah usang** — panelnya sekarang UModal asli di slot `#body`, jadi CSS bounce lama tidak lagi berlaku.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
