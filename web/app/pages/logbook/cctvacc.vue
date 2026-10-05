@@ -753,7 +753,13 @@ await init()
          @click on a submit button in this codebase, which is exactly why this form was an
          inline panel to begin with. They stay inside the <UForm> in the #body slot so the
          native form submit path stays intact. -->
-    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl cctv-record-modal', body: 'p-4 sm:p-5' }"
+    <!-- `header` and `body` get `relative z-10` so they paint ABOVE the ::after accent glow
+         defined in the non-scoped style block at the foot of this file (same treatment as the
+         Add/Edit user dialog in users.vue). The glow is a pseudo-element rather than a div in
+         the #content slot on purpose - that slot is documented in this file as having broken
+         the form's submit path, and the content element is already `overflow: hidden`, which is
+         exactly the clipping that makes the orb read as light bleeding in from the corner. -->
+    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl cctv-record-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }"
             :title="editing ? 'Edit Row' : 'New Record'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
       <template #body>
@@ -1113,6 +1119,52 @@ await init()
   animation:
     cctv-modal-dismiss-pos 200ms cubic-bezier(0.4, 0, 1, 1) both,
     cctv-modal-dismiss-fade 160ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* ------------------------------------------------------------------------------------------
+   Accent glow bleeding in from the top-right corner, matching the Add/Edit user dialog
+   (users.vue `.users-record-modal::after`). HIRO: "cctv acces modal add glowing like add
+   users modal".
+
+   Measured against the reference in the WelcomeBanner glow: this is NOT a CSS gradient, it is a
+   plain circle of the accent colour with an enormous blur, so the "gradient" is nothing but the
+   blur falloff. `var(--ui-primary)` is a semantic token, so the glow follows whichever accent the
+   user picked in the sidebar - switching to violet retints it with no extra code, and a hard-coded
+   colour here would have gone stale the moment the accent changed.
+
+   Same three decisions as the users dialog:
+     - `::after` rather than a real element, because the #content slot is documented in this very
+       file as having broken the form's submit path, and the content element is already
+       `overflow: hidden` - which is exactly the clipping needed for the orb to read as light
+       coming in from the corner instead of a blob floating over the form.
+     - `pointer-events: none`, because the circle sits over the header and would otherwise
+       swallow clicks on the close button.
+     - z-0, with `header: 'relative z-10'` and `body: 'relative z-10'` in the :ui prop, so the
+       title and the fields paint above it.
+
+   Scaled slightly up from the users dialog (300px / blur 70px / 0.13 rather than 250 / 60 /
+   0.14) purely because this dialog is much larger - sm:max-w-4xl - and the users-sized orb
+   disappeared into its top-right corner. It is the same visual weight, not a stronger one.
+   ------------------------------------------------------------------------------------------ */
+.cctv-record-modal[data-slot='content']::after {
+  content: '';
+  position: absolute;
+  top: -130px;
+  right: -110px;
+  width: 300px;
+  height: 300px;
+  border-radius: 9999px;
+  background-color: var(--ui-primary);
+  opacity: 0.13;
+  filter: blur(70px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Light mode needs a lighter touch: the same value that is barely perceptible on the dark navy
+   surface turns into a visible stain on a near-white one. */
+:root:not(.dark) .cctv-record-modal[data-slot='content']::after {
+  opacity: 0.09;
 }
 
 /* Staggered reveal of the form fields, so they arrive in reading order instead of the whole

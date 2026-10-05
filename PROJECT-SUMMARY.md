@@ -591,3 +591,62 @@ Tinggi dialog tetap **650px**, tanpa scroll di 1080/900/800/768/720. Form diveri
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
 > Kalau Windows Auth → connection string `Integrated Security=True`, app pool harus jalan sebagai domain service account, dan DB user login-nya perlu `Enable Windows Authentication`. Jawaban ini menentukan langkah setup IIS.
+
+## CCTV Access — glow accent di modal New/Edit Record (2026-10-05)
+
+HIRO: *"cctv acces modal add glowing like add users modal"*.
+
+`web/app/pages/logbook/cctvacc.vue`, pseudo-element `::after` pada
+`.cctv-record-modal[data-slot='content']` — sama persis resepnya dengan glow di dialog
+Add/Edit User (`users.vue`), bukan CSS gradient melainkan **lingkaran** berwarna
+`var(--ui-primary)` dengan blur besar.
+
+| | Users dialog | CCTV dialog |
+|---|---|---|
+| ukuran | 250px | **300px** |
+| blur | 60px | **70px** |
+| opacity (dark) | 0.14 | **0.13** |
+| opacity (light) | 0.09 | **0.09** |
+| posisi | top -110 / right -90 | top -130 / right -110 |
+
+Nilai CCTV sedikit **diperbesar** hanya karena dialognya jauh lebih lebar
+(`sm:max-w-4xl`, terukur 896×500) — orb ukuran users ikut menghilang di sudutnya.
+Bobot visualnya sama, bukan lebih kuat.
+
+Tiga keputusan yang menentukan:
+
+1. **`::after`, bukan elemen nyata** — slot `#content` milik `UModal` adalah hal yang
+   membuat `@submit` form tidak pernah sampai ke `save()` di file ini juga, dan elemen
+   content sudah `overflow: hidden` yang persis memberi clipping supaya glow terbaca
+   sebagai cahaya yang merembes dari sudut.
+2. **`pointer-events: none`** — orb-nya besar di atas header; tanpanya ia menelan klik
+   tombol close.
+3. **`header: 'relative z-10'` + `body: 'relative z-10'`** ditambahkan ke prop `:ui`,
+   supaya judul dan field tergambar di atas glow yang z-0.
+
+CSS-nya di blok `<style>` **non-scoped** yang sudah ada, karena `UModal` di-teleport ke
+`<body>` — aturan scoped tidak akan pernah sampai ke elemen content.
+
+### Verifikasi
+
+| Accent | Warna glow |
+|---|---|
+| green | `rgb(0, 220, 130)` |
+| violet | `oklch(0.702 0.183 293.541)` |
+| green (dikembalikan) | `rgb(0, 220, 130)` |
+
+- Screenshot crop 2x sudut kanan atas (lewat `Page.captureScreenshot` + `clip`) menunjukkan
+  bloom hijau maupun violet dengan jelas.
+- `elementFromPoint` di tengah tombol close tetap mendarat di dalam tombol → orb tidak
+  menutupi klik.
+- Jalur submit form diuji ulang setelah perubahan `:ui`: **Save Row** pada form kosong
+  memunculkan peringatan "These fields are required: Section, Employee No, PIC Name,
+  Purpose / Details, PIC Sign, ISD Sign." → rantai `@submit` → `save()` utuh.
+- Modal ditutup, tabel tidak berubah. Server 11 record, UI "Showing 11 of 11" — cocok,
+  tidak ada baris probe.
+
+> Catatan harness:
+> - Teks aksesibel tombol user di sidebar adalah `ADAdministratorAdmin` (inisial + nama +
+>   role digabung), bukan `Administrator`.
+> - `.click()` sintetis pada item submenu **tidak** membukanya; pakai `cdp
+>   Input.dispatchMouseEvent` pada rect hasil `getBoundingClientRect()`.
