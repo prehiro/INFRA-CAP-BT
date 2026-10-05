@@ -482,6 +482,42 @@ Form diverifikasi ulang setelah perubahan: buat zzanim(Manager) → "User create
 
 > Catatan: memory lama menyebut panel users adalah `<UCard v-if="modalOpen">` inline dengan animasi `modal-bounce-in`. Itu **sudah usang** — panelnya sekarang UModal asli di slot `#body`, jadi CSS bounce lama tidak lagi berlaku.
 
+## 7j. Deskripsi role penuh, pesan password English, Full Name auto-capital (2026-10-05)
+
+Tiga permintaan sekaligus.
+
+### 1. Deskripsi role tampil penuh
+
+`web/app/components/RolePicker.vue`: deskripsi dari satu baris ter-truncate + tooltip `title` menjadi **wrap penuh** di seluruh lebar kartu.
+
+Karena deskripsi jadi 2–3 baris, kartu harus berubah dari `items-center` ke `items-start`, dan nama + deskripsi sekarang berada dalam **satu kolom `flex-1`** — di baris yang di-center, nama akan mengambang ke tengah vertikal deskripsinya sendiri dan terbaca tidak rapi. Indikator dan `UIcon` dapat `mt-0.5` agar rata ke baris pertama.
+
+Dialog tumbuh 582px → **650px**, tapi sweep viewport tetap **tanpa scroll** di 1080/900/800/768/720, karena form dua kolom menyerap tinggi tambahan. Verifikasi: probe `scrollWidth > clientWidth` di semua anak kartu return **false**.
+
+### 2. "Password minimal 6 karakter" → English
+
+Teks yang HIRO lihat itu **server-side**, bukan help text (help sudah English). `api/Controllers/UsersController.cs`:
+
+| Sebelum | Sesudah |
+|---|---|
+| `Password minimal 6 karakter` | `Password must be at least 6 characters` |
+| `Username wajib diisi` | `Username is required` |
+| `Username sudah dipakai` | `Username is already taken` |
+
+`Password minimal` muncul **dua kali** (jalur create dan jalur update) — keduanya diubah. Help text client "Min. 6 characters." → "At least 6 characters." `dotnet build` 0 error, API di-restart. Ketiga respons 400 diverifikasi English lewat fetch langsung.
+
+### 3. Full Name auto-capital — proteksi username dipertahankan
+
+HIRO sebelumnya pernah bilang: "jangan terapkan plugin ini pada halaman login dan user management. **bahaya!**", dan `web/app/plugins/autocapitalize.client.ts` punya `EXCLUDED_PATHS = ['/login', '/users']` sebagai blok **seluruh halaman**.
+
+Blok itu **persempit, bukan dihapus**: `EXCLUDED_PATHS` jadi `['/login']` saja, dan UInput username memakai `data-no-capitalize` (escape hatch yang sudah didokumentasikan plugin ini). Bahaya yang HIRO maksudkan nyata dan masih berlaku — capitalize username mengubah data, "budi" tersimpan jadi "Budi" dan orang itu terkunci dari akunnya.
+
+Verifikasi memakai **keystroke asli** (set `.value` sintetis tidak memicu plugin): mengetik "budi" membuat username tetap `b` lowercase sementara Full Name menjadi `B`. Lalu dibuat user nyata dan dibaca balik dari server: username `zzlower`, fullName `Budi Santoso`.
+
+Trade yang didokumentasikan di komentar plugin: opt-out per-field tidak otomatis menutupi field baru yang ditambahkan ke /users nanti — itu justru argumen asli kenapa blok se-page dulu dipakai.
+
+> Jebakan harness: dispatch **keyDown-with-text sekaligus** `type='char'` untuk satu ketikan menyisipkan karakter **dua kali** ("b" → "bb"), dan Ctrl+A tidak membersihkan UInput terfokus lewat jalur ini. Pakai `type='char'` saja pada field yang sudah fokus dan kosong.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
