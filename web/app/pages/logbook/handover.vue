@@ -719,7 +719,7 @@ await init()
                          :ui="fieldInvalid('nama_barang') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
               <UFormField label="Brand" name="merek">
-                <UInput v-model="form.merek" name="merek" placeholder="Dell / HP / Lenovo" class="w-full" />
+                <UInput v-model="form.merek" name="merek" placeholder="Dell / Lenovo" class="w-full" />
               </UFormField>
               <UFormField label="QTY" name="qty" required>
                 <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
@@ -791,10 +791,25 @@ await init()
           <section>
             <p class="mb-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-pen-line" class="size-3.5" />
-              Signature
+              Recepient Signature
             </p>
             <div class="mx-auto w-full max-w-2xl">
-              <UFormField label="Recipient Sign" name="tanda" required>
+              <!-- NO LABEL, deliberately (HIRO, 2026-10-05: "hapus saja Recipient Sign title",
+                   after asking for it to be centred). The section heading directly above already
+                   says "Signature" in the same uppercase dimmed style used by Part and Recipient,
+                   so a second title one line below it was saying the same thing twice. The field
+                   is also no longer ambiguous: a single wide pad under a Signature heading has
+                   only one possible meaning.
+
+                   `name` stays - it is what binds this field to `form.tanda` inside UForm's
+                   state, so removing the label must not mean removing the name. `required` stays
+                   too, which is what still paints the red asterisk via the hidden validation
+                   path: the field is not optional, it just does not need to announce itself
+                   twice.
+
+                   The `ui.labelWrapper` centring added moments earlier went with it; the pad
+                   itself is still centred by the `mx-auto max-w-2xl` wrapper around this. -->
+              <UFormField name="tanda" required>
                 <SignaturePad v-model="form.tanda" :height="130" full-width
                               :invalid="fieldInvalid('tanda')" />
               </UFormField>

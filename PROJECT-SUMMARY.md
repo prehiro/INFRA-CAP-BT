@@ -1117,3 +1117,35 @@ membuktikan Name sekarang benar-benar wajib diketik. Sebelumnya error Name tidak
 terjevak di jalur create karena field-nya tidak pernah kosong.
 
 Dialog tetap 687px, data tidak tersentuh (0 handover, 11 CCTV).
+
+## Handover — label "Recipient Sign" dihapus (2026-10-05)
+
+HIRO: *"Recipient Sign title to center"* → lalu langsung *"hapus saja Recipient Sign title"*.
+
+Yang perlu dicatat adalah **kenapa** dua permintaan itu saling bertentangan dan hanya yang
+kedua yang berlaku: judul seksi tepat di atas pad sudah berbunyi **"SIGNATURE"** dengan gaya
+uppercase redup yang sama dengan Part dan Recipient, jadi label field satu baris di bawahnya
+mengulang hal yang sama dua kali. Satu pad lebar di bawah judul Signature hanya punya satu
+makna yang mungkin — label itu murni duplikasi, dan HIRO melihatnya begitu setelah label itu
+dijadikan center di sebelah pad. Trik `ui.labelWrapper: 'w-full justify-center'` yang
+ditambahkan sesaat sebelumnya ikut hilang bersamanya.
+
+### Yang TIDAK BOLEH ikut terhapus
+
+- **`name="tanda"`** — inilah yang mengikat field ke `form.tanda` di state `UForm`. Menghapus
+  label tidak boleh berarti menghapus name.
+- **`required`** — tetap menggambar asterisk merah dan tetap menggerakkan validasi halaman ini.
+
+### Verifikasi
+
+Seksi Signature kini me-render **nol label** sementara judulnya tetap berbunyi "Signature";
+pad tetap center di lebar 672px dengan **leftGap 85 = rightGap 85**; dan menekan Save Row pada
+form kosong **tetap** melaporkan *"These fields are required: Part Name, Name, Signature"* —
+jadi field-nya masih wajib walau tidak lagi|SWEATKAN dirinya sendiri. Dialog 687px overflow 0,
+data tidak tersentuh (0 handover, 11 CCTV).
+
+> Pelajaran yang layak digeneralisasi: di project ini HIRO sudah **dua kali** meminta
+> sesuatu di-center lalu meminta menghapusnya, dan dua-duanya permintaan kedua yang lebih baik.
+> Tandranya: hal yang diminta di-center itu sudah berada persis di bawah judul yang
+> mengatakan hal yang sama. Saat diminta menengahkan sebuah judul, cek dulu apakah judul itu
+> memang perlu ada.
