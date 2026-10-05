@@ -727,3 +727,64 @@ persona (CCTV memakai `tanggal` / `nama_pemohon`), dan search haystack mengecual
 
 Baris probe **sudah dihapus**, jadi `handover_log_book` kosong dan siap untuk data asli HIRO.
 Entity id 9 di DB dev.
+
+## Handover — canvas signature diperbesar (2026-10-05)
+
+HIRO: *"canvas signature too small i think, could you redesign the modal form so the canvas
+can have biger space"*.
+
+### Dua sebab, dan hanya memperbaiki satu akan terlihat seperti tidak terjadi apa-apa
+
+1. **Layout** — pad cuma menempati **satu kolom** dari grid 3 kolom form.
+2. **Wrapper `inline-block` di `SignaturePad.vue`** — ini yang sebenarnya. `inline-block`
+   berarti elemennya shrink-to-fit, dan **canvas tidak punya lebar intrinsik**, jadi
+   "fit the content" resolve ke lebar Sekitar placeholder "Sign here": **terukur 124px**
+   di dalam kolom yang sebenarnya ~250px. Jadi kolomnya masih ada ruang, tapi pad tidak
+   bisa memakainya.
+
+### Perbaikan
+
+Prop **opsional** `fullWidth` di `SignaturePad.vue` (default `false`, jadi dialog CCTV yang
+sengaja menaruh dua pad berdampingan **tidak tersentuh**). Saat aktif, wrapper jadi
+`block w-full` **dan** root ikut dapat `w-full` — root itu block biasa, tanpa itu wrapper
+tidak punya ruang tambahan untuk tumbuh.
+
+Field Signature di form handover sekarang `sm:col-span-2 lg:col-span-3` dengan
+`:height="140"`. Form juga diurut ulang: **Name** dapat satu baris penuh (nilai free-text
+terpanjang, sebelumnya tergelit di sebelah Brand yang mostly kosong) dan Section pindah ke
+samping Employee No.
+
+Nilai **140**, bukan lebih tinggi, itu disengaja: dialog terukur 642px dan tidak boleh mulai
+scroll di laptop biasa — pelajaran yang sama dengan perbaikan dialog Add User.
+
+### Terukur
+
+| | Sebelum | Sesudah |
+|---|---|---|
+| Canvas | 124 × 64 | **856 × 140** (~15× luas) |
+| Dialog | 505px | 642px |
+
+Sweep tinggi viewport (bukan cuma 1080p): 1080/900/800/768/720 dialog tetap 642px dengan
+`scrollHeight === clientHeight` (tanpa scroll); 640/569 juga overflow 0 dengan dialog
+mengecil ke 576/505.
+
+D drew di pad itu: 954 piksel tinta di canvas 856×140, tombol Clear muncul, signature
+tergambar penuh selebar dialog di screenshot.
+
+**CCTV diukur ulang sesudahnya** — dua pad tetap **124 × 64**, dialog 503px, overflow 0.
+Benar-benar tidak berubah. Data tidak tersentuh: handover 0 baris, cctv 11.
+
+### Jebakan Vue yang|biaya satu 500 untuk seluruh halaman
+
+Menulis **dua binding `:class` pada elemen yang sama** ditolak outright oleh
+`@vitejs/plugin-vue` dengan "Duplicate attribute", dan itu menjatuhkan **seluruh halaman**
+sebagai 500 "Failed to fetch dynamically imported module" — bukan error lokal. Semua
+conditional class digabung jadi satu ekspresi array.
+
+Diagnosisnya lambat karena satu alasan spesifik: browser menampilkan `500 Internal Server
+Error` **tanpa overlay**, dan `curl` ke `/_nuxt/components/SignaturePad.vue` mengembalikan
+404 sementara `/_nuxt/pages/logbook/handover.vue` mengembalikan 200 — jadi pengecekan URL
+langsung mengarah ke file yang salah. Error ini juga baru muncul **setelah** `.nuxt`
+dihapus dan dev server direstart; sebelumnya dev server menyajikan module graph basi dan
+errornya tertutup. Kalau halaman 500 tanpa overlay, screenshot halaman **segera** — jangan
+berasumsi errornya ada di file yang sedang kamu edit.

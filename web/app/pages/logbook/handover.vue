@@ -639,21 +639,39 @@ await init()
                 <UFormField label="Employee No" name="no_pegawai">
                   <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
                 </UFormField>
-                <UFormField label="Name" name="nama" required>
+                <UFormField label="Section" name="departemen">
+                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
+                </UFormField>
+
+                <!-- Row 3: the recipient's name gets a WHOLE ROW to itself, because it is the
+                     longest free-text value on the sheet and it was previously squeezed into a
+                     third of the width while Brand sat next to it holding mostly empty space.
+                     Pairing it with Name would have been worse: the recipient is who the whole
+                     record is about. -->
+                <UFormField label="Name" name="nama" required class="sm:col-span-2 lg:col-span-3">
                   <UInput v-model="form.nama" name="nama" placeholder="Recipient's full name" class="w-full"
                            :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
                 </UFormField>
 
-                <!-- Row 3: section, then the recipient's signature. One grid column each is
-                     what keeps the pad adjacent to the labels instead of on a row of its own. -->
-                <UFormField label="Section" name="departemen">
-                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
-                </UFormField>
-                <UFormField label="Signature" name="tanda" required>
-                  <SignaturePad v-model="form.tanda" :height="64" :invalid="fieldInvalid('tanda')" />
+                <!-- Row 4: THE SIGNATURE, full width and taller.
+                     This is the change HIRO asked for ("canvas signature too small"). Two things
+                     were wrong, and only fixing one of them would have looked like nothing
+                     happened:
+                       1. the pad sat in ONE grid column, roughly a third of the dialog;
+                       2. SignaturePad's wrapper was `inline-block`, so the canvas shrink-wrapped
+                          to about 124px even inside that column.
+                     Now it spans all three columns at 140px tall - a 700x140 surface instead of
+                     124x64, roughly 12x the drawing area. 140 rather than a taller value on
+                     purpose: the dialog is already 503px tall and this page must not start
+                     scrolling on a normal laptop (the same lesson as the Add-user dialog fix).
+                     `full-width` is opt-in on SignaturePad, so the CCTV dialog's two side-by-side
+                     pads keep exactly the size they have today. -->
+                <UFormField label="Signature" name="tanda" required class="sm:col-span-2 lg:col-span-3">
+                  <SignaturePad v-model="form.tanda" :height="140" full-width
+                                :invalid="fieldInvalid('tanda')" />
                 </UFormField>
 
-                <!-- Row 4: remarks spans the full width. w-full is required as well as the
+                <!-- Row 5: remarks spans the full width. w-full is required as well as the
                      col-span: UTextarea sizes to its content otherwise and ignores the span. -->
                 <UFormField label="Remarks" name="catatan" class="sm:col-span-2 lg:col-span-3">
                   <UTextarea v-model="form.catatan" name="catatan" :rows="2" class="w-full"

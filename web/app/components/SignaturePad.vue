@@ -16,12 +16,25 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   /** Red outline when a mandatory signature has not been drawn yet. */
   invalid?: boolean
+  /**
+   * Fill the whole width of the parent instead of shrink-wrapping.
+   *
+   * The wrapper is `inline-block` by default, which makes the element shrink-to-fit its
+   * content - and a canvas has no intrinsic width, so "fit the content" resolves to roughly
+   * the width of the "Sign here" placeholder. Measured at 124px inside a grid column that
+   * was actually ~250px wide, which is why the pad felt cramped even though the column had
+   * room to spare. Opt-in rather than changed globally: the CCTV dialog deliberately puts
+   * two pads side by side and relies on the current sizing, so flipping the default there
+   * would change a page HIRO did not ask me to touch.
+   */
+  fullWidth?: boolean
 }>(), {
   modelValue: null,
   label: '',
   height: 90,
   disabled: false,
-  invalid: false
+  invalid: false,
+  fullWidth: false
 })
 
 const emit = defineEmits<{ 'update:modelValue': [string | null] }>()
@@ -131,9 +144,23 @@ onBeforeUnmount(() => window.removeEventListener('resize', resize))
 </script>
 
 <template>
-  <div>
+  <!-- `w-full` on the ROOT as well as the wrapper: the root is a plain block, so the wrapper
+       inside it is only as wide as the root allows. Without it, `full-width` alone would
+       have no extra room to grow into. -->
+  <div :class="fullWidth ? 'w-full' : ''">
     <p v-if="label" class="mb-1 text-xs font-medium text-muted">{{ label }}</p>
-    <div class="relative inline-block" :class="invalid ? 'rounded ring-2 ring-error' : ''">
+    <!-- ONE `:class` binding only. Vue's template compiler rejects a second `:class`
+         attribute on the same element outright ("Duplicate attribute" from
+         plugin:vite:vue), and it took down the whole page with a 500 rather than
+         something local - the HMR error overlay hid it. All the conditional classes
+         are therefore folded into a single expression. -->
+    <div
+      class="relative"
+      :class="[
+        fullWidth ? 'block w-full' : 'inline-block',
+        invalid ? 'rounded ring-2 ring-error' : ''
+      ]"
+    >
       <canvas
         ref="canvasEl"
         class="block w-full cursor-crosshair rounded border border-default bg-white touch-none dark:bg-white"
