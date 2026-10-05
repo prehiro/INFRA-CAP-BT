@@ -518,6 +518,38 @@ Trade yang didokumentasikan di komentar plugin: opt-out per-field tidak otomatis
 
 > Jebakan harness: dispatch **keyDown-with-text sekaligus** `type='char'` untuk satu ketikan menyisipkan karakter **dua kali** ("b" → "bb"), dan Ctrl+A tidak membersihkan UInput terfokus lewat jalur ini. Pakai `type='char'` saja pada field yang sudah fokus dan kosong.
 
+## 7k. Rename user tidak langsung update di Dashboard (2026-10-05)
+
+HIRO: "when i rename the user, name in dashboard page not automaticaly change, i must manualy refresh the browser."
+
+**Ini bukan normal — itu bug**, dan sudah diperbaiki.
+
+### Root cause
+
+`useUser()` (`web/app/composables/useApi.ts:23`) adalah `useState<User|null>('auth-user')` — sebuah ref **global** yang ditulis **hanya sekali**, oleh `login()` atau oleh `restore()` setelah full page load.
+
+Dashboard `WelcomeBanner`, sidebar `UserMenu`, dan avatar initials semuanya derive dari situ:
+
+```ts
+const displayName = computed(() => user.value?.fullName || user.value?.username || '')
+```
+
+Jadi PUT berhasil mengubah **database**, tapi state cache tetap menyajikan nama lama. Tidak ada yang fetch ulang; hanya browser refresh yang menjalankan `restore()` → `apiMe()`.
+
+### Fix
+
+`refreshUser()` baru di `web/app/composables/useAuth.ts` — memanggil `apiMe()`, assign ke `user.value`, return boolean, return false kalau tidak ada token, dan **sengaja tidak** menghapus token atau logout saat gagal (network error sesaat tidak boleh mengeluarkan sesi yang masih valid).
+
+`users.vue` sekarang mendestructure `refreshUser` dan memanggilnya setelah `await load()` **hanya** bila `editing.value.id === me.value.id` — mengedit akun orang lain tidak boleh mengubah siapa yang sedang login, dan create tidak relevan.
+
+Karena banner/menu/initials semuanya `computed` dari `user`, **satu assignment itu** memperbarui semua permukaan sekaligus; tidak ada perubahan per-komponen.
+
+### Verifikasi
+
+Rename admin → "Rename Probe", save, lalu **klik link Dashboard di sidebar** (bukan `goto_url`, karena itu bisa memicu reload) → `h2` = "Rename Probe", sidebar = "RP | Rename Probe | Admin". Lalu dikembalikan ke "ADMINISTRATOR" dan dicek ulang → "ADMINISTRATOR" / "AD".
+
+> Jebakan harness: mencocokkan baris user dengan `/@admin/` lebih dulu akan cocok ke **avatar sidebar**, bukan baris tabel — lalu `.querySelectorAll` pada undefined melempar. Batasi pencarian baris ke string sel tabel yang khas, misalnya email `admin@internal`.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
