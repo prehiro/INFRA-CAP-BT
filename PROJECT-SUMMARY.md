@@ -383,6 +383,40 @@ Dua jebakan harness terkait:
 - Span **terlepas** yang di-append ke `body` bukan tes ikon yang sah (CSS disuntik saat render, jadi selalu terbaca MISSING). Teslah elemen asli di dalam modal.
 - CSS mask yang dihasilkan ada di tag `<style>` yang di-inject runtime, bukan di `.nuxt/ui.css`, jadi grep file build tidak membuktikan apa pun.
 
+## 7g. Dialog Add/Edit User tidak lagi scroll (2026-10-05)
+
+HIRO: "i dont want scrollbar in its modal form". Dialog Add user lama tingginya **854px** di viewport 1080p, jadi body UModal scroll dan baris Cancel/Create harus di-scroll dulu untuk dijangkau.
+
+Diperbaiki dengan **redesign, bukan menyembunyikan scrollbar**:
+
+1. `web/app/pages/users.vue` — susunan field satu kolom `space-y-4` jadi `grid grid-cols-2 gap-x-4 gap-y-3.5`:
+
+   | Username | Full Name |
+   |---|---|
+   | Password | Email |
+   | Role | (col-span-2) |
+   | Status | (col-span-2) |
+
+   Modal dilebarkan `sm:max-w-lg` → `sm:max-w-xl`, padding body `p-5` → `p-4 sm:p-5`, dan dua help text dipersingkat.
+
+2. `web/app/components/RolePicker.vue` — kartu role dari dua baris (p-3, indikator size-5, nama di atas deskripsi yang wrap) jadi **satu baris ringkas**: `items-center px-2.5 py-1.5 rounded-lg gap-2.5`, indikator size-4, ikon size-3.5, nama role, lalu deskripsi satu baris ter-truncate dengan `title` untuk teks penuh. Deskripsi role adalah kalimat panjang Bahasa Indonesia, dan membiarkannya wrap adalah penyumbang tinggi terbesar.
+
+Hasil: dialog **854px → 582px**.
+
+Sudah diukur across beberapa tinggi viewport (ini yang penting — satu cek di 1080p akan berhasil padahal laptop 1366x768 masih scroll):
+
+| Viewport | Scroll? |
+|---|---|
+| 1080 / 900 / 800 / 768 / 720 | tidak |
+| 640 | 5px lebih |
+| 569 | 70px lebih |
+
+Jadi di jendela sangat pendek masih scroll, tapi laptop 1366x768 (viewport efektif ~640–720) sudah bersih.
+
+Create diverifikasi ulang **setelah** field diurutkan ulang: isi berdasarkan posisi DOM (sekarang Username, FullName, Password, Email), pilih Admin+Staff → "User created" → server `['Admin','Staff']`; user buangan dihapus, server kembali ke admin/operator01/staf04.
+
+> Pelajaran: "tidak mau scrollbar" itu soal pengguna bisa mencapai tombolnya — turunkan tinggi konten, jangan sekadar menyembunyikan batangnya. Dan selalu sweep beberapa tinggi viewport, jangan hanya mengukur di layar sendiri.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
