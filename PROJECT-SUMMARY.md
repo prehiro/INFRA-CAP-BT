@@ -550,6 +550,43 @@ Rename admin → "Rename Probe", save, lalu **klik link Dashboard di sidebar** (
 
 > Jebakan harness: mencocokkan baris user dengan `/@admin/` lebih dulu akan cocok ke **avatar sidebar**, bukan baris tabel — lalu `.querySelectorAll` pada undefined melempar. Batasi pencarian baris ke string sel tabel yang khas, misalnya email `admin@internal`.
 
+## 7l. Glow accent di kanan atas modal Add/Edit User (2026-10-05)
+
+HIRO: "add smooth gradient in the top right and this color will follow user selected theme accent color".
+
+Diaplication sebagai **pseudo-element `::after`** pada `.users-record-modal[data-slot='content']`, di dalam blok `<style>` **non-scoped** (wajib, alasan sama seperti animasi reveal: `UModal` di-teleport ke body).
+
+Resepnya disalin dari glow `WelcomeBanner` yang sudah diukur terhadap template referensi: **bukan CSS gradient**, melainkan lingkaran 380px berwarna `var(--ui-primary)` dengan `blur(90px)` dan `opacity: 0.28`, diposisikan `top: -140px; right: -120px`, `border-radius: 9999px`.
+
+Karena warnanya `var(--ui-primary)`, glow **otomatis mengikuti accent** — ganti tema, warnanya ikut tanpa kode tambahan. Mode terang menurunkan opacity ke 0.18, karena 0.28 terbaca sebagai tint lembut di navy gelap tapi jadi noda berat di permukaan hampir putih.
+
+Tiga keputusan yang sifatnya menentukan:
+
+1. **`::after`, bukan elemen nyata** — slot `#content` milik `UModal` adalah hal yang membuat `@submit` form tidak pernah sampai ke `save()` di file ini juga, dan elemen nyata akan di-reparent vendor tiap perubahan state.
+2. **`pointer-events: none`** — orb-nya lingkaran besar di atas header; tanpanya ia akan menelan klik tombol close. Diverifikasi dengan `elementFromPoint` bahwa hit test tetap sampai ke tombol close.
+3. **`header: 'relative z-10'` dan `body: 'relative z-10'`** ditambahkan ke prop `:ui`, agar konten tergambar **di atas** glow yang z-0.
+
+Elemen `content` sudah `overflow: hidden`, dan itu persis clipping yang dibutuhkan supaya glow terbaca sebagai cahaya yang merembes dari sudut, bukan blob melayang.
+
+### Verifikasi
+
+Membaca computed style `::after`:
+
+| Accent | Warna glow |
+|---|---|
+| green | `rgb(0, 220, 130)` |
+| violet | `oklch(0.702 0.183 293.541)` |
+| green (dikembalikan) | `rgb(0, 220, 130)` |
+
+Ganti accent lewat submenu **Accent Color** di sidebar, screenshot mengonfirmasi glow jadi violet, lalu dikembalikan ke green (cookie `infra-cap.theme` kembali `{"primary":"green","neutral":"slate"}`).
+
+Tinggi dialog tetap **650px**, tanpa scroll di 1080/900/800/768/720. Form diverifikasi ulang dengan glow aktif: buat `zzglow`(Staff) → "User created", baris muncul, lalu dihapus; server kembali ke admin/operator01/staf04.
+
+> Catatan harness:
+> - Komentar HTML **tidak boleh** berada di antara atribut sebuah komponen di template Vue — pindahkan ke atas tag.
+> - Submenu sidebar punya tiga anak: Accent Color / Neutral Color / Appearance; nama warna ada di span `[data-slot=itemLabel]`, bisa dipilih lewat teks seperti 'violet' atau 'green'.
+> - Override viewport CDP **hilang diam-diam** setelah siklus login/navigasi. Selalu pasang ulang `setDeviceMetricsOverride` sebelum mengukur tinggi/lebar, atau akan mengukur jendela 1264×569 dan salah menyimpulkan ada regresi layout.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
