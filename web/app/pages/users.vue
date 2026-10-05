@@ -461,7 +461,7 @@ onMounted(() => {
            without any duplicated CSS. -->
       <UModal
         v-model:open="modalOpen"
-        :ui="{ content: 'sm:max-w-lg', body: 'p-5' }"
+        :ui="{ content: 'sm:max-w-xl', body: 'p-4 sm:p-5' }"
         :title="editing ? 'Edit user' : 'Add user'"
         :description="editing
           ? 'Update this account. The username cannot be changed.'
@@ -485,15 +485,29 @@ onMounted(() => {
             @submit="save"
             @error="onFormError"
           >
-            <div class="space-y-4">
+            <!-- TWO COLUMNS, deliberately. This form used to be one field per row, which made
+                 the dialog taller than the viewport at ordinary laptop heights, so UModal's
+                 body scrolled and the Cancel/Create row had to be scrolled to reach. Pairing
+                 the short fields side by side roughly halves the height:
+                   Username | Full Name
+                   Password | Email
+                   Role            (spans both - the cards need the width)
+                   Status          (spans both - its help text can be a full sentence)
+                 Nothing here is hidden and nothing scrolls; if a future role list grows long
+                 the RolePicker itself is the only thing that would need to change. -->
+            <div class="grid grid-cols-2 gap-x-4 gap-y-3.5">
               <UFormField
                 name="username"
                 label="Username"
                 required
                 :error="formErrors.username"
-                :help="editing ? 'The username cannot be changed.' : undefined"
+                :help="editing ? 'Cannot be changed.' : undefined"
               >
                 <UInput v-model="form.username" :disabled="!!editing" class="w-full" placeholder="jsmith" />
+              </UFormField>
+
+              <UFormField name="fullName" label="Full Name" :error="formErrors.fullName">
+                <UInput v-model="form.fullName" class="w-full" placeholder="John Smith" />
               </UFormField>
 
               <UFormField
@@ -501,9 +515,13 @@ onMounted(() => {
                 :label="editing ? 'New password' : 'Password'"
                 :required="!editing"
                 :error="formErrors.password"
-                :help="editing ? 'Leave blank to keep the current password.' : 'At least 6 characters.'"
+                :help="editing ? 'Blank keeps current.' : 'Min. 6 characters.'"
               >
                 <UInput v-model="form.password" type="password" class="w-full" placeholder="••••••••" />
+              </UFormField>
+
+              <UFormField name="email" label="Email" :error="formErrors.email">
+                <UInput v-model="form.email" type="email" class="w-full" placeholder="user@company.local" />
               </UFormField>
 
               <!-- Role is now RolePicker: radio-LOOKING cards that are multi-select toggles.
@@ -528,6 +546,7 @@ onMounted(() => {
                 label="Role"
                 :error="formErrors.roleIds"
                 :help="formErrors.roleIds ? undefined : 'Select at least one. A user can hold more than one.'"
+                class="col-span-2"
               >
                 <RolePicker
                   v-model="form.roleIds"
@@ -536,20 +555,13 @@ onMounted(() => {
                 />
               </UFormField>
 
-              <UFormField name="fullName" label="Full Name" :error="formErrors.fullName">
-                <UInput v-model="form.fullName" class="w-full" placeholder="John Smith" />
-              </UFormField>
-
-              <UFormField name="email" label="Email" :error="formErrors.email">
-                <UInput v-model="form.email" type="email" class="w-full" placeholder="user@company.local" />
-              </UFormField>
-
               <UFormField
                 name="isActive"
                 label="Status"
                 :help="deactivateBlocked
                   ? 'This is the only active Admin. Deactivating it would lock every admin account out, with no one left to switch it back on.'
                   : undefined"
+                class="col-span-2"
               >
                 <USwitch
                   v-model="form.isActive"

@@ -80,7 +80,7 @@ function toggle(id: number) {
 </script>
 
 <template>
-  <div class="grid gap-2" role="group" aria-label="Roles">
+  <div class="grid gap-1.5" role="group" aria-label="Roles">
     <button
       v-for="r in roles"
       :key="r.id"
@@ -88,7 +88,7 @@ function toggle(id: number) {
       role="checkbox"
       :aria-checked="isSelected(r.id)"
       :disabled="disabled"
-      class="group flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-default disabled:cursor-not-allowed disabled:opacity-60"
+      class="group flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-default disabled:cursor-not-allowed disabled:opacity-60"
       :class="isSelected(r.id)
         ? 'border-primary bg-primary/8 shadow-sm shadow-primary/10'
         : (invalid
@@ -99,35 +99,40 @@ function toggle(id: number) {
       <!-- The radio-shaped indicator. A ring with a filled centre when selected, so it
            reads as a radio group at a glance while behaving as the checkbox it is. -->
       <span
-        class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150"
+        class="flex size-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors duration-150"
         :class="isSelected(r.id) ? 'border-primary bg-primary' : 'border-default group-hover:border-primary/60'"
         aria-hidden="true"
       >
         <span
-          class="size-1.5 rounded-full bg-white transition-transform duration-150"
+          class="size-1 rounded-full bg-white transition-transform duration-150"
           :class="isSelected(r.id) ? 'scale-100' : 'scale-0'"
         />
       </span>
 
-      <span class="min-w-0 flex-1">
-        <span class="flex items-center gap-2">
-          <span
-            class="flex size-6 shrink-0 items-center justify-center rounded-md transition-colors duration-150"
-            :class="isSelected(r.id) ? 'bg-primary/15 text-primary' : 'bg-default text-dimmed group-hover:text-muted'"
-          >
-            <!-- UIcon, NOT a raw <span class="iconify i-lucide:...">. The raw span renders at the
-                 right size but stays COMPLETELY INVISIBLE (mask-image: none): Nuxt UI resolves an
-                 icon's SVG and injects the matching mask-image CSS from
-                 .nuxt/nuxt-icon-client-bundle.mundle at RENDER TIME, and only the Icon component
-                 triggers that. The class name on its own does nothing, and the icon IS in the
-                 bundle - which is why this looks like a bundling failure when it is not. -->
-            <UIcon :name="iconFor(r.name)" class="size-3.5" />
-          </span>
-          <span class="truncate text-sm font-medium text-default">{{ r.name }}</span>
-        </span>
-        <span v-if="r.description" class="mt-1 block text-xs leading-snug text-dimmed">
-          {{ r.description }}
-        </span>
+      <!-- UIcon, NOT a raw <span class="iconify i-lucide:...">. The raw span renders at the
+           correct size but stays COMPLETELY INVISIBLE (mask-image: none): Nuxt UI resolves an
+           icon's SVG and injects the matching mask-image CSS from
+           .nuxt/nuxt-icon-client-bundle at RENDER TIME, and only the Icon component triggers
+           that. The class name on its own does nothing, and the icon IS in the bundle - which
+           is why this looks like a bundling failure when it is not. -->
+      <UIcon
+        :name="iconFor(r.name)"
+        class="size-3.5 shrink-0 transition-colors duration-150"
+        :class="isSelected(r.id) ? 'text-primary' : 'text-dimmed group-hover:text-muted'"
+      />
+
+      <span class="min-w-0 flex-1 truncate text-sm font-medium text-default">{{ r.name }}</span>
+
+      <!-- One line, truncated, with the full text on hover. The descriptions are long
+           sentences, and letting them wrap is what pushed this dialog past the viewport on a
+           1366x768 laptop (whose usable viewport is only ~640px). The full text is still
+           reachable via the native tooltip, and the delete dialog shows roles in full. -->
+      <span
+        v-if="r.description"
+        class="hidden min-w-0 flex-1 truncate text-xs text-dimmed sm:block"
+        :title="r.description"
+      >
+        {{ r.description }}
       </span>
     </button>
   </div>
