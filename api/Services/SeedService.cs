@@ -11,9 +11,10 @@ public class SeedService
 
     public async Task SeedAsync(string adminUsername, string adminPassword)
     {
-        var adminRole = await EnsureRoleAsync("Admin", "Akses penuh: kelola entity, field, user, dan semua data");
-        await EnsureRoleAsync("Manager", "Kelola data master dan transaksi, tidak bisa kelola user");
-        await EnsureRoleAsync("Staff", "Input dan lihat transaksi, read-only untuk master data");
+        // Descriptions are in English, matching every other string in the UI.
+        var adminRole = await EnsureRoleAsync("Admin", "Full access: manage entities, fields, users, and all data");
+        await EnsureRoleAsync("Manager", "Manage master and transaction data, cannot manage users");
+        await EnsureRoleAsync("Staff", "Enter and view transactions, read-only for master data");
 
         if (!await _db.Users.AnyAsync(u => u.Username == adminUsername))
         {
