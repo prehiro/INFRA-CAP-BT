@@ -798,21 +798,18 @@ await init()
              screen at 768px. -->
         <div class="cctv-record-grid space-y-4">
           <!-- ============ REQUEST ============ -->
+          <!-- HIRO's order (2026-10-05): Section, Employee No, PIC Name on one line, then
+               PIC by ISD and Purpose below. All five fit a single 3-column grid as
+               3 + (1 + 2): the second row gives PIC by ISD one column and Purpose the other
+               two, because Purpose is the long free-text value and PIC by ISD is a name
+               prefilled from the session. One grid, one row break - no col-span guessing and
+               no second row's height wasted on a mostly-empty Purpose. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-file-text" class="size-3.5" />
-              Request
+              Requestor
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <!-- Date is prefilled with today and stays editable. Same themed picker as the
-                   filter, not the native control: the OS date input cannot be styled to match
-                   the app and renders the US mm/dd/yyyy order on this machine, while the sheet
-                   is written dd/mm/yyyy. v-model is a bare yyyy-mm-dd, which is exactly the
-                   form's shape, and :name keeps it inside UForm's state. -->
-              <UFormField label="Date" name="tanggal" required>
-                <DatePicker v-model="form.tanggal" name="tanggal" placeholder="Pick a date"
-                            :invalid="fieldInvalid('tanggal')" />
-              </UFormField>
               <UFormField label="Section" name="departemen" required>
                 <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
                          class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
@@ -821,15 +818,19 @@ await init()
                 <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
                          class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
-
-              <!-- PIC Name gets two columns and Purpose the third, instead of Purpose taking
-                   the whole row. Both are free text; pairing them uses the row instead of
-                   giving one of them a full-width line it does not need. -->
-              <UFormField label="PIC Name" name="nama_pemohon" required class="sm:col-span-2">
+              <UFormField label="PIC Name" name="nama_pemohon" required>
                 <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
                          :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
-              <UFormField label="Purpose" name="tujuan" required>
+
+              <!-- PIC by ISD is prefilled from the session. w-full is required as well as the
+                   col-span on Purpose: UTextarea sizes to its content otherwise and ignores
+                   the span. -->
+              <UFormField label="PIC by ISD" name="pic_isd" required>
+                <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
+                         :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Purpose" name="tujuan" required class="sm:col-span-2">
                 <UTextarea v-model="form.tujuan" name="tujuan" :rows="1" class="w-full"
                           placeholder="What is the footage for?"
                           :ui="fieldInvalid('tujuan') ? { base: 'ring-2 ring-error' } : undefined" />
@@ -838,15 +839,31 @@ await init()
           </section>
 
           <!-- ============ ACCESS WINDOW ============ -->
-          <!-- The pickers take the TIME only; today's date is glued on at save time, so
-               nobody types a date. Two columns rather than three because there are exactly
-               two values here, and a third empty cell would read as a missing field. -->
+          <!-- HIRO asked for Date to sit ON THIS LINE, in the order Date, Start Time, End
+               Time (2026-10-05). It reads correctly: the date qualifies the whole window, so
+               the three values belong together rather than with the requester's details - and
+               it also means the window can be read at a glance as one span of time instead of
+               a date you have to remember from the row above.
+
+               Date is prefilled with today and stays editable. Same themed picker as the
+               filter, not the native control: the OS date input cannot be styled to match the
+               app and renders the US mm/dd/yyyy order on this machine, while the sheet is
+               written dd/mm/yyyy. v-model is a bare yyyy-mm-dd, which is exactly the form's
+               shape, and :name keeps it inside UForm's state.
+
+               The time pickers take the TIME only; today's date is glued on at save time, so
+               nobody types a date. Three columns, because there are exactly three values here
+               and a fourth empty cell would read as a missing field. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-clock" class="size-3.5" />
-              Access window
+              Access Time
             </p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <UFormField label="Date" name="tanggal" required>
+                <DatePicker v-model="form.tanggal" name="tanggal" placeholder="Pick a date"
+                            :invalid="fieldInvalid('tanggal')" />
+              </UFormField>
               <UFormField label="Start Time" name="pic_mulai" required>
                 <TimePicker v-model="form.pic_mulai" name="pic_mulai" :invalid="fieldInvalid('pic_mulai')" />
               </UFormField>
@@ -856,27 +873,23 @@ await init()
             </div>
           </section>
 
-          <!-- ============ AUTHORISATION ============ -->
+          <!-- ============ SIGNATURE ============ -->
+          <!-- Titled "Signature", not "Authorisation" (HIRO, 2026-10-05). The section holds
+               nothing but the two pads now that PIC by ISD moved up into the Request section,
+               so a broader heading would be claiming more than the section contains. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-pen-line" class="size-3.5" />
-              Authorisation
+              Signature
             </p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <!-- The ISD officer is prefilled from the session, and takes the full width so
-                   the signature pair below starts on its own clean row - the row's meaning is
-                   "who signed", not "who is this and who signed". -->
-              <UFormField label="PIC by ISD" name="pic_isd" required class="sm:col-span-2 lg:col-span-3">
-                <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
-                         :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
-              </UFormField>
-            </div>
 
             <!-- The two pads, side by side, each half the dialog. `full-width` is the opt-in
                  prop added to SignaturePad for the Handover page: without it the wrapper is
                  `inline-block` and the canvas shrink-wraps to about 124px no matter how much
-                 room this cell actually has. -->
-            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                 room this cell actually has. Side by side is deliberate - the two signatures
+                 ARE the point of this sheet, one requester and one ISD officer approving the
+                 same request. -->
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <UFormField label="PIC Sign" name="tanda_pemohon" required>
                 <SignaturePad v-model="form.tanda_pemohon" :height="130" full-width
                               :invalid="fieldInvalid('tanda_pemohon')" />

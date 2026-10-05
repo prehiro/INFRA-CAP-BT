@@ -849,3 +849,49 @@ server kembali ke **11 baris CCTV, 0 handover, nol baris probe**.
 > CSS saya sendiri terjadi di antara fill dan submit. Mengisi **dan** submit dalam **satu**
 > `browser_exec` call adalah pola yang bisa diandalkan; mengisi di satu call lalu submit di
 > call berikutnya tidak.
+
+## CCTV — urutan field form according (2026-10-05)
+
+HIRO: *"change the position of date make it same line on section access windows, in order ->
+Date, Start Time, End Time. Then in the request section in order -> Section, Employee No,
+PIC Name, below that PIC by ISD, Purpose. then in Signature section make Signature title"*.
+
+### Struktur hasil (dibaca ulang dari DOM, bukan diasumsikan)
+
+| Seksi | Field |
+|---|---|
+| **Request** | Section, Employee No, PIC Name, PIC by ISD, Purpose |
+| **Access window** | Date, Start Time, End Time |
+| **Signature** | PIC Sign, ISD Sign |
+
+Dua konsekuensi layout yang perlu diingat:
+
+1. **Access window** berubah dari grid 2 kolom ke `sm:col-cols-3`, karena sekarang ada
+   **tiga** nilai persis di baris itu — kolom kosong keempat akan terbaca sebagai field
+   yang hilang.
+2. **PIC by ISD pindah keluar** dari seksi Authorisation ke dalam Request. Itulah sebabnya
+   seksi ketiga sekarang diberi judul **"Signature"**, bukan "Authorisation": isinya hanya
+   dua pad, jadi judul yang lebih luas mengklaim lebih dari yang_isinya.
+
+`sm:col-span-2` pada **Purpose** berpindah ke kolom lain di baris yang sama (sebelumnya
+PIC Name yang 1 kolom; sekarang PIC by ISD 1 kolom dan Purpose 2 kolom), karena Purpose
+adalah nilai free-text terpanjang sedangkan PIC by ISD hanya nama yang ter-prefill dari
+sesi. `mt-3` pada grid pad dihapus karena `mb-2` pada judul seksi sudah memberi jarak itu —
+`mt-3` itu hanya ada untuk menyingkiri baris yang sekarang tidak lagi memisahkan keduanya.
+
+### Tingginya justru turun
+
+Dialog **694px → 626px**ZBANpad tetap 130px, karena tiga field jadi satu baris
+(Date + Start + End) dan Purpose pindah seeksip PIC by ISD — satu baris utuh hilang.
+Sweep 1080/900/800/768/720 semua membaca 626px overflow 0; di 640 menyusut ke 576px dengan
+pad 415×130, tetap overflow 0.
+
+### Verifikasi
+
+Diuji ulang end to end pada baris probe **sesudah** pengurutan: diisi mengikuti posisi
+BARU, gambar di kedua pad (904 piksel tinta masing-masing), Save Row → baris muncul dengan
+dua image signature 4658 karakter, dihapus → server kembali ke **11 baris CCTV, nol ZZ
+Probe**.
+
+CSS stagger tidak perlu diubah: selector-nya menyasar `> section > div > *`, dan
+pengurutan ini hanya mengubah **field mana** di tiap seksi, bukan strukturnya.
