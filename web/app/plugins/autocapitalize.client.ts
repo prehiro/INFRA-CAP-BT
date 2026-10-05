@@ -40,14 +40,23 @@
  *              into "Admin" means the app stops comparing what was typed with what was
  *              stored. It happened to work only because the API compares case-insensitively,
  *              which is a coincidence, not a guarantee.
- * - /users   - the Add/Edit User form. Capitalising there does not merely look wrong, it
- *              CHANGES DATA: creating "budi" would save "Budi", and from then on that
- *              person cannot sign in with the username they were given.
  *
- * Excluding the whole page also covers any field added to these screens later, which a
- * per-field opt-out would not.
+ * /users WAS ALSO EXCLUDED, and on 2026-10-05 HIRO asked for the Full Name to auto-capitalise
+ * ("Fullname textbox auto Capital"). The page-wide exclusion is therefore narrowed rather than
+ * removed, because the danger he was protecting against is real and still applies:
+ *
+ * - the USERNAME must never be rewritten. Creating "budi" and saving "Budi" means that person
+ *   can never sign in with the username they were given. That field now opts out individually
+ *   with `data-no-capitalize`, which is the escape hatch this plugin already documents, and the
+ *   password is skipped by type. Verified: typing a lowercase username stores it lowercase.
+ * - FULL NAME is a caption, not a credential, so capitalising it is safe and is what HIRO asked
+ *   for. Email is skipped by input type.
+ *
+ * Note the trade: a per-field opt-out does not automatically cover a field added to this page in
+ * future, which is the argument the page-wide exclusion was originally built on. The username
+ * field is disabled when editing, and the only other free-text fields are the ones handled here.
  */
-const EXCLUDED_PATHS = ['/login', '/users']
+const EXCLUDED_PATHS = ['/login']
 
 function onExcludedPage() {
   const path = window.location.pathname.toLowerCase()

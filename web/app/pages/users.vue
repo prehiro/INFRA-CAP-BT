@@ -496,6 +496,13 @@ onMounted(() => {
                  Nothing here is hidden and nothing scrolls; if a future role list grows long
                  the RolePicker itself is the only thing that would need to change. -->
             <div class="users-record-grid grid grid-cols-2 gap-x-4 gap-y-3.5">
+              <!-- `data-no-capitalize` is LOAD-BEARING, not decoration. The auto-capitalise plugin skips any
+                   input carrying it, which is how the username stays lowercase while Full Name
+                   capitalises on the same page. The whole /users page used to be excluded from
+                   that plugin, but HIRO asked for Full Name to auto-capitalise on 2026-10-05.
+                   Capitalising the username would save "budi" as "Budi" and lock that person out
+                   of the account name they were given, so the protection moved from the page
+                   down to this one field. -->
               <UFormField
                 name="username"
                 label="Username"
@@ -503,7 +510,13 @@ onMounted(() => {
                 :error="formErrors.username"
                 :help="editing ? 'Cannot be changed.' : undefined"
               >
-                <UInput v-model="form.username" :disabled="!!editing" class="w-full" placeholder="jsmith" />
+                <UInput
+                  v-model="form.username"
+                  data-no-capitalize
+                  :disabled="!!editing"
+                  class="w-full"
+                  placeholder="jsmith"
+                />
               </UFormField>
 
               <UFormField name="fullName" label="Full Name" :error="formErrors.fullName">
@@ -515,7 +528,7 @@ onMounted(() => {
                 :label="editing ? 'New password' : 'Password'"
                 :required="!editing"
                 :error="formErrors.password"
-                :help="editing ? 'Blank keeps current.' : 'Min. 6 characters.'"
+                :help="editing ? 'Blank keeps current.' : 'At least 6 characters.'"
               >
                 <UInput v-model="form.password" type="password" class="w-full" placeholder="••••••••" />
               </UFormField>

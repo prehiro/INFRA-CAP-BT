@@ -31,12 +31,12 @@ public class UsersController : ControllerBase
     public async Task<ActionResult<UserDto>> Create(CreateUserRequest req)
     {
         var errors = new Dictionary<string, string>();
-        if (string.IsNullOrWhiteSpace(req.Username)) errors["username"] = "Username wajib diisi";
-        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6) errors["password"] = "Password minimal 6 karakter";
+        if (string.IsNullOrWhiteSpace(req.Username)) errors["username"] = "Username is required";
+        if (string.IsNullOrWhiteSpace(req.Password) || req.Password.Length < 6) errors["password"] = "Password must be at least 6 characters";
         if (errors.Count > 0) return BadRequest(new { message = "Validation failed", errors });
 
         if (await _db.Users.AnyAsync(u => u.Username == req.Username))
-            return BadRequest(new { message = "Validation failed", errors = new Dictionary<string, string> { ["username"] = "Username sudah dipakai" } });
+            return BadRequest(new { message = "Validation failed", errors = new Dictionary<string, string> { ["username"] = "Username is already taken" } });
 
         var roles = await _db.Roles.Where(r => req.RoleIds.Contains(r.Id)).ToListAsync();
         var user = new Api.Domain.AppUser
@@ -69,7 +69,7 @@ public class UsersController : ControllerBase
         if (req.IsActive is not null) user.IsActive = req.IsActive.Value;
         if (!string.IsNullOrEmpty(req.Password))
         {
-            if (req.Password.Length < 6) return BadRequest(new { message = "Password minimal 6 karakter" });
+            if (req.Password.Length < 6) return BadRequest(new { message = "Password must be at least 6 characters" });
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.Password);
         }
         if (req.RoleIds is not null)
