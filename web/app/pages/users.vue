@@ -470,9 +470,18 @@ onMounted(() => {
            The title/description are passed as UModal props rather than hand-built markup,
            which is also what makes the header, close button and layout identical to CCTV's
            without any duplicated CSS. -->
+      <!-- The header and body get `relative z-10` so they sit ABOVE the ::after glow painted below.
+           The glow itself is a ::after on the content element (CSS in the non-scoped block at the
+           foot of this file), NOT a div in the #content slot: that slot previously made the form's
+           @submit never reach save(), and a real element would also have to be re-parented by the
+           vendor on every state change. -->
       <UModal
         v-model:open="modalOpen"
-        :ui="{ content: 'sm:max-w-xl users-record-modal', body: 'p-4 sm:p-5' }"
+        :ui="{
+          content: 'sm:max-w-xl users-record-modal',
+          header: 'relative z-10',
+          body: 'relative z-10 p-4 sm:p-5'
+        }"
         :title="editing ? 'Edit user' : 'Add user'"
         :description="editing
           ? 'Update this account. The username cannot be changed.'
@@ -804,6 +813,46 @@ onMounted(() => {
 
 .users-page-block:nth-of-type(2) {
   animation-delay: 90ms;
+}
+
+/* ---- accent glow in the top-right corner ----
+   Same recipe as the WelcomeBanner glow, which was measured against the reference template:
+   it is NOT a CSS gradient, it is a plain circle of `bg-primary` with an enormous blur, so the
+   "gradient" is nothing but the blur falloff.
+
+   `bg-primary` is a SEMANTIC token, so the glow follows whichever accent the user picked in
+   the sidebar Appearance menu - switching to violet retints it with no extra work. A hard-coded
+   colour here would have gone stale the moment the accent changed.
+
+   Why a ::after rather than a real element:
+    - UModal's #content slot is documented in this file's own history as the thing that stopped
+      the form's @submit from ever reaching save(), so it is not a safe place to add markup.
+    - the content element is already `overflow: hidden`, which is exactly the clipping needed to
+      make the glow read as light bleeding in from the corner rather than a floating blob.
+
+   `pointer-events: none` is essential: the orb is a large circle sitting over the header, and
+   without this it would swallow clicks on the close button. `aria-hidden` is not needed on a
+   pseudo-element (it is never exposed to assistive tech), but z-0 keeps it below the header and
+   body, which were given `relative z-10` in the :ui prop. */
+.users-record-modal[data-slot='content']::after {
+  content: '';
+  position: absolute;
+  top: -140px;
+  right: -120px;
+  width: 380px;
+  height: 380px;
+  border-radius: 9999px;
+  background-color: var(--ui-primary);
+  opacity: 0.28;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Light mode needs a lighter touch: the same 0.28 opacity that reads as a soft tint on the dark
+   navy surface turns into a heavy wash on a near-white one. */
+:root:not(.dark) .users-record-modal[data-slot='content']::after {
+  opacity: 0.18;
 }
 
 /* No half-built animation may ever be captured, on paper or under the OS reduce-motion
