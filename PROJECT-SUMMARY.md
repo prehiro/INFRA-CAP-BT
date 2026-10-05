@@ -319,6 +319,45 @@ Cek cepat kalau API Connectivity Timeout dan tidak yakin: `curl -s -m 10 http://
 
 > Di produzsi kantor file `appsettings.Production.json` memang itu yang BENAR (SQL lokal di 10.89.6.237), jadi file ini jangan dihapus — yang bahaya cuma membacanya di mesin dev.
 
+## 7e. Notifikasi CCTV Access = toast yang sama dengan User Management (2026-10-05)
+
+HIRO minta notifikasi "row added/deleted" di `/logbook/cctvacc` dibuat sama persis dengan yang di `/users`.
+
+Sebelumnya cctvacc bikin notifikasi sendiri: `const toast = ref<{msg,kind}|null>(null)` + blok `<Teleport to="body">` dengan `top-20 z-[60]`, class success/error buatan sendiri, dan `setTimeout` 4 detik.
+
+Sekarang pakai toast bawaan Nuxt UI yang sama dengan users.vue:
+
+```ts
+const toast = useToast()
+function notify(msg: string, kind: 'success' | 'error' = 'success') {
+  toast.add({ title: msg, color: kind })
+}
+```
+
+Blok `<Teleport>` **dihapus**, bukan dinonaktifkan — grep membuktikan 0 sisa `toast.value` / `toast.msg` / `toast.kind` dan tidak ada elemen `<Teleport>` di halaman ini.
+
+Kenapa `<Teleport>` itu perlu duluan: notifikasi yang render inline terkurung di stacking context `isolate` milik `#__nuxt`, jadi tidak bisa pernah di atas `UModal` (modal di-teleport ke sibling yang lebih akhir) — itu sebabnya "Validation failed" tidak terlihat di belakang modal. `<UToaster>` milik `UApp` sudah me-teleport ke body sendiri, jadi masalah yang sama tetap hilang.
+
+> Fakta penting: `UApp` di `web/app/app.vue` sudah menyediakan `<UToaster>` untuk seluruh app. Itu sebabnya `users.vue` tidak menulis `<UToaster>` sama sekali, dan `grep UToaster web/app` kosong. Jangan tambahkan UToaster kedua di halaman manapun.
+
+Tampilan sekarang: **kanan bawah**, ada tombol X, ada progress strip berwarna (hijau sukses / merah error).
+
+Teks juga disamakan dengan users.vue (tanpa titik di akhir):
+
+| Sebelum | Sesudah |
+|---|---|
+| `Row added.` | `Record created` |
+| `Row updated.` | `Record updated` |
+| `Row deleted.` | `Record deleted` |
+| `Gagal menyimpan.` | `Could not save the record.` |
+| `Gagal menghapus.` | `Could not delete the record.` |
+| `Gagal memuat data.` | `Could not load the data.` |
+| `Entity CCTV Log Book belum ada di database.` | `CCTV Log Book entity not found in the database.` |
+
+Sudah diverifikasi end-to-end di browser 1920x1080: toast validasi error, record asli dibuat (tanda tangan digambar di kedua canvas, 341/339 piksel tinta) → "Record created", lalu dihapus lewat dialog konfirmasi → "Record deleted". Baris probe sudah dihapus, tabel kembali ke 10 baris milik HIRO, User Management tetap 3 user.
+
+> Catatan harness: tombol aksi di baris tabel **tidak punya aria-label**, jadi cari lewat class ikon (`i-lucide:trash-2`, `i-lucide:pencil`) di dalam baris target — bukan lewat nama aksesibel. Toast hilang dalam ~5 detik, jadi pemicu dan pembacaan harus dalam satu panggilan js() yang sama.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
