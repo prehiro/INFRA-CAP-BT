@@ -609,75 +609,173 @@ await init()
              documented in the CCTV file as having broken the form's submit path, and the content
              element is already `overflow: hidden`, which is exactly the clipping that makes the
              orb read as light bleeding in from the corner. -->
-        <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl handover-record-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }"
-                :title="editing ? 'Edit Row' : 'New Handover'"
-                :description="editing ? 'Update this handover entry.' : 'Record an IT part handed over to a user.'">
-          <template #body>
-            <!-- `:validate-on="[]"` switches OFF UForm's own validation, so this page can raise
-                 ONE warning listing every missing field instead of UForm short-circuiting the
-                 submit with per-field errors. `required` is kept only for the red asterisk. -->
-            <UForm :state="form" :validate-on="[]" @submit="save">
-              <div class="handover-record-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <!-- Row 1: when the part left, what it is, and how many. -->
-                <UFormField label="Taken Date" name="tanggal_ambil" required>
-                  <DatePicker v-model="form.tanggal_ambil" name="tanggal_ambil" placeholder="Pick a date"
-                              :invalid="fieldInvalid('tanggal_ambil')" />
-                </UFormField>
-                <UFormField label="Part Name" name="nama_barang" required>
-                  <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Laptop / monitor / dongle" class="w-full"
-                           :ui="fieldInvalid('nama_barang') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
-                <UFormField label="Brand" name="merek">
-                  <UInput v-model="form.merek" name="merek" placeholder="Dell / HP / Lenovo" class="w-full" />
-                </UFormField>
+        <!-- THE HEADER IS REPLACED WHOLESALE, matching the CCTV dialog exactly (HIRO, 2026-10-05:
+         "on new handover form adapt style from cctv form ... make the section title like form
+         cctv access"). Two logbooks that look different read as two different applications, so
+         this is a deliberate copy rather than a parallel design.
 
-                <!-- Row 2: quantity and who received it. Name is prefilled from the session. -->
-                <UFormField label="QTY" name="qty" required>
-                  <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
-                           :ui="fieldInvalid('qty') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
-                <UFormField label="Employee No" name="no_pegawai">
-                  <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
-                </UFormField>
-                <UFormField label="Section" name="departemen">
-                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
-                </UFormField>
+         REPLACING #header INSTEAD OF FILLING #title IS REQUIRED for the plate to span both
+         lines. Modal.vue renders `<slot name="title">` INSIDE its own <DialogTitle>, which is a
+         SIBLING of <DialogDescription> - so a plate placed there can only ever be as tall as
+         the title line. That is the single fact that cost three measurement rounds on the CCTV
+         page; it is written here so it does not have to be rediscovered here.
 
-                <!-- Row 3: the recipient's name gets a WHOLE ROW to itself, because it is the
-                     longest free-text value on the sheet and it was previously squeezed into a
-                     third of the width while Brand sat next to it holding mostly empty space.
-                     Pairing it with Name would have been worse: the recipient is who the whole
-                     record is about. -->
-                <UFormField label="Name" name="nama" required class="sm:col-span-2 lg:col-span-3">
-                  <UInput v-model="form.nama" name="nama" placeholder="Recipient's full name" class="w-full"
-                           :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
+         The cost of taking the slot over is owning the close button, because #header wraps the
+         wrapper, the #actions slot and the <DialogClose> together (Modal.vue lines 100-135).
+         Both teardown paths were verified working after the copy on this page too.
 
-                <!-- Row 4: THE SIGNATURE, full width and taller.
-                     This is the change HIRO asked for ("canvas signature too small"). Two things
-                     were wrong, and only fixing one of them would have looked like nothing
-                     happened:
-                       1. the pad sat in ONE grid column, roughly a third of the dialog;
-                       2. SignaturePad's wrapper was `inline-block`, so the canvas shrink-wrapped
-                          to about 124px even inside that column.
-                     Now it spans all three columns at 140px tall - a 700x140 surface instead of
-                     124x64, roughly 12x the drawing area. 140 rather than a taller value on
-                     purpose: the dialog is already 503px tall and this page must not start
-                     scrolling on a normal laptop (the same lesson as the Add-user dialog fix).
-                     `full-width` is opt-in on SignaturePad, so the CCTV dialog's two side-by-side
-                     pads keep exactly the size they have today. -->
-                <UFormField label="Signature" name="tanda" required class="sm:col-span-2 lg:col-span-3">
-                  <SignaturePad v-model="form.tanda" :height="140" full-width
-                                :invalid="fieldInvalid('tanda')" />
-                </UFormField>
+         `min-h-0` cancels the vendor's `min-h-(--ui-header-height)` floor - the 4rem lock that
+         also made PageHeader title-only on this project. Without it, the 32px of default
+         padding eats a 64px box and leaves no room for a two-line block. `items-stretch`
+         (NOT items-center) is what makes each item take the full line height; `items-center`
+         measures the plate at 33px against a 41px text block.
+         `self-stretch` needs a fixed WIDTH and NO height class at all - a `size-*` sets height
+         and silently defeats it, and a `grid` parent establishes its own alignment context so
+         align-self never reaches the row's cross axis. -->
+    <UModal v-model:open="showForm"
+            :ui="{
+              content: 'sm:max-w-4xl handover-record-modal',
+              header: 'relative z-10 flex items-stretch gap-3.5 p-4 min-h-0 sm:px-6',
+              body: 'relative z-10 p-4 sm:p-5'
+            }"
+            :title="editing ? 'Edit Row' : 'New Handover'"
+            :description="editing ? 'Update this handover entry.' : 'Record an IT part handed over to a user.'">
+      <template #header="{ close }">
+        <span
+          class="handover-modal-icon flex w-10 shrink-0 items-center justify-center self-stretch
+                 rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 dark:bg-primary/15"
+        >
+          <!-- Package/box for a part being handed over; the pen variant when editing, matching
+               the CCTV dialog's create-vs-edit icon swap. -->
+          <UIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-package'" class="size-5" />
+        </span>
 
-                <!-- Row 5: remarks spans the full width. w-full is required as well as the
-                     col-span: UTextarea sizes to its content otherwise and ignores the span. -->
-                <UFormField label="Remarks" name="catatan" class="sm:col-span-2 lg:col-span-3">
-                  <UTextarea v-model="form.catatan" name="catatan" :rows="2" class="w-full"
-                            placeholder="Condition of the part, accessories included, anything notable" />
-                </UFormField>
-              </div>
+        <!-- Title and subtitle as ONE block: `leading-tight` on the title and a 0 gap before the
+             description is what makes the pair read as a single two-line label rather than a
+             caption floating under a heading. `min-w-0` lets the text truncate on a narrow
+             dialog instead of pushing the close button off-screen. -->
+        <span class="min-w-0 flex-1">
+          <span class="block text-base font-semibold leading-tight text-default">
+            {{ editing ? 'Edit Row' : 'New Handover' }}
+          </span>
+          <span class="mt-0.5 block text-sm leading-snug text-muted">
+            {{ editing ? 'Update this handover entry.' : 'Record an IT part handed over to a user.' }}
+          </span>
+        </span>
+
+        <!-- The vendor close button, rebuilt. `close()` comes from DialogRoot, so this is the
+             same teardown path the vendor button uses, not a hand-rolled state change. -->
+        <UButton
+          icon="i-lucide-x"
+          color="neutral"
+          variant="ghost"
+          aria-label="Close"
+          class="shrink-0"
+          @click="close()"
+        />
+      </template>
+      <template #body>
+      <!-- `:validate-on="[]"` switches OFF UForm's own validation, so this page can raise ONE
+           warning listing every missing field instead of UForm short-circuiting the submit with
+           per-field errors. `required` is kept only for the red asterisk. -->
+      <UForm :state="form" :validate-on="[]" @submit="save">
+        <!-- Sections and a 2-column grid (HIRO, 2026-10-05), copying the CCTV dialog's structure:
+             small uppercase dimmed heading with a leading icon, the fields under it, then the
+             next section. The section headings are the thing that makes a ten-field form read
+             as a record being created rather than a form to fill in.
+
+             TWO columns rather than three on purpose. Three columns on this sheet would leave a
+             gap wherever an odd field count is followed by a wide one, and - more importantly -
+             Remarks was asked for BESIDE Name, which only works cleanly at two: Name | Remarks
+             fills the row exactly, and the pair reads as "who received it, and anything worth
+             noting about it", which is how the record is actually used.
+
+             The heading selectors below changed with the structure: the grid's direct children
+             are now the three <section> elements rather than the fields, so `> *` alone would
+             stagger the sections and nothing else - a silent partial failure, since the
+             animation would still be visible. -->
+        <div class="handover-record-grid space-y-4">
+          <!-- ============ PART ============ -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-package" class="size-3.5" />
+              Part
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <!-- Taken Date is prefilled with today and stays editable. Same themed picker as the
+                   filter, not the native control: the OS date input cannot be styled to match the
+                   app and renders the US mm/dd/yyyy order on this machine, while the sheet is
+                   written dd/mm/yyyy. v-model is a bare yyyy-mm-dd, which is exactly the form's
+                   shape, and :name keeps it inside UForm's state. -->
+              <UFormField label="Taken Date" name="tanggal_ambil" required>
+                <DatePicker v-model="form.tanggal_ambil" name="tanggal_ambil" placeholder="Pick a date"
+                            :invalid="fieldInvalid('tanggal_ambil')" />
+              </UFormField>
+              <UFormField label="QTY" name="qty" required>
+                <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
+                         :ui="fieldInvalid('qty') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Part Name" name="nama_barang" required>
+                <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Laptop / monitor / dongle" class="w-full"
+                         :ui="fieldInvalid('nama_barang') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Brand" name="merek">
+                <UInput v-model="form.merek" name="merek" placeholder="Dell / HP / Lenovo" class="w-full" />
+              </UFormField>
+            </div>
+          </section>
+
+          <!-- ============ RECIPIENT ============ -->
+          <!-- Name and Remarks share the row, Name on the left (HIRO: "make remarks in the right
+               of name"). Name is prefilled from the session. Remarks is a free-text box rather
+               than an input because condition notes run to a sentence or two - "screen has a
+               hairline scratch, charger included" is the kind of thing this column exists for,
+               and a single-line input would truncate exactly that.
+
+               Both are full width of their own column, and `w-full` is required as well as the
+               grid cell: UTextarea sizes to its content otherwise and ignores the column. -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-user-round" class="size-3.5" />
+              Recipient
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UFormField label="Name" name="nama" required>
+                <UInput v-model="form.nama" name="nama" placeholder="Recipient's full name" class="w-full"
+                         :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Remarks" name="catatan">
+                <UTextarea v-model="form.catatan" name="catatan" :rows="1" class="w-full"
+                          placeholder="Condition, accessories included" />
+              </UFormField>
+              <UFormField label="Employee No" name="no_pegawai">
+                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
+              </UFormField>
+              <UFormField label="Section" name="departemen">
+                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
+              </UFormField>
+            </div>
+          </section>
+
+          <!-- ============ SIGNATURE ============ -->
+          <!-- Titled "Signature" to match the CCTV dialog's third section exactly.
+               `full-width` is the opt-in prop on SignaturePad: without it the wrapper is
+               `inline-block` and the canvas shrink-wraps to about 124px however much room the
+               cell actually has. 140 rather than taller keeps the dialog off a scrollbar on a
+               normal laptop. -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-pen-line" class="size-3.5" />
+              Signature
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UFormField label="Recipient Sign" name="tanda" required>
+                <SignaturePad v-model="form.tanda" :height="130" full-width
+                              :invalid="fieldInvalid('tanda')" />
+              </UFormField>
+            </div>
+          </section>
+        </div>
 
               <div class="mt-4 flex items-center justify-between gap-2 border-t border-default pt-4">
                 <!-- Footnote on the LEFT, actions on the right: the legend for the red
@@ -980,9 +1078,27 @@ await init()
   opacity: 0.09;
 }
 
+/* The icon plate in the dialog title settles a beat AFTER the dialog starts moving.
+   Without a delay it popped into place at full opacity on frame 1 while the dialog was still
+   sliding in, which read as a separate, later event rather than part of the same arrival.
+   Opacity + a small translate only - never scale (a scaled glyph rasterises at the intermediate
+   size and reads soft). The curve is monotonic so the plate lands exactly where it belongs. */
+@keyframes handover-title-icon-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.handover-modal-icon {
+  animation: handover-title-icon-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+}
+
 /* Staggered reveal of the form fields, so they arrive in reading order instead of the whole
    form arriving as one slab. `both` keeps each field at its from-state while it waits its turn,
-   which is what makes the stagger read as a sequence rather than a flash. */
+   which is what makes the stagger read as a sequence rather than a flash.
+   The selector targets the SECTIONS and the fields inside them: the grid's direct children are
+   the three <section> elements, so `> *` alone would stagger the sections and nothing else -
+   a silent partial failure, because the animation would still be visible.
+   One delay per SECTION, and the signature pad last, because it is the point of the form. */
 @keyframes handover-row-reveal-pos {
   from { transform: translateY(8px); }
   to   { transform: translateY(0); }
@@ -993,23 +1109,25 @@ await init()
   to   { opacity: 1; }
 }
 
-.handover-record-grid > * {
+.handover-record-grid > *,
+.handover-record-grid > section > div > * {
   animation:
     handover-row-reveal-pos 320ms cubic-bezier(0.3, 0, 0.2, 1) both,
     handover-row-reveal-fade 210ms cubic-bezier(0.4, 0, 0.35, 1) both;
 }
 
-.handover-record-grid > *:nth-child(1) { animation-delay: 0ms; }
-.handover-record-grid > *:nth-child(2) { animation-delay: 38ms; }
-.handover-record-grid > *:nth-child(3) { animation-delay: 76ms; }
-.handover-record-grid > *:nth-child(4) { animation-delay: 114ms; }
-.handover-record-grid > *:nth-child(5) { animation-delay: 150ms; }
-.handover-record-grid > *:nth-child(6) { animation-delay: 182ms; }
-.handover-record-grid > *:nth-child(n + 7) { animation-delay: 210ms; }
+.handover-record-grid > *:nth-child(1),
+.handover-record-grid > *:nth-child(1) > div > * { animation-delay: 0ms; }
+.handover-record-grid > *:nth-child(2),
+.handover-record-grid > *:nth-child(2) > div > * { animation-delay: 70ms; }
+.handover-record-grid > *:nth-child(3),
+.handover-record-grid > *:nth-child(3) > div > * { animation-delay: 140ms; }
 
 @media (prefers-reduced-motion: reduce) {
   .handover-record-modal[data-slot='content'][data-state],
-  .handover-record-grid > * {
+  .handover-record-grid > *,
+  .handover-record-grid > section > div > *,
+  .handover-modal-icon {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -1018,7 +1136,9 @@ await init()
 
 @media print {
   .handover-record-modal[data-slot='content'][data-state],
-  .handover-record-grid > * {
+  .handover-record-grid > *,
+  .handover-record-grid > section > div > *,
+  .handover-modal-icon {
     animation: none !important;
   }
 }

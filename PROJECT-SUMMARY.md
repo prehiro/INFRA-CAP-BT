@@ -976,3 +976,60 @@ overflow 0 di 1080/900/800/768/720.
 > hasilnya dan tanya dulu sebelum commit. Versi pertama ikon ini saya commit lalu ditolak
 > HIRO ("make it full in the wrapper, dont separate the subtitle") — bertanya memakan satu
 > round, jauh lebih murah daripada mengirim header yang salah tampilan lalu revert.
+
+## Handover — form disamakan dengan CCTV (2026-10-05)
+
+HIRO: *"on new handover form adapt style from cctv form, then make remarks in the right of
+name. make it use 2 colum grid. also make the section title like form cctv access"*.
+
+Dua logbook yang terlihat berbeda terbaca sebagai dua aplikasi berbeda — jadi ini **salin
+sengaja**, bukan desain paralel.
+
+### 1. Header
+
+Slot `#header` diganti seluruhnya, sama persis dengan CCTV: plate accent setinggi penuh
+**40×29 terhadap text block 29px** (fills=true, terukur), ikon **package** untuk New Handover
+dan **square-pen** untuk Edit Row, title+subtitle jadi satu blok `min-w-0 flex-1`, tombol close
+dibangun ulang memanggil callback `close` milik DialogRoot.
+
+Semua tiga fakta yang dipelajari di halaman CCTV dipakai ulang, **bukan** ditemukan ulang:
+
+- slot `#title` **mustahil** menjangkau dua baris — `Modal.vue` me-render-nya **di dalam**
+  `<DialogTitle>`, yang bersaudara dengan `<DialogDescription>`;
+- `min-h-0` membatalkan lantai `min-h-(--ui-header-height)` milik vendor;
+- `items-stretch` (bukan `items-center`) yang membuat item mengisi tinggi baris;
+- plate butuh **lebar tetap, tanpa kelas tinggi sama sekali**, dan harus anak **flex**.
+
+### 2. Tiga seksi
+
+| Seksi | Isi (baris 1 | baris 2) |
+|---|---|
+| **Part** | Taken Date \| QTY | Part Name \| Brand |
+| **Recipient** | **Name \| Remarks** | Employee No \| Section |
+| **Signature** | Recipient Sign | — |
+
+Permintaan spesifik HIRO — *Remarks di kanan Name* — terukur benar: **Name@x=204,
+Remarks@x=631**, satu baris, Remarks di kanan. **Dua kolom** justru yang membuat pasangan itu
+mengisi baris penuh; di tiga kolom akan ada celah.
+
+Label field diubah dari "Signature" jadi "Recipient Sign" karena **seksi**nya sudah bernama
+Signature — labelnya akan mengulang judulnya sendiri.
+
+### 3. CSS stagger wajib ditulis ulang
+
+`.handover-record-grid > *` dulu langsung match field. Sekarang anak langsungnya adalah tiga
+`<section>`, jadi `> *` saja akan men-*stagger* tiga section itu dan **tidak ada field di
+dalamnya** — kegagalan parsial yang senyap, karena animasinya tetap terlihat dan tidak ada error
+yang muncul. Sekarang menyasar section **dan** `> section > div > *`, satu delay per section
+(0/70/140ms). Blok `prefers-reduced-motion` dan `print` diperbarui dengan selector yang sama,
+kalau tidak keduanya berhenti menutupi field.
+
+Pad terukur 415×130, dialog 687px dengan overflow 0 di 1080/900/800/768, menyusut ke 656 di 720
+dan 576 di 640.
+
+### Verifikasi end to end (baris probe)
+
+Create (807 piksel tinta, Save Row, nomor ter-assign) → Edit (judul berubah ke "Edit Row" dengan
+ikon pena, QTY 1→5, signature 4446 karakter **bertahan** — itu lagi perilaku
+omit-field-tersembunyi) → dialog hapus membaca Part Name / Name / Employee No / Taken Date / QTY
+= nilai asli baris → dihapus → server kembali **0 baris handover, 11 baris CCTV, nol probe**.
