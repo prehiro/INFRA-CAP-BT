@@ -768,62 +768,125 @@ await init()
            the checking itself so it can raise ONE English warning listing every missing
            field and outline them all in red. -->
       <UForm :state="form" :validate-on="[]" @submit="save">
-        <!-- Five rows on a 3-column grid, no scroll area: the dialog is sized to fit its
-             content (see the :ui below) and the two signature pads sit side by side in the
-             last row, which is what keeps the whole form inside a 1080p window. -->
-        <div class="cctv-record-grid grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <!-- Row 1: who/when/where. Date is prefilled with today and stays editable. -->
-          <!-- Same themed picker as the filter, not the native control: the OS date input
-               cannot be styled to match the app and renders the US mm/dd/yyyy order on this
-               machine, while the sheet is written dd/mm/yyyy. v-model is a bare yyyy-mm-dd,
-               which is exactly the form's shape, and :name keeps it inside UForm's state. -->
-          <UFormField label="Date" name="tanggal" required>
-            <DatePicker v-model="form.tanggal" name="tanggal" placeholder="Pick a date"
-                        :invalid="fieldInvalid('tanggal')" />
-          </UFormField>
-          <UFormField label="Section" name="departemen" required>
-            <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
-                     class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
-          </UFormField>
-          <UFormField label="Employee No" name="no_pegawai" required>
-            <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
-                     class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
-          </UFormField>
+        <!-- Redesigned 2026-10-05 (HIRO: "i want the cctv signature canvas also make it bigger,
+             redesign the modal form make it professional look").
 
-          <!-- Row 2: the requester and the searched window. Pickers take the TIME only;
-               today's date is glued on at save time, so nobody types a date. -->
-          <UFormField label="PIC Name" name="nama_pemohon" required>
-            <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
-                     :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
-          </UFormField>
-          <UFormField label="Start Time" name="pic_mulai" required>
-            <TimePicker v-model="form.pic_mulai" name="pic_mulai" :invalid="fieldInvalid('pic_mulai')" />
-          </UFormField>
-          <UFormField label="End Time" name="pic_selesai" required>
-            <TimePicker v-model="form.pic_selesai" name="pic_selesai" :invalid="fieldInvalid('pic_selesai')" />
-          </UFormField>
+             THE SIGNATURE PADS - THE ACTUAL ASK. Both stay SIDE BY SIDE, because the two
+             signatures are the whole point of this sheet: a requester and an ISD officer
+             approving the same request. Splitting them onto separate rows would say they are
+             unrelated, and stacking them full-width would make the dialog far too tall.
 
-          <!-- Row 3: purpose spans the full width. w-full is required as well as the
-               col-span: UTextarea sizes to its content otherwise and ignores the span. -->
-          <UFormField label="Purpose / Details" name="tujuan" required class="sm:col-span-2 lg:col-span-3">
-            <UTextarea v-model="form.tujuan" name="tujuan" :rows="2" class="w-full"
-                      placeholder="What is the footage being retrieved for?"
-                      :ui="fieldInvalid('tujuan') ? { base: 'ring-2 ring-error' } : undefined" />
-          </UFormField>
+             Both were 124x64 for the same compound reason found on the Handover dialog: they sat in ONE column of a 3-column grid, AND SignaturePad's
+             wrapper was `inline-block` so the canvas shrink-wrapped to the width of its own
+             "Sign here" placeholder. `full-width` (opt-in, added for the Handover page) plus
+             a NESTED 2-column grid gives each pad half of the dialog - 424px wide at
+             sm:max-w-4xl - and 130px tall instead of 64. That is about 7x the drawing area,
+             and because the wrapper now has real width to grow into, it actually fills it.
 
-          <!-- Row 4: the ISD officer prefilled from the session, then the two signature pads
-               side by side. Giving both pads one grid column each is what keeps them
-               adjacent - a col-span on the second one pushed it onto a row of its own. -->
-          <UFormField label="PIC by ISD" name="pic_isd" required>
-            <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
-                     :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
-          </UFormField>
-          <UFormField label="PIC Sign" name="tanda_pemohon" required>
-            <SignaturePad v-model="form.tanda_pemohon" :height="64" :invalid="fieldInvalid('tanda_pemohon')" />
-          </UFormField>
-          <UFormField label="ISD Sign" name="tanda_isd" required>
-            <SignaturePad v-model="form.tanda_isd" :height="64" :invalid="fieldInvalid('tanda_isd')" />
-          </UFormField>
+             130 rather than something taller is deliberate: this dialog must not start
+             scrolling on a normal laptop (the same lesson as the Add-user dialog fix), and
+             the section headings below add height of their own.
+
+             THE THREE SECTIONS. A flat ten-field grid reads as a form to fill in; grouping it
+             as Request / Access window / Authorisation reads as a record being authorised,
+             which is what it is. The headings are small, uppercase and dimmed - they label
+             the group without competing with the field labels underneath them.
+
+             The dialog width is deliberately NOT increased. A CCTV request form is entered
+             at a desk, and 896px already holds all ten fields comfortably; widening it would
+             have bought line length nobody needs while making the dialog harder to keep on
+             screen at 768px. -->
+        <div class="cctv-record-grid space-y-4">
+          <!-- ============ REQUEST ============ -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-file-text" class="size-3.5" />
+              Request
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <!-- Date is prefilled with today and stays editable. Same themed picker as the
+                   filter, not the native control: the OS date input cannot be styled to match
+                   the app and renders the US mm/dd/yyyy order on this machine, while the sheet
+                   is written dd/mm/yyyy. v-model is a bare yyyy-mm-dd, which is exactly the
+                   form's shape, and :name keeps it inside UForm's state. -->
+              <UFormField label="Date" name="tanggal" required>
+                <DatePicker v-model="form.tanggal" name="tanggal" placeholder="Pick a date"
+                            :invalid="fieldInvalid('tanggal')" />
+              </UFormField>
+              <UFormField label="Section" name="departemen" required>
+                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
+                         class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Employee No" name="no_pegawai" required>
+                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
+                         class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+
+              <!-- PIC Name gets two columns and Purpose the third, instead of Purpose taking
+                   the whole row. Both are free text; pairing them uses the row instead of
+                   giving one of them a full-width line it does not need. -->
+              <UFormField label="PIC Name" name="nama_pemohon" required class="sm:col-span-2">
+                <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
+                         :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Purpose" name="tujuan" required>
+                <UTextarea v-model="form.tujuan" name="tujuan" :rows="1" class="w-full"
+                          placeholder="What is the footage for?"
+                          :ui="fieldInvalid('tujuan') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+            </div>
+          </section>
+
+          <!-- ============ ACCESS WINDOW ============ -->
+          <!-- The pickers take the TIME only; today's date is glued on at save time, so
+               nobody types a date. Two columns rather than three because there are exactly
+               two values here, and a third empty cell would read as a missing field. -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-clock" class="size-3.5" />
+              Access window
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UFormField label="Start Time" name="pic_mulai" required>
+                <TimePicker v-model="form.pic_mulai" name="pic_mulai" :invalid="fieldInvalid('pic_mulai')" />
+              </UFormField>
+              <UFormField label="End Time" name="pic_selesai" required>
+                <TimePicker v-model="form.pic_selesai" name="pic_selesai" :invalid="fieldInvalid('pic_selesai')" />
+              </UFormField>
+            </div>
+          </section>
+
+          <!-- ============ AUTHORISATION ============ -->
+          <section>
+            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+              <UIcon name="i-lucide-pen-line" class="size-3.5" />
+              Authorisation
+            </p>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <!-- The ISD officer is prefilled from the session, and takes the full width so
+                   the signature pair below starts on its own clean row - the row's meaning is
+                   "who signed", not "who is this and who signed". -->
+              <UFormField label="PIC by ISD" name="pic_isd" required class="sm:col-span-2 lg:col-span-3">
+                <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
+                         :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+            </div>
+
+            <!-- The two pads, side by side, each half the dialog. `full-width` is the opt-in
+                 prop added to SignaturePad for the Handover page: without it the wrapper is
+                 `inline-block` and the canvas shrink-wraps to about 124px no matter how much
+                 room this cell actually has. -->
+            <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UFormField label="PIC Sign" name="tanda_pemohon" required>
+                <SignaturePad v-model="form.tanda_pemohon" :height="130" full-width
+                              :invalid="fieldInvalid('tanda_pemohon')" />
+              </UFormField>
+              <UFormField label="ISD Sign" name="tanda_isd" required>
+                <SignaturePad v-model="form.tanda_isd" :height="130" full-width
+                              :invalid="fieldInvalid('tanda_isd')" />
+              </UFormField>
+            </div>
+          </section>
         </div>
 
         <div class="mt-4 flex items-center justify-between gap-2 border-t border-default pt-4">
@@ -1184,25 +1247,40 @@ await init()
   to   { opacity: 1; }
 }
 
-.cctv-record-grid > * {
+/* The stagger now targets the SECTIONS, not the individual fields.
+   This selector used to be `.cctv-record-grid > *` back when the grid's direct children WERE
+   the fields. The 2026-10-05 redesign wrapped them in three <section> elements, so `> *` would
+   have matched only the three sections - the stagger would still have "worked" (no console
+   error, animation still visible) while every field inside arrived as one slab, which is
+   exactly the thing the stagger exists to prevent. A silent partial failure like that is the
+   reason this comment is here.
+
+   Matching the sections AND the fields via the descendant selector keeps the reading-order
+   arrival: the three sections have their own delays, and every field inside one starts
+   together, so the form fills top to bottom as three groups. */
+.cctv-record-grid > *,
+.cctv-record-grid > section > div > * {
   animation:
     cctv-row-reveal-pos 320ms cubic-bezier(0.3, 0, 0.2, 1) both,
     cctv-row-reveal-fade 210ms cubic-bezier(0.4, 0, 0.35, 1) both;
 }
 
-.cctv-record-grid > *:nth-child(1) { animation-delay: 0ms; }
-.cctv-record-grid > *:nth-child(2) { animation-delay: 38ms; }
-.cctv-record-grid > *:nth-child(3) { animation-delay: 76ms; }
-.cctv-record-grid > *:nth-child(4) { animation-delay: 114ms; }
-.cctv-record-grid > *:nth-child(5) { animation-delay: 150ms; }
-.cctv-record-grid > *:nth-child(6) { animation-delay: 182ms; }
-.cctv-record-grid > *:nth-child(n + 7) { animation-delay: 210ms; }
+/* One delay per SECTION, so the groups arrive in reading order. */
+.cctv-record-grid > *:nth-child(1),
+.cctv-record-grid > *:nth-child(1) > div > * { animation-delay: 0ms; }
+.cctv-record-grid > *:nth-child(2),
+.cctv-record-grid > *:nth-child(2) > div > * { animation-delay: 70ms; }
+.cctv-record-grid > *:nth-child(3),
+.cctv-record-grid > *:nth-child(3) > div > * { animation-delay: 140ms; }
+/* The signature pair is the last thing to arrive - it is the point of the form. */
+.cctv-record-grid > *:nth-child(3) > div:last-child > * { animation-delay: 210ms; }
 
 /* No half-built animation may ever be captured, on paper or under the OS reduce-motion
    setting. This mirrors the rule already used by the .anim-* utilities in main.css. */
 @media (prefers-reduced-motion: reduce) {
   .cctv-record-modal[data-slot='content'][data-state],
-  .cctv-record-grid > * {
+  .cctv-record-grid > *,
+  .cctv-record-grid > section > div > * {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -1211,7 +1289,8 @@ await init()
 
 @media print {
   .cctv-record-modal[data-slot='content'][data-state],
-  .cctv-record-grid > * {
+  .cctv-record-grid > *,
+  .cctv-record-grid > section > div > * {
     animation: none !important;
   }
 }

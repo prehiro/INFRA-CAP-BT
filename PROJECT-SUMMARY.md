@@ -788,3 +788,64 @@ langsung mengarah ke file yang salah. Error ini juga baru muncul **setelah** `.n
 dihapus dan dev server direstart; sebelumnya dev server menyajikan module graph basi dan
 errornya tertutup. Kalau halaman 500 tanpa overlay, screenshot halaman **segera** — jangan
 berasumsi errornya ada di file yang sedang kamu edit.
+
+## CCTV — redesign form + canvas signature diperbesar (2026-10-05)
+
+HIRO: *"i want the cctv signature canvas also make it bigger, redesign the modal form make it
+professional look"*.
+
+### Dua canvas
+
+Penyebabnya **sama persis** dengan yang ditemukan di Handover: tiap pad duduk di **satu kolom**
+grid 3-kolom, **dan** wrapper `SignaturePad` itu `inline-block` sehingga canvas shrink-wrap ke
+lebar placeholder "Sign here"-nya sendiri. Keduanya 124×64.
+
+Diperbaiki dengan prop `full-width` yang sama plus **grid 2-kolom bersarang**
+(`mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2`), sehingga dua pad tetap **berdampingan** —
+dan itu disengaja: dua tanda tangan itu justru inti lembar ini (pemohon dan petugas ISD
+menyetujui permintaan yang sama). Memisahkannya ke baris berbeda akan menyiratkan keduanya
+tidak berhubungan.
+
+**Terukur 124×64 → 422×130**, sekitar 7× luas. Dialog 503px → 694px, overflow 0 di
+1080/900/800/768 dan mengecil ke 656 di 720. Tinggi 130, bukan lebih, karena dialog ini tidak
+boleh mulai scroll di laptop biasa.
+
+Lebar dialog **sengaja tidak dilebarkan** — 896px (`sm:max-w-4xl`) sudah cukup untuk sepuluh
+field; memperlebar hanya menambah panjang baris yang tidak dibutuhkan sekaligus membuat 768px
+lebih repot.
+
+### Tiga seksi
+
+| Seksi | Isi |
+|---|---|
+| **Request** | Date, Section, Employee No; lalu PIC Name (2 kolom) + Purpose (1 kolom) |
+| **Access window** | Start Time, End Time — **dua** kolom, karena kolom kosong ketiga akan terbaca sebagai field yang hilang |
+| **Authorisation** | PIC by ISD (lebar penuh), lalu dua canvas signature |
+
+Judul seksi kecil (11px), uppercase, redup, masing-masing dengan `UIcon` kecil
+(file-text / clock / pen-line) — menandai kelompoknya tanpa bersaing dengan label field di
+bawahnya. Purpose dipendekkan dari `rows=2` lebar penuh menjadi `rows=1` satu kolom; itu yang
+membayar tambahan tinggi canvas.
+
+### Animasi stagger hampir rusak diam-diam — ini bagian menariknya
+
+`.cctv-record-grid > *` dulu langsung menymatch field. Setelah redesign dibungkus tiga
+`<section>`, `> *` hanya match **tiga section itu**. Tidak ada error, animasi tetap terlihat —
+tapi setiap field di dalam satu section tiba sebagai satu slab, persis hal yang harus dicegah
+oleh stagger. Diperbaiki dengan menymatch section **dan** `.cctv-record-grid > section > div > *`,
+satu delay per SEKSI (0/70/140ms), dan pasangan signature paling akhir (210ms). Blok
+`prefers-reduced-motion` dan `print` diperbarui dengan selector yang sama, kalau tidak keduanya
+berhenti menutupi field.
+
+### Verifikasi end to end (baris probe)
+
+Isi sepuluh field, gambar di **kedua** pad, Save Row → baris muncul dengan **dua** image
+signature (data-URL 4658 karakter masing-masing, jadi keduanya benar-benar tersimpan dan bukan
+saling menimpa). Dialog hapus membaca Employee No / PIC / Purpose / Date / Section. Dihapus →
+server kembali ke **11 baris CCTV, 0 handover, nol baris probe**.
+
+> Jebakan harness yang memakan tiga percobaan: sesi login terus mati **dan** form diam-diam
+> mengosongkan diri sendiri ("Username dan password wajib diisi") karena HMR reload dari edit
+> CSS saya sendiri terjadi di antara fill dan submit. Mengisi **dan** submit dalam **satu**
+> `browser_exec` call adalah pola yang bisa diandalkan; mengisi di satu call lalu submit di
+> call berikutnya tidak.
