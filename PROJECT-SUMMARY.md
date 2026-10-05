@@ -358,6 +358,31 @@ Sudah diverifikasi end-to-end di browser 1920x1080: toast validasi error, record
 
 > Catatan harness: tombol aksi di baris tabel **tidak punya aria-label**, jadi cari lewat class ikon (`i-lucide:trash-2`, `i-lucide:pencil`) di dalam baris target — bukan lewat nama aksesibel. Toast hilang dalam ~5 detik, jadi pemicu dan pembacaan harus dalam satu panggilan js() yang sama.
 
+## 7f. Role field di User Management = kartu radio (2026-10-05)
+
+HIRO minta pilihan role pakai tampilan radio button. Komponen baru `web/app/components/RolePicker.vue` menggantikan `<USelectMenu multiple>` di `web/app/pages/users.vue`.
+
+Tiap kartu berisi: indikator bulat (berisi saat dipilih), chip ikon, nama role, dan **deskripsi role yang selalu terlihat** — sebelumnya deskripsi hanya muncul di dalam popover yang tertutup.
+
+Sengaja TIDAK memakai radio sungguhan: `AppUser.UserRoles` sebuah collection, `CreateUserRequest` menerima `List<int> RoleIds`, dan `[Authorize(Roles=...)]` membaca semua claim — jadi satu user memang bisa memegang beberapa role. HIRO sudah ditawari pilihan dan memilih mempertahankan multi-select. Karena itu komponen memakai `role="checkbox"` + `aria-checked`, bukan `<input type=radio>`.
+
+State terpilih: border primary + `bg-primary/8` + chip ikon bernuansa. Helpertext: "Select at least one. A user can hold more than one."
+
+`roleItems` yang sekarang tidak terpakai sudah **dihapus** dari `users.vue` — dan kali ini dibuktikan di runtime, bukan cuma grep: membuat user lewat form sungguhan → "User created" → server mengembalikan roles `['Admin','Staff']`; lalu diedit untuk menurunkan Admin → `['Staff']`; lalu dihapus (server kembali ke admin/operator01/staf04).
+
+### Jebakan penting: ikon HARUS pakai `<UIcon>`
+
+`<span class="iconify i-lucide:shield-check">` berukuran benar tapi **tidak terlihat sama sekali** (`mask-image: none`). Nuxt UI me-resolve SVG dan menyuntikkan CSS `mask-image` saat RENDER, dan hanya komponen `<UIcon>` yang memicu itu — nama class saja tidak melakukan apa pun.
+
+Ini terlihat persis seperti kegagalan bundling offline, padahal BUKAN: ikonnya memang ada di `.nuxt/nuxt-icon-client-bundle.mjs` (68 ikon ter-bundle), dan menghapus `.nuxt` lalu restart dev server tidak menolong karena tidak pernah ada aturan CSS yang dibuat untuk span mentah.
+
+> Selalu pakai `<UIcon :name="..." />`. Jangan pernah menulis span `iconify` manual.
+
+Dua jebakan harness terkait:
+
+- Span **terlepas** yang di-append ke `body` bukan tes ikon yang sah (CSS disuntik saat render, jadi selalu terbaca MISSING). Teslah elemen asli di dalam modal.
+- CSS mask yang dihasilkan ada di tag `<style>` yang di-inject runtime, bukan di `.nuxt/ui.css`, jadi grep file build tidak membuktikan apa pun.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
