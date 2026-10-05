@@ -799,11 +799,11 @@ await init()
         <div class="cctv-record-grid space-y-4">
           <!-- ============ REQUEST ============ -->
           <!-- HIRO's order (2026-10-05): Section, Employee No, PIC Name on one line, then
-               PIC by ISD and Purpose below. All five fit a single 3-column grid as
-               3 + (1 + 2): the second row gives PIC by ISD one column and Purpose the other
-               two, because Purpose is the long free-text value and PIC by ISD is a name
-               prefilled from the session. One grid, one row break - no col-span guessing and
-               no second row's height wasted on a mostly-empty Purpose. -->
+               Purpose and PIC by ISD below. All five fit a single 3-column grid as
+               3 + (2 + 1): the second row gives Purpose two columns - it is the long
+               free-text value - and PIC by ISD the third, because it is a name prefilled
+               from the session. One grid, one row break, no second row's height wasted on a
+               mostly-empty field. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-file-text" class="size-3.5" />
@@ -823,17 +823,20 @@ await init()
                          :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
 
-              <!-- PIC by ISD is prefilled from the session. w-full is required as well as the
-                   col-span on Purpose: UTextarea sizes to its content otherwise and ignores
-                   the span. -->
-              <UFormField label="PIC by ISD" name="pic_isd" required>
-                <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
-                         :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
-              </UFormField>
+              <!-- Purpose FIRST at two columns, then PIC by ISD in the third (HIRO, 2026-10-05: "swap
+                   position of PIC by ISD and Purpose, keep purpose use 2 grid"). Purpose is the
+                   long free-text value so it keeps the two columns; PIC by ISD is a name
+                   prefilled from the session and needs only one. The row is still 3 + 3, so
+                   nothing else in the grid moved - only which of the two is on the left. -->
               <UFormField label="Purpose" name="tujuan" required class="sm:col-span-2">
                 <UTextarea v-model="form.tujuan" name="tujuan" :rows="1" class="w-full"
                           placeholder="What is the footage for?"
                           :ui="fieldInvalid('tujuan') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <!-- PIC by ISD is prefilled from the session. -->
+              <UFormField label="PIC by ISD" name="pic_isd" required>
+                <UInput v-model="form.pic_isd" name="pic_isd" class="w-full"
+                         :ui="fieldInvalid('pic_isd') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
             </div>
           </section>

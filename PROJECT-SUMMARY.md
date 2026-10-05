@@ -895,3 +895,27 @@ Probe**.
 
 CSS stagger tidak perlu diubah: selector-nya menyasar `> section > div > *`, dan
 pengurutan ini hanya mengubah **field mana** di tiap seksi, bukan strukturnya.
+
+## CCTV — baris kedua Request ditukar (2026-10-05)
+
+HIRO: *"swap position of PIC by ISD and Purpose, keep purpose use 2 grid"*.
+
+Purpose sekarang **pertama** dengan `sm:col-span-2`, PIC by ISD di kolom ketiga.
+Grid tetap 3 + 3, baris tetap sama, tinggi tetap sama — hanya yang mana yang di kiri.
+
+Diverifikasi dengan **membaca posisi label dari DOM**, bukan Apenas melihat screenshot:
+
+```
+Section      @x=532
+Employee No  @x=821
+PIC Name     @x=1111
+Purpose      @x=532   <- kiri, 2 kolom
+PIC by ISD   @x=1111  <- kanan, 1 kolom
+```
+
+Dialog tetap 626px overflow 0, dua pad tetap 422×130 berdampingan.
+
+> Kebiasaan yang perlu dijaga: ketika permintaan pengurutan datang, **periksa juga blok
+> komentar** di sekelilingnya, bukan hanya markup-nya. Komentar seksi di file ini masih
+> menyebut urutan lama "PIC by ISD dan Purpose di bawah … 3 + (1 + 2)", dan komentar basi
+> seperti itulah yang membuat orang berikutnya "memperbaiki" order-nya kembali.
