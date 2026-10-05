@@ -275,7 +275,7 @@ onMounted(() => {
                panel body instead, below the navbar, which is where the CCTV page puts its own.
                That is also why the page still reads as two distinct things: "User Management"
                in the navbar names the SCREEN, "Registered User" below names the REGISTER. -->
-          <div class="rounded-lg border border-default bg-elevated p-4">
+          <div class="users-page-block rounded-lg border border-default bg-elevated p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h1 class="text-lg font-bold tracking-wide">Registered User</h1>
@@ -304,7 +304,7 @@ onMounted(() => {
                footer below shares its bottom edge. This is the CCTV register's structure
                verbatim - `overflow-hidden rounded-xl border border-default bg-elevated`
                wrapping `.logbook-scroll` plus a footer div. -->
-          <div class="overflow-hidden rounded-xl border border-default bg-elevated">
+          <div class="users-page-block overflow-hidden rounded-xl border border-default bg-elevated">
           <div class="users-scroll max-h-[70vh] overflow-y-auto scrollbar-gutter-stable">
             <table class="w-full table-fixed text-sm">
               <colgroup>
@@ -461,7 +461,7 @@ onMounted(() => {
            without any duplicated CSS. -->
       <UModal
         v-model:open="modalOpen"
-        :ui="{ content: 'sm:max-w-xl', body: 'p-4 sm:p-5' }"
+        :ui="{ content: 'sm:max-w-xl users-record-modal', body: 'p-4 sm:p-5' }"
         :title="editing ? 'Edit user' : 'Add user'"
         :description="editing
           ? 'Update this account. The username cannot be changed.'
@@ -495,7 +495,7 @@ onMounted(() => {
                    Status          (spans both - its help text can be a full sentence)
                  Nothing here is hidden and nothing scrolls; if a future role list grows long
                  the RolePicker itself is the only thing that would need to change. -->
-            <div class="grid grid-cols-2 gap-x-4 gap-y-3.5">
+            <div class="users-record-grid grid grid-cols-2 gap-x-4 gap-y-3.5">
               <UFormField
                 name="username"
                 label="Username"
@@ -657,6 +657,140 @@ onMounted(() => {
 @media (prefers-reduced-motion: reduce) {
   .users-row {
     transition: none !important;
+  }
+}
+
+</style>
+
+<!-- NON-SCOPED, and it has to be. UModal teleports to <body>, so a scoped rule
+     (which compiles to .users-record-modal[data-v-xxx]) can never match the dialog content
+     element - it does not carry this component's scope id. This is exactly why the CCTV
+     dialog keeps its reveal CSS in a plain <style>. -->
+<style>
+/* ============================================================================================
+   MOTION, matched deliberately to the CCTV Access register so both screens feel like one app.
+
+   HIRO asked for the Add/Edit User dialog to animate like the CCTV New Record dialog, plus an
+   animation on page load.
+
+   Two things carried over from the CCTV implementation because they were measured there, not
+   guessed:
+
+   1. TRANSLATE + OPACITY ONLY, NEVER SCALE. The vendor centres this dialog with
+      `left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`, and Tailwind v4 emits those as the
+      STANDALONE `translate` property (computed style is `translate: -50% -50%` with
+      `transform: none`). Animating `transform` therefore COMPOSES with `translate` instead of
+      overwriting it, so the dialog stays centred on every frame - the same trick that keeps the
+      CCTV dialog from flying into the corner. Scaling is also avoided because it re-rasterises
+      text, which is what caused the sidebar "ghost text" bug elsewhere in this app.
+
+   2. THE SELECTOR CARRIES THREE COMPONENTS (specificity 0,3,0) so it beats the vendor utility
+      `data-[state=open]:animate-[scale-in...]` at (0,2,0) WITHOUT disabling the vendor
+      transition - disabling it would also cost its focus-trap timing.
+
+   Position and fade run as TWO animations with different curves and different durations, the
+   same split the CCTV dialog settled on: a single shared curve meant the content was still
+   sliding after it had finished fading, which read as unsmooth. Both curves keep every y
+   control point at or below 1, so the motion is monotonic - it settles rather than wobbling.
+   ============================================================================================ */
+
+@keyframes users-modal-reveal-pos {
+  from { transform: translateY(14px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes users-modal-reveal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Exiting ACCELERATES away: cubic-bezier(0.4, 0, 1, 1) has a rising slope, so the dialog
+   leaves decisively instead of lingering on screen. */
+@keyframes users-modal-dismiss-pos {
+  from { transform: translateY(0); }
+  to   { transform: translateY(8px); }
+}
+
+@keyframes users-modal-dismiss-fade {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.users-record-modal[data-slot='content'][data-state='open'] {
+  animation:
+    users-modal-reveal-pos 440ms cubic-bezier(0.3, 0, 0.2, 1) both,
+    users-modal-reveal-fade 240ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.users-record-modal[data-slot='content'][data-state='closed'] {
+  animation:
+    users-modal-dismiss-pos 200ms cubic-bezier(0.4, 0, 1, 1) both,
+    users-modal-dismiss-fade 160ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* Fields arrive in reading order instead of the whole form arriving as one slab. `both` keeps
+   each field at its from-state while it waits its turn, which is what makes the stagger read as
+   a sequence rather than a flash. The per-field curve deliberately avoids an initial slope
+   above ~1.2 - cubic-bezier(0.22, 1, 0.36, 1) starts at 1/0.22 = 4.5, so a field snapped 0.23
+   of its opacity in a single frame when measured on the CCTV form. */
+@keyframes users-field-reveal-pos {
+  from { transform: translateY(8px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes users-field-reveal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.users-record-grid > * {
+  animation:
+    users-field-reveal-pos 320ms cubic-bezier(0.3, 0, 0.2, 1) both,
+    users-field-reveal-fade 210ms cubic-bezier(0.4, 0, 0.35, 1) both;
+}
+
+/* Six children in the two-column grid: Username|Full Name, Password|Email, Role, Status. */
+.users-record-grid > *:nth-child(1) { animation-delay: 0ms; }
+.users-record-grid > *:nth-child(2) { animation-delay: 38ms; }
+.users-record-grid > *:nth-child(3) { animation-delay: 76ms; }
+.users-record-grid > *:nth-child(4) { animation-delay: 114ms; }
+.users-record-grid > *:nth-child(5) { animation-delay: 150ms; }
+.users-record-grid > *:nth-child(n + 6) { animation-delay: 182ms; }
+
+/* ---- page load ----
+   The sheet header and the table card settle into place one after the other, so arriving on
+   the page has a beginning and an end rather than everything simply being there. Both blocks
+   animate ONCE on mount - this is not tied to `loading`, so a background refresh (create,
+   delete, edit) does not replay it and make the page twitch under the user's cursor. */
+@keyframes users-page-enter-pos {
+  from { transform: translateY(10px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes users-page-enter-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.users-page-block {
+  animation:
+    users-page-enter-pos 380ms cubic-bezier(0.3, 0, 0.2, 1) both,
+    users-page-enter-fade 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.users-page-block:nth-of-type(2) {
+  animation-delay: 90ms;
+}
+
+/* No half-built animation may ever be captured, on paper or under the OS reduce-motion
+   setting. This mirrors the rule already used by the CCTV dialog. */
+@media (prefers-reduced-motion: reduce) {
+  .users-record-modal[data-slot='content'][data-state],
+  .users-record-grid > *,
+  .users-page-block {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 </style>
