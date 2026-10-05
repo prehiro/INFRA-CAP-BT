@@ -179,8 +179,6 @@ async function confirmDelete() {
   }
 }
 
-const roleItems = computed(() => roles.value.map(r => ({ label: r.name, value: r.id })))
-
 /**
  * True when the account being edited is an ACTIVE Admin and the ONLY active Admin.
  *
@@ -508,22 +506,33 @@ onMounted(() => {
                 <UInput v-model="form.password" type="password" class="w-full" placeholder="••••••••" />
               </UFormField>
 
-              <!-- Role sits THIRD, deliberately, not last. It used to be the final field
-                   before the footer, and that made creating a user impossible in practice:
-                   USelectMenu is a multiple select, so it STAYS OPEN after you tick a role,
-                   and with nothing but the footer below it the popover opened straight over
-                   the "Create user" button. The click was swallowed - zero requests were ever
-                   sent - and the natural next move, pressing Escape to dismiss the popover,
-                   DISCARDS the ticked role, so the retry then failed with "Select at least
-                   one role". One field higher, the same popover opens downward over the
-                   ordinary text inputs instead, which costs nothing and covers no button. -->
-              <UFormField name="roleIds" label="Role" :error="formErrors.roleIds">
-                <USelectMenu
+              <!-- Role is now RolePicker: radio-LOOKING cards that are multi-select toggles.
+                   This replaced <USelectMenu multiple>, which was genuinely hostile here.
+                   Two real defects are gone rather than relocated:
+                    - it STAYS OPEN after ticking, so as the last field before the footer it
+                      opened straight over the "Create user" button and swallowed the click.
+                      Zero requests were ever sent, and the natural next move - pressing Escape
+                      to dismiss the popover - DISCARDED the ticked role, so the retry then
+                      failed with "Select at least one role". The field had been moved up one
+                      row purely to dodge that; the cards have no popover at all.
+                    - nothing showed WHAT a role could do, because each description only ever
+                      appeared inside the closed popover. They are always visible now.
+                   `name` stays on UFormField because it is load-bearing: UForm's submit
+                   wrapper runs _validate() first, and a field with no name can never be
+                   satisfied, which made submit look completely dead.
+                   Multi-select is deliberate - one user can hold several roles (AppUser.
+                   UserRoles is a collection and [Authorize(Roles=...)] reads every claim).
+                   A real radio would be single-select and would drop that capability. -->
+              <UFormField
+                name="roleIds"
+                label="Role"
+                :error="formErrors.roleIds"
+                :help="formErrors.roleIds ? undefined : 'Select at least one. A user can hold more than one.'"
+              >
+                <RolePicker
                   v-model="form.roleIds"
-                  :items="roleItems"
-                  multiple
-                  placeholder="Select a role"
-                  class="w-full"
+                  :roles="roles"
+                  :invalid="!!formErrors.roleIds"
                 />
               </UFormField>
 
