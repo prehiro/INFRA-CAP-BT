@@ -824,35 +824,41 @@ onMounted(() => {
    the sidebar Appearance menu - switching to violet retints it with no extra work. A hard-coded
    colour here would have gone stale the moment the accent changed.
 
-   Why a ::after rather than a real element:
+   WHY A ::after rather than a real element:
     - UModal's #content slot is documented in this file's own history as the thing that stopped
       the form's @submit from ever reaching save(), so it is not a safe place to add markup.
     - the content element is already `overflow: hidden`, which is exactly the clipping needed to
       make the glow read as light bleeding in from the corner rather than a floating blob.
 
-   `pointer-events: none` is essential: the orb is a large circle sitting over the header, and
-   without this it would swallow clicks on the close button. `aria-hidden` is not needed on a
-   pseudo-element (it is never exposed to assistive tech), but z-0 keeps it below the header and
-   body, which were given `relative z-10` in the :ui prop. */
+   `pointer-events: none` is essential: the orb is a circle sitting over the header, and without
+   this it would swallow clicks on the close button. z-0 keeps it below the header and body,
+   which were given `relative z-10` in the :ui prop.
+
+   TUNED DOWN on HIRO's second pass ("make the radius smaller, dont make the color too strong"),
+   from 380px / blur 90px / opacity 0.28 to what is below. The first pass read as a coloured wash
+   over the top-right of the dialog rather than as a highlight: it reached far enough down to sit
+   behind the Username and Password labels, and at 0.28 on the dark navy it was strong enough to
+   tint those labels. Smaller circle, tighter blur, and roughly half the opacity keeps it in the
+   corner where it belongs. */
 .users-record-modal[data-slot='content']::after {
   content: '';
   position: absolute;
-  top: -140px;
-  right: -120px;
-  width: 380px;
-  height: 380px;
+  top: -110px;
+  right: -90px;
+  width: 250px;
+  height: 250px;
   border-radius: 9999px;
   background-color: var(--ui-primary);
-  opacity: 0.28;
-  filter: blur(90px);
+  opacity: 0.14;
+  filter: blur(60px);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Light mode needs a lighter touch: the same 0.28 opacity that reads as a soft tint on the dark
-   navy surface turns into a heavy wash on a near-white one. */
+/* Light mode needs a lighter touch still: the same value that is barely perceptible on the dark
+   navy surface turns into a visible stain on a near-white one. */
 :root:not(.dark) .users-record-modal[data-slot='content']::after {
-  opacity: 0.18;
+  opacity: 0.09;
 }
 
 /* No half-built animation may ever be captured, on paper or under the OS reduce-motion
