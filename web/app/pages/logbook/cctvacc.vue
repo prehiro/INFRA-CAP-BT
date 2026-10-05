@@ -753,15 +753,82 @@ await init()
          @click on a submit button in this codebase, which is exactly why this form was an
          inline panel to begin with. They stay inside the <UForm> in the #body slot so the
          native form submit path stays intact. -->
-    <!-- `header` and `body` get `relative z-10` so they paint ABOVE the ::after accent glow
-         defined in the non-scoped style block at the foot of this file (same treatment as the
-         Add/Edit user dialog in users.vue). The glow is a pseudo-element rather than a div in
-         the #content slot on purpose - that slot is documented in this file as having broken
-         the form's submit path, and the content element is already `overflow: hidden`, which is
-         exactly the clipping that makes the orb read as light bleeding in from the corner. -->
-    <UModal v-model:open="showForm" :ui="{ content: 'sm:max-w-4xl cctv-record-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }"
+    <!-- THE HEADER IS LOCKED TO A FIXED HEIGHT, and that is the real reason the plate kept
+             collapsing. This project has been bitten by the same vendor lock twice before -
+             PageHeader's navbar is pinned to h-(--ui-header-height) = 4rem = 64px, which is why
+             it is title-only with no subtitle prop. UModal's header carries the same
+             `min-h-(--ui-header-height)`, so with the default `p-4 sm:px-6` the padding ate 32px
+             of a 64px box and left a 32px content box for a 41px two-line text block. Measuring
+             confirmed it exactly: the plate came out 40x29, i.e. 32px of content box minus the
+             2px of my own vertical margin.
+
+             `min-h-0` cancels the vendor's floor so the CONTENT defines the height - which is
+             what lets the plate stretch to cover both title and subtitle. Two earlier attempts
+             failed for reasons worth recording, because neither produced an error, only a
+             wrong number:
+               - `size-10` set a fixed `height`, and a fixed height and `align-self: stretch`
+                 set the SAME property, so the utility won and the plate stayed 40px.
+               - `grid` + `self-stretch` measured 40x29 the other way: `display: grid`
+                 establishes its own alignment context, so align-self never reached the row's
+                 cross axis and the element collapsed to its one-line content height.
+             So the plate is `flex` + `self-stretch` with NO fixed height: width is fixed, height
+             comes from the row. `items-center` centres the glyph inside the stretched plate so
+             it does not ride the top edge once the plate is taller than one line. -->
+    <UModal v-model:open="showForm"
+            :ui="{
+              content: 'sm:max-w-4xl cctv-record-modal',
+              header: 'relative z-10 flex items-stretch gap-3.5 p-4 min-h-0 sm:px-6',
+              body: 'relative z-10 p-4 sm:p-5'
+            }"
             :title="editing ? 'Edit Row' : 'New Record'"
             :description="editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.'">
+      <template #header="{ close }">
+        <!-- `w-10` for width and `self-stretch` for height, and it must be a FLEX item, not a grid
+             one. Two measurement rounds got here, and both are worth recording because the
+             symptom in each case was "the plate is the wrong height" rather than an error:
+               - `size-10` FAILED silently: a fixed `height` and `align-self: stretch` set the
+                 SAME property, the utility won, and the plate stayed 40px inside a 66px header.
+               - then `w-10` + `grid` + `self-stretch` FAILED the other way and measured
+                 40x29: `display: grid` establishes its own alignment context, so align-self
+                 stopped reaching the row's cross axis and the element collapsed to its
+                 single-line content height.
+             `flex` + `self-stretch` is the combination that actually resolves: the flex item is
+             aligned to the container's cross axis, so it takes the height of the two-line text
+             block. `items-center` centres the ICON inside that stretched plate, which is what
+             keeps the glyph from riding the top edge once the plate is taller than one line. -->
+        <span
+          class="cctv-modal-icon flex w-10 shrink-0 items-center justify-center self-stretch
+                 rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 dark:bg-primary/15"
+        >
+          <UIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-video'" class="size-5" />
+        </span>
+
+        <!-- Title and subtitle as ONE block, not two stacked lines with a gap between them.
+             `leading-tight` on the title and a 0 gap before the description is what makes the
+             pair read as a single two-line label: the subtitle is a continuation of the title,
+             not a caption that happens to sit under it. `min-w-0` lets the text truncate on a
+             narrow dialog instead of pushing the close button off-screen. -->
+        <span class="min-w-0 flex-1">
+          <span class="block text-base font-semibold leading-tight text-default">
+            {{ editing ? 'Edit Row' : 'New Record' }}
+          </span>
+          <span class="mt-0.5 block text-sm leading-snug text-muted">
+            {{ editing ? 'Update this CCTV access log entry.' : 'Record a new CCTV access request.' }}
+          </span>
+        </span>
+
+        <!-- The vendor close button, rebuilt. See the note above on what taking over the
+             #header slot costs. `close()` comes from DialogRoot, so this is the same
+             teardown path the vendor button uses, not a hand-rolled state change. -->
+        <UButton
+          icon="i-lucide-x"
+          color="neutral"
+          variant="ghost"
+          aria-label="Close"
+          class="shrink-0"
+          @click="close()"
+        />
+      </template>
       <template #body>
       <!-- `:validate-on="[]"` switches OFF UForm's own validation. It is off on purpose:
            `required` on UFormField is kept only for the red asterisk, and this page does
@@ -1246,9 +1313,35 @@ await init()
   opacity: 0.09;
 }
 
+/* The icon disc in the dialog title settles a beat AFTER the dialog starts moving.
+   Without a delay it popped into place at full opacity on frame 1 while the dialog was still
+   sliding in, which read as a separate, later event rather than part of the same arrival. 40ms
+   is enough to read as "with" the title and not enough to feel like a second animation.
+
+   Opacity + a small translate only - never scale. The app-wide rule about scale is about TEXT
+   (a scaled glyph rasterises at the intermediate size and reads soft), and here the icon is
+   the one element where a scale would be defensible, but at 36px a scale is also invisible
+   enough to be pointless. The curve is monotonic so the disc lands exactly where it belongs. */
+@keyframes cctv-title-icon-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.cctv-modal-icon {
+  animation: cctv-title-icon-in 320ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cctv-modal-icon {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 /* Staggered reveal of the form fields, so they arrive in reading order instead of the whole
-   form arriving as one slab. `both` keeps each field at its from-state while it waits its
-   turn, which is what makes the stagger read as a sequence rather than a flash.
+   form arriving as one slab. `both` keeps each field at its from-state while it waits its turn,
+   which is what makes the stagger read as a sequence rather than a flash.
    The per-field curve was cubic-bezier(0.22, 1, 0.36, 1), whose initial slope is 1/0.22 =
    4.5 - so a field that woke up snapped 0.23 of its opacity in a SINGLE frame. Measured.
    y1 is now 0.35 (slope ~1.2), which starts gently, and the delays are tighter so the whole

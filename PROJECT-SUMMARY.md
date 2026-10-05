@@ -919,3 +919,60 @@ Dialog tetap 626px overflow 0, dua pad tetap 422×130 berdampingan.
 > komentar** di sekelilingnya, bukan hanya markup-nya. Komentar seksi di file ini masih
 > menyebut urutan lama "PIC by ISD dan Purpose di bawah … 3 + (1 + 2)", dan komentar basi
 > seperti itulah yang membuat orang berikutnya "memperbaiki" order-nya kembali.
+
+## CCTV — icon plate penuh di title dialog (2026-10-05)
+
+HIRO: *"add cctv icon in the form title, position in left title and subtitle"* →
+*"make it full in the wrapper, dont separate the subtitle"*.
+
+### Butuh TIGA putaran pengukuran, dan tidak satu pun melempar error
+
+Gejalanya selalu cuma **angka piksel yang salah**, jadi tiap perbaikan harus diverifikasi dengan
+`getBoundingClientRect`, bukan dengan dilihat saja:
+
+1. **`size-9`/`size-10` diam-diam kalah.** `height` tetap dan `align-self: stretch` menyetel
+   property yang **sama**; utility menang, jadi plate tetap bujur sangkar di header dua baris.
+2. Ganti `w-10` + **`grid`** + `self-stretch` gagal **ke arah sebaliknya**, terukur 40×29:
+   `display: grid`建立 alignment context sendiri, jadi `align-self` tidak pernah sampai ke
+   cross axis baris dan elemen runtuh ke tinggi konten satu barisnya.
+3. **Penyebab sebenarnya adalah tinggi header yang dikunci vendor**, bukan alignment plate-nya:
+   header `UModal` membawa `min-h-(--ui-header-height)` — kunci 4rem yang sama yang membuat
+   `PageHeader` jadi title-only di project ini — dan dengan `p-4 sm:px-6` bawaan, 32px padding
+  -nya menyisakan content box hanya 32px untuk blok teks setinggi 41px. `min-h-0` membatalkan
+   lantai itu sehingga **konten** yang menentukan tinggi, dan `items-stretch` pada header —
+   bukan `items-center` — yang membuat semua item mengambil tinggi penuh baris.
+
+**Hasil akhir terukur: plate 40×33 مقابل text block 33px** — persis sama, dan berlaku untuk
+New Record (ikon video) maupun Edit Row (ikon square-pen).
+
+### Kombinasi yang benar
+
+```
+header : relative z-10 flex items-stretch gap-3.5 p-4 min-h-0 sm:px-6
+plate  : flex w-10 shrink-0 items-center justify-center self-stretch rounded-xl
+         bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 dark:bg-primary/15
+```
+
+Lebar tetap, **tanpa kelas tinggi sama sekali**, dan harus anak **flex** bukan anak grid.
+
+### Kenapa #header diganti seluruhnya, bukan #title
+
+`Modal.vue` me-render `<slot name="title">` **di dalam** `<DialogTitle>`-nya sendiri, yang
+bersAUDARA dengan `<DialogDescription>`. Plate di slot itu hanya bisa setinggi baris title dan
+tidak pernah bisa menj，两位 baris — permintaan ini secara struktural mustahil dari #title.
+Mengambil #header berarti mengambil alih tombol close juga (slot itu membungkus wrapper, slot
+#actions, dan `<DialogClose>` sekaligus, Modal.vue baris 100–135), jadi tombol close dibangun
+ulang sebagai `<button>` asli yang memanggil callback `close` milik DialogRoot.
+
+**Kedua jalur penutupan diverifikasi masih jalan setelah pengambilalihan:** klik close menutup
+dialog, ESC juga menutup, tabel tetap 11 of 11 di keduanya, dan `aria-label="Close"` terjaga.
+
+Title dan subtitle kini **satu blok** (`min-w-0 flex-1`, title `leading-tight`, subtitle
+`mt-0.5 text-sm leading-snug`) sehingga pasangan itu terbaca sebagai satu label dua baris,
+bukan keterangan yang melayang di bawah judul. Tinggi dialog justru **turun**, 638 → **619px**,
+overflow 0 di 1080/900/800/768/720.
+
+> Pengulangan pelajaran project ini: kalau permintaannya soal **TASTE** bukan perilaku, tampilkan
+> hasilnya dan tanya dulu sebelum commit. Versi pertama ikon ini saya commit lalu ditolak
+> HIRO ("make it full in the wrapper, dont separate the subtitle") — bertanya memakan satu
+> round, jauh lebih murah daripada mengirim header yang salah tampilan lalu revert.
