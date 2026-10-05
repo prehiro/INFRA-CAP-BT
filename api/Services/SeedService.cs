@@ -40,6 +40,7 @@ public class SeedService
 
         await SeedSampleSchemaAsync();
         await SeedCctvLogBookAsync();
+        await SeedHandoverLogBookAsync();
     }
 
     /// <summary>
@@ -84,6 +85,54 @@ public class SeedService
         };
 
         _db.Entities.Add(cctv);
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// The Handover Log Book - records every IT part handed over to a user (HIRO, 2026-10-05).
+    ///
+    /// Same shape as the CCTV Log Book: a sequential NO filled server-side by
+    /// LogbookNumberService, plus one signature pad. Storage, validation and audit all run
+    /// through the generic engine; only the presentation is bespoke.
+    ///
+    /// Column order is exactly what HIRO asked for:
+    ///   Taken Date, Part Name, Brand, QTY, Employee No, Name, Section, Signature, Remarks
+    /// which is why `tanggal_ambil` leads and the part identity comes before the person -
+    /// the sheet is a register of IT ASSETS first and its recipients second.
+    ///
+    /// `tanda` (the recipient's signature) is a Text field holding a data-URL PNG, exactly
+    /// like the CCTV signature columns: no MaxLength, so the base64 is never truncated.
+    /// </summary>
+    private async Task SeedHandoverLogBookAsync()
+    {
+        if (await _db.Entities.AnyAsync(e => e.Slug == LogbookNumberService.HANDOVER_SLUG)) return;
+
+        var handover = new DynamicEntity
+        {
+            Name = "Handover Log Book",
+            Slug = LogbookNumberService.HANDOVER_SLUG,
+            Kind = EntityKind.Transaction,
+            Description = "Logbook penyerahan part IT ke user",
+            DisplayField = LogbookNumberService.NO_FIELD,
+            IsSystem = false,
+            IsActive = true,
+            SortOrder = 20,
+            Fields =
+            {
+                new DynamicField { Name = "nomor",         Label = "NO",          Type = FieldType.Text,     IsRequired = true, IsUnique = true, MaxLength = 30, SortOrder = 0 },
+                new DynamicField { Name = "tanggal_ambil", Label = "Taken Date",  Type = FieldType.Date,     IsRequired = true, SortOrder = 1 },
+                new DynamicField { Name = "nama_barang",   Label = "Part Name",   Type = FieldType.Text,     IsRequired = true, MaxLength = 200, SortOrder = 2 },
+                new DynamicField { Name = "merek",         Label = "Brand",       Type = FieldType.Text,     MaxLength = 100, SortOrder = 3 },
+                new DynamicField { Name = "qty",           Label = "QTY",         Type = FieldType.Number,   IsRequired = true, DefaultValue = "1", SortOrder = 4 },
+                new DynamicField { Name = "no_pegawai",    Label = "Employee No", Type = FieldType.Text,     MaxLength = 50,  SortOrder = 5 },
+                new DynamicField { Name = "nama",          Label = "Name",        Type = FieldType.Text,     IsRequired = true, MaxLength = 200, SortOrder = 6 },
+                new DynamicField { Name = "departemen",    Label = "Section",     Type = FieldType.Text,     MaxLength = 100, SortOrder = 7 },
+                new DynamicField { Name = "tanda",         Label = "Signature",   Type = FieldType.Text,     SortOrder = 8 },
+                new DynamicField { Name = "catatan",       Label = "Remarks",     Type = FieldType.TextArea, MaxLength = 1000, SortOrder = 9 },
+            }
+        };
+
+        _db.Entities.Add(handover);
         await _db.SaveChangesAsync();
     }
 

@@ -650,3 +650,80 @@ CSS-nya di blok `<style>` **non-scoped** yang sudah ada, karena `UModal` di-tele
 >   role digabung), bukan `Administrator`.
 > - `.click()` sintetis pada item submenu **tidak** membukanya; pakai `cdp
 >   Input.dispatchMouseEvent` pada rect hasil `getBoundingClientRect()`.
+
+## Handover Log Book — module baru (2026-10-05)
+
+HIRO: *"now let's make handover page. in this page records all IT parts hand over to user.
+table header start with Taken Date, Part Name, Brand, QTY, Employee No, Name, Section,
+Signature, Remarks. pls make effect and transision or animation same like cctv page"*
+
+Menggantikan placeholder `handover.vue` yang dibuat 2026-10-02.
+
+### Backend
+
+Entity baru **`handover_log_book`** (SortOrder 20, DisplayField `nomor`, 10 field), di-seed
+oleh `SeedService.SeedHandoverLogBookAsync`:
+
+| Field | Label | Tipe | Wajib |
+|---|---|---|---|
+| `nomor` | NO | Text | ya (auto, unik) |
+| `tanggal_ambil` | Taken Date | Date | ya |
+| `nama_barang` | Part Name | Text | ya |
+| `merek` | Brand | Text | — |
+| `qty` | QTY | Number | ya (default 1) |
+| `no_pegawai` | Employee No | Text | — |
+| `nama` | Name | Text | ya |
+| `departemen` | Section | Text | — |
+| `tanda` | Signature | Text (data-URL PNG) | — |
+| `catatan` | Remarks | TextArea | — |
+
+**`LogbookNumberService` harus digeneralisasi** — ini bagian yang tidak obvious:
+`TryNextAsync` membandingkan `entitySlug != CCTV_SLUG` dan mengembalikan `(false, "")`.
+Untuk handover itu berarti field `nomor` (required + unique) kosong di setiap create →
+validasi gagal. Diganti dengan `HashSet` `NumberedSlugs` + `NextNumberAsync(slug, …)`
+yang menerima slug sebagai parameter (counter-nya memang sudah membaca field `nomor` milik
+entity itu sendiri, jadi tiap logbook bernomor sendiri mulai 1). `NextCctvNumberAsync`
+kembali jadi satu baris mendelegasikan, sehingga `CctvLogbookController` dan assertion
+`next-no` di `test-logbook.ps1` tidak tersentuh.
+
+Catatan operasional: `Api.exe` harus **dihentikan dulu** sebelum `dotnet build` —
+MSB3027, apphost tidak bisa menimpa `Api.exe` yang sedang terkunci.
+
+### Frontend
+
+`web/app/pages/logbook/handover.vue` meniru `cctvacc.vue` dengan sengaja: panel shell dengan
+`:ui` per-instance, toolbar Search | Filter | Excel | Add Record, `LogbookFilterPopover` +
+chip yang bisa dilepas (animasi tinggi 0fr→1fr), grid `table-fixed` + `colgroup` (tepat 10
+`<col>` untuk 10 kolom), transisi baris FLIP, keyframes reveal/dismiss modal, glow accent
+`::after` (300px / blur 70 / 0.13), dialog konfirmasi hapus dengan motion stagger, dan blok
+print A4 landscape.
+
+Semua CSS spesifik halaman berprefiks `handover-`. Yang shared (`.chips-slot`, `.row-*`,
+`.logbook-scroll`, print) **sengaja diduplikasi** dengan nilai identik, bukan diekstrak, agar
+satu halaman tidak bisa dirusak oleh edit di halaman lain.
+
+**Satu bug nyata yang ditemukan dari screenshot:** popover filter shared meng-hard-code
+dropdown kedua sebagai "PIC Name" / "All requesters" — salah total di lembar yang tidak punya
+kolom PIC. Diperbaiki dengan dua prop **opsional** `personLabel` / `personPlaceholder` yang
+**default-nya string CCTV yang sekarang**, jadi markup CCTV tidak berubah sama sekali.
+Diverifikasi live: Handover membaca Name / All recipients, CCTV tetap PIC Name.
+
+Halaman ini juga memakai `tanggal_ambil` untuk filter tanggal dan `nama` untuk filter
+persona (CCTV memakai `tanggal` / `nama_pemohon`), dan search haystack mengecualikan
+`tanda` supaya base64 signature ~1800 karakter tidak pernah mencocoki kata pencarian.
+
+### Verifikasi (di browser, bukan hanya build)
+
+- **Create** — tanggal/nama/QTY ter-prefill, signature digambar di canvas via
+  `cdp Input.dispatchMouseEvent`, Save Row → "Record created", `nomor` dari server = **"1"**,
+  signature tersimpan sebagai data-URL 1846 karakter.
+- **Edit** — QTY 1→3, signature bertahan, `nomor` **tidak** terhapus (membuktikan
+ 省略 field tersembunyi bekerja).
+- **Search** — "latitude" → 1 of 1; "zzzznotfound" → 0 of 1 + "No rows match your filter";
+  dikosongkan → 1 of 1.
+- **Filter** — preset "This month" → chip `Taken Date: 2026-10-01 → 2026-10-05`, slot `is-open`.
+- **Delete** — dialog membaca Part Name / Name / Employee No / Taken Date / QTY = nilai asli
+  baris; Delete record → 0 of 0, server mengonfirmasi total 0.
+
+Baris probe **sudah dihapus**, jadi `handover_log_book` kosong dan siap untuk data asli HIRO.
+Entity id 9 di DB dev.

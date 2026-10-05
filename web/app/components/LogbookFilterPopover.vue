@@ -30,6 +30,17 @@ const props = defineProps<{
   /** How many rows survive the current filter - shown live so the user is never guessing. */
   matchCount: number
   totalCount: number
+  /**
+   * Label for the person dropdown, and its empty-state placeholder.
+   *
+   * OPTIONAL AND DEFAULTS TO THE CCTV WORDING on purpose. The Handover Log Book has no PIC
+   * column at all - it records a PART being handed to a person - so it passes "Name" /
+   * "All recipients". Making these props rather than hard-coding one label is what lets both
+   * pages share this popover without either of them being mislabelled, and because the
+   * defaults are the existing CCTV strings, the CCTV page's markup is unchanged.
+   */
+  personLabel?: string
+  personPlaceholder?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [LogbookFilters]; clear: [] }>()
@@ -195,12 +206,13 @@ function applyPreset(key: string) {
               placeholder="All sections" @update:model-value="set('section', $event ?? '')"
             />
           </UFormField>
-          <UFormField label="PIC Name" name="f-pic">
-            <USelect
-              :model-value="modelValue.pic" :items="pics" searchable class="w-full"
-              placeholder="All requesters" @update:model-value="set('pic', $event ?? '')"
-            />
-          </UFormField>
+          <UFormField :label="personLabel ?? 'PIC Name'" name="f-pic">
+                      <USelect
+                        :model-value="modelValue.pic" :items="pics" searchable class="w-full"
+                        :placeholder="personPlaceholder ?? 'All requesters'"
+                        @update:model-value="set('pic', $event ?? '')"
+                      />
+                    </UFormField>
         </div>
 
         <div class="mt-3 flex items-center justify-between gap-2 border-t border-default pt-3">

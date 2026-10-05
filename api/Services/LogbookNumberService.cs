@@ -34,21 +34,44 @@ public class LogbookNumberService : ISequentialNumberProvider
 
     public const string CCTV_SLUG = "cctv_log_book";
 
+    /// <summary>The Handover Log Book, seeded 2026-10-05. Same sequential-NO shape as CCTV.</summary>
+    public const string HANDOVER_SLUG = "handover_log_book";
+
     /// <summary>Field name holding the printed NO value on the CCTV Log Book entity.</summary>
     public const string NO_FIELD = "nomor";
 
+    /// <summary>
+    /// Every entity whose NO column this service fills. A set rather than a single comparison,
+    /// because the Handover Log Book uses the identical mechanism - without it TryNextAsync
+    /// returned (false, "") for handover, and its required+unique `nomor` field would then
+    /// fail validation on every create.
+    /// </summary>
+    private static readonly HashSet<string> NumberedSlugs = new(StringComparer.OrdinalIgnoreCase)
+    {
+        CCTV_SLUG,
+        HANDOVER_SLUG,
+    };
+
     public async Task<string> NextCctvNumberAsync(DateTime? forDate, CancellationToken ct = default)
+        => await NextNumberAsync(CCTV_SLUG, forDate, ct);
+
+    /// <summary>
+    /// Next sequential NO for ANY numbered logbook entity. The slug is a parameter rather
+    /// than hard-wired to CCTV so the second logbook needs no copy of this method: the counter
+    /// is read from that entity's own `nomor` field, so each logbook numbers independently.
+    /// </summary>
+    public async Task<string> NextNumberAsync(string slug, DateTime? forDate, CancellationToken ct = default)
     {
         // forDate is intentionally unused now that the number no longer embeds a year. It
         // stays in the signature so the controller and API contract do not change.
         _ = forDate;
 
         var fieldId = await _db.Fields
-            .Where(f => f.Name == NO_FIELD && f.Entity!.Slug == CCTV_SLUG)
+            .Where(f => f.Name == NO_FIELD && f.Entity!.Slug == slug)
             .Select(f => f.Id)
             .FirstOrDefaultAsync(ct);
 
-        if (fieldId == 0) throw new InvalidOperationException("Entity CCTV Log Book belum ada.");
+        if (fieldId == 0) throw new InvalidOperationException($"Entity {slug} belum ada.");
 
         // Soft-deleted rows must NOT consume a number: Record.IsDeleted filters the
         // join, so deleting a row releases its NO back into the sequence instead of
@@ -74,9 +97,9 @@ public class LogbookNumberService : ISequentialNumberProvider
         return max.ToString();
     }
 
-    public async Task<(bool handled, string value)> TryNextAsync(string entitySlug, DateTime? forDate, CancellationToken ct)
+    public async Task<(bool handled, string value)> TryNextAsync(string entitySlug, DateTime? forDate, CancellationToken ct = default)
     {
-        if (entitySlug != CCTV_SLUG) return (false, "");
-        return (true, await NextCctvNumberAsync(forDate, ct));
+        if (!NumberedSlugs.Contains(entitySlug)) return (false, "");
+        return (true, await NextNumberAsync(entitySlug, forDate, ct));
     }
 }
