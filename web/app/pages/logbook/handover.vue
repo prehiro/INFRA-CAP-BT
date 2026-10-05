@@ -706,14 +706,15 @@ await init()
                    filter, not the native control: the OS date input cannot be styled to match the
                    app and renders the US mm/dd/yyyy order on this machine, while the sheet is
                    written dd/mm/yyyy. v-model is a bare yyyy-mm-dd, which is exactly the form's
-                   shape, and :name keeps it inside UForm's state. -->
+                   shape, and :name keeps it inside UForm's state.
+
+                   HIRO's order (2026-10-05) reads across the row, not down the column:
+                     Taken Date | Part Name
+                     Brand     | QTY
+                   which is also how the printed sheet reads - what it is, then how many. -->
               <UFormField label="Taken Date" name="tanggal_ambil" required>
                 <DatePicker v-model="form.tanggal_ambil" name="tanggal_ambil" placeholder="Pick a date"
                             :invalid="fieldInvalid('tanggal_ambil')" />
-              </UFormField>
-              <UFormField label="QTY" name="qty" required>
-                <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
-                         :ui="fieldInvalid('qty') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
               <UFormField label="Part Name" name="nama_barang" required>
                 <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Laptop / monitor / dongle" class="w-full"
@@ -722,53 +723,79 @@ await init()
               <UFormField label="Brand" name="merek">
                 <UInput v-model="form.merek" name="merek" placeholder="Dell / HP / Lenovo" class="w-full" />
               </UFormField>
+              <UFormField label="QTY" name="qty" required>
+                <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
+                         :ui="fieldInvalid('qty') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
             </div>
           </section>
 
           <!-- ============ RECIPIENT ============ -->
-          <!-- Name and Remarks share the row, Name on the left (HIRO: "make remarks in the right
-               of name"). Name is prefilled from the session. Remarks is a free-text box rather
-               than an input because condition notes run to a sentence or two - "screen has a
-               hairline scratch, charger included" is the kind of thing this column exists for,
-               and a single-line input would truncate exactly that.
+          <!-- HIRO's order (2026-10-05), reading across each row:
+               Employee No | Name
+               Section    | Remarks
+               The identity pair sits on the first row - the number and the person who owns the
+               account belong together - and the org details with them. Name is prefilled from
+               the session.
 
-               Both are full width of their own column, and `w-full` is required as well as the
-               grid cell: UTextarea sizes to its content otherwise and ignores the column. -->
+               Remarks is a free-text box rather than an input because condition notes run to a
+               sentence or two: "screen has a hairline scratch, charger included" is exactly the
+               kind of thing this column exists for, and a single-line input truncates precisely
+               that. `w-full` is required as well as the grid cell - UTextarea sizes to its
+               content otherwise and ignores the column. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-user-round" class="size-3.5" />
               Recipient
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <UFormField label="Employee No" name="no_pegawai">
+                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
+              </UFormField>
               <UFormField label="Name" name="nama" required>
                 <UInput v-model="form.nama" name="nama" placeholder="Recipient's full name" class="w-full"
                          :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
+              </UFormField>
+              <UFormField label="Section" name="departemen">
+                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
               </UFormField>
               <UFormField label="Remarks" name="catatan">
                 <UTextarea v-model="form.catatan" name="catatan" :rows="1" class="w-full"
                           placeholder="Condition, accessories included" />
               </UFormField>
-              <UFormField label="Employee No" name="no_pegawai">
-                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900" class="w-full" />
-              </UFormField>
-              <UFormField label="Section" name="departemen">
-                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
-              </UFormField>
             </div>
           </section>
 
           <!-- ============ SIGNATURE ============ -->
-          <!-- Titled "Signature" to match the CCTV dialog's third section exactly.
+          <!-- Titled "Signature" to match the CCTV dialog's third section.
                `full-width` is the opt-in prop on SignaturePad: without it the wrapper is
                `inline-block` and the canvas shrink-wraps to about 124px however much room the
-               cell actually has. 140 rather than taller keeps the dialog off a scrollbar on a
-               normal laptop. -->
+               cell actually has.
+
+               CENTRED IN THE FORM (HIRO, 2026-10-05: "make the signature section in the center
+               of form"). Two separate things are centred, and they need different mechanisms:
+
+                 - the SECTION HEADING is centred with `justify-center` on its own flex row.
+                   That is why the heading's `items-center` stays and a `justify-center` is added
+                   rather than the whole heading being centred some other way.
+                 - the PAD is centred with `mx-auto` inside a `max-w-2xl` wrapper, so it is
+                   centred RELATIVE TO THE DIALOG rather than relative to a grid column. Sizing it
+                   to the column and centring with `justify-center` would have been the obvious
+                   route and it does not work here: the pad is the only child of its section, so
+                   there is no second column to centre it against - `justify-center` alone does
+                   nothing to a single item in a full-width cell.
+
+               `max-w-2xl` rather than full width is the deliberate part. A signature box stretched
+               to 856px is not a signature box, it is a rule with a squiggle on it; ~670px matches
+               the physical width a person actually signs on, and centring it reads as
+               intentional. The height stays 130 rather than growing with the width, and the pad
+               still lands on the same 2-column row width the CCTV dialog uses. -->
           <section>
-            <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
+            <p class="mb-2 flex items-center justify-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-pen-line" class="size-3.5" />
               Signature
             </p>
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="mx-auto w-full max-w-2xl">
               <UFormField label="Recipient Sign" name="tanda" required>
                 <SignaturePad v-model="form.tanda" :height="130" full-width
                               :invalid="fieldInvalid('tanda')" />

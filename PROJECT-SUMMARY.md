@@ -1033,3 +1033,55 @@ Create (807 piksel tinta, Save Row, nomor ter-assign) → Edit (judul berubah ke
 ikon pena, QTY 1→5, signature 4446 karakter **bertahan** — itu lagi perilaku
 omit-field-tersembunyi) → dialog hapus membaca Part Name / Name / Employee No / Taken Date / QTY
 = nilai asli baris → dihapus → server kembali **0 baris handover, 11 baris CCTV, nol probe**.
+
+## Handover — urutan kolom diperbaiki, Signature di tengah (2026-10-05)
+
+HIRO: *"i want this position / Taken Date | Part Name / Brand | QTY / (baris kosong) /
+Employee No | Name / Section | Remarks / make the signature section in the center of form"*.
+
+Urutan sekarang dibaca **mendatar per baris**, bukan menurun per kolom — diverifikasi dengan
+membaca label yang benar-benar ter-render per seksi:
+
+| Seksi | Isi |
+|---|---|
+| **Part** | Taken Date \| Part Name · Brand \| QTY |
+| **Recipient** | Employee No \| Name · Section \| Remarks |
+| **Signature** | Recipient Sign |
+
+Pasangan identitas (Employee No + Name) sengaja memimpin seksi Recipient — nomor dan orang yang
+memiliki akun itu memang satu paket. Baris kedua brought Section dan Remarks.
+
+> Catatan: ini **menggantikan** layout yang di-commit beberapa jam sebelumnya (Name | Remarks di
+> baris 1, Employee No | Section di baris 2). Permintaan "pasangan kolom" dan permintaan
+> "urutan baris" adalah dua hal berbeda, dan yang terakhir inilah yang berlaku.
+
+### Centering butuh DUA mekanisme berbeda
+
+Mencampur keduanya akan menghasilkan seksi yang setback centering-nya:
+
+- **Judul seksi** di-center dengan `justify-center` pada flex row-nya sendiri. `items-center`
+  tetap ada, karena sumbu itu soal menyejajarkan ikonnya.
+- **Pad** di-center dengan `mx-auto` di dalam wrapper `max-w-2xl`, sehingga center-nya
+  **terhadap dialog**. Merapitkannya ke kolom grid lalu `justify-center` adalah cara yang
+  tampak wajar dan **diam-diam tidak melakukan apa-apa** di sini: pad adalah anak tunggal
+  seksinya, jadi tidak ada kolom kedua untuk disejajarkan.
+
+`max-w-2xl`, bukan lebar penuh, itu bagian yang disengaja — kotak signature yang diregangkan ke
+856px bukan kotak signature, itu garis dengan gelayangan di atasnya. Pad terukur **672×130**,
+lebar yang memang ditandatangani orang di kertas.
+
+### Jebakan harness yang menghasilkan false negative
+
+Pemeriksaan centering pertama saya membandingkan pad terhadap **border box** body modal dan
+melaporkan leftGap 105 vs rightGap 120, yaitu "tidak|center". Padahal **sudah** center — padding
+horizontal 20px milik body ikut terhitung di border box-nya, jadi perbandingannya dilakukan
+terhadap kotak yang 40px lebih lebar dari konten sebenarnya. Diukur terhadap **content box
+seksi lain** hasilnya leftGap 85 = rightGap 85 dan headingOffset 0 — itulah kebenarannya.
+
+> **Aturan:** saat centering apa pun di dalam container berpadding, ukur terhadap **saudara seksi
+> yang sama**, jangan pernah terhadap border box container-nya.
+
+Sweep: dialog 687px dengan overflow 0 di 1080/900/768, menyusut ke 656 di 720.
+
+Verifikasi end to end (baris probe): create (873 piksel tinta, Save Row, sepuluh field
+tersimpan) → dihapus → server kembali **0 baris handover, 11 baris CCTV, nol probe**.
