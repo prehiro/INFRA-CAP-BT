@@ -417,6 +417,38 @@ Create diverifikasi ulang **setelah** field diurutkan ulang: isi berdasarkan pos
 
 > Pelajaran: "tidak mau scrollbar" itu soal pengguna bisa mencapai tombolnya — turunkan tinggi konten, jangan sekadar menyembunyikan batangnya. Dan selalu sweep beberapa tinggi viewport, jangan hanya mengukur di layar sendiri.
 
+## 7h. Deskripsi role dibuat Bahasa Inggris (2026-10-05)
+
+HIRO: "pls use english for role description". Isi deskripsi role adalah **data di database**, bukan teks di frontend.
+
+Isi database sekarang:
+
+| Role | Description |
+|---|---|
+| Admin | Full access: manage entities, fields, users, and all data |
+| Manager | Manage master and transaction data, cannot manage users |
+| Staff | Enter and view transactions, read-only for master data |
+
+Table-nya adalah **`Roles`**, bukan `AppRoles` — query dengan `AppRoles` gagal dengan "Invalid object name 'AppRoles'". Table lengkap di `InternalApp_Dev`: `dbo.Roles`, `dbo.Users`, `dbo.UserRoles`, `dbo.Entities`, `dbo.Fields`, `dbo.Records`, `dbo.RecordValues`, `dbo.__EFMigrationsHistory`.
+
+### Dua edit wajib — jebakan yang sama seperti rename Department→Section
+
+`EnsureRoleAsync(name, desc)` di `api/Services/SeedService.cs` hanya mengisi `Description` kalau row-nya **belum ada**:
+
+```csharp
+if (r is null)
+{
+    r = new AppRole { Name = name, Description = desc };
+```
+
+Jadi **mengedit seed saja tidak mengubah apa pun** di database yang sudah ada. Row live di-update dengan SQL langsung ke `192.168.4.3/InternalApp_Dev` (@d/@n parameterized, masing-masing role 1 row).
+
+Tidak ada endpoint API untuk mengubah role — `GET /api/users/roles` satu-satunya route roles dan read-only, jadi script DB langsung adalah satu-satunya opsi tanpa menambah migration.
+
+> Konsekuensi yang perlu diingat: database **baru** otomatis dapat teks Inggris dari seed, tapi database lain yang sudah ada — terutama `InternalApp` di server kantor 10.89.6.237 — masih menyimpan baris Bahasa Indonesia sampai UPDATE yang sama dijalankan di sana. Seed tidak akan memperbaikinya.
+
+Sudah diverifikasi: `GET /api/users/roles` mengembalikan teks Inggris, kartu RolePicker di render `"Admin | Full access: manage entities, fields, users, and all data"`, regex `/kelola|Akses penuh|Input dan lihat|transaksi/i` terhadap `innerText` modal return false, dan dialog tetap 582px tanpa scrollbar.
+
 ## 8. Permintaan terbuka ke HIRO
 
 > **SQL Server kantor pakai Windows Auth atau SQL Auth?**
