@@ -33,7 +33,8 @@ const rows = ref<Row[]>([])
 const total = ref(0)
 const loading = ref(true)
 const saving = ref(false)
-const toast = ref<{ msg: string; kind: 'success' | 'error' } | null>(null)
+/** Nuxt UI's own toast, the same one User Management uses, so notifications look identical app-wide. */
+const toast = useToast()
 const search = ref('')
 const showForm = ref(false)
 const editing = ref<Row | null>(null)
@@ -240,9 +241,14 @@ function removeChip(key: string) {
 /** Draft of the row currently being entered. */
 const form = reactive<Record<string, any>>({})
 
+/**
+ * Thin wrapper over Nuxt UI's toast so the ~10 call sites below stay unchanged while the
+ * rendering moves to the shared <UToaster> that UApp already provides. User Management
+ * calls toast.add directly; keeping the wrapper here means one place to change if the
+ * notification style ever moves again.
+ */
 function notify(msg: string, kind: 'success' | 'error' = 'success') {
-  toast.value = { msg, kind }
-  setTimeout(() => { toast.value = null }, 4000)
+  toast.add({ title: msg, color: kind })
 }
 
 function resetForm() {
@@ -259,7 +265,7 @@ async function loadEntity() {
   const meta = all.find((e: any) => e.slug === CCTV_SLUG)
   if (!meta) {
     loading.value = false
-    notify('Entity CCTV Log Book belum ada di database.', 'error')
+    notify('CCTV Log Book entity not found in the database.', 'error')
     return false
   }
   const full = await apiGetEntity(meta.id)
@@ -361,16 +367,16 @@ async function save() {
     }
     if (editing.value) {
       await apiUpdateRecord(entity.value.id, editing.value.id, values)
-      notify('Row updated.')
+      notify('Record updated')
     } else {
       await apiCreateRecord(entity.value.id, values)
-      notify('Row added.')
+      notify('Record created')
     }
     showForm.value = false
     resetForm()
     await loadRows()
   } catch (e: any) {
-    notify(e?.data?.message || 'Gagal menyimpan.', 'error')
+    notify(e?.data?.message || 'Could not save the record.', 'error')
   } finally {
     saving.value = false
   }
@@ -429,12 +435,12 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await apiDeleteRecord(entity.value.id, deleteTarget.value.id)
-    notify('Row deleted.')
+    notify('Record deleted')
     showDelete.value = false
     deleteTarget.value = null
     await loadRows()
   } catch (e: any) {
-    notify(e?.data?.message || 'Gagal menghapus.', 'error')
+    notify(e?.data?.message || 'Could not delete the record.', 'error')
   } finally {
     deleting.value = false
   }
@@ -476,7 +482,7 @@ async function exportExcel() {
       sheetTitle: 'CCTV Access Request Log',
       fileName: `CCTV-Access-Log-${stamp}.xlsx`
     })
-    notify(`Exported ${visibleRows.value.length} rows to Excel.`)
+    notify(`Exported ${visibleRows.value.length} rows to Excel`)
   } catch (e: any) {
     notify(e?.message || 'Export failed.', 'error')
   } finally {
@@ -489,7 +495,7 @@ async function init() {
   try {
     if (await loadEntity()) await loadRows()
   } catch (e: any) {
-    notify(e?.data?.message || 'Gagal memuat data.', 'error')
+    notify(e?.data?.message || 'Could not load the data.', 'error')
   } finally {
     loading.value = false
   }
@@ -557,24 +563,17 @@ await init()
       </div>
     </div>
 
-    <!-- Save feedback is TELEPORTED to <body> on purpose. Rendered inline it sat inside
-         #__nuxt, which carries `isolate` and therefore forms its own stacking context: no
-         z-index on any descendant of it can ever paint above a UModal, because the modal is
-         teleported to a LATER sibling of #__nuxt. That is why "Validation failed" was
-         invisible behind the open modal. Teleporting to body makes the toast a sibling of the
-         modal, and since it is appended later, z-[60] (over UModal's z-50) puts it on top.
-         top-20 clears the 64px sticky navbar. -->
-    <Teleport to="body">
-      <div v-if="toast" class="pointer-events-none fixed left-1/2 top-20 z-[60] -translate-x-1/2 rounded-lg border px-4 py-2.5 text-sm shadow-lg backdrop-blur"
-           :class="toast.kind === 'error' ? 'border-error bg-error/15 text-error' : 'border-success bg-success/15 text-success'">
-        {{ toast.msg }}
-      </div>
-    </Teleport>
+    <!-- Notifications are NOT rendered here any more. This page used to hand-roll a
+             teleported div (top-20, z-[60]) because an inline one could never paint above a
+             UModal: #__nuxt carries `isolate`, so any descendant z-index is trapped in that
+             stacking context while the modal teleports to a later sibling. The Teleport worked
+             around that. UApp already renders <UToaster> for the whole app, so Nuxt UI's toast
+             owns the positioning and z-order and this block is redundant. -->
 
-    <!-- Active filters, as removable chips. These exist so the current view is never
-         ambiguous: without them a user can forget a filter is on, print the wrong thing or
-         export the wrong thing and not notice until afterwards. -->
-    <!-- COLLAPSIBLE SLOT. The chips used to be `v-if`'d straight into the flow, so the moment
+        <!-- Active filters, as removable chips. These exist so the current view is never
+             ambiguous: without them a user can forget a filter is on, print the wrong thing or
+             export the wrong thing and not notice until afterwards. -->
+        <!-- COLLAPSIBLE SLOT. The chips used to be `v-if`'d straight into the flow, so the moment
          a chip appeared the table below was shoved down by a whole line-height in one frame -
          a jump. Now the row is always present and only its HEIGHT animates (0fr -> 1fr), so
          the table is pushed down progressively and lands exactly where it belongs. The chips
