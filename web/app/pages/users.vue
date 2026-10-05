@@ -2,7 +2,7 @@
 import type { Role, User } from '~/types'
 
 const toast = useToast()
-const { user: me, isAdmin } = useAuth()
+const { user: me, isAdmin, refreshUser } = useAuth()
 
 const users = ref<User[]>([])
 const roles = ref<Role[]>([])
@@ -130,6 +130,17 @@ async function save() {
     }
     modalOpen.value = false
     await load()
+
+    // If the account just edited is the one signed in, re-read it from the server.
+    //
+    // WHY: the Dashboard welcome banner, the sidebar user menu and the avatar initials all read
+    // `useUser()`, a global useState written once at login. Saving a rename updated the database
+    // but left that state holding the OLD name, so the dashboard kept showing it until a full
+    // browser refresh re-ran restore(). Only the self-edit needs this - editing somebody else's
+    // account does not change what the signed-in user is called.
+    if (editing.value && me.value && editing.value.id === me.value.id) {
+      await refreshUser()
+    }
   } catch (e: any) {
     if (e?.data?.errors) Object.assign(formErrors, e.data.errors)
     // A silent catch here made a broken submit look like a no-op, so the reason is
