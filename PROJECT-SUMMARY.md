@@ -1235,4 +1235,65 @@ memunculkan error → validasi form tidak ikut mati.
 
 Tidak ada theme override global. Permintaan ini memang tentang **default global**, jadi
 `app.config.ts` yang tepat sasaran — bukan `dashboardPanel` atau slot lain yang pernah
-membocorkan scrollbar ke halaman yang tidakصدق.
+membocorkan scrollbar ke halaman yang tidak benar.
+
+## CCTV — chip preview tanda tangan diperbesar (2026-10-06)
+
+HIRO: *"the sign preview in the table a bit small, can you improve"*.
+
+Yang menghambat BUKAN kolomnya, tapi chip-nya — dan itu yang harus dibuktikan dulu sebelum
+mengubah apa pun. Terukur di viewport kantor 1920: kolom PIC SIGN dan ISD SIGN **164px**,
+`px-3` menyisakan 140px content box, sementara chip-nya hanya **108px**. Jadi ~32px dari tiap
+kolom **tidak terpakai sama sekali**, dan tinta terkunci di 98×32.
+
+PNG yang tersimpan rasio **3.2:1** (422×130), jadi yang membatasi adalah **lebar**, bukan
+tinggi. Chip 132px + `h-10` menghasilkan tinta **122×40** — sekitar 27% lebih besar linear —
+sambil **meninggalkan `<colgroup>` apa adanya**. Mengalokasikan ulang persentase kolom akan
+memindahkan semua kolom lain dan berisiko merusak properti "dua kolom tanda tangan selalu sama
+lebar" yang justru alasan `<table-fixed>` + `<colgroup>` ada di file ini.
+
+### `max-w-full` itu WAJIB, bukan sekadar pengaman
+
+Tabel membawa `min-w-[1180px]`, jadi di viewport **1280 atau 1440** kolom tanda tangan hanya
+**117px** (93px content box), sementara di layar kantor 164px. **Terukur tanpa `max-w-full`:
+chip 132px melebihi selnya sendiri sebesar 15px di kedua lebar itu** dan mendorong konten ke
+kolom Start Time. Dengan `max-w-full`, chip menyusut mengikuti kolomnya.
+
+Kekhawatiran yang wajar — "chip jadi mengikuti kolom, jadi baris yang berisi tanda tangan
+selalu beda lebar dari baris yang berisi `—`" — **tidak berlaku di sini**. Ketidaksamaan itu
+dari layout **auto**, di mana `w-[n%]` pada `<th>` cuma **hint** dan browser
+membagikan sisa ruang tidak rata per baris. Under table-fixed + `<colgroup>`,
+lebar kolom deterministik dan identik di semua baris, jadi `min(132px, sel)`
+menghasilkan angka yang sama untuk semua baris.
+
+### Cara mengukur tanpa menebak
+
+Chip **LAMA dan BARU diukur berdampingan di sel yang sama** — node klon disisipkan ke DOM
+yang sama lalu kedua-nya di-`getBoundingClientRect()` dalam satu panggilan. Ini menghapus
+dua sumber kesalahan sekaligus: membandingkan angka antar sesi, dan menghitung dari CSS apa
+yang seharusnya terjadi.
+
+| viewport | kolom | chip LAMA / tinta | chip BARU / tinta |
+| --- | --- | --- | --- |
+| 1280 | 117px | 108px / 98×32 | 93px / 83×40 |
+| 1920 | 164px | 108px / 98×32 | 132px / 122×40 |
+
+### Trade-off yang harus dinyatakan
+
+Di 1280 chip sekarang **mengecil** (tinta 83px, bukan 98px lama) karena chip yang lebih lebar
+dari kolomnya akan mendorong sel tetangga. Di 1600/1920 — layar yang HIRO pakai — tinta jadi
+**98×40 dan 122×40**, jelas lebih terbaca. Jadi permintaan "perbesar" terpenuhi di layar
+kantor, dan di layar sempit luar biasa justru dikecilkan demi tidak merusak layout.
+
+Sweep 1280/1440/1600/1920: tidak ada clipping atau pergeseran di lebar mana pun, jarak ke
+kolom berikutnya tetap 12–20px, dan kedua kolom tanda tangan **tetap persis sama** di semua
+lebar. Screenshot 1920 mengonfirmasi tinta terbaca, seragam, dan berada di dalam selnya.
+
+> Catatan harness: perintah `Stop-Process` untuk restart dev server **diblokir tanpa
+> persetujuan** dan tidak dicoba ulang. HMR ternyata sudah menyajikan kode baru — dibuktikan
+> dengan membaca `className` yang tersaji, bukan dengan menganggapnya benar.
+
+> Pelajaran yang lebih luas: **ukur dulu, baru ubah bagian yang terbukti menjadi pembatas.**
+> Dugaan awal saya adalah kolomnya yang sempit; pengukuran membuktikan chip-nya yang kecil,
+> dan kolomnya justru punya 32px yang tidak terpakai. Dan untuk data yang tidak bisa dibaca
+> dengan yakin, mengatakannya adalah hasilnya — bukan mengisinya dengan tebakan.
