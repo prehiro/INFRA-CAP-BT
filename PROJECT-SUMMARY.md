@@ -1399,3 +1399,51 @@ yang tersimpan, jadi tidak lagi dobel dan tidak gepeng.
 > di dpr>1 akan lolos semua test di sini. Untuk canvas HiDPI, DPR bukan detail, tapi
 > **variabel uji yang wajib diaktifkan ulang setelah `Page.navigate`** (override kembali ke 1
 > kalau tidak dipasang ulang di panggilan berikutnya).
+
+## Handover — crop + preview yang sama dengan CCTV (2026-10-06)
+
+HIRO: *"implement crop dan preview adjustment juga ke form handover"*. Commit `b64c7b8`,
+satu file: `web/app/pages/logbook/handover.vue`.
+
+### Yang sebenarnya perlu diubah — dan apa yang TIDAK
+
+`SignaturePad.vue` itu **komponen bersama**, jadi crop saat export dan perbaikan
+centering di `paint()` **sudah otomatis aktif di handover** begitu dua commit sebelumnya
+tidak merusak apa pun. Yang belum ikut cuma **chip preview di tabel** — masih `w-[108px]`
++ `h-8` (tinta 98x32) sementara CCTV sudah `w-[132px] max-w-full` + `h-10` (122x40).
+
+Jadi diff-nya hanya baris class chip itu. Menyalin seluruh mekanisme crop ke handover
+justru akan jadi duplikasi yang harus diperbaiki dua kali di setiap perbaikan berikutnya.
+
+`max-w-full` itu **wajib**, bukan defensif: tabel handover `min-w-[1240px]`, jadi di 1280
+sel signature lebih sempit dari chip 132px dan akan **membanjiri** kolom Section + Remarks.
+`<colgroup>` sengaja tidak disentuh — handover cuma punya SATUR kolom signature (11%), jadi
+sifat "dua kolom signature sama lebar" milik CCTV tidak berlaku di sini.
+
+### Pad handover lebih besar dari CCTV, jadi crop lebih menguntungkan
+
+Pad signature handover **672x130**, bukan 422x130 seperti CCTV — karena form-nya `max-w-2xl`
+dan di-center. Artinya margin kosong yang dibuang crop **jauh lebih lebar** di halaman ini.
+
+| yang diukur | hasil |
+| --- | --- |
+| pad handover | 672x130 |
+| goresan di 15–60% lebar pad → PNG tersimpan | **310x130** |
+| chip 132px di dalam sel | muat di sel **135px** (overflow -3px) |
+| tinta preview record ter-crop | 95x40 |
+| dpr=2, ink di dialog Edit | **304 device px**, kiri **520** == kanan **520** |
+
+### Jebakan: "0 rows" bukan berarti data hilang
+
+Setelah delete probe lewat UI, tabel menampilkan **0 rows** padahal row asli HIRO
+(Keyboard/Rama) bersama probe masih ada di server. Saya cek langsung ke API: `total: 2`,
+record 140 (Chip Probe) dan 134 (Keyboard). Setelah **full reload** barisnya kembali 2 —
+jadi itu state transien saat refetch, bukan data hilang.
+
+Probe lalu saya hapus **lewat API** (`DELETE /api/records/9/140`) dengan `KEEP = {134}`,
+dan script itu mencetak before/after-nya, jadi sekarang hanya ada **134** — row asli
+HIRO utuh. **Jangan pernah percaya angka "0 baris" di UI sebagai bukti penghapusan**;
+baca server.
+
+`vision` juga salah di sini: melaporkan dua chip "tidak sama besar", padahal keduanya
+**132x50 persis** — hanya border yang lebih terlihat pada baris yang tintaunya besar.
