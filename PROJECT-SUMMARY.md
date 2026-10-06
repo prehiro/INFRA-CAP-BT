@@ -1364,3 +1364,38 @@ ukuran tinta, `naturalWidth x getBoundingClientRect()` lebih jujur daripada mata
 
 > Probe row yang dibuat untuk pengukuran (Crop Probe, Crop Realistic, Crop Edit,
 > Full Height) **sudah dihapus semua**; tabel kembali ke 13 baris.
+
+### BUG yang saya perkenalkan sendiri: tinta 2x besar + meleset di dialog Edit
+
+HIRO melapor: *"in edit row modal, the signature is moved to the right"*. Dua defect nyata,
+**keduanya konsekuensi dari crop di atas** — sudah diverifikasi ulang di browser, bukan
+menebak.
+
+**1. Tinta tergambar DUA KALI LEBIH BESAR di layar HiDPI.** `paint()` menggambar
+`img.naturalWidth` (device pixel) ke dalam context yang **sudah** di-`scale(dpr, dpr)` oleh
+`resize()`. Jadi di dpr=2 tinta keluar 2×. Di dpr=1 tidak terlihat sama sekali — itulah
+alasannya lolos dari pengujian saya sebelumnya, dan **layar 1920 laptop HIRO yang
+memunculkannya**. Terukur: PNG 201px tapi tinta gambar **392 device px**, mengisi setengah pad.
+
+**2. Posisi dianggap "meleset ke kanan".** Crop membuang posisi asli tinta di dalam pad, jadi
+`x = 0` hanya hasil "nempel di tepi kiri dengan ekor kosong panjang" — itu terbaca meleset,
+bukan sekadar rata-kiri. `vision` bahkan melapor "left-anchored", jadi laporan mata dan
+visi sama-sama salah arah; yang benar adalah **ekornya yang hilang penyeimbangnya**.
+
+Fix di `paint()`: bagi dengan `dpr`, lalu **center horizontal**. Posisi vertikal tidak
+disentuh karena export tidak memotong tinggi — jadi `y` masih informasi yang benar.
+
+| kondisi | tintanya | jarak kiri | jarak kanan |
+| --- | --- | --- | --- |
+| dpr=2, SEBELUM | 392 device px (2×) | 5 | 447 |
+| dpr=2, SESUDAH | **196 device px (1:1 dari PNG 201)** | **324** | **324** |
+| dpr=1, SESUDAH | **196px** | **113** | **113** |
+
+Kiri == kanan di kedua DPR = benar-benar center, dan ukuran tintanya cocok 1:1 dengan PNG
+yang tersimpan, jadi tidak lagi dobel dan tidak gepeng.
+
+> Pelajaran: **efek samping dari sebuah optimasi bisa tersembunyi justru di konfigurasi
+> tempat saya menguji.** dpr=1 adalah kondisi yang justru MENUTUPI bug — yang hanya muncul
+> di dpr>1 akan lolos semua test di sini. Untuk canvas HiDPI, DPR bukan detail, tapi
+> **variabel uji yang wajib diaktifkan ulang setelah `Page.navigate`** (override kembali ke 1
+> kalau tidak dipasang ulang di panggilan berikutnya).
