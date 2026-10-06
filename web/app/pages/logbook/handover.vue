@@ -715,11 +715,11 @@ await init()
                             :invalid="fieldInvalid('tanggal_ambil')" />
               </UFormField>
               <UFormField label="Part Name" name="nama_barang" required>
-                <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Laptop / monitor / dongle" class="w-full"
+                <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Keyboard / Mouse / Monitor / etc..." class="w-full"
                          :ui="fieldInvalid('nama_barang') ? { base: 'ring-2 ring-error' } : undefined" />
               </UFormField>
               <UFormField label="Brand" name="merek">
-                <UInput v-model="form.merek" name="merek" placeholder="Dell / Lenovo" class="w-full" />
+                <UInput v-model="form.merek" name="merek" placeholder="Dell / Lenovo / HP / etc..." class="w-full" />
               </UFormField>
               <UFormField label="QTY" name="qty" required>
                 <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
