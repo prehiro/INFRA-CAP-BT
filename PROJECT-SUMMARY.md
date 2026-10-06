@@ -959,7 +959,7 @@ Lebar tetap, **tanpa kelas tinggi sama sekali**, dan harus anak **flex** bukan a
 
 `Modal.vue` me-render `<slot name="title">` **di dalam** `<DialogTitle>`-nya sendiri, yang
 bersAUDARA dengan `<DialogDescription>`. Plate di slot itu hanya bisa setinggi baris title dan
-tidak pernah bisa menj，两位 baris — permintaan ini secara struktural mustahil dari #title.
+tidak pernah bisa menj，dua baris — permintaan ini secara struktural mustahil dari #title.
 Mengambil #header berarti mengambil alih tombol close juga (slot itu membungkus wrapper, slot
 #actions, dan `<DialogClose>` sekaligus, Modal.vue baris 100–135), jadi tombol close dibangun
 ulang sebagai `<button>` asli yang memanggil callback `close` milik DialogRoot.
@@ -1092,7 +1092,7 @@ HIRO: *"employee no placeholder change to 939432. do not fill name to Administra
 placeholder Recepient"*.
 
 Prefill itu ada karena form grid rata-rata dulu menganggap "menyerahkan part ke diri sendiri"
-adali kasus umum — dan itu justru **bukan** apa yang ee登记 handover. Petugas IT adalah orang yang
+adali kasus umum — dan itu justru **bukan** apa yang yang terjadi pada handover. Petugas IT adalah orang yang
 **menyerahkan**, bukan yang **menerima**, jadi prefill-nya mengarah ke pihak yang salah di baris
 itu, dan membuat field terlihat terjawab sebelum labelnya sempat dibaca.
 
@@ -1575,6 +1575,56 @@ yang ditolak). Sekarang icon + nama action tetap, state merah dibawa tag kecil "
 `mt-auto` menempel di **group terakhir** sidebar. Group Log Audit terpisah mengambil slot
 itu dan mendorong User Management ke atas. Log Audit harus di **group yang sama, sebelum**
 User Management. Terukur: Log Audit y=943, User Management y=975, profil y=1024.
+
+### Search tidak pernah menulis nilainya (bug nyata, bukan UX)
+
+Input search terikat dengan `:value="search"` (satu arah) dan dibaca lewat `onSearchInput()`,
+tapi handler itu **tidak pernah menulis `search.value`** — hanya menjadwalkan reload. Jadi
+mengetik tidak mengubah apa pun: term tidak pernah masuk query.
+
+`search` juga ikut ada di `watch([search, ...])`, yang justru **membatalkan debounce-nya**:
+watcher tetap jalan tiap ketukan, jadi timer 280ms hanya menjadwalkan request kedua yang
+identik. Satu jalur memiliki term (handler), watcher hanya memiliki select.
+
+**Akibat tidak terlihat: mengubah ref bukan hal yang sama dengan meminta reload.** Setelah
+`search` dikeluarkan dari watcher, `clearFilters()` jadi tidak memicu apa pun — tombolnya
+mengosongkan input tapi tabel tetap menampilkan hasil 0 baris lama dengan
+"Showing 0 of 0 events". Diperbaiki dengan `load()` eksplisit di dalam `clearFilters()`.
+
+Verifikasi: request di-patch di halaman sebelum mengetik. Ketik 8 karakter
+`operator` → **tepat 1 request**, bukan 8. Sesi bersih: `zzzznotathing` → 0 baris,
+`handover` → 3, keduanya HTTP 200.
+
+**HMR melayani kode basi setelah patch.** Right setelah patch, `zzzznotathing` mengembalikan
+15 baris di browser padahal API-nya 0. Full reload → 0. Selalu uji state baru di sesi bersih;
+HMR bukan bukti.
+
+### Tabel fit in screen, nol page scrollbar
+
+`max-h-[62vh]` membuat halaman scroll **dua kali**: panel body (1050 > 1016, jadi 34px
+keluar) plus tabelnya sendiri. Diubah jadi rantai flex height:
+
+`panel body:flex min-h-0 flex-col` → `content wrapper:flex min-h-0 flex-1 flex-col` →
+`register card:flex min-h-0 flex-1 flex-col` → `table wrapper:flex-1 min-h-0`,
+dengan filter bar dan pager `shrink-0`.
+
+`min-h-0` wajib di setiap link: item flex default `min-height:auto` dan **menolak menyusut**
+di bawah isinya, bukan melepaskan ruang.
+
+Diverifikasi di 1920×1080, 1600×900, 1366×768, 1280×720 dengan tabel PENUH (16 baris):
+`html scrollHeight == clientHeight` di semua resolusi, dan elemen yang scroll hanya
+`.audit-table`. Panel body tidak overflow sama sekali.
+
+Scrollbar panel body disembunyikan (`scrollbar-width:none` + `::-webkit-scrollbar{width:0}`)
+dengan class `.audit-panel-body` via `:ui` **per-instance** — `overflow-y:auto` tetap
+supaya viewport pendek tetap degrade jadi scroll yang berfungsi, bukan pager terpotong.
+
+### Lebar kolom: vision menemukan kebalikan dari masalah lama
+
+Setelah kolom Date ditambah, screenshot review menemukan kebalikannya: SOURCE 112px
+untuk isi `::1` atau `—` (jarak kosong besar), sementara TARGET 200px membuat
+`"Handover Log Book / #183"` **wrap dua baris**. Digeser: SOURCE 84px, TARGET 236px.
+Hasil: cell TARGET seragam 57px (satu baris), nol ellipsis.
 
 HIRO: *"ketika tombol delete record ditekan ada seperti popup muncul sepersekian detik
 sebelum modal tertutup"* — di **CCTV Access dan Handover**.

@@ -89,6 +89,24 @@ function clockTime(iso: string): string {
   return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
+/**
+ * Calendar date for the DATE column, separate from the clock in the TIME column.
+ *
+ * HIRO asked for a date column: the previous single Time column showed only a relative
+ * label plus HH:MM:SS, so an event from last month read "3d ago" with no date on it and a
+ * row could only be placed in time by hovering. Splitting the two makes the date sortable
+ * by eye and keeps the relative label as the fast "what just happened" read.
+ *
+ * Uses LOCAL formatting, because the operator's question is "which day was that", and the
+ * server stores UTC. A UTC-formatted date would show the wrong day for any event logged
+ * in the evening in WIB.
+ */
+function dayLabel(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return String(iso)
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 function initialsOf(username: string): string {
   const parts = (username || '').trim().split(/[\s._-]+/).filter(Boolean)
   if (!parts.length) return '?'
@@ -159,22 +177,50 @@ async function load() {
 
 // Any filter change resets to page 1: staying on page 4 of a result set that now has one page
 // is the classic way a filter looks like it silently returned nothing.
-watch([search, actionFilter, actorFilter, rangeFilter, pageSize], () => { page.value = 1; load() })
+//
+// `search` is NOT in this list on purpose - see onSearchInput below. It is owned by the
+// debounced handler, and a watcher on it would fire per keystroke and defeat the debounce.
+watch([actionFilter, actorFilter, rangeFilter, pageSize], () => { page.value = 1; load() })
 watch(page, load)
 
-/** Debounced so typing does not fire a request per keystroke. */
+/**
+ * Search input handler.
+ *
+ * THE BUG THIS FIXES: the input was bound with `:value="search"` and read through this
+ * handler, but the handler never WROTE `search.value` - it only fired the debounced reload.
+ * So typing updated nothing: the bound value was re-applied on every re-render and the field
+ * either stayed empty or reverted, and the query never carried the term. A one-way binding
+ * with no writer is not a search box.
+ *
+ * `search` is therefore deliberately NOT in the watcher below. It used to be, which also
+ * cancelled out the debounce: the watcher fires on every keystroke regardless, so the 280ms
+ * timer just queued a second identical request. One path owns the term - this handler - and
+ * the watcher owns only the selects.
+ */
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 onBeforeUnmount(() => clearTimeout(searchTimer))
-function onSearchInput() {
+function onSearchInput(e: Event) {
+  search.value = (e.target as HTMLInputElement).value
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => { page.value = 1; load() }, 280)
 }
 
+/**
+ * Clear every filter and reload.
+ *
+ * The explicit `load()` is required, not redundant. `search` is deliberately absent from the
+ * filter watcher (it is debounced, see onSearchInput), so clearing it there fires no watcher
+ * at all: measured, the button emptied the input and left the table showing the previous
+ * zero-result search with "Showing 0 of 0 events". Resetting a ref is not the same thing as
+ * asking for a reload.
+ */
 function clearFilters() {
   search.value = ''
   actionFilter.value = undefined
   actorFilter.value = undefined
   rangeFilter.value = 'all'
+  page.value = 1
+  load()
 }
 
 onMounted(() => {
@@ -183,7 +229,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <UDashboardPanel>
+  <!-- `flex min-h-0 flex-col` on the panel body and `flex min-h-0 flex-col` on the content
+         wrapper are what let the table fill the leftover height. The vendor body is
+         `flex flex-col gap-4 sm:gap-6 flex-1 overflow-y-auto`, so without `min-h-0` this
+         chain cannot shrink below its content and the BODY keeps its own scrollbar - which
+         is what produced the page-level scroll HIRO reported. -->
+  <UDashboardPanel :ui="{ body: 'audit-panel-body flex min-h-0 flex-col' }">
     <template #header>
       <!-- PageHeader carries the sidebar collapse control in the navbar's #leading slot,
            exactly as the Nuxt dashboard template does on every page. -->
@@ -191,7 +242,7 @@ onMounted(() => {
     </template>
 
     <template #body>
-      <div class="space-y-4">
+      <div class="flex min-h-0 flex-1 flex-col gap-4">
         <UAlert
           v-if="!isAdmin"
           color="warning"
@@ -240,8 +291,12 @@ onMounted(() => {
           </div>
 
           <!-- Register card. Same block shape as the other two logbooks: rounded-lg border
-               bg-elevated p-4, so the three pages read as one application. -->
-          <div class="rounded-lg border border-default bg-elevated p-4">
+               bg-elevated p-4, so the three pages read as one application.
+               `flex min-h-0 flex-1 flex-col` is the middle link of the height chain: the
+               panel body flexes, this card takes the leftover, and the table inside takes
+               what is left after the header and pager. Without `min-h-0` on each link the
+               card refuses to shrink and pushes the whole page past the viewport. -->
+          <div class="flex min-h-0 flex-1 flex-col rounded-lg border border-default bg-elevated p-4">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h2 class="text-lg font-bold tracking-wide">Activity Trail</h2>
@@ -274,8 +329,11 @@ onMounted(() => {
             </div>
 
             <!-- Filter bar. Action chips double as the legend for the icons in the table, so
-                 the mapping from a colour to a meaning is stated before the reader meets it. -->
-            <div class="mt-4 space-y-3">
+                 the mapping from a colour to a meaning is stated before the reader meets it.
+                 `shrink-0` because this row is fixed height; without it the filter bar is
+                 itself a flex candidate and steals space the table needs when the viewport
+                 is short. -->
+            <div class="mt-4 shrink-0 space-y-3">
               <div class="flex flex-wrap items-center gap-2">
                 <div class="relative">
                   <UIcon name="i-lucide-search" class="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-dimmed" />
@@ -341,19 +399,34 @@ onMounted(() => {
                  150px and ellipsised to "Handover Log Bo..." while the DETAIL column held 991px
                  of mostly empty space. A truncated column sitting next to a void reads as a bug.
                  The last column now flexes and TARGET is wide enough for the longest real
-                 target name ("Handover Log Book", "CCTV Access Request Log"). -->
-            <div class="logbook-scroll mt-4 max-h-[62vh] overflow-auto rounded-lg border border-default">
-              <table class="w-full min-w-[1080px] table-fixed">
+                 target name ("Handover Log Book", "CCTV Access Request Log").
+
+                 HEIGHT: the table fills the viewport instead of being capped at 62vh, which
+                 left the page scrolling twice - the panel body AND this table. Measured at
+                 1920x1080: content 1002px inside a 1016px panel body, i.e. 34px over, so
+                 the body grew a scrollbar of its own. `flex-1 min-h-0` on this wrapper plus
+                 the same pair on the register card and its body wrapper makes the table take
+                 exactly the leftover height, so only the table scrolls. `min-h-0` is required:
+                 a flex item defaults to min-height:auto and would refuse to shrink below its
+                 content instead of yielding the space.
+
+                 Per-instance `:ui` on this page's own UDashboardPanel, NOT a theme override:
+                 the same trick was rejected earlier for putting a scrollbar on three pages
+                 that never had the bug. -->
+            <div class="logbook-scroll audit-table mt-4 min-h-0 flex-1 overflow-auto rounded-lg border border-default">
+              <table class="w-full min-w-[1180px] table-fixed">
                 <colgroup>
-                  <col class="w-[150px]">
-                  <col class="w-[170px]">
-                  <col class="w-[188px]">
-                  <col class="w-[210px]">
-                  <col class="w-[116px]">
+                  <col class="w-[118px]">
+                  <col class="w-[104px]">
+                  <col class="w-[164px]">
+                  <col class="w-[182px]">
+                  <col class="w-[236px]">
+                  <col class="w-[84px]">
                   <col>
                 </colgroup>
                 <thead class="sticky top-0 z-10 bg-elevated/95 backdrop-blur">
                   <tr class="border-b border-default">
+                    <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-dimmed">Date</th>
                     <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-dimmed">Time</th>
                     <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-dimmed">User</th>
                     <th class="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-dimmed">Action</th>
@@ -369,6 +442,13 @@ onMounted(() => {
                        so Vue can reuse rows across a refresh and the animation would otherwise
                        replay on rows that did not change. -->
                   <tr v-for="row in rows" :key="row.id" class="audit-row border-b border-default/60 last:border-0 hover:bg-elevated/50">
+                    <td class="px-3 py-2.5">
+                      <!-- Local calendar date, independent of the clock column beside it. -->
+                      <span class="block truncate text-sm tabular-nums text-default" :title="fullTime(row.createdAt)">
+                        {{ dayLabel(row.createdAt) }}
+                      </span>
+                    </td>
+
                     <td class="px-3 py-2.5">
                       <span class="block text-sm font-medium tabular-nums text-default" :title="fullTime(row.createdAt)">
                         {{ relTime(row.createdAt) }}
@@ -421,7 +501,7 @@ onMounted(() => {
                   </tr>
 
                   <tr v-if="!loading && !rows.length">
-                    <td colspan="6" class="px-3 py-14 text-center">
+                    <td colspan="7" class="px-3 py-14 text-center">
                       <UIcon name="i-lucide-inbox" class="mx-auto size-8 text-dimmed" />
                       <p class="mt-3 text-sm font-medium text-default">
                         {{ anyFilterActive ? 'No activity matches these filters' : 'No activity recorded yet' }}
@@ -443,8 +523,9 @@ onMounted(() => {
 
             <!-- Pager. Count text is explicit about what it counts, because the header card
                  above it shows a DIFFERENT number (events in the filtered set, not on this
-                 page) and conflating the two is an easy misread. -->
-            <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+                 page) and conflating the two is an easy misread. `shrink-0` so it stays
+                 pinned under the table instead of being squeezed by it. -->
+            <div class="mt-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
               <p class="text-xs text-muted">
                 Showing <span class="tabular-nums">{{ rows.length }}</span> of
                 <span class="tabular-nums">{{ total.toLocaleString() }}</span> events
@@ -541,5 +622,40 @@ onMounted(() => {
     transform: none !important;
   }
   .audit-chip { transition: none !important; }
+}
+
+/* -------------------------------------------------------------------------------------------
+   HIDE the panel body's scrollbar - keep the scrolling.
+
+   HIRO asked for no body scrollbar and a table that fits the screen, so the body should not
+   be scrolling at all once the flex height chain is in place. `overflow-y: auto` stays
+   exactly as the vendor has it: if a viewport is ever too short to fit the cards, the page
+   degrades to a working scroll rather than clipping the pager. Only the scrollbar's
+   APPEARANCE is suppressed, by giving it zero width.
+
+   Scoped to `.audit-panel-body`, a class that exists only on this page's own
+   UDashboardPanel via :ui. Same approach as `.cctv-panel-body` on the CCTV page and for the
+   same reason: a theme override in app.config.ts was tried for the CCTV flicker and was
+   rejected because it put a permanent scrollbar on three pages that never had the bug.
+
+   The standard properties cover Firefox, ::-webkit covers Chrome/Edge; both are needed
+   because a browser supporting neither would otherwise still paint a scrollbar.
+   ------------------------------------------------------------------------------------------- */
+.audit-panel-body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.audit-panel-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.audit-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.audit-panel-body::-webkit-scrollbar-thumb {
+  background: transparent;
 }
 </style>
