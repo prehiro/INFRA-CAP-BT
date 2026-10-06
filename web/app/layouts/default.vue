@@ -35,6 +35,15 @@ const links = computed<NavigationMenuItem[][]>(() => [
     }
   ],
   [
+    // Same group as User Management, and placed BEFORE it deliberately.
+    //
+    // The sidebar puts `mt-auto` on the LAST nav group, which is what pins that group to the
+    // bottom of the sidebar, directly above the profile button in the footer. Giving Log Audit
+    // its own group made IT the last one, so it inherited `mt-auto` and pushed User Management
+    // up out of its position - HIRO: "jgn pindah posisi menu user management. posisi tetap
+    // diatas tombol profile". Sharing the group keeps User Management last, so it keeps the
+    // slot, and Log Audit simply sits above it in the same block.
+    { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' },
     { label: 'User Management', icon: 'i-lucide-users', to: '/users' }
   ] as NavigationMenuItem[][]
 ])
@@ -51,7 +60,8 @@ const groups = computed(() => [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
-      { label: 'User Management', icon: 'i-lucide-users', to: '/users' }
+      { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
+      { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]
   }
 ])

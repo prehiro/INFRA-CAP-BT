@@ -1,5 +1,5 @@
 import type {
-  EntityMeta, FieldMeta, LoginResponse, RecordPage, RecordRow, User
+  AuditPage, EntityMeta, FieldMeta, LoginResponse, RecordPage, RecordRow, User
 } from '~/types'
 
 /**
@@ -84,3 +84,13 @@ export const apiListRoles = () => request<{ id: number; name: string; descriptio
 export const apiCreateUser = (body: any) => request<User>('/users', { method: 'POST', body })
 export const apiUpdateUser = (id: number, body: any) => request<User>(`/users/${id}`, { method: 'PUT', body })
 export const apiDeleteUser = (id: number) => request<void>(`/users/${id}`, { method: 'DELETE' })
+
+// ---- audit (admin; read-only by design - there is no write endpoint) ----
+export const apiListAudit = (params: Record<string, any> = {}) => {
+  const qs = new URLSearchParams(
+    Object.entries(params)
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => [k, String(v)])
+  ).toString()
+  return request<AuditPage>(`/audit${qs ? `?${qs}` : ''}`)
+}

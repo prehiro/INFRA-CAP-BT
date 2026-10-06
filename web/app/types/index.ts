@@ -70,3 +70,38 @@ export interface RecordPage {
   total: number
   items: RecordRow[]
 }
+
+export interface AuditActor {
+  username: string
+  count: number
+}
+
+export interface AuditDto {
+  id: number
+  createdAt: string
+  username: string
+  userId: number | null
+  action: string
+  target: string
+  targetId: string | null
+  summary: string
+  success: boolean
+  ipAddress: string | null
+}
+
+/** Aggregates over the FILTERED set, so the cards describe what is on screen. */
+export interface AuditStats {
+  total: number
+  logins: number
+  failed: number
+  deletes: number
+  actors: AuditActor[]
+}
+
+export interface AuditPage {
+  page: number
+  pageSize: number
+  total: number
+  items: AuditDto[]
+  stats: AuditStats
+}

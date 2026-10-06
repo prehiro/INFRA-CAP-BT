@@ -718,7 +718,7 @@ persona (CCTV memakai `tanggal` / `nama_pemohon`), dan search haystack mengecual
   `cdp Input.dispatchMouseEvent`, Save Row → "Record created", `nomor` dari server = **"1"**,
   signature tersimpan sebagai data-URL 1846 karakter.
 - **Edit** — QTY 1→3, signature bertahan, `nomor` **tidak** terhapus (membuktikan
- 省略 field tersembunyi bekerja).
+ Kolom field tersembunyi bekerja).
 - **Search** — "latitude" → 1 of 1; "zzzznotfound" → 0 of 1 + "No rows match your filter";
   dikosongkan → 1 of 1.
 - **Filter** — preset "This month" → chip `Taken Date: 2026-10-01 → 2026-10-05`, slot `is-open`.
@@ -933,7 +933,7 @@ Gejalanya selalu cuma **angka piksel yang salah**, jadi tiap perbaikan harus div
 1. **`size-9`/`size-10` diam-diam kalah.** `height` tetap dan `align-self: stretch` menyetel
    property yang **sama**; utility menang, jadi plate tetap bujur sangkar di header dua baris.
 2. Ganti `w-10` + **`grid`** + `self-stretch` gagal **ke arah sebaliknya**, terukur 40×29:
-   `display: grid`建立 alignment context sendiri, jadi `align-self` tidak pernah sampai ke
+   `display: grid`membuat alignment context sendiri, jadi `align-self` tidak pernah sampai ke
    cross axis baris dan elemen runtuh ke tinggi konten satu barisnya.
 3. **Penyebab sebenarnya adalah tinggi header yang dikunci vendor**, bukan alignment plate-nya:
    header `UModal` membawa `min-h-(--ui-header-height)` — kunci 4rem yang sama yang membuat
@@ -1506,7 +1506,75 @@ semua baris ikut mulus, itu butuh data migration, bukan perubahan kode.
    tidak ada record. **Selalu pasang ulang `Emulation.setDeviceMetricsOverride` di awal
    call yang butuh koordinat**, jangan andalkan override dari call sebelumnya.
 
-## Toast delete menimpa modal yang sedang menutup (2026-10-06)
+## Halaman Log Audit (2026-10-06)
+
+HIRO meminta halaman baru berisi **semua aktivitas user** — "design plagus mungkin, professional
+dan informatif. pastikan animasi dan transisi nya juga ada". reseller  belum ada audit sama sekali
+(`grep -ril "audit\|activity"` kosong), jadi ini semuanya dari nol.
+
+**Why bukan middleware:** kalau cukup sekadar mencatat request, middleware lebih mudah. Tapi
+middleware akan mencatat **percobaan** yang gagal dan request yang lalu di-rollback. Log audit
+harus berisi kejadian yang benar-benar terjadi. Jadi tiap endpoint mutating memanggil
+`_audit.LogAsync(...)` **setelah** work-nya sukses.
+
+Tiap baris login gagal tetap dicatat di kedua cabang (user tidak ada / password salah) —
+log yang hanya berisi keberhasilan tidak bisa menjawab "ada yang mencoba masuk?".
+
+**Isi kolom hanya nama field, tidak pernah nilainya.** `AuditDetails` menyimpan
+`["nama_barang","qty"]` atau flag `passwordChanged:true`, bukan isi field. Free text, email,
+dan data signature tidak ikut ter-copy ke tabel append-only yang dibaca lebih bebas
+daripada logbook-nya.
+
+`AuditController` **read-only by construction** — tidak ada endpoint write/update/delete,
+dan tidak ada affordance hapus di UI.
+
+### 500 saat `GET /api/audit`
+
+```
+g.GroupBy(a => a.Username).Select(g => new AuditActor(g.Key, g.Count()))
+```
+
+EF memaksa **client evaluation** (`g.AsQueryable().Count()`) → "could not be translated".
+Perbaikan: project ke **anonymous type**, mapping ke `AuditActor` di memory. Blok agregat
+`GroupBy(_ => 1)` juga diganti `CountAsync()` terpisah.
+
+Pelajaran: `new T(...)` dari class DTO di dalam `.Select()` EF = client evaluation = 500.
+Anonymous type dulu, mapping sesudahnya.
+
+### Animasi baris harus dibuktikan, bukan diasumsikan
+
+Claim "ada animasi fade-in" tidak terbukti hanya dari ada `<TransitionGroup>` di source.
+Yang diukur: `Page.addScriptToEvaluateOnNewDocument` + rAF sampler, lalu baca `opacity`
+per frame. Hasil: **16 nilai opacity berbeda, 0 → 1**, delay tetap `0.018s` (fixed, bukan
+fungsi `loading`). Animasi nyata.
+
+`window.__var` **tidak bertahan across  navigasi** — recorder harus dipasang via
+`Page.addScriptToEvaluateOnNewDocument`, bukan `js()` sebelum `goto_url`.
+
+### Kolom yang terpotong padahal tabel 45% kosong
+
+Screenshot review menemukan TARGET fixed 150px → `"Handover Log Bo..."` ter-ellipsis,
+sementara DETAIL memegang 991px yang sebagian besar kosong. **Kolom terpotong di sebelah
+kolom kosong terbaca sebagai bug.** Rebalance: kolom wasi diberi ruang, IP masuk sebagai
+kolom Source yang informatif (di dev selalu `::1`, di server kantor baru berarti).
+
+Verifikasi harus hitung elemen: `<colgroup>` 6 `<col>`, 6 `<th>`, 6 `<td>`, colspan 6.
+Kolom hasil di 1920: 150/170/188/210/116/764.
+
+### Warna: satu makna = satu warna
+
+Kartu "Deletions" with a stray dot  amber sementara baris yang dihitungnya merah. Dua hue untuk
+satu kelas kejadian terbaca sebagai salah set-up . Sekarang keduanya `text-error`.
+
+Baris gagal kehilangan action-nya (icon diganti cross generik, jadi tidak jelas action apa
+yang ditolak). Sekarang icon + nama action tetap, state merah dibawa tag kecil "REJECTED" —
+**warna tidak boleh jadi satu-satunya pembawa makna.**
+
+### Posisi menu
+
+`mt-auto` menempel di **group terakhir** sidebar. Group Log Audit terpisah mengambil slot
+itu dan mendorong User Management ke atas. Log Audit harus di **group yang sama, sebelum**
+User Management. Terukur: Log Audit y=943, User Management y=975, profil y=1024.
 
 HIRO: *"ketika tombol delete record ditekan ada seperti popup muncul sepersekian detik
 sebelum modal tertutup"* — di **CCTV Access dan Handover**.
