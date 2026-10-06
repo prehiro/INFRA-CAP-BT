@@ -1297,3 +1297,70 @@ lebar. Screenshot 1920 mengonfirmasi tinta terbaca, seragam, dan berada di dalam
 > Dugaan awal saya adalah kolomnya yang sempit; pengukuran membuktikan chip-nya yang kecil,
 > dan kolomnya justru punya 32px yang tidak terpakai. Dan untuk data yang tidak bisa dibaca
 > dengan yakin, mengatakannya adalah hasilnya — bukan mengisinya dengan tebakan.
+
+## Signature PNG auto-crop kiri-kanan (2026-10-06)
+
+Permintaan HIRO: *"make auto crop right and left the signature image result when there is
+empty space"*. Commit `a4a34b0`, satu file: `web/app/components/SignaturePad.vue`.
+
+### Masalahnya
+
+Pad signature di dialog CCTV **422x130**, tapi tangan orang hampir nunca mengisi lebar
+itu. PNG yang tersimpan jadi membawa margin kosong yang lebar, dan preview di tabel
+mengecilkan **seluruh** gambar itu ke dalam chip setinggi 40px dengan `object-contain` —
+jadi yang kecil adalah tintanya, bukan kotaknya.
+
+### Yang dikerjakan
+
+`exportDataUrl()` di `SignaturePad.vue` memotong margin transparan **kiri dan kanan saja**
+(kedua sisi yang diminta), menyisakan bantalan **3 CSS px**, lalu mengembalikan PNG dari
+canvas baru. Tinggi **sengaja** tidak disentuh: pad-nya pendek dan hampir penuh.
+
+Tiga kondisi fallback, supaya tanda tangan tidak pernah hilang oleh crop:
+
+| kondisi | hasil |
+| --- | --- |
+| ada tinta | dipotong + bantalan 3px |
+| tidak ada tinta sama sekali | canvas penuh (seperti sebelumnya) |
+| tinta < 16px (mis. satu titik nyasar) | canvas penuh |
+
+Batasannya dihitung dalam **device pixel** karena backing store di-scale
+`devicePixelRatio`; satu-satunya konversi yang perlu adalah `3 x dpr`.
+
+### Efek samping yang WAJIB diperbaiki di perubahan yang sama
+
+`paint()` menggambar ulang signature tersimpan dengan
+`drawImage(img, 0, 0, width, height)` — meregangkan ke seluruh pad. Itu benar **hanya
+selama** gambar tersimpan memang sebesar pad. Begitu export jadi lebih sempit dari pad,
+mengedit baris akan **meregangkan** tinta melintasi lebar penuh: tanda tangan yang digambar
+pada 55% lebar pad akan kembali pada 100%, lebih lebar dari apa pun yang bisa digambar user.
+Terbukti di browser: record ter-crop 227px kembali **tergambar 422px**.
+
+Fix: `paint()` sekarang menggambar pada **ukuran natural**
+(`drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight)`) dan tetap di kiri-atas,
+supaya geometri yang ditandatangani user tetap sama saat diedit.
+
+### Terverifikasi di browser (1920, bukan ditebak)
+
+| yang diukur | hasil |
+| --- | --- |
+| goresan di 55% lebar pad -> PNG tersimpan | **113x130** (sebelumnya 422x130) |
+| piksel tinta sebelum vs sesudah crop | **435 vs 435** — tidak ada yang terpotong |
+| ink di dialog Edit untuk record ter-crop | **221px** dari PNG 227px (bukan 422) |
+| tinta preview baris legacy (belum ter-crop) | 33x38 |
+| tinta preview baris ter-crop | **68x40** |
+
+Record lama **tidak tersentuh** — crop hanya berlaku saat export, jadi 13 record yang
+sekarang ada tetap 422x130 dan tetap tampil apa adanya.
+
+### Jebakan yang hampir menipu saya
+
+Screenshot pertama **terlihat seperti crop justru memperkecil** tampilan: goresan uji saya
+tinggi amplitudonya rendah, jadi memang melebar dan pendek. Angka yang mengalahkannya —
+`vision` bilang "rows below look bigger", padahal tinta baris legacy hanya 33x38 vs 68x40
+untuk yang ter-crop. Goresan uji kedua yang setinggi penuh mengonfirmasi arahnya benar.
+Pelajarannya sama seperti di atas: **measurement menang atas screenshot**, dan untuk menilai
+ukuran tinta, `naturalWidth x getBoundingClientRect()` lebih jujur daripada mata.
+
+> Probe row yang dibuat untuk pengukuran (Crop Probe, Crop Realistic, Crop Edit,
+> Full Height) **sudah dihapus semua**; tabel kembali ke 13 baris.
