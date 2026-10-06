@@ -561,12 +561,27 @@ await init()
                          on the dark table. The INK is flipped instead: `dark:invert` turns black
                          pixels white and leaves the ALPHA channel alone, so the cell keeps the
                          theme's own background and the signature reads as white ink on dark.
-                         Nothing stored is modified. The chip is a FIXED w-[108px], not min-w,
-                         so this column has the same content width on every row. -->
+                         Nothing stored is modified.
+
+                         132px chip + h-10 img, matching the CCTV table exactly. The old
+                         108px/h-8 pair capped the ink at 98x32 and wasted ~32px of the
+                         column; 132px + h-10 renders 122x40, about 27% larger linearly.
+                         SignaturePad already trims the empty side margin on export, so the
+                         stored PNG is the ink itself and object-contain now scales the ink
+                         to the full chip height instead of shrinking it to fit the margin.
+
+                         `max-w-full` is REQUIRED, not defensive: the table is min-w-[1240px],
+                         so at 1280 the signature cell is narrower than a fixed 132px chip and
+                         it would overflow into Section and Remarks. The chip is a FIXED
+                         w-[132px] (not min-w) plus this cap, so every row keeps the same
+                         content width and a signed row cannot differ from a "—" row.
+
+                         The <colgroup> is untouched: reallocating percentages would move
+                         every other column for no gain. -->
                     <div v-if="c.sign && signSrc(r.values[c.key])"
-                         class="flex w-[108px] items-center justify-center rounded-md border border-default/50 p-1">
+                         class="flex w-[132px] max-w-full items-center justify-center rounded-md border border-default/50 p-1">
                       <img :src="signSrc(r.values[c.key])!" alt="signature"
-                           class="h-8 max-w-full object-contain dark:invert" />
+                           class="h-10 max-w-full object-contain dark:invert" />
                     </div>
                     <span v-else-if="c.sign" class="text-dimmed">—</span>
                     <template v-else-if="c.key === 'tanggal_ambil'">
