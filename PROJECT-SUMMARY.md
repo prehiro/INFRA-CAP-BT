@@ -1149,3 +1149,90 @@ data tidak tersentuh (0 handover, 11 CCTV).
 > Tandranya: hal yang diminta di-center itu sudah berada persis di bawah judul yang
 > mengatakan hal yang sama. Saat diminta menengahkan sebuah judul, cek dulu apakah judul itu
 > memang perlu ada.
+
+## Tema default: accent green + neutral zinc, dan restore yang benar-benar jalan (2026-10-06)
+
+HIRO: *"make accent color green, and neutral color zinc as default theme for all user"*.
+
+Sesi sebelumnya meninggalkan pekerjaan ini **setengah jadi dan belum di-commit**. Dua bug nyata
+ketahuan waktu verifikasi — keduanya lolos dari pemeriksaan statis dan hanya muncul saat dijalankan.
+
+### Bug 1 — `setPrimary` diam-diam ikut mengubah netral
+
+`persist()` membaca `appConfig.ui.colors`, lalu menulis ulang **kedua** kunci ke cookie. Di luar
+component setup `appConfig` bukan instance yang hidup, jadi `neutral` yang ditulis adalah nilai
+default modul — **`stone`**, bukan `zinc`.
+
+Terukur: `setPrimary('violet')` menghasilkan cookie `{"primary":"violet","neutral":"stone"}`.
+Artinya memilih satu warna merusak pilihan warna lainnya.
+
+Fix: helper `currentChoice()` yang membaca kedua kunci dari `appConfig`, memvalidasi tiap nilai
+terhadap `VALID_PRIMARY`/`VALID_NEUTRAL`, lalu jatuh ke `DEFAULT_*` bila tidak valid. Tiap setter
+persist dari situ. Sekarang satu sumber jawaban untuk "warna apa yang sedang aktif".
+
+### Bug 2 — `restore()` dipanggil dari tempat yang salah, DIEMPAT KALI
+
+`restore()` dicoba dari `onMounted` UserMenu → `onMounted` app.vue → plugin `onNuxtReady` →
+plugin yang dipanggil langsung. **Keempatnya mengabaikan cookie.** Bukti yang makeshift: cookie
+di-set ke violet/slate — warna yang **bukan** default lama, jadi tidak bisa dijelaskan oleh
+migrasi — lalu di-reload, `--ui-primary` tetap hijau.
+
+Penyebabnya `useCookie`: ref-nya di-resolve terhadap payload Nuxt instance yang sedang aktif, dan
+panggilan dari `onMounted` komponen berjalan dengan effect scope komponen itu, bukan scope app.
+Jadi ref yang dikembalikan bukan ref yang dibaca seluruh app. Yang justru tetap bekerja adalah
+`setPrimary`/`setNeutral`, karena click handler di komponen ter-mount adalah konteks di mana ref
+bersama itu memang di-scope.
+
+Akibatnya `useCookie` **dibuang** sama sekali. Cookie dibaca dan ditulis langsung lewat
+`document.cookie`. Kolornya tetap tinggal di `appConfig` — itu yang dibaca komponen Nuxt UI, dan
+Nuxt UI memperlakukannya reaktif, jadi assignment memperbarui UI yang sedang berjalan.
+
+Fix: plugin baru `web/app/plugins/theme.client.ts`, `restore()` dipanggil **langsung dari body
+plugin** (bukan di dalam `onNuxtReady` — bentuk itu juga sudah dicoba dan gagal). `.client`
+supaya tidak jalan saat SSR. Call site di `app.vue` dan `UserMenu.vue` dihapus, sisanya
+komentar penjelas.
+
+### Dua sumber kebenaran untuk satu setting
+
+`app.config.ts` (`primary: 'green', neutral: 'zinc'`) adalah runtime truth yang dibaca
+komponen; `DEFAULT_PRIMARY`/`DEFAULT_NEUTRAL` di composable adalah truth lapisan persistensi.
+Keduanya diekspor dan saling-rujuk di komentar. Pernah melenceng: default lama green/slate
+bertahan setelah file satu berubah.
+
+### Migrasi cookie lama
+
+Tanpa migrasi, permintaan ini hanya setengah jadi — dan kegagalan-nya tak terlihat di mesin yang
+sedang menguji: setiap browser yang **pernah** membuka app (yaitu semua browser dengan user
+sungguhan) tetap menyimpan slate-nya dan tidak pernah melihat default baru. Orang yang menguji di
+profil baru akan melihat zinc dan melaporkan sukses.
+
+`LEGACY_DEFAULTS = { primary: 'green', neutral: 'slate' }` diperlakukan sebagai **"tidak ada
+pilihan"**, di-default-kan, lalu ditulis ulang. Trade-off ini eksplisit dan kecil: orang yang
+memang pernah memilih tepat green + slate tidak bisa dibedakan dari yang tidak pernah memilih,
+dan cookie-nya diperlakukan sebagai belum memilih. Alternatifnya — membiarkan cookie basi —
+berarti perubahan default tidak terlihat sama sekali ke seluruh user base yang sudah ada.
+
+### Verifikasi (semua lewat UI sungguhan + CDP, bukan baca cookie)
+
+| Kasus | Hasil |
+| --- | --- |
+| Tanpa cookie | primary `#00DC82` (green), bg `oklch(0.21 0.006 285.885)` = zinc |
+| Pilih **violet** | primary `oklch(70.2% 0.183 293.541)`, cookie `{primary:violet, neutral:zinc}` — **netral tidak ikut berubah** |
+| Pilih **slate** | bg `oklch(0.208 0.042 265.755)`, cookie `{...neutral:slate}` — netral benar-benar berubah, ada bukti numerik |
+| Reload setelah violet+slate | primary & bg **identik** → plugin restore bekerja |
+| Cookie lama green+slate | ditulis ulang jadi `{primary:green, neutral:zinc}`, bg jadi zinc |
+| Cookie rusak `%7Bbroken` | `#__nuxt` children = 1, path `/`, app tidak brick |
+| Sweep `/logbook/cctvacc` (11 baris), `/logbook/handover` (1), `/users` (3) | semua render, primary ikut tema |
+
+Submenu accent/neutral hanya terbuka setelah diklik dengan pointer sungguhan lewat
+`Input.dispatchMouseEvent` — `element.click()` sintetis pada opsi select Reka UI tidak memilih.
+
+Placeholder baru di handover ikut terverifikasi di dalam dialog Add Record:
+`Keyboard / Mouse / Monitor / etc...` dan `Dell / Lenovo / HP / etc...`. Submit kosong tetap
+memunculkan error → validasi form tidak ikut mati.
+
+### Yang TIDAK saya ubah
+
+Tidak ada theme override global. Permintaan ini memang tentang **default global**, jadi
+`app.config.ts` yang tepat sasaran — bukan `dashboardPanel` atau slot lain yang pernah
+membocorkan scrollbar ke halaman yang tidakصدق.
