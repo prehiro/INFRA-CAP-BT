@@ -34,10 +34,13 @@ const initials = computed(() => {
   return String(name).slice(0, 2).toUpperCase()
 })
 
-const { restore, setPrimary, setNeutral } = useThemeChoice()
+const { setPrimary, setNeutral } = useThemeChoice()
 
-// Applied on every page load so a colour picked earlier survives a refresh.
-onMounted(() => { restore() })
+// `restore()` is NOT called here. It used to run from this component's onMounted and never took
+// effect - `useCookie` inside an onMounted hook resolves against the component's effect scope,
+// not the Nuxt instance, so the ref it returned was not the one the app reads. It now runs from
+// app/plugins/theme.client.ts, which has no such problem. `setPrimary`/`setNeutral` are
+// unaffected: a click handler in a mounted component is exactly the context where they work.
 
 const displayName = computed(() => user.value?.fullName || user.value?.username || 'User')
 const roleLabel = computed(() => (user.value?.roles?.[0]?.name) || '')
