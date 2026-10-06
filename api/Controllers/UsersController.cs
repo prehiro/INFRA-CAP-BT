@@ -13,7 +13,8 @@ namespace Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly AppDbContext _db;
-    public UsersController(AppDbContext db) => _db = db;
+    private readonly AuditService _audit;
+    public UsersController(AppDbContext db, AuditService audit) { _db = db; _audit = audit; }
 
     [HttpGet]
     public async Task<ActionResult<List<UserDto>>> List()
@@ -54,6 +55,11 @@ public class UsersController : ControllerBase
         await _db.SaveChangesAsync();
 
         var created = await _db.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).FirstAsync(u => u.Id == user.Id);
+        var actor = User.Identity?.Name ?? "unknown";
+        await _audit.LogAsync(
+            AuditActions.UserCreate, "User Management", $"Created user \"{created.Username}\"",
+            username: actor, targetId: created.Id.ToString(),
+            details: new { roles = roles.Select(r => r.Name).ToArray(), isActive = created.IsActive });
         return Ok(AuthController.ToDto(created));
     }
 
@@ -82,6 +88,23 @@ public class UsersController : ControllerBase
 
         await _db.SaveChangesAsync();
         var updated = await _db.Users.Include(u => u.UserRoles).ThenInclude(ur => ur.Role).FirstAsync(u => u.Id == id);
+        // Flags only, never the values: an audit row that stored an email address or a role
+        // change payload would duplicate exactly the credential-adjacent data this trail
+        // should stay clear of. "which fields did the admin touch" is the useful question.
+        await _audit.LogAsync(
+            AuditActions.UserUpdate, "User Management", $"Updated user \"{updated.Username}\"",
+            username: User.Identity?.Name ?? "unknown", targetId: id.ToString(),
+            details: new
+            {
+                changed = new
+                {
+                    email = req.Email is not null,
+                    fullName = req.FullName is not null,
+                    isActive = req.IsActive,
+                    password = !string.IsNullOrEmpty(req.Password),
+                    roles = req.RoleIds is not null
+                }
+            });
         return Ok(AuthController.ToDto(updated));
     }
 
@@ -94,6 +117,9 @@ public class UsersController : ControllerBase
             return BadRequest(new { message = "User 'admin' bawaan tidak bisa dihapus" });
         _db.Users.Remove(user);
         await _db.SaveChangesAsync();
+        await _audit.LogAsync(
+            AuditActions.UserDelete, "User Management", $"Deleted user \"{user.Username}\"",
+            username: User.Identity?.Name ?? "unknown", targetId: id.ToString());
         return NoContent();
     }
 }

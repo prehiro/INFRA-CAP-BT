@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<DynamicField> Fields => Set<DynamicField>();
     public DbSet<Record> Records => Set<Record>();
     public DbSet<RecordValue> RecordValues => Set<RecordValue>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -76,6 +77,23 @@ public class AppDbContext : DbContext
             // would silently truncate and rounds monetary values to 2 dp — unacceptable
             // for an inventory/transaction app.
             e.Property(x => x.NumberValue).HasPrecision(18, 4);
+        });
+
+        b.Entity<AuditEntry>(e =>
+        {
+            // The Log Audit page always reads newest-first with a date filter, so the
+            // composite index carries both keys. Without it this table degrades to a
+            // clustered scan the first time it holds more than a few thousand rows.
+            e.HasIndex(x => new { x.CreatedAt });
+            e.HasIndex(x => new { x.Username, x.CreatedAt });
+            e.HasIndex(x => new { x.Action, x.CreatedAt });
+            e.Property(x => x.Username).HasMaxLength(100).IsRequired();
+            e.Property(x => x.Action).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Target).HasMaxLength(120).IsRequired();
+            e.Property(x => x.TargetId).HasMaxLength(40);
+            e.Property(x => x.Summary).HasMaxLength(500).IsRequired();
+            e.Property(x => x.DetailsJson).HasMaxLength(2000);
+            e.Property(x => x.IpAddress).HasMaxLength(60);
         });
     }
 }

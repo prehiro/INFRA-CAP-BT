@@ -32,3 +32,16 @@ public record RecordDto(
 
 public record RecordPage(int Page, int PageSize, int Total, List<RecordDto> Items);
 public record SaveRecordRequest(Dictionary<string, object?> Values);
+
+// ---- Audit ----
+public record AuditDto(
+    long Id, DateTime CreatedAt, string Username, int? UserId,
+    string Action, string Target, string? TargetId, string Summary,
+    bool Success, string? IpAddress);
+
+public record AuditActor(string Username, int Count);
+
+/// <summary>Aggregates over the FILTERED set, so the cards describe what is on screen.</summary>
+public record AuditStats(int Total, int Logins, int Failed, int Deletes, List<AuditActor> Actors);
+
+public record AuditPage(int Page, int PageSize, int Total, List<AuditDto> Items, AuditStats Stats);

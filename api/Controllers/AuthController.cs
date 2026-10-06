@@ -15,9 +15,10 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _db;
     private readonly TokenService _tokens;
     private readonly SeedService _seed;
+    private readonly AuditService _audit;
 
-    public AuthController(AppDbContext db, TokenService tokens, SeedService seed)
-    { _db = db; _tokens = tokens; _seed = seed; }
+    public AuthController(AppDbContext db, TokenService tokens, SeedService seed, AuditService audit)
+    { _db = db; _tokens = tokens; _seed = seed; _audit = audit; }
 
     [AllowAnonymous]
     [HttpPost("login")]
@@ -31,10 +32,31 @@ public class AuthController : ControllerBase
             .FirstOrDefaultAsync(u => u.Username == req.Username);
 
         if (user is null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
+        {
+            // Recorded on BOTH failure branches. A trail that only holds successes cannot
+            // answer "was anyone trying to get in?", which is the main reason to keep one.
+            // No password or hash ever reaches this row.
+            await _audit.LogAsync(
+                AuditActions.LoginFailed,
+                "Authentication",
+                $"Failed sign-in for \"{req.Username}\"",
+                username: req.Username,
+                details: new { reason = user is null ? "no_such_user" : !user.IsActive ? "inactive" : "bad_password" },
+                success: false,
+                ip: HttpContext.Connection.RemoteIpAddress?.ToString());
             return Unauthorized(new { message = "Username atau password salah" });
+        }
 
         var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
         var t = _tokens.Create(user, roles);
+        await _audit.LogAsync(
+            AuditActions.Login,
+            "Authentication",
+            $"Signed in as {user.Username}",
+            username: user.Username,
+            userId: user.Id,
+            details: new { roles },
+            ip: HttpContext.Connection.RemoteIpAddress?.ToString());
         return Ok(new LoginResponse(t.Token, t.ExpiresAt, ToDto(user)));
     }
 
