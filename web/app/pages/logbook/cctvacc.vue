@@ -400,11 +400,17 @@ const deleting = ref(false)
 /**
  * Set only when a delete SUCCEEDS, consumed by the modal's `after:leave` handler.
  *
- * HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup".
- * The toast used to be raised inside confirmDelete, i.e. while the dialog was still on
- * screen - measured, the dialog entered its leave animation 17ms BEFORE the toast appeared.
- * The success toast therefore waits for `after:leave`, which UModal emits once the exit
- * transition has really finished, so nothing flashes over the fading dialog.
+ * HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup"
+ * — reported TWICE, and the first fix (deferring the toast) only solved half of it.
+ *
+ * The remaining flash was the DIALOG ITSELF collapsing, not a stray popup. `confirmDelete`
+ * cleared `deleteTarget` immediately, and the dialog's identity block is `<dl v-if="deleteTarget">`
+ * - so on the very next frame the dialog lost that 180px block and went from 376px tall to 176px,
+ * dead centre of the viewport, for ~230ms while it was still fading out. Measured frame by frame:
+ * open h=376 at t=0, closed h=176 at t=99ms, opacity 1 -> 0 over the next 183ms, gone at t=329ms.
+ *
+ * So `deleteTarget` is now cleared in `after:leave`, together with the toast. The dialog keeps its
+ * full height for the whole exit transition instead of snapping shut halfway through it.
  */
 const pendingDeleteToast = ref(false)
 
@@ -456,8 +462,12 @@ async function confirmDelete() {
     // So the success toast is deferred to after:leave, which UModal emits when the exit
     // transition has actually finished. Deleting the record does NOT wait for that - the
     // refresh happens immediately, so the table is already correct behind the closing modal.
+    //
+    // `deleteTarget` is deliberately NOT cleared here even though that looks like a leak.
+    // It is what renders the dialog's identity block, so nulling it mid-animation made the
+    // dialog snap from 376px to 176px tall while still fading - the "popup" HIRO saw.
+    // after:leave clears it, once the dialog can no longer be seen. See pendingDeleteToast.
     showDelete.value = false
-    deleteTarget.value = null
     pendingDeleteToast.value = true
     await loadRows()
   } catch (e: any) {
@@ -1039,7 +1049,7 @@ await init()
     <!-- DELETE CONFIRMATION - see remove/askDelete above for why this is not a native confirm(). -->
     <UModal
       v-model:open="showDelete"
-      @after:leave="pendingDeleteToast && (notify('Record deleted'), pendingDeleteToast = false)"
+      @after:leave="pendingDeleteToast && (notify('Record deleted'), deleteTarget = null, pendingDeleteToast = false)"
       :ui="{
         content: 'sm:max-w-md',
         body: 'p-0',

@@ -322,10 +322,11 @@ const deleting = ref(false)
  * Set only when a delete SUCCEEDS, consumed by the modal's `after:leave` handler.
  *
  * HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup".
- * The toast used to be raised inside confirmDelete, i.e. while the dialog was still on
- * screen - measured on the CCTV dialog, it entered its leave animation 17ms BEFORE the
- * toast appeared. The success toast therefore waits for `after:leave`, which UModal emits
- * once the exit transition has really finished, so nothing flashes over the fading dialog.
+ * Reported twice; deferring the toast fixed only half of it. The rest was the DIALOG
+ * COLLAPSING: `confirmDelete` cleared `deleteTarget`, which is what renders the identity
+ * block, so the dialog dropped from 376px to 176px tall mid-animation and stayed that way
+ * for ~230ms in the middle of the viewport. Measured on the CCTV dialog, which shares this
+ * markup. `deleteTarget` is now cleared in after:leave, so the dialog fades at full size.
  */
 const pendingDeleteToast = ref(false)
 
@@ -354,7 +355,6 @@ async function confirmDelete() {
     await apiDeleteRecord(entity.value.id, deleteTarget.value.id)
     // Close first, toast after the exit animation - see pendingDeleteToast above.
     showDelete.value = false
-    deleteTarget.value = null
     pendingDeleteToast.value = true
     await loadRows()
   } catch (e: any) {
@@ -866,7 +866,7 @@ await init()
        repeated so the person confirms the row they MEANT, with the same staggered motion. -->
   <UModal
     v-model:open="showDelete"
-    @after:leave="pendingDeleteToast && (notify('Record deleted'), pendingDeleteToast = false)"
+    @after:leave="pendingDeleteToast && (notify('Record deleted'), deleteTarget = null, pendingDeleteToast = false)"
     :ui="{
       content: 'sm:max-w-md',
       body: 'p-0',
