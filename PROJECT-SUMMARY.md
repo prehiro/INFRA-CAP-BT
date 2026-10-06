@@ -1447,3 +1447,117 @@ baca server.
 
 `vision` juga salah di sini: melaporkan dua chip "tidak sama besar", padahal keduanya
 **132x50 persis** — hanya border yang lebih terlihat pada baris yang tintaunya besar.
+
+## Garis preview terputus-putus (2026-10-06)
+
+HIRO: *"kenapa preview signature pada tabel tidak smooth line nya?"*.
+
+### Penyebabnya BUKAN crop — tapi rasio pengecilan
+
+Terukur di PNG asli yang tersimpan: `scaleX == scaleY == 3.25` untuk signature yang
+setinggi penuh. Jadi goresan `lineWidth: 1.6` CSS px itu tiba di preview sebagai **~0.5
+device px** — lebih tipis dari SATU piksel. Di bawah satu piksel, resampler tidak bisa
+meng-blend garis, dia **membuang** pikselnya, dan kurva jadi putus-putus. Ink piksel di
+preview melonjak dari 121 ke 101 di beberapa baris: bukti piksel hilang, bukan piksel
+tersebar.
+
+### Dua perbaikan, satu sebab yang sama
+
+| perubahan | angka |
+| --- | --- |
+| `lineWidth` 1.6 -> **2.4** CSS px | setelah downscale ~0.7–1.8 device px, selalu >= 1 px |
+| crop **semua sisi**, bukan hanya kiri-kanan | tinggi yang terpakai hanya **42%–89%**, jadi ini yang menurunkan downscale dari 3.25x ke 1.35x–2.41x |
+
+Tinggi sengaja ikut dipotong: permintaan awal hanya menyebut kiri-kanan, tapi pengukuran
+bilang **margin vertikal adalah buangan yang lebih besar**. `paint()` kini center di
+kedua sumbu, karena crop tinggi membuang posisi vertikal persis seperti crop lebar
+membuang posisi horizontal.
+
+### Metrik verifikasi: JUMLAH KOMPONEN TERHUBUNG di preview
+
+Ini tes langsung dari "apakah ini satu garis", bukan soalTF screenshot:
+
+| baris | PNG tersimpan | preview | downscale | komponen |
+| --- | --- | --- | --- | --- |
+| **baru (Smooth Probe)** | 270x115 | 94x40 | 2.88x | **1** (satu garis utuh) |
+| lama (Asdad) | 201x130 | 62x40 | 3.25x | 5 |
+| lama (Riswanto) | 81x130 | 25x40 | 3.25x | 2 |
+| lama (Riswanto) | 415x130 | 122x40 | 3.25x | 3 |
+
+Round-trip juga diukur: PNG 270x115 kembali di dialog Edit sebagai tinta **264x110**,
+`gapL == gapR == 79` dan `gapT == gapB == 10` — center di kedua sumbu, ukuran 1:1.
+
+Record lama **tidak tersentuh**: crop dan lebar goresan sama-sama berlaku saat export, jadi
+14 signature yang sudah tersimpan tetap memakai goresan tipis lama. Kalau HIRO mau
+semua baris ikut mulus, itu butuh data migration, bukan perubahan kode.
+
+### Dua jebakan yang menghabiskan waktu (dan wajib dicatat)
+
+1. **JWT kedaluwarsa membuat save 401 SENYAP.** `api.log`: `SecurityTokenExpiredException
+   IDX10223 ... ValidTo 10/5 23:16 UTC, Current 10/6 10:16 UTC`. Gejalanya menyesatkan:
+   dialog **tertutup**, tidak ada toast error, tidak ada record baru — dan `window.__errs`
+   berisi `[]`. Saya sempat hampir menyimpulkan ada bug di kode crop. Akar masalahnya
+   **bukan kode sama sekali**. Jadi saat sebuah aksi UI "tidak terjadi", **baca log server
+   sebelum menuduh kode**: `grep "Request starting.*POST" api.log` showed **nol** POST.
+
+2. **Override CDP ke-1920 hilang tanpa jejak.** Viewport jatuh sendiri ke 1264x569, dialog
+   jadi ter-scroll, dan koordinat klik saya meleset — jadi klik "Save" mendarat di
+   tempat lain. Gejalanya identik dengan "tombol tidak berfungsi": dialog tertutup,
+   tidak ada record. **Selalu pasang ulang `Emulation.setDeviceMetricsOverride` di awal
+   call yang butuh koordinat**, jangan andalkan override dari call sebelumnya.
+
+## Toast delete menimpa modal yang sedang menutup (2026-10-06)
+
+HIRO: *"ketika tombol delete record ditekan ada seperti popup muncul sepersekian detik
+sebelum modal tertutup"* — di **CCTV Access dan Handover**.
+
+### Bukan popup liar — itu toast yang memang dipanggil, tapi terlalu cepat
+
+`notify('Record deleted')` dipanggil **di dalam** `confirmDelete`, sementara `showDelete`
+baru di-`false` **dua baris berikutnya**. Terukur dengan MutationObserver:
+
+| t (ms) | dialog | toast |
+| --- | --- | --- |
+| 16246 | **closed** (masuk animasi keluar) | none |
+| 16263 | closed | **muncul** |
+
+Jadi toast datang **17ms setelah** modal mulai menutup — masih di atas layar. Mata
+membacanya sebagai popup nyasar.
+
+### Fix: tunggu `after:leave`
+
+`UModal` (Nuxt UI 4) meng-emit `after:leave` — sudah dicek langsung di
+`node_modules/@nuxt/ui/dist/runtime/components/Modal.vue`, bukan dari dokumentasi:
+
+```js
+const emits = defineEmits(["leave", "after:leave", "enter", "after:enter", ...])
+```
+
+Toast sukses sekarang ditahan di `pendingDeleteToast` dan dilepas dari
+`@after:leave`. `loadRows()` tetap jalan **langsung** — jadi tabel di belakang modal
+sudah benar saat modal menutup; hanya toast yang ditunda. Toast **error** tetap inline,
+karena saat delete gagal modal memang harus tetap terbuka.
+
+Hasil terukur di Handover (probe baris buang, dihapus **berdasarkan identitas**):
+
+| t (ms) | keadaan |
+| --- | --- |
+| 28833 | dialog `closed` |
+| 29082 | dialog **hilang dari DOM** |
+| 29091 | **toast muncul** — 258ms setelah modal hilang |
+
+Sebelum: toast 17ms *sebelum* modal selesai menutup. Sesudah: 258ms *setelah* modal
+hilang. Commit `6fdd62d`, kedua halaman memakai mekanisme yang sama.
+
+### Pelajaran terpenting dari kejadian yang sama
+
+Beberapa kali dalam sesi ini **koordinat klik meleset** (override CDP hilang, atau baris
+bergeser setelah `loadRows()`), dan klik delete yang dimaksud mendarat di record lain.
+`purge_ho_probe.py` sempat saya tulis dengan `KEEP = {"134"}` lalu saya nyatakan aman —
+padahal targetnya dipilih dari `querySelectorAll('button')[1]`, **bukan dari ID**, jadi
+"KEEP" itu tidak melindungi apa pun saat koordinat bergeser.
+
+Aturan yang sekarang berlaku: **untuk operasi destruktif, pilih target berdasarkan ID dari
+server, bukan berdasarkan indeks/posisi di DOM, dan print ulang sisa baris setelahnya.**
+`audit_rows.py` dibuat persis untuk ini — ia mencetak `(id, nama)` dari API, jadi
+"data hilang" langsung terlihat, bukan baru ketahuan dari angka baris di UI.
