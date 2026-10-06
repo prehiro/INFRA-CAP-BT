@@ -56,19 +56,36 @@ function paint(model?: string | null) {
   if (!c || !canvasEl.value) return
   const { width, height } = canvasEl.value
   c.clearRect(0, 0, width, height)
-  if (model) {
-    // Redraw an existing signature so editing a row shows the stored ink.
-    //
-    // AT NATURAL SIZE, NOT STRETCHED TO THE PAD. The exported PNG is now cropped to the ink
-    // (see exportDataUrl), so it is NARROWER than the pad. The old drawImage(img, 0, 0,
-    // width, height) would therefore squash the ink across the full pad when editing -
-    // a signature drawn at 66% of the pad width would come back stretched to 100%, wider
-    // than any signature the user could have drawn. Drawing 1:1 keeps the geometry the
-    // user actually signed, and top-left keeps it where the pointer put it.
-    const img = new Image()
-    img.onload = () => c.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight)
-    img.src = model
+  if (!model) {
+    return
   }
+  // Redraw an existing signature so editing a row shows the stored ink.
+  //
+  // Two corrections, both forced by exportDataUrl cropping the stored PNG:
+  //
+  // 1. AT NATURAL SIZE, NOT STRETCHED TO THE PAD. The old drawImage(img, 0, 0, width,
+  //    height) was correct only while the stored image WAS the pad. Exports are now
+  //    narrower than the pad, so that would squash the ink across the full width on edit -
+  //    a signature drawn at 55% of the pad would come back at 100%, wider than anything the
+  //    user could have drawn.
+  //
+  // 2. DIVIDED BY dpr, or the ink renders dpr TIMES TOO BIG. naturalWidth is in DEVICE
+  //    pixels, but resize() already did g.scale(dpr, dpr), so the context works in CSS
+  //    pixels. Drawing naturalWidth straight into it doubles the signature on every HiDPI
+  //    screen. This is invisible at dpr=1, which is exactly why it survived my earlier
+  //    testing, and it was HIRO's 1920 laptop that exposed it: a 201px-wide signature was
+  //    measured drawing 392 device px, filling half the pad.
+  //
+  // CENTRED HORIZONTALLY. The crop threw away where in the pad the ink sat, so there is no
+  // offset left to restore - 0 would just hug the left edge and look like it slid off.
+  // Vertical placement IS still real (the export does not crop height), so y stays 0.
+  const img = new Image()
+  img.onload = () => {
+    const w = img.naturalWidth / dpr.value
+    const h = img.naturalHeight / dpr.value
+    c.drawImage(img, (width / dpr.value - w) / 2, 0, w, h)
+  }
+  img.src = model
 }
 
 function resize() {
