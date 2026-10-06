@@ -397,6 +397,16 @@ async function save() {
 const showDelete = ref(false)
 const deleteTarget = ref<Row | null>(null)
 const deleting = ref(false)
+/**
+ * Set only when a delete SUCCEEDS, consumed by the modal's `after:leave` handler.
+ *
+ * HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup".
+ * The toast used to be raised inside confirmDelete, i.e. while the dialog was still on
+ * screen - measured, the dialog entered its leave animation 17ms BEFORE the toast appeared.
+ * The success toast therefore waits for `after:leave`, which UModal emits once the exit
+ * transition has really finished, so nothing flashes over the fading dialog.
+ */
+const pendingDeleteToast = ref(false)
 
 function askDelete(row: Row) {
   deleteTarget.value = row
@@ -435,9 +445,20 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await apiDeleteRecord(entity.value.id, deleteTarget.value.id)
-    notify('Record deleted')
+    // Close the dialog FIRST and let the toast wait for its exit animation.
+    //
+    // HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup".
+    // The toast was being raised while the modal was still on screen: measured with a
+    // MutationObserver, dialog went data-state=open -> closed at t=16246ms and the toast
+    // only appeared at t=16263ms, i.e. 17ms INTO the leave animation. To the eye that is a
+    // stray popup flashing over the dialog that is still fading out.
+    //
+    // So the success toast is deferred to after:leave, which UModal emits when the exit
+    // transition has actually finished. Deleting the record does NOT wait for that - the
+    // refresh happens immediately, so the table is already correct behind the closing modal.
     showDelete.value = false
     deleteTarget.value = null
+    pendingDeleteToast.value = true
     await loadRows()
   } catch (e: any) {
     notify(e?.data?.message || 'Could not delete the record.', 'error')
@@ -1018,6 +1039,7 @@ await init()
     <!-- DELETE CONFIRMATION - see remove/askDelete above for why this is not a native confirm(). -->
     <UModal
       v-model:open="showDelete"
+      @after:leave="pendingDeleteToast && (notify('Record deleted'), pendingDeleteToast = false)"
       :ui="{
         content: 'sm:max-w-md',
         body: 'p-0',

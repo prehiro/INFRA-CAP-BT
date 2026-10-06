@@ -318,6 +318,16 @@ async function save() {
 const showDelete = ref(false)
 const deleteTarget = ref<Row | null>(null)
 const deleting = ref(false)
+/**
+ * Set only when a delete SUCCEEDS, consumed by the modal's `after:leave` handler.
+ *
+ * HIRO, 2026-10-06: "ada seperti popup muncul sepersekian detik sebelum modal tertutup".
+ * The toast used to be raised inside confirmDelete, i.e. while the dialog was still on
+ * screen - measured on the CCTV dialog, it entered its leave animation 17ms BEFORE the
+ * toast appeared. The success toast therefore waits for `after:leave`, which UModal emits
+ * once the exit transition has really finished, so nothing flashes over the fading dialog.
+ */
+const pendingDeleteToast = ref(false)
 
 function askDelete(row: Row) {
   deleteTarget.value = row
@@ -342,9 +352,10 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await apiDeleteRecord(entity.value.id, deleteTarget.value.id)
-    notify('Record deleted')
+    // Close first, toast after the exit animation - see pendingDeleteToast above.
     showDelete.value = false
     deleteTarget.value = null
+    pendingDeleteToast.value = true
     await loadRows()
   } catch (e: any) {
     notify(e?.data?.message || 'Could not delete the record.', 'error')
@@ -855,6 +866,7 @@ await init()
        repeated so the person confirms the row they MEANT, with the same staggered motion. -->
   <UModal
     v-model:open="showDelete"
+    @after:leave="pendingDeleteToast && (notify('Record deleted'), pendingDeleteToast = false)"
     :ui="{
       content: 'sm:max-w-md',
       body: 'p-0',
