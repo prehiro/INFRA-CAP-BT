@@ -76,14 +76,14 @@ function paint(model?: string | null) {
   //    testing, and it was HIRO's 1920 laptop that exposed it: a 201px-wide signature was
   //    measured drawing 392 device px, filling half the pad.
   //
-  // CENTRED HORIZONTALLY. The crop threw away where in the pad the ink sat, so there is no
-  // offset left to restore - 0 would just hug the left edge and look like it slid off.
-  // Vertical placement IS still real (the export does not crop height), so y stays 0.
+  // 3. CENTRED ON BOTH AXES. The crop throws away where in the pad the ink sat, so there
+  //    is no offset left to restore - 0 would just hug one edge and look like it slid off.
+  //    Height is centred for the same reason: exportDataUrl now trims top and bottom too.
   const img = new Image()
   img.onload = () => {
     const w = img.naturalWidth / dpr.value
     const h = img.naturalHeight / dpr.value
-    c.drawImage(img, (width / dpr.value - w) / 2, 0, w, h)
+    c.drawImage(img, (width / dpr.value - w) / 2, (height / dpr.value - h) / 2, w, h)
   }
   img.src = model
 }
@@ -107,25 +107,32 @@ function pos(e: PointerEvent) {
 }
 
 /**
- * Trim transparent margin from the LEFT and RIGHT of the exported PNG.
+ * Trim the transparent margin from the stored PNG.
  *
- * WHY: the pad is 422x130 in the CCTV dialog but a signature is rarely the full width of
- * it, so the stored PNG carries a wide empty margin. The table preview scales that whole
- * margin into a 132px chip with object-contain, which shrinks the INK to fit - measured
- * before this: ink 60px of a 38px-tall box. Cropping the margin means the ink occupies the
- * full height of the preview box instead.
+ * WHY: the pad is 422x130 (672x130 on the handover form) but a signature rarely fills it,
+ * so the stored PNG carries empty margin. The table preview scales that whole margin into
+ * a 132px chip with object-contain, which shrinks the INK to fit - and a big downscale is
+ * what makes the preview line look ragged: measured scaleX == scaleY == 3.25 for a 130px
+ * tall preview of a full-height signature, with a 1.6 CSS px stroke landing at ~0.5 device
+ * px, i.e. thinner than one pixel, so the resampler drops pixels along the stroke instead
+ * of blending them and the curve breaks into dashes.
  *
- * LEFT/RIGHT ONLY, as asked. Vertical margin is deliberately left alone: the pad is short
- * and mostly used, and trimming the height would change the aspect ratio for no gain here.
+ * ALL FOUR SIDES, not just left/right. The original request named left and right only, and
+ * that is deliberate - but the measurement says the VERTICAL margin is the bigger waste:
+ * real signatures use 42% to 89% of the pad height, so cropping height is what takes the
+ * downscale from 3.25x down to 1.35x-2.41x for the same chip. Vertical placement is the one
+ * thing that is genuinely lost by cropping it, so it is kept in the JSON-free case only in
+ * the sense that paint() re-centres on load (see below).
  *
- * Falls back to the full canvas when there is nothing worth trimming (no ink, an ink
- * narrower than one stroke, or a stray dot), so a signature can never be cropped away.
+ * Falls back to the full canvas when there is nothing worth trimming (no ink, or ink
+ * narrower/shorter than a couple of strokes), so a signature can never be cropped away.
  *
  * device pixels, not CSS: the canvas backing store is scaled by devicePixelRatio, so every
  * bound below is in the canvas's own pixel space and needs no conversion except the pad.
  */
 const CROP_PAD_CSS = 3
 const MIN_CROP_W = 16
+const MIN_CROP_H = 16
 
 function inkBounds() {
   const c = canvasEl.value
@@ -137,16 +144,20 @@ function inkBounds() {
   const { data } = g.getImageData(0, 0, width, height)
   let minX = width
   let maxX = -1
+  let minY = height
+  let maxY = -1
   for (let y = 0; y < height; y++) {
     const row = y * width * 4
     for (let x = 0; x < width; x++) {
       if (data[row + x * 4 + 3] > 10) {
         if (x < minX) minX = x
         if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
       }
     }
   }
-  return maxX < 0 ? null : { minX, maxX, width, height }
+  return maxX < 0 ? null : { minX, maxX, minY, maxY, width, height }
 }
 
 function exportDataUrl(): string | null {
@@ -157,14 +168,20 @@ function exportDataUrl(): string | null {
   const pad = Math.max(1, Math.round(CROP_PAD_CSS * dpr.value))
   const x0 = Math.max(0, b.minX - pad)
   const x1 = Math.min(b.width, b.maxX + 1 + pad)
+  const y0 = Math.max(0, b.minY - pad)
+  const y1 = Math.min(b.height, b.maxY + 1 + pad)
   const w = x1 - x0
-  // Nothing to gain (already flush) or too small to be a signature: keep the whole pad.
-  if (w >= b.width || w < MIN_CROP_W) return c.toDataURL('image/png')
+  const h = y1 - y0
+  // Nothing to gain (already flush on both axes) or too small to be a signature: keep the
+  // whole pad.
+  if ((w >= b.width && h >= b.height) || w < MIN_CROP_W || h < MIN_CROP_H) {
+    return c.toDataURL('image/png')
+  }
   const out = document.createElement('canvas')
   out.width = w
-  out.height = b.height
+  out.height = h
   // A FRESH context, so the pad's own dpr transform does not scale this copy as well.
-  out.getContext('2d')?.drawImage(c, x0, 0, w, b.height, 0, 0, w, b.height)
+  out.getContext('2d')?.drawImage(c, x0, y0, w, h, 0, 0, w, h)
   return out.toDataURL('image/png')
 }
 
@@ -181,7 +198,14 @@ function start(e: PointerEvent) {
   c.lineCap = 'round'
   c.lineJoin = 'round'
   c.strokeStyle = INK
-  c.lineWidth = 1.6
+  // 2.4 CSS px, not 1.6 (HIRO, 2026-10-06: "kenapa preview signature pada tabel tidak
+  // smooth line nya?"). Measured on the real stored PNGs: the preview downscales 1.35x to
+  // 3.25x, so the old 1.6 CSS px stroke arrived as 0.5 to 1.2 device px - at the high end
+  // that is under ONE device pixel, where the resampler cannot blend a line and drops it,
+  // which is what broke curves into separate dashes. 2.4 CSS px keeps the on-screen
+  // signature looking like a pen rather than a hairline, and stays at ~0.7 to 1.8 device px
+  // after the downscale so the stroke is always at least one pixel wide.
+  c.lineWidth = 2.4
   drawing.value = true
   // Strokes ACCUMULATE (HIRO, 2026-10-04): signing is naturally done in several passes -
   // a name, then a date, then a flourish - and this used to erase everything on every
