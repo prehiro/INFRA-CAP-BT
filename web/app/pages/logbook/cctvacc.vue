@@ -709,14 +709,38 @@ await init()
                      `dark:invert` turns black pixels white and leaves the ALPHA channel
                      alone, so the cell keeps the theme's own background and the signature
                      simply reads as white ink on dark. Nothing stored is modified.
-                     The chip is a FIXED w-[108px], not min-w: percentage widths on <th> are
+                     The chip is a FIXED width, not min-w: percentage widths on <th> are
                      only hints, so a column whose row happens to hold a signature rendered
                      wider than its neighbour showing "—". A fixed-width container gives both
-                     signature columns identical content width and therefore identical columns. -->
+                     signature columns identical content width and therefore identical columns.
+
+                     SIZE - MEASURED at the office 1920px viewport, not guessed. The two
+                     signature columns are 164px wide, and `px-3` leaves 140px of content
+                     box, so the old 108px chip wasted ~32px of the column and capped the ink
+                     at 98x32. The stored PNG is 3.2:1 (422x130), so WIDTH constrains it, not
+                     height: 132px + h-10 renders 122x40, about 27% larger linearly. The
+                     <colgroup> is untouched on purpose - reallocating column percentages would
+                     move every other column and risk the equal-signature-columns property
+                     that <colgroup> exists to guarantee.
+
+                     `max-w-full` IS safe here, and the reason is worth keeping: the fear is
+                     that the chip follows its COLUMN, so the row holding a signature would
+                         get a different width from the row showing "—". That mismatch came
+                         from auto layout, where the w-[n%] on <th> is only a HINT and the
+                         browser hands out leftover space unevenly per row. Under table-fixed +
+                         <colgroup> the column width is deterministic and identical for every
+                         row, so min(132px, cell) is the same number in all of them.
+
+                     It is also REQUIRED, not optional. The table carries min-w-[1180px], so
+                     at a 1280 or 1440 viewport the signature column is only 117px (93px of
+                         content box) while the office screen gives it 164px. Measured overflow
+                     without it: the 132px chip exceeded its own cell by 15px at 1280 and
+                     1440 and pushed into Start Time. With it, the chip shrinks with the
+                         column and nothing is clipped or displaced at any width. -->
                 <div v-if="c.sign && signSrc(r.values[c.key])"
-                     class="flex w-[108px] items-center justify-center rounded-md border border-default/50 p-1">
+                     class="flex w-[132px] max-w-full items-center justify-center rounded-md border border-default/50 p-1">
                   <img :src="signSrc(r.values[c.key])!" alt="signature"
-                       class="h-8 max-w-full object-contain dark:invert" />
+                       class="h-10 max-w-full object-contain dark:invert" />
                 </div>
                 <span v-else-if="c.sign" class="text-dimmed">—</span>
                 <template v-else-if="c.key === 'tanggal'">
