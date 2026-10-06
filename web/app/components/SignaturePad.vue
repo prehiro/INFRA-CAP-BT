@@ -58,8 +58,15 @@ function paint(model?: string | null) {
   c.clearRect(0, 0, width, height)
   if (model) {
     // Redraw an existing signature so editing a row shows the stored ink.
+    //
+    // AT NATURAL SIZE, NOT STRETCHED TO THE PAD. The exported PNG is now cropped to the ink
+    // (see exportDataUrl), so it is NARROWER than the pad. The old drawImage(img, 0, 0,
+    // width, height) would therefore squash the ink across the full pad when editing -
+    // a signature drawn at 66% of the pad width would come back stretched to 100%, wider
+    // than any signature the user could have drawn. Drawing 1:1 keeps the geometry the
+    // user actually signed, and top-left keeps it where the pointer put it.
     const img = new Image()
-    img.onload = () => c.drawImage(img, 0, 0, width, height)
+    img.onload = () => c.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight)
     img.src = model
   }
 }
@@ -80,6 +87,68 @@ function resize() {
 function pos(e: PointerEvent) {
   const rect = canvasEl.value!.getBoundingClientRect()
   return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+}
+
+/**
+ * Trim transparent margin from the LEFT and RIGHT of the exported PNG.
+ *
+ * WHY: the pad is 422x130 in the CCTV dialog but a signature is rarely the full width of
+ * it, so the stored PNG carries a wide empty margin. The table preview scales that whole
+ * margin into a 132px chip with object-contain, which shrinks the INK to fit - measured
+ * before this: ink 60px of a 38px-tall box. Cropping the margin means the ink occupies the
+ * full height of the preview box instead.
+ *
+ * LEFT/RIGHT ONLY, as asked. Vertical margin is deliberately left alone: the pad is short
+ * and mostly used, and trimming the height would change the aspect ratio for no gain here.
+ *
+ * Falls back to the full canvas when there is nothing worth trimming (no ink, an ink
+ * narrower than one stroke, or a stray dot), so a signature can never be cropped away.
+ *
+ * device pixels, not CSS: the canvas backing store is scaled by devicePixelRatio, so every
+ * bound below is in the canvas's own pixel space and needs no conversion except the pad.
+ */
+const CROP_PAD_CSS = 3
+const MIN_CROP_W = 16
+
+function inkBounds() {
+  const c = canvasEl.value
+  const g = c?.getContext('2d')
+  if (!c || !g) return null
+  const { width, height } = c
+  // Alpha is the whole test: the surface is transparent until ink is drawn, so a pixel
+  // with any alpha IS ink and the colour itself is irrelevant.
+  const { data } = g.getImageData(0, 0, width, height)
+  let minX = width
+  let maxX = -1
+  for (let y = 0; y < height; y++) {
+    const row = y * width * 4
+    for (let x = 0; x < width; x++) {
+      if (data[row + x * 4 + 3] > 10) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+      }
+    }
+  }
+  return maxX < 0 ? null : { minX, maxX, width, height }
+}
+
+function exportDataUrl(): string | null {
+  const c = canvasEl.value
+  if (!c) return null
+  const b = inkBounds()
+  if (!b) return c.toDataURL('image/png')
+  const pad = Math.max(1, Math.round(CROP_PAD_CSS * dpr.value))
+  const x0 = Math.max(0, b.minX - pad)
+  const x1 = Math.min(b.width, b.maxX + 1 + pad)
+  const w = x1 - x0
+  // Nothing to gain (already flush) or too small to be a signature: keep the whole pad.
+  if (w >= b.width || w < MIN_CROP_W) return c.toDataURL('image/png')
+  const out = document.createElement('canvas')
+  out.width = w
+  out.height = b.height
+  // A FRESH context, so the pad's own dpr transform does not scale this copy as well.
+  out.getContext('2d')?.drawImage(c, x0, 0, w, b.height, 0, 0, w, b.height)
+  return out.toDataURL('image/png')
 }
 
 function start(e: PointerEvent) {
@@ -125,7 +194,9 @@ function end() {
   if (!drawing.value) return
   drawing.value = false
   if (!hasInk.value) return
-  emit('update:modelValue', canvasEl.value?.toDataURL('image/png') ?? null)
+  // exportDataUrl(), not the raw canvas: the stored PNG is cropped to the ink so the table
+  // preview is not scaled down by empty margin. The pad on screen keeps its full width.
+  emit('update:modelValue', exportDataUrl())
 }
 
 function clear() {
