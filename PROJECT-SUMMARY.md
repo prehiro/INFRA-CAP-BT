@@ -2121,3 +2121,37 @@ bergerak lagi (`settledLast4: true`, 2 pembalikan arah).
 Satu koreksi komentar: blok komentar transisi masih menulis "NO LEAVE ANIMATION, deliberately" dari
 revisi sebelumnya, padahal animasi leave sudah ditambahkan. Sudah diperbaiki supaya tidak jadi
 komentar yang membohongi pembaca berikutnya.
+
+
+### Bounce antar kolom saat check/uncheck visible column (2026-10-08)
+
+HIRO: *"maksud saya ketika ceklis visible column di check dan uncheck ada efek bounce antar column"*.
+
+Jadi yang dimaksud bukan bounce baris setelah filter, tapi bounce **antar kolom** saat sebuah kolom
+disembunyikan/ditampilkan. Dua mekanisme saya bangun dan UKUR di tabel hidup, dan **tidak satu pun
+menghasilkan bounce** — jadi yang saya commit adalah bagian fungsionalnya saja, dengan komentar yang
+menyebutkan kegagalannya, bukan animasi yang berpura-pura jalan:
+
+1. **`transition: width` pada `<col>/th/td`.** Terbukti beranimasi di tabel ini (satu sel terukur
+   256px → 32px lewat 14 nilai antara) dan ia memang menggeser kolom tetangga dengan halus, karena
+   kolom yang menutup menyempit bertahap. Tapi ia **tidak bisa bounce**: kurvanya harus melewati
+   lebar nol, dan lebar negatif tidak valid, jadi penutupannya selalu mendarat rata. Lebih buruk
+   lagi, mekanisme ini juga **menyerap pergerakan** yang dibutuhkan FLIP: posisi sel berubah 0 pada
+   saat FLIP mengukurnya, sehingga transformnya tidak pernah dipasang.
+2. **FLIP pada sel** (`onBeforeUpdate` snapshot, `onUpdated` lepas ke kurva overshoot). Terukur:
+   hook-nya **tidak pernah memasang transform** (0 sampel berisi transform inline sementara kolomnya
+   berpindah 1240 → 1048 dalam satu langkah). Kode ini sudah **DIHAPUS**, tidak dibiarkan. Dugaan
+   penyebabnya urutan update — snapshot dan pengukuran butuh `await nextTick()` plus layout paksa di
+   antaranya — tapi itu baru dugaan, bukan perbaikan terverifikasi, jadi tidak saya tulis ke file.
+   `tableEl` dan `ref="tableEl"` yang jadi tidak terpakai ikut dihapus, dan fade opacity pada sel
+   yang disembunyikan juga (kolom sudah nol-lebar dan ter-clip, jadi fade-nya tak terlihat).
+
+**Yang JALAN dan terverifikasi:** setiap kolom sekarang selalu dirender (bukan dihapus), kolom
+tersembunyi dikuncupkan oleh `.pl-col-hidden` (lebar 0, padding 0, ter-clip instant), `visibleIndex()`
+menjaga agar pasangan kolom yang di-pin tetap kolom VISIBLE pertama dan kedua (terukur: "1" di
+left 0px dan ".\capuser" di left 80px setelah GID disembunyikan), dan kolom tersembunyi benar-benar
+0px (1 header + 26 sel dapat kelas `pl-col-hidden`). Preferensinya tetap tersimpan per browser.
+
+**STATUS JUJUR: efek bounce antar kolom BELUM ADA.** Langkah berikutnya yang paling masuk akal:
+instrumentasi hook-nya lebih dulu (cetak kapan `onBeforeUpdate`/`onUpdated` benar-benar jalan dan
+berapa dx yang terukur) sebelum menulis mekanisme ketiga — bukan menebak lagi.

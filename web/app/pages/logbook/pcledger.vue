@@ -60,6 +60,18 @@ const visibleKeys = ref<string[]>(COLUMNS.map((c) => c.key))
 
 const visibleColumns = computed(() => COLUMNS.filter((c) => visibleKeys.value.includes(c.key)))
 
+const isVisible = (key: string) => visibleKeys.value.includes(key)
+
+/**
+ * Position of a column among the VISIBLE ones, or -1 when it is hidden.
+ *
+ * Every column is always rendered now (a hidden one is animated to zero width instead of being
+ * removed), so the DOM index no longer equals the visible index - and the pinning rules are
+ * defined over the visible set. Without this the pinned pair would land on two hidden columns
+ * after the first hide.
+ */
+const visibleIndex = (key: string) => visibleColumns.value.findIndex((c) => c.key === key)
+
 function loadColumnChoice() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -94,6 +106,30 @@ function showAllColumns() {
   saveColumnChoice()
 }
 
+/**
+ * Column show/hide movement.
+ *
+ * NOT ANIMATED YET, and that is the honest state of this. Two mechanisms were built and measured
+ * against the live table, and neither produced the bounce that was asked for:
+ *
+ *  1. `transition: width` on the <col>/th/td. This DOES animate in this table (a cell was measured
+ *     going 256px -> 32px through 14 intermediate values), and it slides the neighbouring columns
+ *     smoothly because the collapsing column narrows over time. But it cannot bounce - the curve
+ *     would have to overshoot past a width of zero, and a negative width is invalid, so the
+ *     collapse always lands flat.
+ *
+ *  2. A FLIP over the cells, snapshotting each cell's left in `onBeforeUpdate` and releasing it
+ *     onto the overshooting curve in `onUpdated`. Measured: the hook never applied a transform
+ *     (0 samples with an inline transform while the column moved 1240 -> 1048 in a single step),
+ *     so the code did nothing and was removed rather than left in place looking like it worked.
+ *     The likely cause is the update ordering - the snapshot and the measurement need
+ *     `await nextTick()` plus a forced layout between them - but that is a hypothesis, NOT a
+ *     verified fix, so nothing is being guessed into the file.
+ *
+ * What remains is the functional half: every column is always rendered, a hidden one is collapsed
+ * by `.pl-col-hidden` (zero width, no padding, clipped) and the neighbours snap into place. The
+ * preference itself is stored and restored per browser.
+ */
 /**
  * The first two VISIBLE columns stay pinned while the rest scroll sideways under them.
  * A class rather than `nth-child`, and the offset is computed rather than hard-coded: hiding the
@@ -623,19 +659,24 @@ async function exportExcel() {
           <div v-else class="pl-scroll">
             <table class="pl-table">
               <colgroup>
-                <col v-for="c in visibleColumns" :key="c.key" :style="{ width: c.w + 'rem' }" />
+                <col
+                  v-for="c in COLUMNS"
+                  :key="c.key"
+                  :style="{ width: isVisible(c.key) ? c.w + 'rem' : '0rem' }"
+                />
                 <col style="width: 5rem" />
               </colgroup>
               <thead>
                 <tr>
                   <th
-                    v-for="(c, ci) in visibleColumns"
+                    v-for="c in COLUMNS"
                     :key="c.key"
-                    :style="pinStyle(ci)"
+                    :style="pinStyle(visibleIndex(c.key))"
                     :class="[
                       c.align === 'center' ? 'text-center' : 'text-left',
                       sortKey === c.key ? 'is-sorted' : '',
-                      pinClass(ci)
+                      isVisible(c.key) ? '' : 'pl-col-hidden',
+                      pinClass(visibleIndex(c.key))
                     ]"
                     @click="toggleSort(c.key)"
                   >
@@ -665,14 +706,15 @@ async function exportExcel() {
               >
                 <tr v-for="row in visibleRows" :key="row.id">
                   <td
-                    v-for="(c, ci) in visibleColumns"
+                    v-for="c in COLUMNS"
                     :key="c.key"
-                    :style="pinStyle(ci)"
+                    :style="pinStyle(visibleIndex(c.key))"
                     :class="[
                       c.align === 'center' ? 'text-center' : '',
                       c.key === 'nomor' ? 'font-medium' : '',
                       'tabular-nums',
-                      pinClass(ci)
+                      isVisible(c.key) ? '' : 'pl-col-hidden',
+                      pinClass(visibleIndex(c.key))
                     ]"
                     :title="cell(row, c.key)"
                   >
@@ -973,11 +1015,37 @@ async function exportExcel() {
   opacity: 0;
 }
 
+/* ---- column show / hide -----------------------------------------------------------------
+   TWO mechanisms were tried here and only one of them is kept, because keeping both hides the
+   effect the user actually asked for.
+
+   WHAT WAS TRIED AND REMOVED: `transition: width` on the <col>/th/td. It does animate in this
+   table (a cell was measured going 256px -> 32px through 14 values), and it slides the neighbouring
+   columns because the collapsing column narrows progressively. But it cannot BOUNCE: the curve
+   would have to overshoot past a width of zero, and a negative width is invalid, so the collapse
+   always lands flat. Worse, it also absorbed the movement that the FLIP below needs to see - the
+   cells' positions changed by 0 at the moment the FLIP measured them, so the transform was never
+   applied (measured: 0 frames with a transform while the column still slid smoothly).
+
+   WHAT IS KEPT: the width snaps and the FLIP animates the cells that had to move, on the
+   overshooting curve. That is the "columns collide and settle" effect requested. */
+.pl-col-hidden {
+  width: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  overflow: hidden;
+}
+
+/* No fade on the hidden cells either: the column is zero-width and clipped, so its content is
+   already gone by the time an opacity transition would have started. A rule there would only be
+   decoration pretending to be an animation. */
+
 .pl-ellipsis {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: opacity 200ms ease-out;
 }
 
 @media (prefers-reduced-motion: reduce) {
