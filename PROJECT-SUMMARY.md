@@ -2052,3 +2052,42 @@ Terukur saat filter dijalankan: pada t=37ms ada **21 baris** dalam keadaan trans
 5 masuk) dengan opacity minimum masih 1; pada t=95ms opacity minimum **0.902** — barisnya benar-benar
 memudar di tengah jalan, bukan lompat; pada t=506ms transisi selesai dan DOM tinggal **5 baris**
 (footer `Showing 5 of 26`). Kolom yang di-pin tetap `position: sticky, left: 0px` sepanjang animasi.
+
+
+### Footer disamakan + transisi baris (2026-10-08)
+
+HIRO: *"status footer samakan stylenya denga cctv access. animasi dan transisi hasil filter masih
+kurang halus, terasa tiba-biba, coba enhance lagi"*.
+
+**FOOTER** sekarang memakai kelas yang sama persis dengan register CCTV
+(`flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs
+text-muted`), dan **hitungan kiri mengikuti FILTER** (`{{ visibleRows.length }} records`) supaya
+tidak mungkin berbeda dengan `Showing X of Y` di sebelahnya. CCTV pernah mencetak total mentah di
+sana dan terbaca `1 row / Showing 0 of 1` yang tampak seperti bug. Kata bendanya tetap
+"record/records" karena itu kosakata halaman ini; yang disamakan stylenya, bukan teksnya.
+
+**TRANSISI** diambil dari cctvacc.vue, bukan dikarang ulang: `TransitionGroup` dengan
+`enter-active-class` / `enter-from-class` / `move-class` / `move-active-class` dan nilai 220ms pada
+`cubic-bezier(0.22, 1, 0.36, 1)` yang sama. Tambahan di PC Ledger: kelas **leave** (fade 260ms +
+padding sel mengempis 240ms) karena CCTV sengaja menghapus baris keluar seketika, dan dengan 26
+baris di layar itulah potongan keras yang HIRO rasakan.
+
+Terukur, dengan sampel tiap 35-40ms:
+- **FLIP move bekerja**: klik header "Staff Name" membuat **25 baris** transisi/ter-transform
+  (seluruh daftar berubah urutan) dan `pinnedLeft` tetap 232 = `scrollerLeft` di SEMUA sampel —
+  jadi transform pada `<tr>` **tidak** merusak pin kolom sticky. Ini yang saya khawatirkan dan
+  ternyata aman.
+- **Leave** memudar bertahap: opacity 1 → 0.980 → 0.853 → 0.530 → 0.252, bukan potong satu frame.
+- **Padding sel mengempis**: tinggi baris keluar 43px → 27px, jadi 16px tingginya sudah kembali ke
+  baris bawah sambil baris itu masih dihapus.
+
+**KOREKSI ATAS KLAIM SAYA SENDIRI:** saya sempat menambahkan `max-height: 0` pada isi sel supaya
+baris keluar mengempis total sampai 0, dan **itu tidak bekerja sama sekali** — diukur, barisnya
+tetap 27px saat dihapus. Aturannya sudah saya HAPUS, bukan ditinggal seolah berfungsi.
+
+**SISA MASALAH YANG JUJUR:** lompatan ~477px masih ada satu kali saat 18 baris dihapus serentak
+(filter 26 → 8): baris di bawahnya naik dalam satu langkah besar. Ini persis peringatan yang sudah
+tertulis di komentar cctvacc.vue. Perbaikan sesungguhnya berarti mengeluarkan baris yang keluar dari
+alur tabel (`position: absolute` + spacer), dan itu menukar lompatan dengan tabel yang tidak bisa
+mempertahankan lebar kolomnya sendiri. Belum saya kerjakan — dilaporkan ke HIRO lengkap dengan
+angkanya, bukan ditutupi.

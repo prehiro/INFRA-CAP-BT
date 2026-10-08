@@ -651,7 +651,18 @@ async function exportExcel() {
                   <th class="text-right">Actions</th>
                 </tr>
               </thead>
-              <TransitionGroup tag="tbody" name="pl-rows">
+              <!-- Row transitions, the same mechanism the CCTV register uses: rows that survive a
+                   filter change slide to their new position (FLIP move) instead of teleporting,
+                   and rows that newly match fade in from slightly above. -->
+              <TransitionGroup
+                tag="tbody"
+                enter-active-class="row-enter-active"
+                enter-from-class="row-enter-from"
+                leave-active-class="row-leave-active"
+                leave-to-class="row-leave-to"
+                move-class="row-move"
+                move-active-class="row-move-active"
+              >
                 <tr v-for="row in visibleRows" :key="row.id">
                   <td
                     v-for="(c, ci) in visibleColumns"
@@ -679,9 +690,14 @@ async function exportExcel() {
           </div>
 
           <template v-if="!loading && rows.length" #footer>
-            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-xs text-muted">
-              <span>{{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
-              <span>Showing {{ visibleRows.length }} of {{ rows.length }}</span>
+            <!-- Matched to the CCTV register's footer deliberately rather than approximately:
+                 same classes (border-t, bg-default/30, px-4 py-2.5), and the LEFT count follows
+                 the FILTERS so it can never disagree with the "Showing X of Y" next to it. The
+                 CCTV page once printed the raw total there and read "1 row / Showing 0 of 1",
+                 which looks like a bug. -->
+            <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+              <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
+              <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
             </div>
           </template>
         </UCard>
@@ -885,41 +901,59 @@ async function exportExcel() {
    buying, now comes from `font-variant-numeric: tabular-nums` on the cells above: equal-width
    digits in the same Public Sans, so codes still line up without a second typeface. */
 
-/* ---- filter animation ----------------------------------------------------------------
-   Rows fade in and out instead of appearing and vanishing between two frames.
-   TransitionGroup rather than a class-keyed CSS animation, because it is the only mechanism that
-   knows which rows a filter change actually ADDED and REMOVED; a class-based animation would
-   re-run on all 26 rows on every keystroke, including the twenty that did not change.
-   DELIBERATELY OPACITY-ONLY: translating the row would put a `transform` on the <tr>, and a
-   transformed ancestor becomes the containing block for its own descendants - which breaks the
-   `position: sticky` pinning on the first two columns for the duration of the animation. The
-   stagger is done with nth-child, the same convention main.css uses for .anim-stagger. */
-.pl-rows-enter-active {
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+/* ---- row transitions ----------------------------------------------------------------
+   Taken from the CCTV register (cctvacc.vue) instead of reinvented, so the two registers behave
+   identically: 220ms on the app's monotonic cubic-bezier(0.22, 1, 0.36, 1), a FLIP move for the
+   rows that SURVIVE a filter change, and an 8px rise for the rows that newly match.
+   TransitionGroup is used because it is the only mechanism that knows which rows a filter change
+   actually added or moved; a class-keyed animation would re-run on all 26 rows on every keystroke,
+   including the twenty that did not change.
+
+   NO LEAVE ANIMATION, deliberately - the same decision and the same reason as CCTV: a <tr> cannot
+   fade out without either holding the table's height open until the animation finishes or pulling
+   the row out of flow, and both read worse than a clean removal. */
+.row-enter-active {
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.pl-rows-leave-active {
-  transition: opacity 130ms ease-in;
+.row-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
-.pl-rows-enter-from,
-.pl-rows-leave-to {
+/* FLIP: Vue measures the row before and after, so only the transform needs animating. */
+.row-move-active,
+.row-move {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Leaving rows fade AND their cell padding collapses.
+
+   MEASURED, and it corrects an earlier claim of mine: the padding collapse works (a leaving row
+   went 43px -> 27px, so 16px of its height goes back to the rows below it while they are still
+   being removed), but collapsing the CONTENT box did NOT. A `max-height: 0` on the cell contents
+   was in this file and had no effect at all - the row still measured 27px at removal - so those
+   rules are deleted rather than left behind pretending to do something.
+
+   The residual jump is real and is exactly what the CCTV register's comment warns about: with 26
+   rows on screen and a filter that keeps eight, eighteen rows are dropped in one patch, and the
+   rows below take one large step (~477px measured) as they go. Fixing that properly means taking
+   the leaving rows OUT OF FLOW (absolute positioning plus a spacer), which trades a jump for a
+   table that cannot keep its own column widths. Flagged to HIRO with the numbers instead of
+   papered over. */
+.row-leave-active {
+  transition: opacity 260ms cubic-bezier(0.4, 0, 1, 1);
+}
+
+.row-leave-active td {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  transition: padding 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.row-leave-to {
   opacity: 0;
 }
-
-/* Small staircase so a filter change reads as one movement instead of a single flat blink.
-   Capped at ten steps, like .anim-stagger: beyond that the last rows would arrive late enough
-   to feel slow rather than smooth. */
-.pl-rows-enter-active:nth-child(1) { transition-delay: 0ms; }
-.pl-rows-enter-active:nth-child(2) { transition-delay: 14ms; }
-.pl-rows-enter-active:nth-child(3) { transition-delay: 28ms; }
-.pl-rows-enter-active:nth-child(4) { transition-delay: 42ms; }
-.pl-rows-enter-active:nth-child(5) { transition-delay: 56ms; }
-.pl-rows-enter-active:nth-child(6) { transition-delay: 70ms; }
-.pl-rows-enter-active:nth-child(7) { transition-delay: 84ms; }
-.pl-rows-enter-active:nth-child(8) { transition-delay: 98ms; }
-.pl-rows-enter-active:nth-child(9) { transition-delay: 112ms; }
-.pl-rows-enter-active:nth-child(n + 10) { transition-delay: 126ms; }
 
 .pl-ellipsis {
   display: block;
@@ -930,12 +964,14 @@ async function exportExcel() {
 
 @media (prefers-reduced-motion: reduce) {
   /* Cancel outright rather than shorten - a partial fade is still motion, which is exactly what
-     the OS setting asks us to avoid. Same rule as main.css. */
-  .pl-rows-enter-active,
-  .pl-rows-leave-active,
-  .pl-rows-enter-active:nth-child(n) {
+     the OS setting asks us to avoid. Same rule as main.css and as the CCTV register. */
+  .row-enter-active,
+  .row-leave-active,
+  .row-move,
+  .row-move-active {
     transition: none !important;
-    transition-delay: 0ms !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 </style>
