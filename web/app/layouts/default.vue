@@ -30,7 +30,8 @@ const links = computed<NavigationMenuItem[][]>(() => [
       defaultOpen: true,
       children: [
         { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
-        { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' }
+        { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
+        { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' }
       ]
     }
   ],
@@ -60,6 +61,7 @@ const groups = computed(() => [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
+      { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
       { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]

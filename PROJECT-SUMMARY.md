@@ -1881,3 +1881,97 @@ kedua arah gerak terbukti, fasenya berlawanan. Kotak cincin di ujung luar 50×50
 di dalam header 64px, dan tepi kanannya x=61 sementara teks `INFRA-BTCAP` mulai di x=60 — jadi
 hanya bersinggungan 1px pada opacity ~0.05 (praktis tidak terlihat). Di-zoom dari screenshot:
 tidak ada clipping, glyph tetap center.
+
+---
+
+## PC Ledger — modul baru (2026-10-08)
+
+HIRO: *"sekarang buat 1 page PC Ledger. saya mau membuat system pengganti excel manual ini. ada
+fitur exportnya dan hasil exportnya mengikuti format excel ini
+`D:\WORK\PANASONIC\Web\INFRA-CAP\reff\PC_Ledger.xlsx`. design yang bagus dan professional"*.
+
+### Referensi dibaca dulu, bukan ditebak
+
+File referensi itu `IT FORM SG031 Department PC Ledger Form v7`, **satu sheet bernama `Ledger`**,
+16 kolom, 26 baris data. Strukturnya di-dump pakai ExcelJS (script di scratch, bukan di repo):
+judul di baris 1 (bold 16pt, center, melintasi kolom A–D), catatan "Requests to IT Reps:-" di
+**kolom C** baris 3–6 (baris 6 berisi dua baris teks dengan `\n`), "Department:" di **C9**,
+header di **baris 10** (bold 12pt, center, fill `theme1`), data mulai **baris 11**, dan **semua
+kolom C–P punya fill `FFFFFFCC`** — kuning muda, itulah arti "please fill in yellow columns".
+Kolom A adalah spacer selebar 2.44. Lebar kolom asli disalin apa adanya ke export.
+
+### Entity dibuat lewat API, bukan migration
+
+`POST /api/entities` → **`pc_ledger` (id 10), 16 field**, kind `Transaction`. Field order
+mengikuti sheet: `nomor` (required+unique, diisi server), staff_name, email, gid, japan_hostname,
+computer_model, computer_sn, tanggal (Date), chassis, manufacturer, os_name, os_arch, lokasi,
+remark2, remark3, departemen. Script pembuatnya disimpan di `api/create-pc-ledger-entity.py`.
+
+**`departemen` adalah satu-satunya penambahan**, dan alasannya: workbook punya SATU sel
+"Department:" di atas tabel, yang tidak mungkin mewakili nilai per baris. Jadi Department hidup
+di record (bisa difilter di layar) dan ditulis kembali ke sel itu saat export; kalau baris yang
+diexport punya lebih dari satu department, selnya diisi daftar gabungan.
+
+### JEBAKAN YANG KETEMU SAAT RUNTIME (dua-duanya nyata, bukan teori)
+
+1. **`nomor` tidak diisi otomatis.** `POST /api/records` pertama gagal 26 kali dengan
+   `{"nomor":"No wajib diisi"}`. `LogbookNumberService.TryNextAsync` hanya melayani slug yang
+   terdaftar di `NumberedSlugs` — cctv dan handover saja. Jadi entity baru **tidak** otomatis
+   dapat penomoran: tanpa menambah `PC_LEDGER_SLUG` ke set itu, SEMUA create dari UI juga akan
+   gagal 400. Pelajaran: menambah entity ber-`nomor` baru selalu butuh satu baris di service ini.
+2. **`<SelectItem>` menolak `value: ''`.** Filter department/chassis saya isi opsi
+   `{ label: 'All departments', value: '' }` dan **seluruh halaman jadi 500**:
+   *"A <SelectItem /> must have a value prop that is not an empty string. This is because the
+   Select value can be set to an empty string to clear the selection and show the placeholder."*
+   Fix: sentinel `const ALL = '__all__'` untuk nilai "tanpa filter", dipakai di v-model, di items,
+   dan di pengecekan filter. Awalan string kosong sebagai penanda "semua" adalah pola yang salah
+   di Reka UI.
+
+### Halaman
+
+`web/app/pages/logbook/pcledger.vue`, route **`/logbook/pcledger`**, masuk grup **Log Book** di
+sidebar (ikon `i-lucide-monitor`) — juga didaftarkan di command palette (dua tempat, karena
+palette sengaja eksplisit).
+
+Isinya: header sheet (judul + "IT FORM SG031 · Department PC Ledger Form v7 · N records"),
+toolbar **Search | All departments | All chassis | Excel | Add Record**, tabel 15 kolom with
+`table-fixed` + `<colgroup>`, header sticky, **kolom No dan Staff Name di-pin** (`position: sticky`
+kiri) supaya identitas baris tetap terlihat saat 15 kolom di-scroll horizontal, klik header untuk
+sort (No dan Date dibandingkan numerik/tanggal, bukan string — kalau tidak, 10 akan mendahului 2),
+kolom mono untuk email/GID/hostname/S-N, footer "N records | Showing X of N", modal Add/Edit 3 seksi
+(Identity / Hardware / System and placement), dan dialog delete yang mengulang identitas baris
+(No + Staff Name + Hostname + Location).
+
+**Tidak ada auto-capitalise di halaman ini.** Nilai identitas (`.\\capuser`, `JAPAN\\29384_DTS05`,
+`pidbt.dts05@sg.panasonic.com`, `E0B5536/7`) dikopi apa adanya dari spreadsheet, dan app ini punya
+aturan berdiri bahwa permukaan identitas/kredensial tidak pernah "dirapikan" otomatis.
+
+### Import data lama
+
+26 baris referensi diimpor lewat `api/seed-pc-ledger-rows.cjs` (ExcelJS → `POST /api/records/10`):
+**created=26 failed=0, server total = 26**. Nilai disalin **verbatim**, termasuk yang berantakan dan
+memang sudah dijalani departemen (`#NA` pada email, `E0B5536/7`, spasi ganda di `Surface GO  4`,
+spasi di ujung `PC Display EVR `). Merapikannya di sini akan membuat data aplikasi berbeda dari
+workbook yang masih dipakai departemen — itu satu hal yang tidak boleh dilakukan sebuah import.
+Kolom Date di sumber isinya campur: angka serial Excel dan teks `OK` (seseorang mengetik status ke
+kolom tanggal). Serial dikonversi; yang bukan angka **dibuang**, tidak dipaksa masuk field Date.
+
+### Verifikasi export (dibandingkan langsung dengan file referensi)
+
+Klik Excel di browser → file benar-benar terunduh (`C:\Users\HIRO\Downloads\PC_Ledger_2026-10-08.xlsx`,
+10.027 byte), lalu dibandingkan field-per-field dengan `PC_Ledger.xlsx` memakai ExcelJS:
+
+| yang dibandingkan | hasil |
+| --- | --- |
+| nama sheet | `Ledger` = `Ledger` |
+| judul baris 1 + bold + size | identik (`true`, 16) |
+| 4 baris catatan di kolom C | keempatnya identik |
+| label "Department:" | identik |
+| 15 label header baris 10 | identik, urutannya sama |
+| 16 lebar kolom A–P | identik |
+| fill kolom B–P pada baris data | `["none", FFFFFFCC × 14]` — sama persis |
+| jumlah baris data | 26 = 26 |
+| baris pertama & terakhir (spot check) | nilainya identik |
+
+Render halaman juga sudah dikonfirmasi di browser: 26 baris, 15 kolom + Actions, footer
+"26 records | Showing 26 of 26", dan "PC Ledger" muncul di sidebar.
