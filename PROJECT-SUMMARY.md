@@ -2091,3 +2091,33 @@ tertulis di komentar cctvacc.vue. Perbaikan sesungguhnya berarti mengeluarkan ba
 alur tabel (`position: absolute` + spacer), dan itu menukar lompatan dengan tabel yang tidak bisa
 mempertahankan lebar kolomnya sendiri. Belum saya kerjakan — dilaporkan ke HIRO lengkap dengan
 angkanya, bukan ditutupi.
+
+
+### Bounce saat baris mendarat (2026-10-08)
+
+HIRO: *"can add bounce effect when column collide after filter?"*.
+
+Kurva FLIP move diganti dari monoton `cubic-bezier(0.22, 1, 0.36, 1)` 220ms menjadi
+**`cubic-bezier(0.34, 1.56, 0.64, 1)` 340ms** (ease-out-back klasik) — baris melaju sedikit melewati
+garis akhirnya lalu mantul kembali ke tempatnya. Kurva yang sama juga dipakai untuk transform pada
+baris yang BARU masuk, jadi baris yang datang mendarat dengan bounce yang sama; opacity-nya tetap di
+kurva monoton karena kurva overshoot akan mendorong opacity melewati 1 di tengah jalan (di-clamp,
+jadi tidak berbahaya, tapi hanya memperpendek fade tanpa manfaat).
+
+340ms, bukan 220ms seperti register CCTV: pada tinggi baris 43px, overshoot dengan durasi lebih
+pendek tidak terasa sebagai bounce, hanya terasa seperti mendarat agak telat.
+
+**Aman meski aturan app ini menuntut kurva monoton** — aturan itu ada karena kurva non-monoton bisa
+meninggalkan elemen di luar nilai akhirnya. Transisi CSS SELALU berakhir tepat di targetnya, dan
+target di sini `transform: none`, jadi barisnya mendarat persis di garisnya; overshoot hanya ada di
+tengah lintasan. Aturan itu juga ditulis untuk TEKS yang di-scale (glyph jadi soft di ukuran antara)
+— ini memindahkan baris, bukan men-scale apa pun.
+
+Terukur (klik header Staff Name, sampel tiap 30ms, top baris no. 5): `394 → 359 → 300 → 257 → 241 →
+220 → 209 → **207** → 210 → 212 → 218 → 222 → **224 → 224 → ...`. Jadi: melaju 170px, **melewati
+garis akhir sejauh 17px** (207 vs final 224), lalu mantul dan berhenti **tepat** di 224 dan tidak
+bergerak lagi (`settledLast4: true`, 2 pembalikan arah).
+
+Satu koreksi komentar: blok komentar transisi masih menulis "NO LEAVE ANIMATION, deliberately" dari
+revisi sebelumnya, padahal animasi leave sudah ditambahkan. Sudah diperbaiki supaya tidak jadi
+komentar yang membohongi pembaca berikutnya.

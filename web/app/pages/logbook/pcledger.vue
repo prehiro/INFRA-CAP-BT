@@ -909,11 +909,18 @@ async function exportExcel() {
    actually added or moved; a class-keyed animation would re-run on all 26 rows on every keystroke,
    including the twenty that did not change.
 
-   NO LEAVE ANIMATION, deliberately - the same decision and the same reason as CCTV: a <tr> cannot
-   fade out without either holding the table's height open until the animation finishes or pulling
-   the row out of flow, and both read worse than a clean removal. */
+   A LEAVE ANIMATION IS ADDED HERE, unlike CCTV. That page removes filtered-out rows instantly by
+   choice, and its comment explains why a <tr> cannot be faded out without either holding the
+   table's height open or pulling the row out of flow. With 26 rows on screen and a filter that
+   keeps eight, the instant version is a hard cut, so this page pays the price: the leaving row
+   fades AND gives its padding back while it goes, which hands most of its height to the rows
+   below before it is dropped. */
+/* New rows rise into place on the same overshooting curve as the move, so a row that arrives
+   after a filter lands with the same little bounce as the rows that travelled. The OPACITY stays
+   on the monotonic curve on purpose: a non-monotonic curve would push opacity past 1 mid-flight
+   (clamped, so harmless, but it shortens the visible fade for no gain). */
 .row-enter-active {
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .row-enter-from {
@@ -921,10 +928,21 @@ async function exportExcel() {
   transform: translateY(-8px);
 }
 
-/* FLIP: Vue measures the row before and after, so only the transform needs animating. */
+/* FLIP: Vue measures the row before and after, so only the transform needs animating.
+   THE CURVE OVERSHOOTS ON PURPOSE - a small bounce as the rows land on each other after a
+   filter, which is what HIRO asked for ("add bounce effect when column collide after filter").
+   cubic-bezier(0.34, 1.56, 0.64, 1) is the classic ease-out-back: the row travels a little past
+   its final line and settles back into it.
+   WHY THIS IS SAFE despite the app's monotonic-curve rule, which exists because a non-monotonic
+   curve can leave an element off its settled value: a CSS transition ALWAYS ends exactly on its
+   target, and the target here is `transform: none`, so the row lands precisely on its grid line.
+   The overshoot only exists mid-flight. The rule was also written for scaled TEXT (a glyph
+   rasterises soft at an in-between size); this moves rows, it does not scale anything.
+   340ms rather than the CCTV register's 220ms: on a 43px row pitch a shorter overshoot is not
+   perceptible, it just reads as a slightly late landing. */
 .row-move-active,
 .row-move {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Leaving rows fade AND their cell padding collapses.
