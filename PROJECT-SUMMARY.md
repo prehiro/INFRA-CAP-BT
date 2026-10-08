@@ -1858,3 +1858,26 @@ tepat 360°/18s. Cincin terukur `scale 1.251 → 1.480` (keluar) sementara cinci
 Badge tetap `transform: none`, `animationName: pulse`, kotak **44×44**. Visual di-zoom dari
 screenshot: cincin terbaca sebagai halo, tidak memotong wordmark INFRA-BTCAP. `prefers-reduced-motion`
 sudah mencakup `.logo-icon`, anaknya, dan `.logo-ring`.
+
+### Brand mark sidebar ikut dianimasikan (2026-10-08)
+
+HIRO: *"implement juga untuk icon infra-btcappada sidebar"*. Jadi `BrandMenu.vue` sekarang memakai
+tiga gerakan yang sama: glyph berputar 18s, opacity bernapas 3.5s, dan dua cincin keluar-masuk
+(2.8s dan 3.4s delay −1.7s). Badge-nya sendiri **tidak diubah** — tetap `size-8 rounded-lg
+bg-primary` dengan glyph putih.
+
+SATU PERBEDAAN YANG DISENGAJA dari versi login: **warna cincin memakai token, bukan hex literal.**
+Login page itu permukaan gelap tetap dengan `#00dc82` hardcoded, sedangkan sidebar mengikuti theme
+picker — jadi cincinnya `color-mix(in oklab, var(--ui-primary) 75%, transparent)`. Kalau saya
+menyalin `rgba(0,220,130,…)` dari login, cincin itu akan jadi satu-satunya bagian mark yang tidak
+ikut berubah saat accent diganti ke violet. `border-radius` cincin disamakan dengan badge (8px,
+`rounded-lg`), kalau tidak sudutnya jadi dobel.
+
+Terukur di runtime: badge `transform: none` dan kotak **32×32** di (20,16) — tidak berubah. Ikon
+`brand-spin` 18s, transform berubah `matrix(-0.385149, -0.922854, …)` → `matrix(0.0235172,
+-0.999723, …)` yaitu **−112.7° → −88.65° = +24° dalam 1.2s**, tepat 360°/18s. Cincin 1 turun
+`1.5665 → 1.1194` (masuk) sementara cincin 2 naik `1.0941 → 1.5996` (keluar) pada saat yang sama —
+kedua arah gerak terbukti, fasenya berlawanan. Kotak cincin di ujung luar 50×50 di (11,7): masih
+di dalam header 64px, dan tepi kanannya x=61 sementara teks `INFRA-BTCAP` mulai di x=60 — jadi
+hanya bersinggungan 1px pada opacity ~0.05 (praktis tidak terlihat). Di-zoom dari screenshot:
+tidak ada clipping, glyph tetap center.
