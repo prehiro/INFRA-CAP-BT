@@ -126,46 +126,76 @@ function showAllColumns() {
 const tableEl = ref<HTMLTableElement | null>(null)
 const COL_ANIM_MS = 340
 
-function measureLefts(): Record<number, number> | null {
-  const row = tableEl.value?.querySelector('tbody tr')
-  if (!row) return null
-  const out: Record<number, number> = {}
-  ;[...row.querySelectorAll('td')].forEach((td, i) => { out[i] = td.getBoundingClientRect().left })
-  return out
+/**
+ * Left position of EVERY cell in the table, grouped by row, plus the header row.
+ *
+ * THE FIRST VERSION OF THIS ONLY MEASURED `querySelector('tbody tr')` - the first row - so only
+ * row 1 received a transform and bounced while every other row snapped. HIRO caught it:
+ * "kenapa cuma row 1 yang bounce, saya mau semua row". The header is measured too, and that is not
+ * a nicety: when a column is hidden, the header cells shift as well, and animating only the body
+ * would leave the header sitting at the new layout while the body is still travelling - a visible
+ * misalignment for the whole 340ms.
+ */
+type Lefts = { head: number[] | null; rows: number[][] }
+
+function snapshotLefts(): Lefts | null {
+  const table = tableEl.value
+  if (!table) return null
+  const rows = [...table.querySelectorAll('tbody tr')]
+  if (!rows.length) return null
+  const headRow = table.querySelector('thead tr')
+  return {
+    head: headRow ? [...headRow.querySelectorAll('th')].map((th) => th.getBoundingClientRect().left) : null,
+    rows: rows.map((r) => [...r.querySelectorAll('td')].map((td) => td.getBoundingClientRect().left))
+  }
 }
 
 watch(visibleKeys, async () => {
-  const before = measureLefts()
+  const before = snapshotLefts()
   await nextTick()
-  const after = measureLefts()
+  const after = snapshotLefts()
   if (!before || !after) return
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
-  const row = tableEl.value?.querySelector('tbody tr')
-  if (!row) return
-  const cells = [...row.querySelectorAll('td')] as HTMLElement[]
+  const table = tableEl.value
+  if (!table) return
 
-  let moved = false
-  cells.forEach((td, i) => {
-    const was = before[i]
-    const now = after[i]
-    if (was === undefined || now === undefined) return
-    const dx = was - now
-    if (Math.abs(dx) < 1) return
-    td.style.transition = 'none'
-    td.style.transform = `translateX(${dx}px)`
-    moved = true
+  // Every element that has to travel, with the distance it has to travel back by.
+  const movers: Array<[HTMLElement, number]> = []
+  const collect = (cells: HTMLElement[], b: number[], a: number[]) => {
+    cells.forEach((el, i) => {
+      const was = b[i]
+      const now = a[i]
+      if (was === undefined || now === undefined) return
+      const dx = was - now
+      if (Math.abs(dx) < 1) return
+      movers.push([el, dx])
+    })
+  }
+
+  const headRow = table.querySelector('thead tr')
+  if (headRow) {
+    collect([...headRow.querySelectorAll('th')] as HTMLElement[], before.head ?? [], after.head ?? [])
+  }
+  const rows = [...table.querySelectorAll('tbody tr')] as HTMLElement[]
+  rows.forEach((tr, ri) => {
+    collect([...tr.querySelectorAll('td')] as HTMLElement[], before.rows[ri] ?? [], after.rows[ri] ?? [])
   })
-  if (!moved) return
+
+  if (!movers.length) return
+
+  movers.forEach(([el, dx]) => {
+    el.style.transition = 'none'
+    el.style.transform = `translateX(${dx}px)`
+  })
 
   requestAnimationFrame(() => {
-    cells.forEach((td) => {
-      if (!td.style.transform) return
-      td.style.transition = `transform ${COL_ANIM_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
-      td.style.transform = ''
+    movers.forEach(([el]) => {
+      el.style.transition = `transform ${COL_ANIM_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+      el.style.transform = ''
     })
     window.setTimeout(() => {
-      cells.forEach((td) => { td.style.transition = ''; td.style.transform = '' })
+      movers.forEach(([el]) => { el.style.transition = ''; el.style.transform = '' })
     }, COL_ANIM_MS + 100)
   })
 }, { deep: true })

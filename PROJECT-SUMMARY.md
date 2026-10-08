@@ -2187,3 +2187,34 @@ transform/transition tersisa di baris itu.
 
 Instrumentasi sementara sudah dihapus dari file; `tableEl` + `ref="tableEl"` sekarang benar-benar
 dipakai oleh `measureLefts()`, dan `onBeforeUpdate`/`onUpdated` tidak lagi direferensikan.
+
+### Bug: cuma row 1 yang bounce (2026-10-08)
+
+HIRO: *"bro kenapa cuma row 1 yang bounce, saya mau semua row"*. Betul, dan itu bug saya:
+`measureLefts()` mengukur lewat `tableEl.value?.querySelector('tbody tr')` — **baris pertama saja** —
+jadi hanya sel di baris 1 yang dapat transform; 25 baris lainnya melompat.
+
+Perbaikan: snapshot sekarang mengambil **semua** baris (`tbody tr` → array left per baris) **plus**
+baris header (`thead tr` → left tiap `th`), lalu transform diterapkan ke setiap elemen yang memang
+harus bergerak. Header ikut diukur bukan karena pelengkap: saat kolom disembunyikan, sel header juga
+bergeser, dan kalau hanya body yang dianimasikan maka header sudah duduk di layout baru sementara
+body masih berjalan — salah posisi selama 340ms penuh.
+
+TERUKUR setelah perbaikan (klik GID, sampel tiap 20ms, kolom JAPAN HOSTNAME), dan keempat seri ini
+IDENTIK:
+
+| target | seri |
+| --- | --- |
+| header | 1240 → 1200 → 1164 → 1107 → 1085 → 1068 → 1054 → 1044 → 1032 → **1029** → 1030 → 1033 → 1039 → 1042 → 1045 → 1047 → 1048 |
+| row 1 | idem |
+| row 5 | idem |
+| baris terakhir | idem |
+
+Masing-masing: `distinct: 17, reversals: 1, overshoot: 19px`, berhenti tepat di 1048, dan tidak ada
+inline transform/transition yang tersisa setelah selesai.
+
+CATATAN PENGUKURAN yang sempat membingungkan: penghitung "elemen yang punya style.transform"
+melaporkan 0 walaupun gerakannya jelas ada. Sebabnya FLIP memang mengosongkan `el.style.transform`
+di frame berikutnya dan membiarkan **transition** yang menganimasikan dari nilai sebelumnya — jadi
+`style.transform` sengaja kosong selama animasi berjalan, dan pengukuran yang benar adalah posisi
+(`getBoundingClientRect().left`), bukan ada/tidaknya inline transform.
