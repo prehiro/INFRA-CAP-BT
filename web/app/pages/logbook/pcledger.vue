@@ -107,29 +107,68 @@ function showAllColumns() {
 }
 
 /**
- * Column show/hide movement.
+ * Column show/hide movement, driven by a WATCH rather than by the update lifecycle hooks.
  *
- * NOT ANIMATED YET, and that is the honest state of this. Two mechanisms were built and measured
- * against the live table, and neither produced the bounce that was asked for:
+ * THAT CHOICE IS THE RESULT OF AN INSTRUMENTATION RUN, not a preference. A temporary logger was
+ * placed in `onBeforeUpdate` and `onUpdated`; toggling a column produced ZERO entries from either
+ * hook while the same toggle produced a `watch` entry. Whatever the reason the two update hooks
+ * never fire in this component, relying on them is precisely why the first FLIP attempt did
+ * nothing at all and looked (from the outside) like a mechanism that had been written wrongly.
  *
- *  1. `transition: width` on the <col>/th/td. This DOES animate in this table (a cell was measured
- *     going 256px -> 32px through 14 intermediate values), and it slides the neighbouring columns
- *     smoothly because the collapsing column narrows over time. But it cannot bounce - the curve
- *     would have to overshoot past a width of zero, and a negative width is invalid, so the
- *     collapse always lands flat.
+ * The watch runs in the pre-flush phase, so the DOM still holds the OLD layout when it starts -
+ * which is exactly the "before" measurement a FLIP needs. `await nextTick()` then makes the new
+ * layout readable, and the cells are moved back by the difference and released onto the same
+ * overshooting curve the rows use, so a column toggle bounces instead of snapping.
  *
- *  2. A FLIP over the cells, snapshotting each cell's left in `onBeforeUpdate` and releasing it
- *     onto the overshooting curve in `onUpdated`. Measured: the hook never applied a transform
- *     (0 samples with an inline transform while the column moved 1240 -> 1048 in a single step),
- *     so the code did nothing and was removed rather than left in place looking like it worked.
- *     The likely cause is the update ordering - the snapshot and the measurement need
- *     `await nextTick()` plus a forced layout between them - but that is a hypothesis, NOT a
- *     verified fix, so nothing is being guessed into the file.
- *
- * What remains is the functional half: every column is always rendered, a hidden one is collapsed
- * by `.pl-col-hidden` (zero width, no padding, clipped) and the neighbours snap into place. The
- * preference itself is stored and restored per browser.
+ * The cleanup timeout is not decoration: a FLIP that leaves a transform behind paints cells at the
+ * wrong offset forever, so the inline styles are always cleared.
  */
+const tableEl = ref<HTMLTableElement | null>(null)
+const COL_ANIM_MS = 340
+
+function measureLefts(): Record<number, number> | null {
+  const row = tableEl.value?.querySelector('tbody tr')
+  if (!row) return null
+  const out: Record<number, number> = {}
+  ;[...row.querySelectorAll('td')].forEach((td, i) => { out[i] = td.getBoundingClientRect().left })
+  return out
+}
+
+watch(visibleKeys, async () => {
+  const before = measureLefts()
+  await nextTick()
+  const after = measureLefts()
+  if (!before || !after) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  const row = tableEl.value?.querySelector('tbody tr')
+  if (!row) return
+  const cells = [...row.querySelectorAll('td')] as HTMLElement[]
+
+  let moved = false
+  cells.forEach((td, i) => {
+    const was = before[i]
+    const now = after[i]
+    if (was === undefined || now === undefined) return
+    const dx = was - now
+    if (Math.abs(dx) < 1) return
+    td.style.transition = 'none'
+    td.style.transform = `translateX(${dx}px)`
+    moved = true
+  })
+  if (!moved) return
+
+  requestAnimationFrame(() => {
+    cells.forEach((td) => {
+      if (!td.style.transform) return
+      td.style.transition = `transform ${COL_ANIM_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+      td.style.transform = ''
+    })
+    window.setTimeout(() => {
+      cells.forEach((td) => { td.style.transition = ''; td.style.transform = '' })
+    }, COL_ANIM_MS + 100)
+  })
+}, { deep: true })
 /**
  * The first two VISIBLE columns stay pinned while the rest scroll sideways under them.
  * A class rather than `nth-child`, and the offset is computed rather than hard-coded: hiding the
@@ -657,7 +696,7 @@ async function exportExcel() {
           </div>
 
           <div v-else class="pl-scroll">
-            <table class="pl-table">
+            <table ref="tableEl" class="pl-table">
               <colgroup>
                 <col
                   v-for="c in COLUMNS"

@@ -2155,3 +2155,35 @@ left 0px dan ".\capuser" di left 80px setelah GID disembunyikan), dan kolom ters
 **STATUS JUJUR: efek bounce antar kolom BELUM ADA.** Langkah berikutnya yang paling masuk akal:
 instrumentasi hook-nya lebih dulu (cetak kapan `onBeforeUpdate`/`onUpdated` benar-benar jalan dan
 berapa dx yang terukur) sebelum menulis mekanisme ketiga — bukan menebak lagi.
+
+
+### Bounce antar kolom — SELESAI, lewat instrumentasi dulu (2026-10-08)
+
+HIRO: *"instrumentasi dulu — log kapan kedua hook benar-benar jalan dan berapa dx yang terukur —
+baru tulis mekanismenya"*. Urutan itu saya ikuti, dan hasilnya menyelesaikan masalahnya.
+
+**TEMUAN INSTRUMENTASI (yang mengubah segalanya):** logger sementara dipasang di `onBeforeUpdate`
+dan `onUpdated`, plus satu `watch(visibleKeys)`. Setelah toggle kolom, log hanya berisi SATU entri:
+`{"e":"watch:visibleKeys","count":14}`. **Kedua hook update TIDAK PERNAH JALAN** di komponen ini.
+Jadi FLIP pertama bukan salah tulis — ia tidak pernah dipanggil sama sekali, dan itu sebabnya ia
+diam-diam tidak melakukan apa pun. Menebak urutan update/`nextTick` (dugaan saya sebelumnya) arahnya
+salah; masalahnya triggernya memang tidak pernah menyala.
+
+**MEKANISME YANG DITULIS DARI FAKTA ITU:** FLIP digerakkan `watch(visibleKeys)` dengan
+`flush: pre` (default). Dua alasan kenapa ini justru lebih tepat daripada hook:
+- watch berjalan di fase pre-flush, jadi DOM masih memegang layout LAMA saat callback mulai — persis
+  pengukuran "before" yang dibutuhkan FLIP;
+- `await nextTick()` setelahnya membuat layout baru terbaca, lalu sel digeser balik dengan
+  `translateX(dx)` dan dilepas ke kurva overshoot yang sama dengan baris
+  (`cubic-bezier(0.34, 1.56, 0.64, 1)`, 340ms). Inline style selalu dibersihkan di timeout supaya
+  FLIP tidak pernah meninggalkan transform yang salah.
+
+**TERUKUR (klik GID untuk menampilkan kembali, sampel tiap 20ms, kolom JAPAN HOSTNAME):**
+`1048 → 1124 → 1155 → 1181 → 1203 → 1220 → 1244 → 1252 → 1256 → **1259** → 1255 → 1252 → 1249 →
+1246 → 1243 → **1240 → 1240 → ...` Jadi kolomnya bergerak 192px, **melewati garis akhir sejauh 19px**
+(1259 vs final 1240), lalu mantul dan berhenti tepat di 1240 (1 pembalikan arah, 16 nilai berbeda).
+17 frame terukur membawa transform aktif (penanda `T`), dan setelah selesai **nol** inline
+transform/transition tersisa di baris itu.
+
+Instrumentasi sementara sudah dihapus dari file; `tableEl` + `ref="tableEl"` sekarang benar-benar
+dipakai oleh `measureLefts()`, dan `onBeforeUpdate`/`onUpdated` tidak lagi direferensikan.
