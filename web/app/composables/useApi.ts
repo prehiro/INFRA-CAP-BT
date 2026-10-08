@@ -1,5 +1,5 @@
 import type {
-  AuditPage, EntityMeta, FieldMeta, LoginResponse, RecordPage, RecordRow, User
+  AuditPage, EntityMeta, FieldMeta, LoginResponse, MetricsSnapshot, RecordPage, RecordRow, User
 } from '~/types'
 
 /**
@@ -53,6 +53,10 @@ export const apiLogin = (username: string, password: string) =>
   request<LoginResponse>('/auth/login', { method: 'POST', body: { username, password } })
 
 export const apiMe = () => request<User>('/auth/me')
+
+// ---- host metrics (Dashboard System Metrics panel) ----
+
+export const apiGetMetrics = () => request<MetricsSnapshot>('/metrics')
 
 // ---- entities / records ----
 export const apiListEntities = (all = false) =>

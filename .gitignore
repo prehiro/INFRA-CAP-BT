@@ -36,3 +36,9 @@ desktop.ini
 
 # Test scratch
 /tmp/
+
+# Local run logs — `dotnet run` and the dev server are redirected here while developing.
+# They carry live request logs and the seed admin password printed at startup, so they must
+# never be committed.
+*.out
+*.err

@@ -83,12 +83,27 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl border border-default bg-elevated">
+  <div class="relative overflow-hidden rounded-xl border border-default bg-elevated
+              ring-1 ring-inset ring-primary/10">
     <!-- Decorative layer. Decorative only, so it is hidden from assistive tech. The wrapper
          matches the reference: absolute inset-0, pointer-events-none, overflow-hidden, at z-0
-         behind the content which sits at z-10. Two elements live here, in this order:
-         the glow first, then the stars, so the stars paint on top of the glow. -->
+         behind the content which sits at z-10. The order inside it IS the paint order: washes,
+         grid, glow orbs, the top hairline, then the stars on top of everything. -->
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <!-- Accent washes. TWO diagonal gradients rather than one, because a single corner-to-
+           corner wash reads as a flat tint; the pair gives the panel depth without turning it
+           into a gradient card.
+           BOTH ARE STRONGER IN DARK MODE, and that is the point: the same alpha that reads as a
+           soft tint on a light surface is nearly invisible on a near-black one, so a single
+           value left the banner washed out in whichever mode it was not tuned for.
+           Everything here is an accent token, so it still follows the colour picker. -->
+      <div class="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-transparent dark:from-primary/20" />
+      <div class="absolute inset-0 bg-gradient-to-tl from-primary/[0.06] via-transparent to-transparent dark:from-primary/[0.14]" />
+
+      <!-- Faint technical grid, masked so it only exists near the glow on the right: at full
+           strength across the panel it competes with the name and the role badges. -->
+      <div class="infra-grid absolute inset-0 opacity-50 dark:opacity-75" />
+
       <!-- The soft accent glow from the reference template. It is NOT a CSS gradient: it is a
            plain circle of the accent colour with a very large blur, so the "gradient" is just
            the blur falloff. Same recipe as the source: `absolute right-[-120px] top-1/2
@@ -99,9 +114,21 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
            entirely outside the banner and be clipped into nothing. The banner's own
            overflow-hidden does the clipping, which is what makes the glow read as light
            bleeding in from the right edge rather than as a floating blob.
+           The opacity is dialled up in dark mode for the same reason as the washes: a blurred
+           accent at low alpha does not survive against a near-black background.
            `bg-primary` is a semantic token, so the glow follows the user's accent exactly as
            the stars do. -->
-      <div class="absolute right-[-120px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary blur-[300px]" />
+      <div class="absolute right-[-120px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary opacity-60 blur-[300px] dark:opacity-100" />
+
+      <!-- Second, smaller orb in the opposite corner: one light source can only light one side,
+           and the counter-glow is what stops the panel reading as flat. Much fainter than the
+           first on purpose, so it never becomes a second focal point. -->
+      <div class="absolute -bottom-[150px] -left-[90px] size-[280px] rounded-full bg-primary opacity-25 blur-[220px] dark:opacity-60" />
+
+      <!-- Hairline highlight along the top edge: reads as "light from above" and gives the panel
+           a defined edge in LIGHT mode, where a shadow alone is barely visible on white. -->
+      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
       <span v-for="(s, i) in STARS" :key="i" class="infra-star"
             :style="{ left: s.left + '%', top: s.top + '%', '--star-size': s.size + 'px',
                       '--twinkle-delay': s.delay + 's', '--twinkle-duration': s.duration + 's' }" />
@@ -142,6 +169,18 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </template>
 
 <style scoped>
+/* Faint 44px accent grid. Drawn as two 1px gradients rather than a bitmap so it stays a theme
+   token and follows whichever accent the user picked. The mask fades it to nothing before it
+   reaches the left half, which is where the name and the badges sit. */
+.infra-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--ui-primary) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--ui-primary) 22%, transparent) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(115% 130% at 88% 50%, black 0%, transparent 68%);
+  -webkit-mask-image: radial-gradient(115% 130% at 88% 50%, black 0%, transparent 68%);
+}
+
 /* Twinkling star field, mirroring the hero panel of https://changelog-template.nuxt.dev/.
    Deliberately opacity-only, like the reference: animating transform or size here would
    re-rasterise 46 elements every frame for no visual gain, and opacity is compositor-only. */
@@ -161,10 +200,10 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 @keyframes infra-twinkle {
   0%,
   100% {
-    opacity: 0.2;
+    opacity: 0.14;
   }
   50% {
-    opacity: 1;
+    opacity: 0.85;
   }
 }
 

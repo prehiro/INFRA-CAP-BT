@@ -105,3 +105,19 @@ export interface AuditPage {
   items: AuditDto[]
   stats: AuditStats
 }
+
+/** Host load reading behind the Dashboard's System Metrics panel. */
+export interface MetricsSnapshot {
+  cpu: number
+  ram: number
+  disk: number
+  cores: number
+  host: string
+  os: string
+  uptimeSeconds: number
+  ramUsedBytes: number
+  ramTotalBytes: number
+  diskUsedBytes: number
+  diskTotalBytes: number
+  diskDrive: string
+}

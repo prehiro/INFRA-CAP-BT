@@ -1,7 +1,7 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-02
+> Terakhir diupdate: 2026-10-08
 
 ## 1. Konsep
 
@@ -1679,3 +1679,136 @@ Aturan yang sekarang berlaku: **untuk operasi destruktif, pilih target berdasark
 server, bukan berdasarkan indeks/posisi di DOM, dan print ulang sisa baris setelahnya.**
 `audit_rows.py` dibuat persis untuk ini — ia mencetak `(id, nama)` dari API, jadi
 "data hilang" langsung terlihat, bukan baru ketahuan dari angka baris di UI.
+
+---
+
+## Dashboard — panel System Metrics dirancang ulang (2026-10-08)
+
+### Kenapa ini perbaikan, bukan sekadar poles tampilan
+
+Panel lamanya rusak secara teknis, dan kerusakannya tidak pernah melempar error:
+
+1. **Garis data lari keluar canvas.** `x = pad + (i/(n-1)) * width` memakai lebar penuh, bukan
+   `width - 2*pad`, jadi titik terakhir jatuh di `x = width + pad` — di luar bitmap. Akibatnya
+   garis selalu tampak menembus sumbu-Y vertikal.
+2. **Bitmap tidak diskalakan DPI.** `canvas.width = clientWidth` tanpa `devicePixelRatio`,
+   jadi setiap garis buram di layar HiDPI.
+3. **`useFetch` dipanggil di dalam `setInterval`.** `useFetch` itu composable setup; dipanggil
+   berulang dari timer ia membuat request baru tiap 8 detik, dan `setInterval` tetap menembak
+   walau request sebelumnya belum kembali (request menumpuk saat API lambat).
+4. **Sumbu tanpa satu pun angka** — digambar sebagai huruf L kosong, jadi tinggi garis tidak
+   bisa dibaca.
+5. **`ram` memakai `% Committed Bytes In Use`** — itu rasio terhadap commit limit, bukan
+   pemakaian RAM fisik. Di panel berlabel "Memory" angkanya salah arti.
+6. **`PerformanceCounter` mati di Windows non-Inggris.** Nama counter ("Processor", "Memory")
+   hanya ada di Windows en-US. Di Windows Server kantor, kalau lokalisasinya bukan en-US,
+   konstruktornya melempar exception dan `/api/metrics` menjadi 500.
+
+### Yang berubah
+
+**API — `api/Services/SystemMetricsService.cs` (baru), `MetricsController` jadi tipis.**
+Sampler sekarang memakai `GetSystemTimes` + `GlobalMemoryStatusEx` (kernel32 langsung, tanpa
+paket NuGet) sehingga bebas locale, dan CPU dihitung sebagai **delta antar dua sampel** — karena
+itu service-nya **singleton**: baseline harus diingat antar-request. Implementasi lama
+menyiasatinya dengan `Thread.Sleep(100)` **di dalam handler HTTP**; itu hilang. Paket
+`System.Diagnostics.PerformanceCounter` **dihapus** dari `Api.csproj` setelah grep seluruh repo
+memastikan tidak ada pemakai lain.
+
+Kontrak JSON lama (`cpu`, `ram`, `disk`) **tidak berubah**, hanya ditambah field aditif:
+`cores`, `host`, `os`, `uptimeSeconds`, `ramUsedBytes`/`ramTotalBytes`,
+`diskUsedBytes`/`diskTotalBytes`, `diskDrive`. `ram` sekarang diturunkan dari dua angka yang
+sama yang dicetak panel (used/total), sehingga persen dan "12,6 / 63,9 GB" mustahil bertentangan.
+
+**Web — `MetricSparkline.vue` (baru) + `MetricsChart.vue` (ditulis ulang), `index.vue` berhenti
+membungkusnya dengan UCard ganda.** Satu kolom per metrik (CPU | Memory | Disk); setiap kolom:
+ikon + label, angka besar, sparkline canvas 70px, baris detail (`16 logical cores` /
+`12.6 / 63.9 GB` / `377.6 / 464.8 GB (C:)`) dan `puncak x%`. Header: judul + pill `Live` dengan
+titik berdenyut (`--ui-primary`) + jam pembaruan. Footer: `host | OS | up 3d 2h` dan
+`Riwayat 60 sampel (5 menit)`.
+
+Tetap **tanpa library chart**: 3 canvas × 60 titik, nol tambahan bundle — server produksi offline.
+
+Keputusan yang disengaja, masing-masing punya alasan:
+
+- **Skala Y mengikuti jendela tapi selalu berlabel.** Skala 0-100 tetap membuat host idle jadi
+  garis mati; skala otomatis tanpa label membuat bentuk yang sama bisa berarti 5% atau 95%.
+  Yang dipakai: puncak jendela × 1.25 → dibulatkan ke langkah enak (5/10/20/25/50/75/100), dan
+  **label hanya di ujung** (0 dan max). Garis tengah sengaja tidak diberi label: dengan plafon
+  25 garis tengahnya 12,5, dan label "13" di panel persentase terbaca seperti bug.
+- **Kurva Fritsch-Butland (monotone cubic).** Catmull-Rom biasa *overshoot* — ia mengarang puncak
+  yang tidak pernah terjadi dan bisa turun di bawah nol pada garis datar. Versi monotone tidak bisa.
+- **Transisi antar sampel** 420ms dengan easing keluar kubik, dilewati total saat
+  `prefers-reduced-motion`. Sampel baru masuk dari kanan; titik lama tidak bergeser.
+- **Readout hover**: `pointermove` menggambar garis putus-putus vertikal, titik, dan bubble
+  `20.54.19  5.6%`.
+- **Polling = rantai `setTimeout`, bukan `setInterval`**, ditambah: tab tersembunyi
+  (`document.hidden`) tidak dipoll sama sekali, dan setelah 3 kegagalan berturut intervalnya
+  jadi 20 detik alih-alih menembak API yang mati tiap 5 detik. Kembali ke tab langsung poll.
+- **Nilai ≥ 90% berubah ke `--ui-error`** — angka yang berubah warna, bukan badge tambahan,
+  supaya tidak menambah keramaian.
+- Nama OS dinormalkan di klien: .NET melaporkan `Microsoft Windows 10.0.26200` karena Windows 11
+  masih mengaku 10.0. Build ≥ 22000 ditampilkan `Windows 11 (build 26200)`; tanpa itu panel
+  terbaca seolah salah mengenali OS.
+
+### Verifikasi (runtime, bukan hanya build)
+
+- `/api/metrics` sebelum: `{"cpu":3,"ram":17,"disk":81.2}`. Sesudah: CPU `3` → `4.9` pada dua
+  panggilan berjarak 6 detik (**bukti delta bekerja**), RAM 17% = 11.68/68.63 GB (konsisten
+  dengan persennya), disk 81.2% = 405.3/499.05 GB.
+- `dotnet build`: **0 error, 0 warning**. Log API: **26 × `GET /api/metrics - 200`**, nol error.
+- Browser di **1920×1080 (resolusi kantor)** dan **1280×900**: `document.documentElement.scrollWidth == window.innerWidth` → tidak ada overflow horizontal; kolom 509px dan 295px.
+- Warna angka dibaca dari `getComputedStyle`, bukan diasumsikan: `rgb(0,193,106)`,
+  `rgb(56,189,248)`, `rgb(245,158,11)`.
+- Hover dibuktikan dengan `Input.dispatchMouseEvent` di atas canvas: piksel tinta 9.534 → 10.937
+  dan bubble `20.54.19 5.6%` tergambar.
+- **Mode terang ikut dicek** (kelas `dark` dilepas): grid, isian area, dan label tetap terbaca.
+- **Keadaan API mati diuji sungguhan, bukan disimulasikan** (proses API di-stop): pill jadi merah
+  `API offline`, footer menampilkan `Metrik tidak tersedia (API tidak merespons).`, nilai terakhir
+  **dibiarkan di layar** (tidak di-nol-kan supaya tidak terbaca seperti host baru reboot), dan dev
+  server hanya mencatat **4** ECONNREFUSED selama jeda itu — bukti backoff bekerja, bukan menembak
+  tiap 5 detik. Setelah API dihidupkan lagi panel kembali `Live` **tanpa reload halaman**.
+
+### Catatan keamanan (belum diubah, disengaja)
+
+`/api/metrics` masih **anonim**. Siapa pun yang bisa menjangkau API dapat membaca nama host,
+versi OS, jumlah core, dan kapasitas disk tanpa login. Klien web sudah mengirim header
+`Authorization` lewat `authHeaders()` di `useApi.ts`, jadi menambahkan `[Authorize]` ke
+`MetricsController` tidak akan merusak panel. Belum diubah karena di luar permintaan — tunggu
+keputusan HIRO.
+
+### Lanjutan (2026-10-08, sore) — bahasa, Quick Actions, banner
+
+Tiga permintaan HIRO sekaligus, semuanya selesai dan diverifikasi di browser:
+
+1. **Panel System Metrics jadi bahasa Inggris** (`Beban host, sampel tiap 5 detik` → `Live host
+   load, sampled every 5s`; `Diperbarui` → `Updated`; `puncak` → `peak`; `Riwayat 60 sampel (5
+   menit)` → `60 samples (5 min)`; `Menunggu data…` → `Waiting for data…`; pesan error →
+   `Metrics unavailable (API not responding).`). Jam memakai locale `en-GB` supaya tampil
+   `21:11:26`, bukan `21.11.26` seperti format id-ID sebelumnya.
+2. **Section Quick Actions dihapus** beserta seluruh markup/`NuxtLink`-nya (bukan disembunyikan).
+   Halaman Dashboard sekarang berakhir setelah tiga kartu modul.
+3. **WelcomeBanner di-enhance agar cocok di dark dan light mode.** Yang ditambahkan: dua wash
+   gradien diagonal (`dark:` lebih kuat), grid aksen 44px yang di-mask supaya hanya muncul di
+   area glow kanan, orb kedua yang lebih redup di kiri-bawah sebagai counter-glow, hairline
+   aksen di tepi atas (memberi definisi di light mode, tempat bayangan nyaris tak terlihat), dan
+   `ring-1 ring-inset ring-primary/10` pada kartu. Semua tetap memakai token aksen, jadi ikut
+   berubah saat user ganti warna.
+
+**BUG NYATA yang ketahuan saat verifikasi dan layak diingat:** rencana pertama saya membuat dua
+set keyframes untuk bintang dan menukarnya per mode lewat `:global(html:not(.dark)) .infra-star`.
+Vue mengompilasi selector itu menjadi **`html:not(.dark) { animation-name: infra-twinkle-light }`**
+— bagian `.infra-star` **dibuang**, sehingga aturannya menempel ke elemen `<html>`, bukan ke
+bintangnya. Akibatnya: rule light mode itu tidak pernah menyentuh satu bintang pun (computed
+`animationName` bintang tetap nama versi dasar), **dan** karena selector yang sama saya pakai juga
+di blok `prefers-reduced-motion`, di sana ia menjadi `html:not(.dark) { opacity: 0.55 !important }`
+— yaitu **meredupkan SELURUH halaman** untuk pengguna yang mengaktifkan reduce-motion. Terdeteksi
+bukan dari membaca kode, tapi dengan **membaca kembali `cssRules` dari stylesheet yang hidup** dan
+mencetak aturan yang mengandung `infra-twinkle`. Perbaikan: buang `:global` dari file ini
+sepenuhnya, pakai satu rentang opacity (0.14 → 0.85) yang enak di kedua mode, dan untuk apa pun
+yang mode-dependent gunakan varian `dark:` Tailwind. Pelajaran umum: **`:global(...)` dengan
+descendant di scoped CSS Vue tidak bisa dipercaya — verifikasi lewat cssRules, jangan dari tebakan.**
+
+Verifikasi akhir (viewport 1920×1080): `cssRules` hanya menyisakan satu aturan
+`@keyframes infra-twinkle-…`, `getComputedStyle(html).animationName === 'none'` dan
+`opacity === '1'` (bukti bug peredupan itu hilang), 3 canvas hidup, teks Inggris ada, dan
+`Quick Actions` tidak ada lagi di DOM. Dark dan light keduanya difoto dan diperiksa.

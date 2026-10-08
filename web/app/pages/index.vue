@@ -20,47 +20,68 @@ const cctv = computed(() => list.value.find(e => e.slug === CCTV_SLUG))
 const cctvCount = computed(() => cctv.value?.recordCount ?? 0)
 </script>
 
+
 <template>
-  <UDashboardPanel>
+  <UDashboardPanel :ui="{ body: 'p-6' }">
     <template #header>
       <PageHeader title="Dashboard" />
     </template>
 
     <template #body>
-      <div class="space-y-6">
+      <div class="space-y-8">
         <!-- Greeting lives in the body, not the navbar: the navbar is locked to 64px. -->
         <WelcomeBanner class="anim-fade-up" />
 
-        <div class="anim-stagger mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <UCard to="/logbook/cctvacc" class="cursor-pointer transition-colors hover:border-primary">
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <UIcon name="i-lucide-video" class="size-8 shrink-0 text-success" />
+        <!-- System Metrics panel. It renders its own UCard: a card inside a card would
+             double the padding and the header. -->
+        <MetricsChart />
+
+        <div class="anim-stagger mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <!-- CCTV Log Book Card -->
+          <UCard
+            to="/logbook/cctvacc"
+            class="cursor-pointer group hover:-translate-y-1 transition-transform duration-300 shadow-lg hover:shadow-xl hover:border-primary/50"
+          >
+            <div class="flex items-center justify-between gap-4 p-6">
+              <div class="flex items-center gap-4">
+                <UIcon name="i-lucide-video" class="size-10 shrink-0 text-success" />
                 <div class="min-w-0">
-                  <p class="text-2xl font-bold">{{ cctvCount }}</p>
-                  <p class="truncate text-xs text-muted">CCTV Access</p>
+                  <p class="text-3xl font-bold tracking-tight">{{ cctvCount }}</p>
+                  <p class="truncate text-xs text-muted">CCTV Access Requests</p>
                 </div>
               </div>
-              <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted" />
+              <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted opacity-75 group-hover:opacity-100" />
+            </div>
+          </UCard>
+
+          <!-- Placeholder for Future Modules (styled as disabled card) -->
+          <UCard class="opacity-50 pointer-events-none">
+            <div class="flex items-center justify-between gap-4 p-6">
+              <div class="flex items-center gap-4">
+                <UIcon name="i-lucide-folder" class="size-10 shrink-0 text-muted" />
+                <div class="min-w-0">
+                  <p class="text-3xl font-bold tracking-tight opacity-50">0</p>
+                  <p class="truncate text-xs text-muted">Handover Log</p>
+                </div>
+              </div>
+              <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted opacity-25" />
+            </div>
+          </UCard>
+
+          <!-- Another Placeholder -->
+          <UCard class="opacity-50 pointer-events-none">
+            <div class="flex items-center justify-between gap-4 p-6">
+              <div class="flex items-center gap-4">
+                <UIcon name="i-lucide-file-text" class="size-10 shrink-0 text-muted" />
+                <div class="min-w-0">
+                  <p class="text-3xl font-bold tracking-tight opacity-50">0</p>
+                  <p class="truncate text-xs text-muted">Audit Log</p>
+                </div>
+              </div>
+              <UIcon name="i-lucide-chevron-right" class="size-5 shrink-0 text-muted opacity-25" />
             </div>
           </UCard>
         </div>
-
-        <UCard class="anim-fade-up mt-6">
-          <template #header>
-            <h2 class="font-semibold">Modules</h2>
-          </template>
-          <NuxtLink
-            to="/logbook/cctvacc"
-            class="flex items-center justify-between rounded-lg border border-default p-3 transition-colors hover:border-primary"
-          >
-            <div class="min-w-0">
-              <p class="truncate font-medium">CCTV Access</p>
-              <p class="text-xs text-muted">{{ cctvCount }} rows</p>
-            </div>
-            <UIcon name="i-lucide-chevron-right" class="size-4 shrink-0 text-muted" />
-          </NuxtLink>
-        </UCard>
       </div>
     </template>
   </UDashboardPanel>
