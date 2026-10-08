@@ -70,9 +70,14 @@ const STARS = (() => {
     top: (rnd() * 100).toFixed(2),
     // 1px to 3px, matching the reference's measured range of 1.04 - 3.00
     size: (1 + rnd() * 2).toFixed(2),
-    // 0 - 5s, against the reference's measured 0.93 - 4.88
-    delay: (rnd() * 5).toFixed(2),
-    duration: (1.6 + rnd() * 2.4).toFixed(2)
+    // 0 - 2.5s, where the reference used 0 - 5s. With the full 5s spread a good share of the
+    // field sat perfectly still for several seconds before doing anything, which reads as a
+    // frozen backdrop rather than as a moving one.
+    delay: (rnd() * 2.5).toFixed(2),
+    // 0.6 - 1.6s, where the reference measured 0.93 - 4.88. At the old pace a single star spent
+    // well over a second fading in, slow enough to read as a breathing glow instead of a
+    // twinkle; this is roughly 2.5x faster while staying in the same visual family.
+    duration: (0.6 + rnd() * 1.0).toFixed(2)
   }))
 })()
 
@@ -83,26 +88,26 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl border border-default bg-elevated
-              ring-1 ring-inset ring-primary/10">
+  <div class="relative overflow-hidden rounded-xl border border-default bg-elevated">
     <!-- Decorative layer. Decorative only, so it is hidden from assistive tech. The wrapper
          matches the reference: absolute inset-0, pointer-events-none, overflow-hidden, at z-0
-         behind the content which sits at z-10. The order inside it IS the paint order: washes,
-         grid, glow orbs, the top hairline, then the stars on top of everything. -->
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <!-- Accent washes. TWO diagonal gradients rather than one, because a single corner-to-
-           corner wash reads as a flat tint; the pair gives the panel depth without turning it
-           into a gradient card.
-           BOTH ARE STRONGER IN DARK MODE, and that is the point: the same alpha that reads as a
-           soft tint on a light surface is nearly invisible on a near-black one, so a single
-           value left the banner washed out in whichever mode it was not tuned for.
-           Everything here is an accent token, so it still follows the colour picker. -->
-      <div class="absolute inset-0 bg-gradient-to-br from-primary/12 via-transparent to-transparent dark:from-primary/20" />
-      <div class="absolute inset-0 bg-gradient-to-tl from-primary/[0.06] via-transparent to-transparent dark:from-primary/[0.14]" />
+         behind the content which sits at z-10.
 
-      <!-- Faint technical grid, masked so it only exists near the glow on the right: at full
-           strength across the panel it competes with the name and the role badges. -->
-      <div class="infra-grid absolute inset-0 opacity-50 dark:opacity-75" />
+         KEPT DELIBERATELY MINIMAL. An earlier pass added a 44px grid, two diagonal washes and a
+         second glow in the opposite corner; the result was rejected on sight and looking at it
+         again the reasons are obvious: the grid read as a rendering fault rather than as
+         texture, and stacking two translucent washes over two blurred orbs left the panel with
+         visible blotchy patches and an olive cast creeping in from the right - lit unevenly,
+         like a smudge, instead of lit cleanly. So: ONE smooth light source from the right, one
+         barely-there warm tint behind it, nothing else. The restraint IS the design. -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <!-- A single smooth horizontal falloff. It is deliberately one gradient and not two: a
+           lone gradient cannot produce the muddled overlap that the two-wash version did.
+           Stronger in dark mode, because the same alpha that reads as a soft tint on a light
+           surface all but disappears against a near-black one - that asymmetry is the whole
+           reason the banner used to look washed out in whichever mode it was not tuned for.
+           `from-primary` is a semantic token, so it follows the user's accent. -->
+      <div class="absolute inset-0 bg-gradient-to-l from-primary/10 via-primary/[0.03] to-transparent dark:from-primary/20 dark:via-primary/[0.06]" />
 
       <!-- The soft accent glow from the reference template. It is NOT a CSS gradient: it is a
            plain circle of the accent colour with a very large blur, so the "gradient" is just
@@ -114,20 +119,9 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
            entirely outside the banner and be clipped into nothing. The banner's own
            overflow-hidden does the clipping, which is what makes the glow read as light
            bleeding in from the right edge rather than as a floating blob.
-           The opacity is dialled up in dark mode for the same reason as the washes: a blurred
-           accent at low alpha does not survive against a near-black background.
-           `bg-primary` is a semantic token, so the glow follows the user's accent exactly as
-           the stars do. -->
-      <div class="absolute right-[-120px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary opacity-60 blur-[300px] dark:opacity-100" />
-
-      <!-- Second, smaller orb in the opposite corner: one light source can only light one side,
-           and the counter-glow is what stops the panel reading as flat. Much fainter than the
-           first on purpose, so it never becomes a second focal point. -->
-      <div class="absolute -bottom-[150px] -left-[90px] size-[280px] rounded-full bg-primary opacity-25 blur-[220px] dark:opacity-60" />
-
-      <!-- Hairline highlight along the top edge: reads as "light from above" and gives the panel
-           a defined edge in LIGHT mode, where a shadow alone is barely visible on white. -->
-      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+           Faded with opacity per mode rather than a second wash: dimmer in light mode, where a
+           full-strength accent blur turns the surface pale green instead of lighting it. -->
+      <div class="absolute right-[-140px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary opacity-50 blur-[300px] dark:opacity-90" />
 
       <span v-for="(s, i) in STARS" :key="i" class="infra-star"
             :style="{ left: s.left + '%', top: s.top + '%', '--star-size': s.size + 'px',
@@ -169,21 +163,17 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </template>
 
 <style scoped>
-/* Faint 44px accent grid. Drawn as two 1px gradients rather than a bitmap so it stays a theme
-   token and follows whichever accent the user picked. The mask fades it to nothing before it
-   reaches the left half, which is where the name and the badges sit. */
-.infra-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--ui-primary) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in oklab, var(--ui-primary) 22%, transparent) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(115% 130% at 88% 50%, black 0%, transparent 68%);
-  -webkit-mask-image: radial-gradient(115% 130% at 88% 50%, black 0%, transparent 68%);
-}
-
 /* Twinkling star field, mirroring the hero panel of https://changelog-template.nuxt.dev/.
    Deliberately opacity-only, like the reference: animating transform or size here would
-   re-rasterise 46 elements every frame for no visual gain, and opacity is compositor-only. */
+   re-rasterise 46 elements every frame for no visual gain, and opacity is compositor-only.
+   The range is narrower than a full 0.2 -> 1 sweep because a bright accent dot reads as
+   confetti on a white surface, so the ceiling is pulled down to keep the field feeling like
+   texture in light mode without letting it vanish in dark mode.
+   NOTE: this used to be two keyframe sets swapped per mode through a `:global(html:not(.dark))`
+   selector, which Vue compiled down to a bare `html:not(.dark)` rule - it dropped the
+   descendant and attached the animation-name to the <html> element, so it never touched a
+   single star (and, in the reduced-motion block, would have dimmed the entire page). Anything
+   mode-dependent in this banner now uses Tailwind's `dark:` variant instead. */
 .infra-star {
   position: absolute;
   width: var(--star-size);
@@ -207,9 +197,6 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
   }
 }
 
-/* Under the OS "reduce motion" setting the stars stop twinkling but stay visible at a fixed
-   opacity, so the banner keeps its texture instead of blinking - the same rule the .anim-*
-   utilities in main.css already follow. */
 /* Breathing glow around the welcome avatar.
    "Breathing" means the halo expands outward and fades back in, on a slow cycle, rather than
    blinking — the easing is a symmetric ease-in-out so the inhale and the exhale take the same
@@ -237,6 +224,9 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
   }
 }
 
+/* Under the OS "reduce motion" setting the stars stop twinkling but stay visible at a fixed
+   opacity, so the banner keeps its texture instead of blinking - the same rule the .anim-*
+   utilities in main.css already follow. */
 @media (prefers-reduced-motion: reduce) {
   .infra-star {
     animation: none !important;

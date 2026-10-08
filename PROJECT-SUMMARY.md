@@ -1812,3 +1812,49 @@ Verifikasi akhir (viewport 1920×1080): `cssRules` hanya menyisakan satu aturan
 `@keyframes infra-twinkle-…`, `getComputedStyle(html).animationName === 'none'` dan
 `opacity === '1'` (bukti bug peredupan itu hilang), 3 canvas hidup, teks Inggris ada, dan
 `Quick Actions` tidak ada lagi di DOM. Dark dan light keduanya difoto dan diperiksa.
+
+### Banner: revisi setelah "wah jelek" + twinkle dipercepat (2026-10-08)
+
+HIRO melihat hasil enhance pertama dan langsung menolak: *"wah jelek bannernya"*. Setelah saya
+zoom sendiri screenshotnya, penyebabnya jelas dan **bukan soal selera yang samar** — tiga hal
+memang salah secara visual:
+
+1. **Grid 44px** terbaca sebagai **artefak render / grid debug**, bukan tekstur.
+2. **Orb kedua di kiri-bawah** menimbulkan bercak hijau pucat di bawah nama — seperti noda dan
+   pencahayaan yang tidak rata.
+3. **Dua wash gradien ditumpuk** di atas dua orb blur menghasilkan tampilan **blotchy** dan
+   nuansa olive kotor, dengan tepi bidang terang yang terlihat tidak beraturan.
+
+Yang dibuang: grid, orb kedua, wash kedua, hairline atas, dan `ring-inset`. Yang tersisa: **satu**
+gradien horizontal (`from-primary/10 via-primary/[0.03]`, dark `from-primary/20 via-primary/[0.06]`)
++ orb glow dari tepi kanan yang opasitasnya per mode (`opacity-50` terang, `90` gelap) + bintang.
+Satu gradien tidak bisa menghasilkan tumpang tindih berlumpur seperti versi dua-wash. Selanjutnya
+twinkle dipercepat atas permintaan HIRO: durasi **1.60–4.00s → 0.64–1.58s** dan delay
+**0–5.00s → 0.00–2.46s**; terukur dari `getComputedStyle` tiap bintang (46 elemen). Spread 5 detik
+ternyata membuat sebagian bidang diam beberapa detik sehingga terasa beku.
+
+### Ikon login INFRA-BTCAP dianimasikan (2026-10-08)
+
+Glyph `streamline-cyber:network` di login page sekarang **berputar 18s linear infinite** dengan
+opacity bernapas 0.7–1.0 dalam 3.5s, dan ditambah **dua cincin yang bergerak keluar lalu masuk
+kembali** (scale 1 → 1.6 → 1, durasi 2.8s dan 3.4s dengan delay −1.7s sehingga fasenya bergeser
+perlahan). Permintaan HIRO eksplisit: *"lingkaran tengah tetap seperti sekarang"* — jadi badge,
+ukuran, border, dan animasi `pulse` box-shadow-nya **tidak disentuh**; cincin adalah child
+`absolute` terpisah.
+
+DUA JEBAKAN YANG DIHINDARI DI SINI:
+- Rotasi dan sway ditaruh di **dua elemen berbeda** (wrapper vs ikon). Kalau keduanya di satu
+  elemen, keduanya butuh `transform` dan yang belakangan menang per-property — salah satu
+  animasi diam-diam tidak jalan.
+- **Tidak ada scaling pada glyph.** Glyph di-raster ulang pada ukuran antara saat diskalakan dan
+  terbaca soft saat bergerak; itu alasan yang sama kenapa app ini tidak pernah men-scale teks.
+  Karena itu animasi badge sendiri juga tidak di-scale (HIRO memang minta badge tetap), dan
+  cincin dibuat sebagai elemen terpisah.
+
+Bukti runtime: `animationName` wrapper `logo-spin` 18s infinite, transform berubah
+`matrix(-0.81248, 0.582989, …)` → `matrix(-0.995126, 0.0986087, …)` = ~144° → ~174° dalam 1.5s,
+tepat 360°/18s. Cincin terukur `scale 1.251 → 1.480` (keluar) sementara cincin kedua
+`1.461 → 1.426` (masuk) pada saat yang sama — jadi benar-benar keluar-masuk dan fasenya berbeda.
+Badge tetap `transform: none`, `animationName: pulse`, kotak **44×44**. Visual di-zoom dari
+screenshot: cincin terbaca sebagai halo, tidak memotong wordmark INFRA-BTCAP. `prefers-reduced-motion`
+sudah mencakup `.logo-icon`, anaknya, dan `.logo-ring`.

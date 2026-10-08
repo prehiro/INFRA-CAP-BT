@@ -172,7 +172,11 @@ onBeforeUnmount(() => cleanup?.())
         <template #header>
           <div class="text-center py-2">
             <div class="logo mx-auto mb-3" aria-hidden="true">
-              <UIcon name="streamline-cyber:network" class="size-8" />
+              <span class="logo-ring" />
+              <span class="logo-ring logo-ring--2" />
+              <span class="logo-icon">
+                <UIcon name="streamline-cyber:network" class="size-8" />
+              </span>
             </div>
             <h1 class="text-xl font-bold tracking-wide text-slate-100">INFRA-BTCAP</h1>
             <p class="text-sm text-[#7b8fb5] mt-1">Internal App ISD Capacitor</p>
@@ -294,6 +298,8 @@ onBeforeUnmount(() => cleanup?.())
 }
 
 .logo {
+  /* Anchor for the rings below, which are absolutely positioned against the badge. */
+  position: relative;
   width: 44px; height: 44px;
   display: grid; place-items: center;
   border-radius: 12px;
@@ -305,6 +311,66 @@ onBeforeUnmount(() => cleanup?.())
 @keyframes pulse {
   0%,100% { box-shadow: 0 0 18px rgba(0, 220, 130, 0.2); }
   50%     { box-shadow: 0 0 32px rgba(0, 220, 130, 0.45); }
+}
+
+/* Two rings travel out from the badge and back in again. HIRO asked for exactly that motion and
+   for the badge itself to stay as it is, which rules out animating the badge's own size or glow -
+   hence separate absolutely positioned children. Scaling `.logo` instead would also scale the
+   glyph sitting inside it, and scaling a glyph is the one thing this app never does (it
+   rasterises at the in-between size and reads soft while it moves).
+   They go back to scale(1) at the end of every cycle, so the motion reads as out AND back, not as
+   a one-way ping. Opacity is already near zero at the outer end of the travel, which is what keeps
+   the far ring from drawing a visible line across the INFRA-BTCAP wordmark just below.
+   The two rings differ in duration rather than in amplitude so they drift slowly in and out of
+   phase with each other: the field keeps moving without the two ever looking like one thick ring. */
+.logo-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 220, 130, 0.6);
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: logo-ring 2.8s ease-in-out infinite;
+}
+
+.logo-ring--2 {
+  animation-duration: 3.4s;
+  animation-delay: -1.7s;
+}
+
+@keyframes logo-ring {
+  0%, 100% { transform: scale(1);    opacity: 0.45; }
+  50%      { transform: scale(1.6);  opacity: 0.05; }
+}
+
+/* The glyph itself turns slowly while its brightness breathes, so the mark reads as live rather
+   than as a static sticker inside a glowing box.
+   THE TWO ANIMATIONS LIVE ON TWO ELEMENTS ON PURPOSE: both would otherwise want `transform`, and
+   on a single element the later `animation` shorthand silently wins per property - the rotation
+   and the sway would fight and one would simply not run. So the wrapper owns the rotation and the
+   icon only owns opacity, which cannot collide.
+   NO SCALING: an SVG glyph rasterises at the intermediate size while it is being scaled and reads
+   soft mid-motion, the same reason the app never scales text. Rotation and opacity are both
+   compositor-friendly and stay crisp.
+   18s per turn is slow enough to read as "steady signal" instead of a spinning logo, and the
+   3.5s sway keeps it from looking like a motor. */
+.logo-icon {
+  display: grid;
+  place-items: center;
+  animation: logo-spin 18s linear infinite;
+}
+
+.logo-icon > * {
+  animation: logo-sway 3.5s ease-in-out infinite;
+}
+
+@keyframes logo-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes logo-sway {
+  0%, 100% { opacity: 0.7; }
+  50%      { opacity: 1; }
 }
 
 /* sign-in button shine */
@@ -323,6 +389,6 @@ onBeforeUnmount(() => cleanup?.())
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb, .bg-grid, .logo, .card-wrap { animation: none; }
+  .orb, .bg-grid, .logo, .card-wrap, .logo-icon, .logo-icon > *, .logo-ring { animation: none; }
 }
 </style>
