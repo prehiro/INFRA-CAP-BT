@@ -25,16 +25,16 @@ const SHEET_NAME = 'Ledger'
 const toast = useToast()
 
 /* ---------------- columns (mirror of the reference sheet) ---------------- */
-type Column = { key: string; label: string; w: number; align?: 'center'; mono?: boolean }
+type Column = { key: string; label: string; w: number; align?: 'center' }
 
 const COLUMNS: Column[] = [
   { key: 'nomor', label: 'No', w: 5, align: 'center' },
   { key: 'staff_name', label: 'Staff Name', w: 20 },
-  { key: 'email', label: 'Email Address', w: 26, mono: true },
-  { key: 'gid', label: 'GID', w: 12, mono: true },
-  { key: 'japan_hostname', label: 'JAPAN Hostname', w: 16, mono: true },
+  { key: 'email', label: 'Email Address', w: 26 },
+  { key: 'gid', label: 'GID', w: 12 },
+  { key: 'japan_hostname', label: 'JAPAN Hostname', w: 16 },
   { key: 'computer_model', label: 'Computer Model', w: 16 },
-  { key: 'computer_sn', label: 'Computer S/N', w: 14, mono: true },
+  { key: 'computer_sn', label: 'Computer S/N', w: 14 },
   { key: 'tanggal', label: 'Date', w: 12, align: 'center' },
   { key: 'chassis', label: 'Computer Chassis', w: 15 },
   { key: 'manufacturer', label: 'Computer Manufacturer', w: 19 },
@@ -651,7 +651,7 @@ async function exportExcel() {
                   <th class="text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <TransitionGroup tag="tbody" name="pl-rows">
                 <tr v-for="row in visibleRows" :key="row.id">
                   <td
                     v-for="(c, ci) in visibleColumns"
@@ -660,7 +660,7 @@ async function exportExcel() {
                     :class="[
                       c.align === 'center' ? 'text-center' : '',
                       c.key === 'nomor' ? 'font-medium' : '',
-                      c.mono ? 'pl-mono' : '',
+                      'tabular-nums',
                       pinClass(ci)
                     ]"
                     :title="cell(row, c.key)"
@@ -674,7 +674,7 @@ async function exportExcel() {
                     </div>
                   </td>
                 </tr>
-              </tbody>
+              </TransitionGroup>
             </table>
           </div>
 
@@ -776,7 +776,7 @@ async function exportExcel() {
               <dt class="text-muted">Staff Name</dt>
               <dd class="truncate">{{ cell(deleteTarget, 'staff_name') || '-' }}</dd>
               <dt class="text-muted">JAPAN Hostname</dt>
-              <dd class="truncate pl-mono">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
+              <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
               <dt class="text-muted">Location</dt>
               <dd class="truncate">{{ cell(deleteTarget, 'lokasi') || '-' }}</dd>
             </dl>
@@ -840,6 +840,8 @@ async function exportExcel() {
   padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--ui-border);
   color: var(--ui-text);
+  /* Equal-width digits in the app's own font, so codes and numbers line up column-wise. */
+  font-variant-numeric: tabular-nums;
 }
 
 .pl-table tbody tr:hover td {
@@ -877,15 +879,63 @@ async function exportExcel() {
   background: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg-elevated));
 }
 
-.pl-mono {
-  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 0.75rem;
+/* ONE FONT IN THIS TABLE. Email, GID, JAPAN Hostname and S/N used to be rendered in a monospace
+   stack, which made the register look like two different documents spliced together - HIRO:
+   "font nya samakan dong jangan beda-beda". Alignment, which is what the monospace was actually
+   buying, now comes from `font-variant-numeric: tabular-nums` on the cells above: equal-width
+   digits in the same Public Sans, so codes still line up without a second typeface. */
+
+/* ---- filter animation ----------------------------------------------------------------
+   Rows fade in and out instead of appearing and vanishing between two frames.
+   TransitionGroup rather than a class-keyed CSS animation, because it is the only mechanism that
+   knows which rows a filter change actually ADDED and REMOVED; a class-based animation would
+   re-run on all 26 rows on every keystroke, including the twenty that did not change.
+   DELIBERATELY OPACITY-ONLY: translating the row would put a `transform` on the <tr>, and a
+   transformed ancestor becomes the containing block for its own descendants - which breaks the
+   `position: sticky` pinning on the first two columns for the duration of the animation. The
+   stagger is done with nth-child, the same convention main.css uses for .anim-stagger. */
+.pl-rows-enter-active {
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+.pl-rows-leave-active {
+  transition: opacity 130ms ease-in;
+}
+
+.pl-rows-enter-from,
+.pl-rows-leave-to {
+  opacity: 0;
+}
+
+/* Small staircase so a filter change reads as one movement instead of a single flat blink.
+   Capped at ten steps, like .anim-stagger: beyond that the last rows would arrive late enough
+   to feel slow rather than smooth. */
+.pl-rows-enter-active:nth-child(1) { transition-delay: 0ms; }
+.pl-rows-enter-active:nth-child(2) { transition-delay: 14ms; }
+.pl-rows-enter-active:nth-child(3) { transition-delay: 28ms; }
+.pl-rows-enter-active:nth-child(4) { transition-delay: 42ms; }
+.pl-rows-enter-active:nth-child(5) { transition-delay: 56ms; }
+.pl-rows-enter-active:nth-child(6) { transition-delay: 70ms; }
+.pl-rows-enter-active:nth-child(7) { transition-delay: 84ms; }
+.pl-rows-enter-active:nth-child(8) { transition-delay: 98ms; }
+.pl-rows-enter-active:nth-child(9) { transition-delay: 112ms; }
+.pl-rows-enter-active:nth-child(n + 10) { transition-delay: 126ms; }
 
 .pl-ellipsis {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Cancel outright rather than shorten - a partial fade is still motion, which is exactly what
+     the OS setting asks us to avoid. Same rule as main.css. */
+  .pl-rows-enter-active,
+  .pl-rows-leave-active,
+  .pl-rows-enter-active:nth-child(n) {
+    transition: none !important;
+    transition-delay: 0ms !important;
+  }
 }
 </style>

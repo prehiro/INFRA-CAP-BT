@@ -2014,3 +2014,41 @@ checkbox; mematikan "Email Address" → header tinggal 14 kolom, label jadi `Col
 seluruh header. Pin terukur benar: kolom pertama `position: sticky, left: 0px`, kolom kedua
 `position: sticky, left: 80px` (= 5rem, lebar kolom No), kolom ketiga `static`. Ditinggalkan dalam
 keadaan semua kolom tampil.
+
+
+### Font diseragamkan + animasi filter (2026-10-08)
+
+HIRO: *"font nya samakan dong jangn beda-beda. lalu pastikan animasi filter nya buat smooth"*.
+
+**FONT** — grep seluruh web/app menemukan hanya DUA tempat yang memakai typeface berbeda dari
+Public Sans:
+- `pcledger.vue`: kelas `.pl-mono` (ui-monospace / Cascadia Mono / Consolas) pada kolom Email, GID,
+  JAPAN Hostname, dan S/N, plus satu baris di dialog delete. Register jadi terbaca seperti dua
+  dokumen berbeda yang disambung.
+- `TimePicker.vue`: kelas Tailwind `font-mono` di 6 tempat (stepper jam pada modal CCTV).
+  **SENGAJA TIDAK saya ubah** — itu di halaman lain, dan mono di stepper jam bisa jadi memang
+  disengaja supaya terbaca seperti jam digital. Tunggu keputusan HIRO dulu.
+
+Yang dikerjakan: `.pl-mono` dihapus bersama flag `mono?: boolean` di tipe `Column` dan keempat
+pemakaiannya (dead code dibuang, bukan dibiarkan), dan perataan digitnya dipindah ke
+`font-variant-numeric: tabular-nums` di `.pl-table td`. Hasilnya satu typeface, tapi kode tetap
+sejajar per kolom. Terukur: `fontFamily` sel = `"Public Sans", ui-sans-serif, system-ui, sans-serif`
+dengan `fontVariantNumeric: tabular-nums`, dan aturan CSS yang menyebut Cascadia sudah tidak ada di
+stylesheet (`monoRulePresent: false`).
+
+**ANIMASI FILTER** — `tbody` sekarang `<TransitionGroup name="pl-rows">`. Dipilih TransitionGroup dan
+bukan animasi CSS berbasis kelas, karena hanya dia yang tahu baris mana yang BENAR-BENAR ditambah dan
+dihapus oleh sebuah perubahan filter; animasi berbasis kelas akan jalan ulang di 26 baris pada setiap
+ketikan, termasuk 20 baris yang tidak berubah. Fade in 220ms / fade out 130ms, stagger `nth-child`
+0–126ms (cap 10 langkah) mengikuti konvensi `.anim-stagger` di main.css, dan `prefers-reduced-motion`
+mematikannya total.
+
+**KEPUTUSAN YANG BUKAN KOSMETIK:** animasinya *opacity-only, tanpa translate*. Memberi `transform`
+pada `<tr>` membuat ancestor yang ter-transform jadi containing block bagi descendant-nya, dan itu
+mematikan `position: sticky` pada dua kolom yang di-pin selama animasi berjalan — jadi gerak
+naik-turun sengaja tidak dipakai.
+
+Terukur saat filter dijalankan: pada t=37ms ada **21 baris** dalam keadaan transisi (16 keluar +
+5 masuk) dengan opacity minimum masih 1; pada t=95ms opacity minimum **0.902** — barisnya benar-benar
+memudar di tengah jalan, bukan lompat; pada t=506ms transisi selesai dan DOM tinggal **5 baris**
+(footer `Showing 5 of 26`). Kolom yang di-pin tetap `position: sticky, left: 0px` sepanjang animasi.
