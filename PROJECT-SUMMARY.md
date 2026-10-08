@@ -1975,3 +1975,42 @@ Klik Excel di browser → file benar-benar terunduh (`C:\Users\HIRO\Downloads\PC
 
 Render halaman juga sudah dikonfirmasi di browser: 26 baris, 15 kolom + Actions, footer
 "26 records | Showing 26 of 26", dan "PC Ledger" muncul di sidebar.
+
+### Pindah menu + pilih kolom (2026-10-08)
+
+HIRO: *"menu pc ledger pindahkan keluar menu log book, letakkan diatas menu log book. pada table
+bisa buat fitur hide column? jadi user bisa fleksibel mau tampilkan kolom yang diinginkan"*.
+
+**Menu**: PC Ledger keluar dari grup Log Book dan dapat grup sendiri **di atas** Log Book —
+urutannya sekarang `Dashboard | PC Ledger | Log Book (CCTV Access, Handover) | Log Audit | User
+Management`. Alasan yang dicatat di kode: ini register aset, bukan log kejadian, dan di dalam grup
+ia menghilang setiap kali Log Book di-collapse. Grup terpisah juga **tidak menggeser** aturan
+`mt-auto` di layout — grup TERAKHIR tetap Log Audit + User Management, jadi keduanya tetap menempel
+di atas tombol profile. Command palette ikut disesuaikan urutannya.
+
+**Hide column**: tombol `Columns (15/15)` di toolbar membuka `UPopover` berisi `UCheckbox` per
+kolom (lihat dulu `Popover.vue` di node_modules untuk memastikan nama slot-nya `#content`, bukan
+menebak). Pilihan disimpan **per browser** di `localStorage` kunci `infra-cap.pcledger.columns`,
+alasannya sama dengan cookie tema: preferensi cara membaca tabel bukan state departemen. Aturan:
+minimal satu kolom harus tetap tampil (tabel kosong tanpa penjelasan terbaca seperti halaman rusak),
+kunci asing dari build lama dibuang saat load, dan nilai localStorage yang rusak tidak boleh
+membuat halaman mati — semua di dalam `try/catch` dengan fallback "tampilkan semua".
+
+**Konsekuensi yang HARUS ikut diperbaiki — pin kolom sebelumnya hard-coded.** Pin dulu memakai
+`th:nth-child(1)` (left 0) dan `:nth-child(2)` (left 5rem). Begitu No bisa disembunyikan, Staff Name
+masuk ke slot pertama dan pin kedua masih di `5rem` → kolom kedua akan didorong 5rem ke dalam tabel
+dan meninggalkan lubang kosong. Sekarang pin memakai kelas (`.pl-pin-first` / `.pl-pin-second`) dan
+offset pin kedua **dihitung** dari lebar kolom pertama yang sedang tampil (`pinStyle()`), bukan
+konstanta. Ditambah satu detail yang gampang terlewat: sel yang di-pin **harus opak**, karena hover
+semi-transparan membuat kolom yang lewat di bawahnya tembus terlihat — itu tampilan sticky-column
+yang rusak — jadi warna hover-nya di-`color-mix` ke permukaan opak, bukan ditumpuk di atasnya.
+
+Verifikasi di browser (klik pointer sungguhan via CDP, karena `element.click()` sintetis tidak
+dipercaya untuk komponen Reka UI): urutan sidebar terbaca `Dashboard, PC Ledger, Log Book, CCTV
+Access, Handover, Log Audit, User Management`; tombol `Columns (15/15)` membuka popover berisi 15
+checkbox; mematikan "Email Address" → header tinggal 14 kolom, label jadi `Columns (14/15)`, dan
+`localStorage` berisi daftar kunci tanpa `email`; **reload halaman → kolom itu tetap tersembunyi
+(14 kolom, label 14/15)** = persistensi terbukti; tombol "Show all" mengembalikan 15/15 dan
+seluruh header. Pin terukur benar: kolom pertama `position: sticky, left: 0px`, kolom kedua
+`position: sticky, left: 80px` (= 5rem, lebar kolom No), kolom ketiga `static`. Ditinggalkan dalam
+keadaan semua kolom tampil.

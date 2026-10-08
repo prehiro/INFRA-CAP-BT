@@ -23,6 +23,16 @@ const links = computed<NavigationMenuItem[][]>(() => [
     { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' }
   ],
   [
+    // PC Ledger is a register of assets, not a log of events, so it sits OUTSIDE the Log Book
+    // group and above it. Inside the group it disappeared whenever Log Book was collapsed,
+    // which is the wrong place for the page that gets opened most.
+    //
+    // Giving it its own group also leaves the layout's `mt-auto` rule untouched: the LAST group
+    // is still Log Audit + User Management, which is what pins them directly above the profile
+    // button. Inserting it into an existing group instead would have moved that slot.
+    { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' }
+  ],
+  [
     {
       label: 'Log Book',
       icon: 'i-lucide-book-open',
@@ -30,8 +40,7 @@ const links = computed<NavigationMenuItem[][]>(() => [
       defaultOpen: true,
       children: [
         { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
-        { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
-        { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' }
+        { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' }
       ]
     }
   ],
@@ -59,9 +68,9 @@ const groups = computed(() => [
     label: 'Navigation',
     items: [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
+      { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
-      { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
       { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]

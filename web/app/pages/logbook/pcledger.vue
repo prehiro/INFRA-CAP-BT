@@ -45,6 +45,73 @@ const COLUMNS: Column[] = [
   { key: 'remark3', label: 'Remark3', w: 18 }
 ]
 
+/**
+ * Column visibility: the user chooses which of the register's 15 columns are on screen.
+ *
+ * STORED PER BROWSER, not on the server. Which columns someone wants to look at is a reading
+ * preference, not shared department state - the same reasoning that put the theme choice in a
+ * cookie rather than in the database.
+ *
+ * `nomor` is not special-cased and can be hidden like any other column, but at least one column
+ * always stays visible: an empty table with nothing to explain itself reads as a broken page.
+ */
+const STORAGE_KEY = 'infra-cap.pcledger.columns'
+const visibleKeys = ref<string[]>(COLUMNS.map((c) => c.key))
+
+const visibleColumns = computed(() => COLUMNS.filter((c) => visibleKeys.value.includes(c.key)))
+
+function loadColumnChoice() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return
+    const saved = JSON.parse(raw)
+    if (!Array.isArray(saved)) return
+    // Unknown keys are dropped rather than trusted: a stale key saved by an older build would
+    // otherwise make the table render a column that no longer exists.
+    const known = saved.filter((k) => COLUMNS.some((c) => c.key === k))
+    if (known.length) visibleKeys.value = known
+  } catch {
+    // A corrupt value must never brick the page - fall back to showing every column.
+  }
+}
+
+function saveColumnChoice() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleKeys.value)) } catch { /* storage full or blocked */ }
+}
+
+function toggleColumn(key: string, on: boolean) {
+  if (on) {
+    if (!visibleKeys.value.includes(key)) visibleKeys.value = [...visibleKeys.value, key]
+  } else {
+    if (visibleKeys.value.length <= 1) return // never hide the last one
+    visibleKeys.value = visibleKeys.value.filter((k) => k !== key)
+  }
+  saveColumnChoice()
+}
+
+function showAllColumns() {
+  visibleKeys.value = COLUMNS.map((c) => c.key)
+  saveColumnChoice()
+}
+
+/**
+ * The first two VISIBLE columns stay pinned while the rest scroll sideways under them.
+ * A class rather than `nth-child`, and the offset is computed rather than hard-coded: hiding the
+ * No column moves Staff Name into the first slot, and with a fixed `left: 5rem` on the second
+ * slot it would have been pushed 5rem into the table and left a visible hole.
+ */
+function pinClass(i: number) {
+  if (i === 0) return 'pl-pin pl-pin-first'
+  if (i === 1) return 'pl-pin pl-pin-second'
+  return ''
+}
+
+function pinStyle(i: number) {
+  if (i !== 1) return undefined
+  const first = visibleColumns.value[0]
+  return first ? { left: `${first.w}rem` } : undefined
+}
+
 /** Kept in sync with COLUMNS by key; the modal groups the fields into three sections. */
 const FORM_SECTIONS = [
   {
@@ -194,7 +261,10 @@ async function load() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  loadColumnChoice()
+  load()
+})
 
 /* ---------------- add / edit ---------------- */
 const showForm = ref(false)
@@ -471,6 +541,45 @@ async function exportExcel() {
                 :ui="{ base: 'h-9' }"
               />
 
+              <!-- Column chooser. A popover of checkboxes rather than a dropdown menu: it is a
+                   persistent list with a live count, not a list of one-shot actions. -->
+              <UPopover>
+                <UButton
+                  color="soft"
+                  icon="i-lucide-columns-3"
+                  :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
+                />
+                <template #content>
+                  <div class="w-64 p-3">
+                    <div class="mb-2 flex items-center justify-between gap-2">
+                      <p class="text-[11px] font-semibold uppercase tracking-wider text-muted">Visible columns</p>
+                      <UButton
+                        v-if="visibleColumns.length !== COLUMNS.length"
+                        color="neutral"
+                        variant="link"
+                        size="xs"
+                        label="Show all"
+                        @click="showAllColumns"
+                      />
+                    </div>
+                    <div class="max-h-72 space-y-0.5 overflow-y-auto">
+                      <UCheckbox
+                        v-for="c in COLUMNS"
+                        :key="c.key"
+                        :model-value="visibleKeys.includes(c.key)"
+                        :label="c.label"
+                        :disabled="visibleKeys.length <= 1 && visibleKeys.includes(c.key)"
+                        variant="list"
+                        @update:model-value="(v: any) => toggleColumn(c.key, !!v)"
+                      />
+                    </div>
+                    <p class="mt-2 text-[11px] leading-snug text-muted">
+                      Remembered for this browser. Excel keeps exporting all 15 columns.
+                    </p>
+                  </div>
+                </template>
+              </UPopover>
+
               <UButton
                 color="soft"
                 icon="i-lucide-file-spreadsheet"
@@ -514,15 +623,20 @@ async function exportExcel() {
           <div v-else class="pl-scroll">
             <table class="pl-table">
               <colgroup>
-                <col v-for="c in COLUMNS" :key="c.key" :style="{ width: c.w + 'rem' }" />
+                <col v-for="c in visibleColumns" :key="c.key" :style="{ width: c.w + 'rem' }" />
                 <col style="width: 5rem" />
               </colgroup>
               <thead>
                 <tr>
                   <th
-                    v-for="c in COLUMNS"
+                    v-for="(c, ci) in visibleColumns"
                     :key="c.key"
-                    :class="[c.align === 'center' ? 'text-center' : 'text-left', sortKey === c.key ? 'is-sorted' : '']"
+                    :style="pinStyle(ci)"
+                    :class="[
+                      c.align === 'center' ? 'text-center' : 'text-left',
+                      sortKey === c.key ? 'is-sorted' : '',
+                      pinClass(ci)
+                    ]"
                     @click="toggleSort(c.key)"
                   >
                     <span class="inline-flex items-center gap-1">
@@ -540,9 +654,15 @@ async function exportExcel() {
               <tbody>
                 <tr v-for="row in visibleRows" :key="row.id">
                   <td
-                    v-for="c in COLUMNS"
+                    v-for="(c, ci) in visibleColumns"
                     :key="c.key"
-                    :class="[c.align === 'center' ? 'text-center' : '', c.key === 'nomor' ? 'font-medium' : '', c.mono ? 'pl-mono' : '']"
+                    :style="pinStyle(ci)"
+                    :class="[
+                      c.align === 'center' ? 'text-center' : '',
+                      c.key === 'nomor' ? 'font-medium' : '',
+                      c.mono ? 'pl-mono' : '',
+                      pinClass(ci)
+                    ]"
                     :title="cell(row, c.key)"
                   >
                     <span class="pl-ellipsis">{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</span>
@@ -726,36 +846,35 @@ async function exportExcel() {
   background: color-mix(in oklab, var(--ui-primary) 6%, transparent);
 }
 
-/* No and Staff Name stay pinned while the rest of the register scrolls under them: the two
-   columns that identify a row are useless if they scroll out of sight on a 15-column table. */
-.pl-table th:nth-child(1),
-.pl-table td:nth-child(1) {
+/* The first two VISIBLE columns stay pinned while the rest of the register scrolls under them:
+   on a 15-column table the columns that identify a row are useless once they scroll away.
+   Driven by a class rather than `nth-child`, because the pinned pair changes when the user hides
+   a column - with a fixed `left: 5rem` on the second slot, hiding No would have pushed Staff Name
+   5rem into the table and left a visible hole. The second slot's `left` is set inline from the
+   first column's own declared width. */
+.pl-pin {
   position: sticky;
+  z-index: 3;
+  background: var(--ui-bg-elevated);
+}
+
+.pl-pin-first {
   left: 0;
-  z-index: 3;
-  background: var(--ui-bg-elevated);
 }
 
-.pl-table th:nth-child(1) {
-  z-index: 4;
-}
-
-.pl-table th:nth-child(2),
-.pl-table td:nth-child(2) {
-  position: sticky;
-  left: 5rem;
-  z-index: 3;
-  background: var(--ui-bg-elevated);
+.pl-pin-second {
   box-shadow: 1px 0 0 var(--ui-border);
 }
 
-.pl-table th:nth-child(2) {
+.pl-table th.pl-pin {
   z-index: 4;
 }
 
-.pl-table tbody tr:hover td:nth-child(1),
-.pl-table tbody tr:hover td:nth-child(2) {
-  background: var(--ui-bg-elevated);
+/* A pinned cell must stay OPAQUE. A translucent hover would let the columns scrolling underneath
+   show through it, which is the classic broken sticky-column look - so the hover tint is mixed
+   into the opaque surface rather than layered over it. */
+.pl-table tbody tr:hover td.pl-pin {
+  background: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg-elevated));
 }
 
 .pl-mono {
