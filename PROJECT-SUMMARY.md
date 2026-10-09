@@ -2715,3 +2715,41 @@ teks judul di atas wash (terlihat jelas di screenshot).
 yang dinamai per modal (`users-record-modal[data-state='open']` dst); modal PC Ledger tidak punya
 animasi itu sebelumnya, dan HIRO meminta bagian BACKGROUND-nya saja. Kalau animasinya juga mau
 disamakan, itu tambahan terpisah.
+
+### Field Department dihapus dari page PC Ledger (2026-10-10)
+
+HIRO: *"hapus kolom departement dari page pc ledger, form add juga. departement tidak dipakai di page
+pc ledger"*.
+
+**YANG DIHAPUS (dan kenapa daftarnya sepanjang ini).** `departemen` bukan kolom tabel - ia muncul di
+empat tempat lain, dan semuanya dibersihkan sekaligus supaya tidak meninggalkan dead code:
+1. `FORM_SECTIONS` bagian Identity : `['staff_name','email','gid','departemen']` -> tanpa departemen.
+2. Peta `LABELS`: entri `departemen: 'Department'` dihapus (form tidak lagi merender field itu).
+3. `computed departments` dihapus. Ia dulu dipertahankan HANYA untuk mengisi field Department di
+   `blankForm()` setelah filter Department dihapus; sekarang tidak ada lagi yang memakainya.
+4. `blankForm()` : baris `form.departemen = departments.value[0] ?? 'Capacitor'` dihapus.
+5. Placeholder input `:placeholder="key === 'departemen' ? 'Capacitor' : ''"` dihapus - tidak ada lagi
+   field yang bisa bernilai 'departemen'.
+6. Komentar kepala file diperbarui (dulu menulis department "filters on screen" - sudah tidak benar).
+
+**YANG SENGAJA TIDAK DIHAPUS.** Ekspor Excel masih membaca `departemen` (baris ~770): workbook
+IT FORM SG031 punya satu sel "Department:" di atas tabel, dan ekspor mengisinya dari nilai record.
+Field di database + nilai 'Capacitor' pada record lama karena itu DIPERTAHANKAN - menghapusnya akan
+membuat sel Department di file ekspor kosong dan sheet tidak lagi sama dengan form aslinya. Kode
+pembacanya diberi komentar eksplisit supaya tidak dikira dead code di kemudian hari.
+
+**DIUJI DULU SEBELUM MENGHAPUS (risiko data hilang).** `payload()` mengirim nilai dari form saja, jadi
+kalau field dihapus dari form, apakah edit akan MENGHAPUS departemen pada record lama? Diuji ke API:
+PUT parsial pada record 184 dengan hanya `{"values":{"staff_name":...}}` -> `departemen` tetap
+'Capacitor' dan seluruh field lain utuh. API-nya **merge**, bukan replace. Jadi aman.
+
+**TERUKUR SESUDAH (1920x1080):** tabel 12 sel header (11 kolom + Actions) - NO, STAFF NAME, EMAIL, GID,
+JAPAN HOST, MODEL, S/N, CHASSIS, LOCATION, REMARK1, REMARK2, ACTIONS; 26 baris; tidak ada teks
+"Department" di mana pun di halaman; form "New PC record" tinggal **14 field** (dulu 15) dan tidak
+mengandung Department; filter chassis ("All chassis") tetap ada; halaman tetap render tanpa error.
+
+**KESALAHAN SAYA SENDIRI DI TENGAH JALAN (dan sudah diperbaiki sebelum verifikasi):** satu patch
+penghapusan `computed departments` salah menyerap baris berikutnya sehingga `const chassisTypes`
+berubah nama menjadi `locations` - artinya ada dua `const locations` dan `chassisTypes` hilang
+(error kompilasi, filter chassis rusak). Langsung diperbaiki; grep membuktikan `chassisTypes` sekarang
+dideklarasikan sekali dan masih dipakai oleh `:items` filter chassis.

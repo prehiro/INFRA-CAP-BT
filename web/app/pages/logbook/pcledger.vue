@@ -7,9 +7,13 @@
  * handed back to the department as the workbook they already use. The entity in the API
  * (`pc_ledger`, id 10) was created to mirror it field for field.
  *
- * The one addition is `department`: the workbook carries a single "Department:" cell above the
- * table, which cannot describe a per-row value, so it lives on the record instead — it filters
- * on screen and is written back into that cell on export.
+ * `department` is the one addition: the workbook carries a single "Department:" cell above the
+ * table, which cannot describe a per-row value, so it lives on the record instead and is written
+ * back into that cell on export. It NO LONGER appears on this page at all - not as a table column,
+ * not in the add/edit form, not as a filter (HIRO: "hapus kolom departement dari page pc ledger,
+ * form add juga. departement tidak dipakai di page pc ledger"). The field and the values stored on
+ * the existing records are kept for that export cell alone, so the excelExport code below still
+ * reads them; everything that used to surface the field on screen is gone.
  *
  * NO INPUT REWRITING happens on this page. Identity fields (`.\\capuser`, `JAPAN\\29384_DTS05`,
  * `pidbt.dts05@sg.panasonic.com`, `E0B5536/7`) are copied out of the source spreadsheet verbatim
@@ -302,7 +306,7 @@ const FORM_SECTIONS = [
   {
     title: 'Identity',
     icon: 'i-lucide-user-round',
-    fields: ['staff_name', 'email', 'gid', 'departemen']
+    fields: ['staff_name', 'email', 'gid']
   },
   {
     title: 'Hardware',
@@ -331,8 +335,7 @@ const LABELS: Record<string, string> = {
   os_arch: 'Computer O/S Architecture',
   lokasi: 'Location',
   remark2: 'Remark1',
-  remark3: 'Remark2',
-  departemen: 'Department'
+  remark3: 'Remark2'
 }
 
 /* ---------------- data ---------------- */
@@ -548,14 +551,11 @@ watch(visibleRows, (v) => {
 // whole page fails to render (measured: a 500 reading "Cannot read properties of undefined").
 watch(rows, () => { measurePinOffset() }, { flush: 'post' })
 
-/* `departments` survives the removal of the Department FILTER for one reason only: `blankForm()` seeds
-   the new-record form's Department field from it. The filter itself is gone - HIRO asked for it to go,
-   and the column has only ever held a single value ("Capacitor"), so a control offering "All
-   departments" plus that one value could not filter anything. `locations` is the new filter's source,
-   built the same way as `chassisTypes` so the two behave identically. */
-const departments = computed(() =>
-  [...new Set(rows.value.map((r) => cell(r, 'departemen')).filter(Boolean))].sort()
-)
+/* The Department field is gone from this page entirely (HIRO: "hapus kolom departement dari page pc
+   ledger, form add juga. departement tidak dipakai di page pc ledger"), so `departments` went with it -
+   it had survived the removal of the Department FILTER only to seed the form's Department input, and
+   that input no longer exists. `locations` is the filter's source, built the same way as `chassisTypes`
+   so the two behave identically. */
 const chassisTypes = computed(() =>
   [...new Set(rows.value.map((r) => cell(r, 'chassis')).filter(Boolean))].sort()
 )
@@ -616,7 +616,6 @@ const formError = ref('')
 
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
-  form.departemen = departments.value[0] ?? 'Capacitor'
 }
 
 function openCreate() {
@@ -764,6 +763,10 @@ async function exportExcel() {
     deptLabel.value = 'Department:'
     deptLabel.font = { bold: true, size: 11 }
 
+    /* `departemen` is read here even though nothing on the page shows the field any more. This is the
+       workbook's own "Department:" cell, and a sheet without it would no longer match IT FORM SG031.
+       It is not dead code: it is the single remaining reader of that field. The API merges on update,
+       so the values on the existing records survive edits that no longer carry the field. */
     const deptValues = [...new Set(data.map((r) => cell(r, 'departemen')).filter(Boolean))]
     const deptCell = ws.getCell(9, 4)
     deptCell.value = deptValues.length === 1 ? deptValues[0] : deptValues.join(', ')
@@ -1116,7 +1119,6 @@ async function exportExcel() {
                     <UInput
                       v-else
                       v-model="form[key]"
-                      :placeholder="key === 'departemen' ? 'Capacitor' : ''"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
