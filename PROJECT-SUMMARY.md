@@ -2436,3 +2436,43 @@ menyusut 727 → 125 px karena kartu register menjadi pendek — itu perubahan l
 (tinggi tabel mengikuti jumlah baris), bukan efek transform, dan pada jalur ini `min-height` beku
 tidak terpasang (0 frame), jadi status overflow masih beberapa kali berubah selama transisi.
 Perlu ditelusuri kenapa `movers` kosong di jalur itu.
+
+### Tinggi area tabel dibuat TETAP (2026-10-08, lanjutan flicker scrollbar)
+
+HIRO: *"filter chasis masih menyebabkan flicker scrollbar. mungkin bisa buat tinggi table nya tetap
+seperti original, walau pun record banyak/dikit tidak berubah"*. Instruksinya tepat, dan itu memang
+sumber kedua flicker yang belum tertutup.
+
+**PERUBAHAN 1 — `.pl-scroll` dari `max-height: 70vh` menjadi `height: 70vh` (tinggi TETAP).**
+Dengan `max-height`, kotak tabel tumbuh/menyusut mengikuti jumlah baris, jadi setiap filter
+menggerakkan track dan thumb-nya sendiri — dan pada filter ekstrem (16 baris → 2) kotaknya
+menciut 727px → 125px di tengah transisi. Tinggi tetap menghapus seluruh kelas masalah itu, dan
+footer di bawahnya juga tidak bisa bergeser lagi. Konsekuensi yang diterima sadar: register yang
+tersaring menyisakan area kosong tinggi di bawah baris terakhir.
+
+**PERUBAHAN 2 — pembekuan tinggi scroll diterapkan untuk SETIAP perubahan daftar baris.** Sebelumnya
+pembekuan dilakukan setelah pengecekan `movers`, jadi filter yang baris tersisanya tidak berpindah
+(Notebook, 16 → 2) keluar lebih awal dan tingginya tidak pernah dibekukan — itulah celah yang masih
+berkedip. Sekarang pembekuan dipasang lebih dulu, dan kalau tidak ada yang perlu dianimasikan
+tingginya dikembalikan lewat timeout pendek (60ms).
+
+**TERUKUR SETELAH PERUBAHAN (1920×1080):**
+
+| filter | baris | tinggi container | clientHeight | vOverflow toggles |
+| --- | --- | --- | --- | --- |
+| awal | 26 | 756 | 744 | — |
+| Desktop | 16 | **756** | 744 | **0** |
+| Notebook | 2 | **756** | 744 | 2 |
+| Reset | 26 | **756** | 744 | 1 |
+
+`containerHeightChanges` = `0:756` di ketiga kasus → tinggi kotak tabel **tidak berubah sama sekali**
+dari 26 baris ke 2 baris, dan `clientHeight` tetap 744 (track scrollbar tingginya konstan). Pada
+filter Desktop: **0 toggle overflow** dan `scrollHeight` beku di 1157 sepanjang animasi.
+
+**SISA 2 TOGGLE PADA FILTER NOTEBOOK, penyebabnya teridentifikasi bukan lagi soal tinggi:** DOM
+sempat memuat **18 baris** selama 2 frame (terukur `rowCount 16 → 18 → 2`) padahal filter hanya
+menyisakan 2 — baris lama dan baris baru sempat hidup bersamaan, kemungkinan dari animasi enter
+TransitionGroup. Selama 2 frame itu konten melebihi container sehingga thumb muncul sekejap
+(≈33ms) lalu hilang. Pembekuan tinggi tidak bisa menutupnya karena pembekuan hanya menaikkan tinggi
+minimum, tidak bisa membatasi konten yang benar-benar lebih banyak. Menghilangkannya berarti melepas
+animasi enter/TransitionGroup — belum saya lakukan tanpa persetujuan.

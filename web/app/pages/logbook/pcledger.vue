@@ -394,18 +394,25 @@ watch(visibleRows, (v) => {
     const id = el.dataset.id
     return !!id && before[id] !== undefined && ids.has(id)
   })
-  if (!movers.length) return
-
-  // THE SCROLL AREA'S HEIGHT IS FROZEN FOR THE DURATION OF THE GLIDE, and that is what stops the
-  // scrollbar from flickering. A transformed row still counts toward the scroll container's
-  // scrollable overflow, so pinning rows back to lower positions stretches `scrollHeight` while the
-  // real content has just got SHORTER, and the extent changes on every frame of the animation -
-  // which repaints the thumb on every frame. Measured through a chassis filter: scrollHeight ran
-  // 813 -> 795 -> 779 -> 765 -> 753 -> 744 -> 736 -> 730 -> 727 over ten frames against a
-  // clientHeight of 727, i.e. the extent moved under the scrollbar the whole way. Holding the table
-  // at its pre-change height keeps scrollHeight constant while the rows travel, and it is released
-  // once they have landed, so the thumb changes exactly once, calmly, instead of flickering.
+  // THE SCROLL AREA'S HEIGHT IS FROZEN FOR EVERY ROW-SET CHANGE, including one where nothing has to
+  // travel. A transformed row still counts toward the scroll container's scrollable overflow, so
+  // pinning rows back to lower positions stretched `scrollHeight` while the real content had just
+  // got shorter, and the extent moved on every frame of the animation - which repaints the thumb
+  // every frame. Measured through a chassis filter: scrollHeight ran 813 -> 795 -> 779 -> 765 -> 753
+  // -> 744 -> 736 -> 730 -> 727 against a clientHeight of 727. Holding the table at its pre-change
+  // height keeps scrollHeight constant for the whole glide.
+  //
+  // It is applied BEFORE the movers check on purpose: a filter whose surviving rows happen to keep
+  // their positions (the Notebook filter, 16 rows down to 2) has nothing to animate, and the first
+  // version returned early there and left the extent unfrozen - which is the gap that was still
+  // flickering. When there is nothing to glide, the extent is given back on a short timeout instead.
+  const unfreeze = () => { if (tableEl.value) tableEl.value.style.minHeight = '' }
   if (tableEl.value && rowScrollBefore) tableEl.value.style.minHeight = `${rowScrollBefore}px`
+
+  if (!movers.length) {
+    window.setTimeout(unfreeze, 60)
+    return
+  }
 
   const pin = () => {
     movers.forEach((el) => {
@@ -422,7 +429,7 @@ watch(visibleRows, (v) => {
     })
     window.setTimeout(() => {
       movers.forEach((el) => { el.style.transition = ''; el.style.transform = '' })
-      if (tableEl.value) tableEl.value.style.minHeight = ''
+      unfreeze()
     }, ROW_ANIM_MS + 120)
   }
 
@@ -1063,11 +1070,21 @@ async function exportExcel() {
    appears when the rows load, steals ~15px of width, and every column jumps sideways in one
    frame. Same reasoning as the CCTV register. */
 .pl-scroll {
-  max-height: 70vh;
+  /* A FIXED height, not `max-height`, on HIRO's instruction: "buat tinggi table nya tetap seperti
+     original, walau pun record banyak/dikit tidak berubah". With max-height the box grew and shrank
+     with the row count, so every filter moved the scrollbar's own track and thumb - and on the
+     extreme filter (16 rows down to 2) the box collapsed from 727px to 125px in the middle of the
+     transition, which is a second, structural source of flicker that freezing the extent could not
+     cover. At a fixed 70vh the track is the same height whether the register holds 26 rows or 2, and
+     the footer below it cannot move either. The cost, accepted deliberately: a filtered-down
+     register keeps a tall empty area under its last row.
+     One more thing this box does NOT change: its height no longer depends on the rows at all, so the
+     only thing left that can move is scrollHeight - which the row FLIP freezes while it runs. */
+  height: 70vh;
   /* overflow-y-scroll, not auto, and not `overflow: auto` - matched to the CCTV register. The
      track is rendered at all times, so the scrollbar can never blink in and out as the row count
-     crosses the 70vh threshold. `overflow-x: auto` stays: the horizontal bar is only useful when
-     the table genuinely overflows sideways. */
+     crosses the threshold. `overflow-x: auto` stays: the horizontal bar is only useful when the
+     table genuinely overflows sideways (here it always does, 4304px of table in a 1650px box). */
   overflow-y: scroll;
   overflow-x: auto;
   scrollbar-gutter: stable;
