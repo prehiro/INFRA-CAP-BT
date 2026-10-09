@@ -25,24 +25,37 @@ const SHEET_NAME = 'Ledger'
 const toast = useToast()
 
 /* ---------------- columns (mirror of the reference sheet) ---------------- */
+/**
+ * `w` IS A PERCENTAGE SHARE of the table's width, not a fixed width. Every column used to carry an
+ * explicit rem width that added up to 269rem - 4304px measured inside a 1650px viewport - so the
+ * register was 2.6 screens wide and each column was as wide as its longest possible value. HIRO:
+ * "buat lebar kolomnya responsive? tujuanya agar lebih ramping dan tidak terlalu melebar".
+ * Percentages let the columns share whatever width is available: the register fits the viewport and
+ * grows only when the screen does.
+ *
+ * The shares are hand-picked rather than the old rem values scaled down mechanically - a proportional
+ * conversion would have given the No column 1.8% (30px) and the Date column 4%. The columns carrying
+ * long values (Email, Hostname, Location) still get the biggest shares. They sum to 95%, leaving 5%
+ * for Actions, and the pinned pair is positioned by MEASUREMENT now - see pinOffset.
+ */
 type Column = { key: string; label: string; w: number; align?: 'center' }
 
 const COLUMNS: Column[] = [
-  { key: 'nomor', label: 'No', w: 5, align: 'center' },
-  { key: 'staff_name', label: 'Staff Name', w: 20 },
-  { key: 'email', label: 'Email Address', w: 26 },
-  { key: 'gid', label: 'GID', w: 12 },
-  { key: 'japan_hostname', label: 'JAPAN Hostname', w: 16 },
-  { key: 'computer_model', label: 'Computer Model', w: 16 },
-  { key: 'computer_sn', label: 'Computer S/N', w: 14 },
-  { key: 'tanggal', label: 'Date', w: 12, align: 'center' },
-  { key: 'chassis', label: 'Computer Chassis', w: 15 },
-  { key: 'manufacturer', label: 'Computer Manufacturer', w: 19 },
-  { key: 'os_name', label: 'Computer O/S Name', w: 20 },
-  { key: 'os_arch', label: 'Computer O/S Architecture', w: 17 },
-  { key: 'lokasi', label: 'Location', w: 28 },
-  { key: 'remark2', label: 'Remark2', w: 26 },
-  { key: 'remark3', label: 'Remark3', w: 18 }
+  { key: 'nomor', label: 'No', w: 3, align: 'center' },
+  { key: 'staff_name', label: 'Staff Name', w: 8 },
+  { key: 'email', label: 'Email Address', w: 10 },
+  { key: 'gid', label: 'GID', w: 5 },
+  { key: 'japan_hostname', label: 'JAPAN Hostname', w: 8 },
+  { key: 'computer_model', label: 'Computer Model', w: 7 },
+  { key: 'computer_sn', label: 'Computer S/N', w: 7 },
+  { key: 'tanggal', label: 'Date', w: 4, align: 'center' },
+  { key: 'chassis', label: 'Computer Chassis', w: 5 },
+  { key: 'manufacturer', label: 'Computer Manufacturer', w: 6 },
+  { key: 'os_name', label: 'Computer O/S Name', w: 7 },
+  { key: 'os_arch', label: 'Computer O/S Architecture', w: 5 },
+  { key: 'lokasi', label: 'Location', w: 9 },
+  { key: 'remark2', label: 'Remark2', w: 7 },
+  { key: 'remark3', label: 'Remark3', w: 4 }
 ]
 
 /**
@@ -205,6 +218,9 @@ watch(visibleKeys, async () => {
     })
     window.setTimeout(() => {
       movers.forEach(([el]) => { el.style.transition = ''; el.style.transform = '' })
+      // The visible set has changed, so the first column may be a different one now - re-measure the
+      // pinned offset once the animation has settled, not during it, or the pinned pair would jump.
+      measurePinOffset()
     }, COL_ANIM_MS + 100)
   })
 }, { deep: true })
@@ -214,6 +230,33 @@ watch(visibleKeys, async () => {
  * No column moves Staff Name into the first slot, and with a fixed `left: 5rem` on the second
  * slot it would have been pushed 5rem into the table and left a visible hole.
  */
+/**
+ * The second pinned column's `left` is MEASURED, not derived from a declared width. The columns are
+ * percentage shares now, so the first column's pixel width depends on the viewport and changes when a
+ * column is hidden or shown - the old `left: 5rem` read the No column's declared width, which would
+ * leave the sticky pair misaligned at any width where 5rem is not the No column's real width.
+ *
+ * The measurement skips zero-width cells on purpose: a hidden column keeps its <th> in the DOM at
+ * width 0, so "the first th" is not necessarily the first VISIBLE column.
+ */
+const pinOffset = ref(0)
+
+function measurePinOffset() {
+  const ths = [...(tableEl.value?.querySelectorAll('thead tr th') ?? [])] as HTMLElement[]
+  const firstVisible = ths.find((th) => th.getBoundingClientRect().width > 0)
+  const w = firstVisible?.getBoundingClientRect().width ?? 0
+  if (w) pinOffset.value = Math.round(w)
+}
+
+onMounted(() => {
+  window.addEventListener('resize', measurePinOffset)
+  measurePinOffset()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', measurePinOffset)
+})
+
 function pinClass(i: number) {
   if (i === 0) return 'pl-pin pl-pin-first'
   if (i === 1) return 'pl-pin'
@@ -222,8 +265,7 @@ function pinClass(i: number) {
 
 function pinStyle(i: number) {
   if (i !== 1) return undefined
-  const first = visibleColumns.value[0]
-  return first ? { left: `${first.w}rem` } : undefined
+  return { left: `${pinOffset.value}px` }
 }
 
 /** Kept in sync with COLUMNS by key; the modal groups the fields into three sections. */
@@ -470,6 +512,12 @@ watch(visibleRows, (v) => {
   }
   requestAnimationFrame(step)
 }, { flush: 'post' })
+
+// The register is loaded asynchronously, so the first real measurement of the pinned offset can only
+// happen once the rows exist. This watcher sits HERE, not next to measurePinOffset(), because `rows`
+// is declared in this section: placed any earlier, `watch(undefined, ...)` throws during setup and the
+// whole page fails to render (measured: a 500 reading "Cannot read properties of undefined").
+watch(rows, () => { measurePinOffset() }, { flush: 'post' })
 
 /* `departments` survives the removal of the Department FILTER for one reason only: `blankForm()` seeds
    the new-record form's Department field from it. The filter itself is gone - HIRO asked for it to go,
@@ -902,9 +950,9 @@ async function exportExcel() {
                 <col
                   v-for="c in COLUMNS"
                   :key="c.key"
-                  :style="{ width: isVisible(c.key) ? c.w + 'rem' : '0rem' }"
+                  :style="{ width: isVisible(c.key) ? c.w + '%' : '0%' }"
                 />
-                <col style="width: 5rem" />
+                <col style="width: 5%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1162,7 +1210,11 @@ async function exportExcel() {
      redistributes the leftover unevenly, so two columns that declare the same width end up
      different at a wider viewport. */
   table-layout: fixed;
-  min-width: max-content;
+  /* A floor for narrow screens, with a percentage colgroup above it: the columns share the available
+     width down to this point, then the register scrolls sideways rather than squeezing them into
+     unreadable slivers. Same model as the CCTV register (full width + a min-width + % columns).
+     `min-width: max-content` is gone with the rem widths - it was what pinned the table at 4304px. */
+  min-width: 1200px;
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -1192,7 +1244,10 @@ async function exportExcel() {
      accent, sama seperti NO". Sorting no longer changes this colour (see the zebra note below), so
      the sorted column is marked by its arrow alone. */
   color: var(--ui-primary);
-  white-space: nowrap;
+  /* NO `white-space: nowrap` HERE ANY MORE, deliberately. With percentage columns a long header
+     ("Computer Manufacturer", "JAPAN Hostname") no longer fits its cell at a normal viewport, and a
+     nowrap header overflows into its neighbour instead of wrapping. The CCTV register's header wraps
+     for the same reason. */
   cursor: pointer;
   user-select: none;
 }

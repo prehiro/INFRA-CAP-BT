@@ -2554,3 +2554,39 @@ Record — chassis di kiri, location di kanan sesuai permintaan.
 - Opsi chassis: All chassis / Desktop / Notebook / Tablet. Pilih Desktop → 16 baris.
 - Opsi location: All locations + 8 lokasi nyata. Dengan chassis=Desktop lalu lokasi=Office → 2 baris,
   footer "Showing 2 of 26" — kedua filter bergabung dengan benar.
+
+### Lebar kolom PC Ledger dibuat responsif (2026-10-08)
+
+HIRO: *"buat lebar kolomnya responsive? tujuanya agar lebih ramping dan tidak terlalu melebar"*.
+
+**PENYEBAB LEBAR.** Setiap kolom punya lebar rem eksplisit yang totalnya 269rem = **4304px** di dalam
+viewport 1650px, dan `.pl-table` memakai `min-width: max-content` sehingga tabel dipatok selebar
+4304px. Hasilnya register 2,6 layar dan tiap kolom selebar nilai terpanjangnya.
+
+**PERUBAHAN:**
+1. `COLUMNS[].w` sekarang **persentase**, bukan rem — totalnya 95% + 5% untuk kolom Actions.
+   Bagiannya dipilih manual, bukan hasil skala mekanis nilai rem lama (konversi proporsional akan
+   memberi kolom No 1,8% alias 30px dan kolom Date 4%).
+2. Colgroup: `c.w + '%'` (kolom tersembunyi `0%`), kolom Actions `5%`.
+3. `.pl-table` `min-width: max-content` → **`min-width: 1200px`** sebagai lantai untuk layar sempit
+   (model yang sama dengan tabel CCTV: full width + min-width + kolom persentase).
+4. **Offset kolom pin sekarang DIUKUR, bukan hard-code** (`pinOffset` + `measurePinOffset()`), karena
+   lebar kolom pertama kini bergantung viewport dan berubah saat kolom disembunyikan. Pengukuran
+   melewati sel selebar 0 px supaya kolom yang disembunyikan tidak dianggap kolom pertama.
+   Dipanggil saat mount, saat resize, saat `rows` berubah (register dimuat asinkron), dan setelah
+   animasi show/hide kolom selesai.
+5. `white-space: nowrap` pada `th` **dihapus**: dengan kolom persentase, judul panjang
+   ("Computer Manufacturer", "JAPAN Hostname") tidak lagi muat dan akan menimpa kolom sebelah;
+   sekarang membungkus seperti header register CCTV.
+
+**TERUKUR SETELAH PERUBAHAN (1920×1080):** `tableWidth` 1650 = `scrollWidth` 1650 = `clientWidth`
+1650, **`hOverflow: false`** (sebelumnya 4304 vs 1650). Lebar kolom: No 50, Staff 132, Email 165,
+GID 83, Hostname 132, Model 116, S/N 116, Date 66, Chassis 83, Manufacturer 99, OS Name 116,
+OS Arch 83, Location 149, Remark2 116, Remark3 66, Actions 83 — jumlah 1650. Pin tepat:
+`staffStickyLeft: 50px` = lebar kolom No (50), dan posisi `th`/`td` kolom Staff Name sama-sama 283
+(= tepi scroller 233 + 50). Tinggi baris header 57px (judul membungkus, tidak menimpa). 26 baris utuh.
+
+**KESALAHAN SAYA YANG SEMPAT MEMBUAT HALAMAN 500:** `watch(rows, ...)` saya pasang sebelum `rows`
+dideklarasikan, sehingga Vue menerima sumber undefined dan halaman gagal render ("Cannot read
+properties of undefined"). Watcher itu sudah dipindah ke setelah `rows` dideklarasikan; tercatat juga
+di komentarnya supaya tidak terulang.
