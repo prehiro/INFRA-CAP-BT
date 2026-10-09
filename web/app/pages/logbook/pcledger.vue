@@ -984,7 +984,13 @@ async function exportExcel() {
 .pl-pin {
   position: sticky;
   z-index: 3;
-  background: var(--ui-bg-elevated);
+  /* The opaque colour must be the surface the table ACTUALLY sits on, which is `--ui-bg`, not
+     `--ui-bg-elevated`. Elevated painted the No and Staff Name columns a shade lighter than every
+     other column - HIRO: "pada tabel no dan staff name warna nya kenapa berbeda?" - because every
+     other cell is transparent and lets the base surface show through. A sticky column still needs
+     an opaque background so the columns scrolling underneath cannot show through it; it just has
+     to be the right opaque colour. */
+  background: var(--ui-bg);
 }
 
 .pl-pin-first {
@@ -997,13 +1003,17 @@ async function exportExcel() {
 
 .pl-table th.pl-pin {
   z-index: 4;
+  /* Back to the elevated colour for the HEADER cells only. The header band is deliberately one
+     shade above the body, and letting these two cells inherit the body colour would punch a dark
+     notch into the first two cells of the header. */
+  background: var(--ui-bg-elevated);
 }
 
 /* A pinned cell must stay OPAQUE. A translucent hover would let the columns scrolling underneath
    show through it, which is the classic broken sticky-column look - so the hover tint is mixed
    into the opaque surface rather than layered over it. */
 .pl-table tbody tr:hover td.pl-pin {
-  background: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg-elevated));
+  background: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg));
 }
 
 /* ONE FONT IN THIS TABLE. Email, GID, JAPAN Hostname and S/N used to be rendered in a monospace

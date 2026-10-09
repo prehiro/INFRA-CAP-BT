@@ -2218,3 +2218,28 @@ melaporkan 0 walaupun gerakannya jelas ada. Sebabnya FLIP memang mengosongkan `e
 di frame berikutnya dan membiarkan **transition** yang menganimasikan dari nilai sebelumnya — jadi
 `style.transform` sengaja kosong selama animasi berjalan, dan pengukuran yang benar adalah posisi
 (`getBoundingClientRect().left`), bukan ada/tidaknya inline transform.
+
+### Warna kolom No + Staff Name berbeda (2026-10-08)
+
+HIRO: *"pada tabel no dan staff name warna nya kenapa berbeda?"* Ini bug saya, bukan maksud desain.
+
+**Penyebab (terukur):** sel kolom pin dicat `var(--ui-bg-elevated)` = `oklch(0.274 0.006 286.033)`,
+sedangkan sel kolom lain `rgba(0,0,0,0)` alias transparan sehingga memperlihatkan permukaan di
+belakang tabel = `oklch(0.21 0.006 285.885)` alias `var(--ui-bg)`. Jadi dua kolom pertama duduk satu
+tone lebih terang dari 14 kolom lainnya.
+
+Kolum pin memang WAJIB opaque — kalau tidak, kolom yang lewat di bawahnya akan tembus saat scroll
+(itulah kenapa `.pl-pin` punya background sejak awal). Yang salah adalah tokennya: tabel ini duduk di
+`--ui-bg`, bukan `--ui-bg-elevated`. Saya ambil token yang lebih terang tanpa memeriksa permukaan di
+bawah tabelnya.
+
+**Perbaikan:** `.pl-pin` → `var(--ui-bg)`, dan hover pin `color-mix(... var(--ui-bg))` supaya tetap
+opaque, sehingga mix-nya setara dengan hover sel biasa yang translucent di atas `--ui-bg`.
+Satu penyesuaian penting: `.pl-table th.pl-pin` **di-set ulang ke `--ui-bg-elevated`** — kalau
+dibiarkan mewarisi warna body, dua sel header pertama akan jadi gelap dan memotong pita header yang
+memang sengaja satu tone di atas body.
+
+**TERUKUR setelah perbaikan:** `bodyPin1` dan `bodyPin2` = `oklch(0.21 0.006 285.885)` = persis
+`tokenBg`; `bodyNormal` tetap transparan; `headPin1` dan `headPin3` keduanya
+`oklch(0.274 0.006 286.033)` (pita header tetap seragam). Semua berbasis token, jadi light mode ikut
+benar tanpa hardcode.
