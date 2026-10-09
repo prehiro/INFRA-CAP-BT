@@ -2590,3 +2590,32 @@ OS Arch 83, Location 149, Remark2 116, Remark3 66, Actions 83 — jumlah 1650. P
 dideklarasikan, sehingga Vue menerima sumber undefined dan halaman gagal render ("Cannot read
 properties of undefined"). Watcher itu sudah dipindah ke setelah `rows` dideklarasikan; tercatat juga
 di komentarnya supaya tidak terulang.
+
+### PC Ledger: kilatan abu-abu di header + tinggi header (2026-10-08)
+
+HIRO: *"ada bug css pada tampilan header dimana ketika filter kolom di tick/untick terlihat ada
+warna abu-abu terang. ohya table header juga terlalu besar height nya tolong sesuaikan"*.
+
+**1. KILATAN ABU-ABU TERANG.** Sebabnya: warna pita header hanya dipasang pada elemen `th`.
+Saat kolom di-tick/untick, sel header bergerak horizontal (FLIP kolom), dan selama beberapa frame
+muncul CELAH antar sel - yang tembus adalah permukaan kartu (`--ui-bg-elevated`, abu-abu lebih
+terang), bukan warna header. Perbaikan: `.pl-table thead` dibuat `position: sticky; top: 0;
+z-index: 10` **dan** diberi warna pita yang sama dengan `th`. Thead membentang seluruh pita, ikut
+lengket, melukis di bawah sel, jadi celah apa pun terisi warna yang SAMA. Ini juga struktur yang
+dipakai register CCTV (`sticky top-0` pada thead-nya).
+Terukur: `getComputedStyle(thead).backgroundColor` === `getComputedStyle(th).backgroundColor` ===
+oklab(0.2356 ...); screenshot pita header yang diambil di tengah animasi toggle memperlihatkan pita
+yang rata (kolom GID yang runtuh tidak lagi membocorkan warna terang).
+
+**2. TINGGI HEADER.** Penyebabnya label panjang membungkus dua baris: 2 x 18px + 20px padding + 1px
+border = **57px**. Perbaikan:
+- `Column.short` (label pendek KHUSUS header tabel). `label` tetap utuh dan masih dipakai ekspor
+  Excel serta popover pilihan kolom, jadi header Excel tetap sama dengan form IT FORM SG031.
+  Singkatan: Email, JAPAN Host, Model, S/N, Chassis, Vendor, O/S Name, O/S Arch.
+- Padding vertikal `th` 10px -> 8px (horizontal tetap 12px supaya tepi kiri teks sejajar dengan sel).
+- Bagian kolom sedikit digeser agar semua label muat satu baris (chassis 6%, os_arch 6%; email 9%,
+  staff_name 7%).
+Hasil: semua sel header **35px**, satu baris, tanpa pembungkusan (sebelumnya 57px).
+
+**DIVERIFIKASI:** lebar tabel tetap 1650 = scrollWidth = clientWidth; 26 baris; header tetap lengket
+saat kontainer di-scroll (`theadTopVsScrollport: 0` pada scrollTop 300).

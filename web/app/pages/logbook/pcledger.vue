@@ -38,21 +38,21 @@ const toast = useToast()
  * long values (Email, Hostname, Location) still get the biggest shares. They sum to 95%, leaving 5%
  * for Actions, and the pinned pair is positioned by MEASUREMENT now - see pinOffset.
  */
-type Column = { key: string; label: string; w: number; align?: 'center' }
+type Column = { key: string; label: string; short?: string; w: number; align?: 'center' }
 
 const COLUMNS: Column[] = [
   { key: 'nomor', label: 'No', w: 3, align: 'center' },
-  { key: 'staff_name', label: 'Staff Name', w: 8 },
-  { key: 'email', label: 'Email Address', w: 10 },
+  { key: 'staff_name', label: 'Staff Name', w: 7 },
+  { key: 'email', label: 'Email Address', short: 'Email', w: 9 },
   { key: 'gid', label: 'GID', w: 5 },
-  { key: 'japan_hostname', label: 'JAPAN Hostname', w: 8 },
-  { key: 'computer_model', label: 'Computer Model', w: 7 },
-  { key: 'computer_sn', label: 'Computer S/N', w: 7 },
+  { key: 'japan_hostname', label: 'JAPAN Hostname', short: 'JAPAN Host', w: 8 },
+  { key: 'computer_model', label: 'Computer Model', short: 'Model', w: 7 },
+  { key: 'computer_sn', label: 'Computer S/N', short: 'S/N', w: 7 },
   { key: 'tanggal', label: 'Date', w: 4, align: 'center' },
-  { key: 'chassis', label: 'Computer Chassis', w: 5 },
-  { key: 'manufacturer', label: 'Computer Manufacturer', w: 6 },
-  { key: 'os_name', label: 'Computer O/S Name', w: 7 },
-  { key: 'os_arch', label: 'Computer O/S Architecture', w: 5 },
+  { key: 'chassis', label: 'Computer Chassis', short: 'Chassis', w: 6 },
+  { key: 'manufacturer', label: 'Computer Manufacturer', short: 'Vendor', w: 6 },
+  { key: 'os_name', label: 'Computer O/S Name', short: 'O/S Name', w: 7 },
+  { key: 'os_arch', label: 'Computer O/S Architecture', short: 'O/S Arch', w: 6 },
   { key: 'lokasi', label: 'Location', w: 9 },
   { key: 'remark2', label: 'Remark2', w: 7 },
   { key: 'remark3', label: 'Remark3', w: 4 }
@@ -968,7 +968,7 @@ async function exportExcel() {
                     @click="toggleSort(c.key)"
                   >
                     <span class="inline-flex items-center gap-1">
-                      {{ c.label }}
+                      {{ c.short ?? c.label }}
                       <UIcon
                         v-if="sortKey === c.key"
                         :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
@@ -1223,6 +1223,20 @@ async function exportExcel() {
   font-size: 0.875rem;
 }
 
+.pl-table thead {
+  /* STICKY ON THE THEAD, NOT ONLY ON EACH <th>, and it carries the band's background.
+     That is what killed the light grey flash: with the colour painted only on the <th> elements,
+     the horizontal movement of a column toggle left gaps between them for a few frames, and what
+     showed through was the CARD's surface (--ui-bg-elevated, a lighter grey) - HIRO: "ketika filter
+     kolom di tick/untick terlihat ada warna abu-abu terang". The thead spans the whole band, sticks
+     with it, paints underneath the cells and therefore fills any such gap with the SAME colour.
+     Also what the CCTV register does (`sticky top-0` on its thead). */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in oklab, var(--ui-bg) 60%, var(--ui-bg-elevated));
+}
+
 .pl-table th {
   position: sticky;
   top: 0;
@@ -1234,8 +1248,11 @@ async function exportExcel() {
      CCTV's header renders to, so the two are indistinguishable where they are not scrolling. */
   background: color-mix(in oklab, var(--ui-bg) 60%, var(--ui-bg-elevated));
   border-bottom: 1px solid var(--ui-border);
-  /* CCTV's th metrics: px-3 py-2.5, text-xs, tracking-wide (0.025em). Was 8px/11px/0.04em. */
-  padding: 0.625rem 0.75rem;
+  /* 8px rather than CCTV's 10px vertically, together with the short header labels above: the header
+     used to wrap to two lines and stood 57px tall, which HIRO asked to bring down. One line plus this
+     padding lands at 35px. The horizontal padding stays 12px so the text's left edge still lines up
+     with the cell text below it. */
+  padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
