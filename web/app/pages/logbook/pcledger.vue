@@ -280,8 +280,8 @@ const searching = ref('')
  * than a falsy check that happens to mean "all".
  */
 const ALL = '__all__'
-const filterDept = ref(ALL)
 const filterChassis = ref(ALL)
+const filterLocation = ref(ALL)
 const sortKey = ref<string>('nomor')
 const sortDir = ref<'asc' | 'desc'>('asc')
 
@@ -308,8 +308,8 @@ const visibleRows = computed(() => {
   const q = searching.value.trim().toLowerCase()
   let out = rows.value
   if (q) out = out.filter((r) => haystack(r).includes(q))
-  if (filterDept.value !== ALL) out = out.filter((r) => cell(r, 'departemen') === filterDept.value)
   if (filterChassis.value !== ALL) out = out.filter((r) => cell(r, 'chassis') === filterChassis.value)
+  if (filterLocation.value !== ALL) out = out.filter((r) => cell(r, 'lokasi') === filterLocation.value)
 
   const key = sortKey.value
   const dir = sortDir.value === 'asc' ? 1 : -1
@@ -471,11 +471,19 @@ watch(visibleRows, (v) => {
   requestAnimationFrame(step)
 }, { flush: 'post' })
 
+/* `departments` survives the removal of the Department FILTER for one reason only: `blankForm()` seeds
+   the new-record form's Department field from it. The filter itself is gone - HIRO asked for it to go,
+   and the column has only ever held a single value ("Capacitor"), so a control offering "All
+   departments" plus that one value could not filter anything. `locations` is the new filter's source,
+   built the same way as `chassisTypes` so the two behave identically. */
 const departments = computed(() =>
   [...new Set(rows.value.map((r) => cell(r, 'departemen')).filter(Boolean))].sort()
 )
 const chassisTypes = computed(() =>
   [...new Set(rows.value.map((r) => cell(r, 'chassis')).filter(Boolean))].sort()
+)
+const locations = computed(() =>
+  [...new Set(rows.value.map((r) => cell(r, 'lokasi')).filter(Boolean))].sort()
 )
 
 function toggleSort(key: string) {
@@ -730,7 +738,7 @@ async function exportExcel() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     const stamp = new Date().toISOString().slice(0, 10)
-    const suffix = (searching.value || filterDept.value !== ALL || filterChassis.value !== ALL) ? '_filtered' : ''
+    const suffix = (searching.value || filterChassis.value !== ALL || filterLocation.value !== ALL) ? '_filtered' : ''
     a.href = url
     a.download = `PC_Ledger_${stamp}${suffix}.xlsx`
     document.body.appendChild(a)
@@ -785,16 +793,16 @@ async function exportExcel() {
               </UInput>
 
               <USelect
-                v-model="filterDept"
-                :items="[{ label: 'All departments', value: ALL }, ...departments.map(d => ({ label: d, value: d }))]"
-                class="w-44"
+                v-model="filterChassis"
+                :items="[{ label: 'All chassis', value: ALL }, ...chassisTypes.map(d => ({ label: d, value: d }))]"
+                class="w-40"
                 :ui="{ base: 'h-9' }"
               />
 
               <USelect
-                v-model="filterChassis"
-                :items="[{ label: 'All chassis', value: ALL }, ...chassisTypes.map(d => ({ label: d, value: d }))]"
-                class="w-40"
+                v-model="filterLocation"
+                :items="[{ label: 'All locations', value: ALL }, ...locations.map(d => ({ label: d, value: d }))]"
+                class="w-64"
                 :ui="{ base: 'h-9' }"
               />
 

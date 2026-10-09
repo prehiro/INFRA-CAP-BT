@@ -2526,3 +2526,31 @@ sekali. `tableEl` tetap dipakai untuk query baris; hanya target `min-height` yan
   `clientHeight` = `0:744` konstan, `overflowToggles: 0` → pembekuan tetap bekerja, tidak ada regresi
   flicker scrollbar.
 - Wrapper menerima `min-height: 1157px` di frame 54 (`wrapperMinHeight`), tabel tidak lagi.
+
+### Filter PC Ledger: Department dihapus, Location ditambahkan (2026-10-08)
+
+HIRO: *"delete filter all departement. tambah filter by location. posisi allchasis di kiri, location
+di kanan"*.
+
+**DEPARTMENT DIHAPUS** karena memang tidak bisa memfilter apa pun: kolom `departemen` di data hanya
+berisi SATU nilai ("Capacitor") pada seluruh 26 baris, jadi pilihannya cuma "All departments" +
+"Capacitor". Yang dihapus: USelect-nya, state `filterDept`, baris penyaringan di `visibleRows`, dan
+acuannya di nama file Excel. **`computed departments` SENGAJA DIBIARKAN** karena masih dipakai
+`blankForm()` untuk mengisi default field Department di form tambah record — sudah saya beri komentar
+supaya tidak dikira sisa.
+
+**LOCATION DITAMBAHKAN** memakai field `lokasi` (label "Location", 8 nilai nyata: Office, PC Display
+EVR, Pc Machine Final inspection #018/#019/#020/#035, Rack PC Ghatering - Server Room, X-DTS Project).
+State `filterLocation`, computed `locations` (dibangun sama persis seperti `chassisTypes`), baris
+penyaringan di `visibleRows`, dan USelect-nya. Ikut masuk ke acuan nama file Excel.
+
+**URUTAN TOOLBAR** sekarang: Search | **All chassis** | **All locations** | Columns | Excel | Add
+Record — chassis di kiri, location di kanan sesuai permintaan.
+
+**TERUKUR DI BROWSER (1920×1080):**
+- Posisi terukur dari koordinat X: `All chassis` di 1076, `All locations` di 1244 → chassis kiri,
+  location kanan.
+- `hasDepartments: false` → kontrol Department benar-benar hilang dari DOM/halaman.
+- Opsi chassis: All chassis / Desktop / Notebook / Tablet. Pilih Desktop → 16 baris.
+- Opsi location: All locations + 8 lokasi nyata. Dengan chassis=Desktop lalu lokasi=Office → 2 baris,
+  footer "Showing 2 of 26" — kedua filter bergabung dengan benar.
