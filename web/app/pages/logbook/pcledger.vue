@@ -345,6 +345,17 @@ const visibleRows = computed(() => {
  * row move and its left stayed at the scroller's left edge in every frame.
  */
 const ROW_ANIM_MS = 340
+const ROW_ANIM_MAX_MS = 560
+
+/**
+ * LONGER TRAVELS GET MORE TIME, so every row moves at roughly the same speed instead of the distant
+ * ones flashing past while a near neighbour drifts into place. The flat 340ms baseline was measured
+ * against a 94px glide, which it suits; on a sort a row travels up to 860px in that same time, and
+ * large displacements are what read as rough.
+ */
+function rowAnimMs(dy: number): number {
+  return Math.min(ROW_ANIM_MAX_MS, ROW_ANIM_MS + Math.round(Math.max(0, Math.abs(dy) - 60) / 3))
+}
 
 /* PINNING IS SELF-CORRECTING, recomputed on each frame from `offsetTop`, and the reason is a defect
    the first version really had: it pinned a FIXED delta (index difference x row height) in one shot,
@@ -414,35 +425,38 @@ watch(visibleRows, (v) => {
     return
   }
 
+  const lastDy = new Map<HTMLElement, number>()
   const pin = () => {
     movers.forEach((el) => {
       const id = el.dataset.id as string
       const dy = before[id] - el.offsetTop
+      lastDy.set(el, dy)
       el.style.transition = 'none'
       el.style.transform = Math.abs(dy) < 1 ? '' : `translateY(${dy}px)`
     })
   }
   const release = () => {
     movers.forEach((el) => {
-      el.style.transition = `transform ${ROW_ANIM_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+      // A GENTLER OVERSHOOT than the column bounce: on a 43px row the stronger curve
+      // (0.34, 1.56, 0.64, 1) reads as a wobble at the end of the glide rather than a landing, and the
+      // glide itself is what HIRO asked to smooth out.
+      el.style.transition = `transform ${rowAnimMs(lastDy.get(el) ?? 0)}ms cubic-bezier(0.22, 1.06, 0.36, 1)`
       el.style.transform = ''
     })
     window.setTimeout(() => {
       movers.forEach((el) => { el.style.transition = ''; el.style.transform = '' })
       unfreeze()
-    }, ROW_ANIM_MS + 120)
+    }, ROW_ANIM_MAX_MS + 140)
   }
 
-  // Two conditions end the pin: the layout has moved, and it then stayed put for a frame. The
-  // ceiling is a safety net so a patch that never changes anything cannot leave rows pinned forever.
+  // The release fires on the FIRST frame the layout is seen to have moved. Requiring it to still be
+  // moved on a second frame cost 16ms of dead time at the start of every glide - a stall the eye reads
+  // as a hitch exactly when the filter is applied. The ceiling stays as the safety net.
   let frames = 0
-  let movedOnce = false
   const step = () => {
     pin()
     const movedNow = movers.some((el) => Math.abs(before[el.dataset.id as string] - el.offsetTop) >= 1)
-    if (movedOnce && movedNow) { release(); return }
-    movedOnce = movedOnce || movedNow
-    if (++frames > 8) { release(); return }
+    if (movedNow || ++frames > 8) { release(); return }
     requestAnimationFrame(step)
   }
   requestAnimationFrame(step)

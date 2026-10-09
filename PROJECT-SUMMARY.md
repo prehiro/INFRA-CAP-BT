@@ -2476,3 +2476,31 @@ TransitionGroup. Selama 2 frame itu konten melebihi container sehingga thumb mun
 (≈33ms) lalu hilang. Pembekuan tinggi tidak bisa menutupnya karena pembekuan hanya menaikkan tinggi
 minimum, tidak bisa membatasi konten yang benar-benar lebih banyak. Menghilangkannya berarti melepas
 animasi enter/TransitionGroup — belum saya lakukan tanpa persetujuan.
+
+### Transisi baris dibuat lebih halus saat filter chassis (2026-10-08)
+
+HIRO: *"ok sekarang saya mau transisi row nya lebih smooth ketika filter chasis"*.
+
+Dua penghambat kehalusan ditemukan dari hasil ukur sebelumnya, dan keduanya diperbaiki:
+
+**1. Ada stall ~1 frame di awal setiap glide.** Pin lama mensyaratkan layout sudah bergerak **dan**
+masih bergerak pada frame berikutnya sebelum melepas animasi — jadi baris berdiri diam 16ms lebih
+dulu, lalu mulai bergerak. Itu terbaca sebagai "hitch" tepat saat filter ditekan. Sekarang release
+dilepas pada **frame pertama** layout terlihat bergerak (`if (movedNow || ++frames > 8)`), plafon 8
+frame tetap dipertahankan sebagai jaring pengaman.
+
+**2. Durasi rata 340ms membuat perjalanan jauh terasa terburu-buru.** Sekarang durasi mengikuti jarak
+lewat `rowAnimMs(dy) = clamp(340 + (|dy| - 60) / 3, 340, 560)` ms, sehingga baris yang menempuh
+ratusan piksel dapat waktu lebih banyak, dan baris yang cuma bergeser sedikit tetap gesit. Kurvanya
+juga dilembutkan dari `cubic-bezier(0.34, 1.56, 0.64, 1)` (bounce kolom) menjadi
+`cubic-bezier(0.22, 1.06, 0.36, 1)` — pada baris 43px, overshoot yang kuat terbaca sebagai goyangan
+di ujung glide, bukan pendaratan. Timeout pembersihan ikut memakai plafon `ROW_ANIM_MAX_MS`.
+
+**TERUKUR SETELAH PERBAIKAN:**
+- FILTER DESKTOP (26 → 16), baris 197 menempuh 349px: `789 → 850 → 906 → 954 → 994 → 1027 → 1054 →
+  1074 → 1091 → 1103 → 1113 → 1120 → 1125 → 1129 → 1132 → 1135 → 1136 → 1137 → 1138 → 1139 → 1138`
+  = **20 frame gerak beruntun** (sebelumnya 11), deselerasi rata tanpa stall, mendarat dengan
+  overshoot 1px (sebelumnya 2px). Baris 196 dan 201: 18 frame.
+- SORT: 20-22 frame gerak per baris (sebelumnya 22 dengan kurva lebih keras).
+- **Tidak ada regresi scrollbar**: `overflowToggles: 0` pada filter maupun sort, `clientHeight`
+  tetap 744 (tidak berubah).
