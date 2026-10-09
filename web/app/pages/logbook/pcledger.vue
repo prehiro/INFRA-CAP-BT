@@ -208,6 +208,24 @@ function snapshotLefts(): Lefts | null {
 watch(visibleKeys, async () => {
   const before = snapshotLefts()
   await nextTick()
+
+  // RE-MEASURE THE PIN OFFSET HERE - BEFORE the "after" snapshot, not when the animation ends.
+  //
+  // The columns are percentage shares, so ticking a column changes the No column's own width
+  // (measured: 64px -> 61px the moment Date was ticked on), and the second pinned column's `left`
+  // is stale from that instant. A stale pin HOLDS that column at its old x, so it sat 3px out for
+  // the whole 340ms and then snapped left in a single frame - HIRO: "setiap kali filter kolom di
+  // tick, kolom staff name bergeser ke kiri". Frame trace of the old code: the No column's right
+  // edge moved at frame 7 while the Staff Name cell stayed put until frame 33 (the cleanup), then
+  // jumped 297 -> 294.
+  //
+  // Measuring before the snapshot makes the pinned pair ordinary movers, so they glide with every
+  // other column instead of lagging behind and correcting later.
+  measurePinOffset()
+  // The reactive `:style` binding lands on the NEXT tick, so the new `left` has to be in the DOM
+  // before the snapshot is taken or the FLIP would measure the stale position and see no movement.
+  await nextTick()
+
   const after = snapshotLefts()
   if (!before || !after) return
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return

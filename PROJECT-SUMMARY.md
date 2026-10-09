@@ -2753,3 +2753,32 @@ penghapusan `computed departments` salah menyerap baris berikutnya sehingga `con
 berubah nama menjadi `locations` - artinya ada dua `const locations` dan `chassisTypes` hilang
 (error kompilasi, filter chassis rusak). Langsung diperbaiki; grep membuktikan `chassisTypes` sekarang
 dideklarasikan sekali dan masih dipakai oleh `:items` filter chassis.
+
+### Perbaikan: kolom Staff Name bergeser ke kiri saat kolom di-tick (2026-10-10)
+
+HIRO: *"ada bug lagi, setiap kali filter kolom di tick, kolom staff name bergeser ke kiri. perbaiki"*.
+
+**AKAR MASALAH (diukur per-frame, bukan ditebak).** Kolom Staff Name adalah kolom pinned kedua, jadi
+posisinya = lebar kolom No yang **DIUKUR** (`pinOffset`), bukan nilai tetap. Karena kolom memakai
+persentase, lebar kolom No ikut berubah setiap kali set kolom berubah: dari rekaman, kolom No
+**64px -> 61px pada frame 7** saat Date di-tick. Tapi `measurePinOffset()` baru dipanggil di akhir
+animasi (timeout `COL_ANIM_MS + 100` = frame 33), jadi selama ~430ms `left` kolom Staff Name masih 64px
+sementara lebar kolom No sudah 61px - sel pinned **tertahan** di posisi lama oleh sticky, lalu
+**melompat ke kiri 297 -> 294 dalam satu frame** begitu animasi selesai. Itulah pergeseran yang terlihat.
+Besar lompatannya mengikuti seberapa banyak set kolom berubah (makin banyak kolom di-tick, makin besar).
+
+**PERBAIKAN.** `measurePinOffset()` dipanggil di dalam watcher `visibleKeys`, tepat setelah layout
+berubah dan SEBELUM snapshot `after` diambil (plus satu `await nextTick()` lagi karena binding `:style`
+baru masuk DOM pada tick berikutnya). Dengan begitu offset pin sudah benar saat layout berubah, dan
+kolom pinned ikut menjadi "mover" biasa di FLIP sehingga meluncur bersama kolom lain, bukan tertinggal
+lalu mengoreksi diri di akhir.
+
+**TERUKUR SESUDAH (trello per-frame, 1920x1080):**
+- Tick ON (12 -> 13 kolom): `staffThCss` 64px -> **61px pada frame 8** (dulu frame 33); posisi sel
+  header & body meluncur 297 -> 296 -> 295 -> 294 (frame 12-16) bersamaan; jarak terhadap tepi kanan
+  kolom No (`gap`) 3.2px -> 0 tepat di frame 29; transform tersisa 0.
+- Tick OFF (13 -> 12 kolom): `staffThCss` 61px -> **64px pada frame 7**; `transform: translateX(-3.17px)`
+  terpasang frame 7 lalu dilepas frame 8; posisi 294 -> 295 -> 296 -> 297 -> 298 (overshoot) -> 297;
+  gap kembali 0 di frame 14.
+- Keadaan akhir kedua arah: `noW` 61px = `staffThLeft` = `staffTdLeft` = "61px", gapTh = gapTd = **0**,
+  `leftoverTransforms` = 0, header dan body sejajar, picker membaca "Columns (12/15)".
