@@ -124,6 +124,15 @@ function showAllColumns() {
  * wrong offset forever, so the inline styles are always cleared.
  */
 const tableEl = ref<HTMLTableElement | null>(null)
+
+/**
+ * The wrapper around the table, and the reason it exists: the frozen scroll extent is applied HERE
+ * and not on the table. A `min-height` on a `<table>` is distributed among its rows, so freezing the
+ * extent to stop the scrollbar flickering also STRETCHED every row for the whole animation - HIRO:
+ * "row melebar sebentar lalu kembali normal, ini jelek". A block wrapper takes the same height without
+ * touching the rows at all.
+ */
+const tableWrapEl = ref<HTMLElement | null>(null)
 const COL_ANIM_MS = 340
 
 /**
@@ -417,8 +426,8 @@ watch(visibleRows, (v) => {
   // their positions (the Notebook filter, 16 rows down to 2) has nothing to animate, and the first
   // version returned early there and left the extent unfrozen - which is the gap that was still
   // flickering. When there is nothing to glide, the extent is given back on a short timeout instead.
-  const unfreeze = () => { if (tableEl.value) tableEl.value.style.minHeight = '' }
-  if (tableEl.value && rowScrollBefore) tableEl.value.style.minHeight = `${rowScrollBefore}px`
+  const unfreeze = () => { if (tableWrapEl.value) tableWrapEl.value.style.minHeight = '' }
+  if (tableWrapEl.value && rowScrollBefore) tableWrapEl.value.style.minHeight = `${rowScrollBefore}px`
 
   if (!movers.length) {
     window.setTimeout(unfreeze, 60)
@@ -876,6 +885,10 @@ async function exportExcel() {
           </div>
 
           <div v-else class="pl-scroll">
+            <!-- The frozen scroll extent lives on THIS wrapper, never on the table itself: a
+                 min-height on a <table> is shared out among its rows, which stretched every row for
+                 the length of the animation. See tableWrapEl in the script. -->
+            <div ref="tableWrapEl">
             <table ref="tableEl" class="pl-table">
               <colgroup>
                 <col
@@ -958,6 +971,7 @@ async function exportExcel() {
                 </tr>
               </TransitionGroup>
             </table>
+            </div>
           </div>
 
           <!-- Sibling of the scroll area, exactly like the CCTV register, so the bar spans the full

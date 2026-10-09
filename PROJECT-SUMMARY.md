@@ -2504,3 +2504,25 @@ di ujung glide, bukan pendaratan. Timeout pembersihan ikut memakai plafon `ROW_A
 - SORT: 20-22 frame gerak per baris (sebelumnya 22 dengan kurva lebih keras).
 - **Tidak ada regresi scrollbar**: `overflowToggles: 0` pada filter maupun sort, `clientHeight`
   tetap 744 (tidak berubah).
+
+### Baris memanjang sesaat saat filter chassis (2026-10-08)
+
+HIRO: *"ketika saya filter chasis desktop, row melebar sebentar lalu kembali normal, ini jelek
+tolong perbaiki"*. Penyebabnya adalah perbaikan flicker saya sendiri di langkah sebelumnya.
+
+**PENYEBAB.** Pembekuan tinggi scroll saya pasang sebagai `min-height` pada `<table>`. Pada tabel,
+kelebihan tinggi **dibagikan ke baris-barisnya**, jadi selama animasi setiap baris ikut memanjang
+(mencari tinggi ekstra) dan kembali normal begitu `min-height`-nya dilepas — persis "melebar sebentar
+lalu kembali normal" yang dilihat HIRO.
+
+**PERBAIKAN.** Pembekuan dipindah ke sebuah **wrapper `<div ref="tableWrapEl">`** yang membungkus
+tabel di dalam `.pl-scroll`. Wrapper block menerima tinggi yang sama tanpa menyentuh baris sama
+sekali. `tableEl` tetap dipakai untuk query baris; hanya target `min-height` yang berubah.
+
+**TERUKUR SETELAH PERBAIKAN (filter Desktop, 26 → 16):**
+- `rowHeightMin` = `0:43` dan `rowHeightMax` = `0:43` → **setiap baris tetap 43px sepanjang transisi**,
+  tidak ada satu frame pun yang memanjang.
+- `rowWidthMax` = `0:4304` (lebar baris tidak berubah), `scrollHeight` = `0:1157` konstan,
+  `clientHeight` = `0:744` konstan, `overflowToggles: 0` → pembekuan tetap bekerja, tidak ada regresi
+  flicker scrollbar.
+- Wrapper menerima `min-height: 1157px` di frame 54 (`wrapperMinHeight`), tabel tidak lagi.
