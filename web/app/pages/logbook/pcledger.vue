@@ -711,7 +711,7 @@ async function exportExcel() {
         />
 
         <!-- Register -->
-        <UCard class="anim-fade-up" :ui="{ body: 'p-0 sm:p-0' }">
+        <UCard class="anim-fade-up" :ui="{ root: 'rounded-xl bg-elevated', body: 'p-0 sm:p-0' }">
           <div v-if="loading" class="flex items-center justify-center gap-2 p-12 text-sm text-muted">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
             Loading the register...
@@ -757,7 +757,7 @@ async function exportExcel() {
                       />
                     </span>
                   </th>
-                  <th class="text-right">Actions</th>
+                  <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <!-- Row transitions, the same mechanism the CCTV register uses: rows that survive a
@@ -788,11 +788,15 @@ async function exportExcel() {
                   >
                     <span class="pl-ellipsis">{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</span>
                   </td>
-                  <td class="text-right">
-                    <div class="inline-flex items-center gap-1">
-                      <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" size="xs" aria-label="Edit" @click="openEdit(row)" />
-                      <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs" aria-label="Delete" @click="askDelete(row)" />
-                    </div>
+                  <!-- Matched to the CCTV register's Actions cell: centred, and the two buttons
+                       sit directly in the cell with no flex wrapper. The `gap-1` wrapper is gone
+                       because CCTV has none - the buttons carry their own padding, so they read
+                       as a pair there and now here too. `pl-actions` brings CCTV's narrower
+                       `px-1 py-2` padding with it, which the shared `.pl-table td` rule cannot
+                       express as a utility (it would lose on specificity). -->
+                  <td class="pl-actions text-center">
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" size="xs" aria-label="Edit" @click="openEdit(row)" />
+                    <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs" aria-label="Delete" @click="askDelete(row)" />
                   </td>
                 </tr>
               </TransitionGroup>
@@ -925,8 +929,44 @@ async function exportExcel() {
    frame. Same reasoning as the CCTV register. */
 .pl-scroll {
   max-height: 70vh;
-  overflow: auto;
+  /* overflow-y-scroll, not auto, and not `overflow: auto` - matched to the CCTV register. The
+     track is rendered at all times, so the scrollbar can never blink in and out as the row count
+     crosses the 70vh threshold. `overflow-x: auto` stays: the horizontal bar is only useful when
+     the table genuinely overflows sideways. */
+  overflow-y: scroll;
+  overflow-x: auto;
   scrollbar-gutter: stable;
+}
+
+/* THE SCROLLBAR LOOK, copied from the CCTV register so the two registers match rather than merely
+   resemble each other. Kept in this page's own scoped block instead of reaching for `.logbook-scroll`
+   in cctvacc.vue: a shared class would couple two pages that are otherwise independent, and a later
+   change to one register's scrollbar would silently restyle the other.
+   12px track with a 2px inset border leaves an 8px pill: quiet, but unmistakably a scrollbar.
+   The thumb is `--ui-text-dimmed` because `--ui-border` resolves to the SAME value as
+   `--ui-bg-elevated`, the surface the bar sits on - a thumb painted its own background is invisible
+   in either theme, which is the bug CCTV's comment records. */
+.pl-scroll::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.pl-scroll::-webkit-scrollbar-track {
+  background-color: color-mix(in oklab, var(--ui-text-dimmed) 10%, transparent);
+}
+
+/* background-COLOR, not the `background` shorthand: the shorthand resets background-clip and would
+   undo the pill shape. */
+.pl-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--ui-text-dimmed);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.pl-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ui-text-muted);
+  background-clip: content-box;
 }
 
 .pl-table {
@@ -938,20 +978,28 @@ async function exportExcel() {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.8125rem;
+  /* 14px, the CCTV register's `text-sm` - this was 13px, which made the two registers read as two
+     different documents side by side. */
+  font-size: 0.875rem;
 }
 
 .pl-table th {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--ui-bg-elevated);
+  /* Matched to CCTV's `bg-default/60 backdrop-blur-sm` header, as an OPAQUE mix. CCTV can get away
+     with a translucent blurred header because nothing scrolls horizontally under its header; here
+     the first two columns are pinned, so a translucent header would let the columns sliding
+     underneath show through the header text. `color-mix(bg 60%, elevated)` is the exact colour
+     CCTV's header renders to, so the two are indistinguishable where they are not scrolling. */
+  background: color-mix(in oklab, var(--ui-bg) 60%, var(--ui-bg-elevated));
   border-bottom: 1px solid var(--ui-border);
-  padding: 0.5rem 0.75rem;
-  font-size: 0.6875rem;
+  /* CCTV's th metrics: px-3 py-2.5, text-xs, tracking-wide (0.025em). Was 8px/11px/0.04em. */
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.025em;
   /* The accent colour, matching the No column - HIRO: "buat header tabel text color sesuai warna
      accent, sama seperti NO". Sorting no longer changes this colour (see the zebra note below), so
      the sorted column is marked by its arrow alone. */
@@ -967,18 +1015,25 @@ async function exportExcel() {
    column is marked by its arrow alone. */
 
 .pl-table td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--ui-border);
+  /* CCTV's cell metrics: px-3 py-2.5 and a 60% border. The border was full-strength, which drew a
+     harder grid than the CCTV register shows. */
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--ui-border) 60%, transparent);
   color: var(--ui-text);
   /* Equal-width digits in the app's own font, so codes and numbers line up column-wise. */
   font-variant-numeric: tabular-nums;
 }
 
 /* ALTERNATING ROW COLOURS - HIRO: "warna antar row buat selang seling biar memudahkan view user".
-   A neutral lift rather than a tinted one: 7% of the text colour mixed into the base surface, which
-   reads as a slightly lighter band in dark mode and a slightly greyer one in light mode, following
-   the theme either way with no second colour to maintain. 5% was measurably there (L 0.2455 against
-   a base of 0.21) but too faint to help anyone scan a row, which is the whole point of the band.
+   THE FORMULA IS CCTV'S, taken from its rendered value rather than invented: CCTV paints the even
+   row with `bg-default/20`, measured as --ui-bg at 20% alpha over the elevated card, which resolves
+   to L 0.261. Applied here as an opaque mix against the same elevated surface so it renders as the
+   identical colour, and stays opaque where a data cell is pinned.
+   Worth knowing, because it is a property of CCTV's own band and not of this port: in DARK mode it
+   is a clear step (0.261 against 0.274), but in LIGHT mode `--ui-bg` is white over an almost-white
+   elevated surface, so the band nearly vanishes there too. Matching CCTV exactly means inheriting
+   that. If the band is ever asked to carry its weight in light mode, the fix is a text-colour mix
+   rather than a surface mix.
 
    TWO ORDERING DETAILS THAT ARE LOAD-BEARING:
    - This rule is declared BEFORE the hover rule below. Both are (0,2,0), so source order decides,
@@ -988,11 +1043,13 @@ async function exportExcel() {
      failure that made No and Staff Name look like a different table. The pinned HOVER rule is
      (0,3,0), so it still takes precedence over the band. */
 .pl-table tbody tr:nth-child(even) td {
-  background: color-mix(in oklab, var(--ui-text) 7%, var(--ui-bg));
+  background: color-mix(in oklab, var(--ui-bg) 20%, var(--ui-bg-elevated));
 }
 
 .pl-table tbody tr:hover td {
-  background: color-mix(in oklab, var(--ui-primary) 6%, transparent);
+  /* CCTV's `hover:bg-primary/5`, verbatim - this was 6%, which was close enough to look wrong
+     next to the CCTV register without being obviously a different number. */
+  background: color-mix(in oklab, var(--ui-primary) 5%, transparent);
 }
 
 /* The first two VISIBLE columns stay pinned while the rest of the register scrolls under them:
@@ -1004,13 +1061,14 @@ async function exportExcel() {
 .pl-pin {
   position: sticky;
   z-index: 3;
-  /* The opaque colour must be the surface the table ACTUALLY sits on, which is `--ui-bg`, not
-     `--ui-bg-elevated`. Elevated painted the No and Staff Name columns a shade lighter than every
-     other column - HIRO: "pada tabel no dan staff name warna nya kenapa berbeda?" - because every
-     other cell is transparent and lets the base surface show through. A sticky column still needs
-     an opaque background so the columns scrolling underneath cannot show through it; it just has
-     to be the right opaque colour. */
-  background: var(--ui-bg);
+  /* The opaque colour must be the surface the table ACTUALLY sits on, which is now
+     `--ui-bg-elevated` - the card was moved onto the elevated surface to match the CCTV register.
+     It was `--ui-bg` while this card sat on the base surface, and it has to move with the card:
+     picking the wrong token is exactly what once painted the No and Staff Name columns a shade off
+     every other column (HIRO: "pada tabel no dan staff name warna nya kenapa berbeda?"). A sticky
+     column must stay opaque so the columns scrolling underneath cannot show through it; the only
+     question is WHICH opaque colour. */
+  background: var(--ui-bg-elevated);
 }
 
 .pl-pin-first {
@@ -1025,17 +1083,26 @@ async function exportExcel() {
 
 .pl-table th.pl-pin {
   z-index: 4;
-  /* Back to the elevated colour for the HEADER cells only. The header band is deliberately one
-     shade above the body, and letting these two cells inherit the body colour would punch a dark
-     notch into the first two cells of the header. */
-  background: var(--ui-bg-elevated);
+  /* No background of its own any more. The header cells all share ONE colour (`.pl-table th`
+     above), so the pinned two cannot disagree with the rest of the band - and because that colour
+     is already opaque, a pinned header is still solid when the columns slide under it. All this
+     rule carries now is the higher z-index, which keeps the pinned header above the pinned cells
+     rather than below them. */
 }
 
 /* A pinned cell must stay OPAQUE. A translucent hover would let the columns scrolling underneath
    show through it, which is the classic broken sticky-column look - so the hover tint is mixed
    into the opaque surface rather than layered over it. */
 .pl-table tbody tr:hover td.pl-pin {
-  background: color-mix(in oklab, var(--ui-primary) 6%, var(--ui-bg));
+  background: color-mix(in oklab, var(--ui-primary) 5%, var(--ui-bg-elevated));
+}
+
+/* CCTV's Actions cell padding (measured 8px 4px, `px-1 py-2`) is narrower than a data cell's, which
+   is what keeps the two icon buttons reading as one pair. It cannot be expressed as a utility here:
+   a Tailwind class would land at (0,1,0) and `.pl-table td` above is (0,1,1), so the utility would
+   simply lose. Hence a rule keyed to the cell's own class. */
+.pl-table td.pl-actions {
+  padding: 0.5rem 0.25rem;
 }
 
 /* ONE FONT IN THIS TABLE. Email, GID, JAPAN Hostname and S/N used to be rendered in a monospace

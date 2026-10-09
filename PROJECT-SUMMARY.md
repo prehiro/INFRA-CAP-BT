@@ -2281,3 +2281,53 @@ terlalu tipis untuk membantu memindai baris, padahal itu tujuan bandnya). Pada 7
 untuk sel pin maupun sel biasa, dan terlihat jelas di screenshot. Hover pada baris genap tetap
 bekerja: sel biasa jadi `oklab(... / 0.06)` translucent, sel pin jadi campuran opaque
 `oklab(0.244569 ...)`.
+
+### Samakan style tabel PC Ledger dengan tabel CCTV Access (2026-10-08)
+
+HIRO: *"samakan style tabel dengan style table cctv access"*. Sebelum mengubah apa pun saya UKUR
+tabel CCTV yang sedang berjalan (dark + light) dan menjadikannya patokan angka, bukan tebakan.
+
+Angka patokan CCTV (dark) vs PC Ledger: `card` CCTV = `oklch(0.274)` alias `--ui-bg-elevated` radius
+12px, PC Ledger `oklch(0.21)` radius 8px; `table-fontSize` 14px vs 13px; `th` 12px / padding 10px 12px /
+tracking 0.3px vs 11px / 8px 12px / 0.44px; `td` padding 10px 12px dan border 60% vs 8px 12px border
+100%; zebra = `--ui-bg` 20% di atas permukaan elevated (efektif L 0.261) vs campuran teks 7%;
+`actionTd` padding 8px 4px align center vs 8px 12px align right; scrollbar punya gaya 12px sendiri vs
+default browser.
+
+Yang disamakan (semua terverifikasi dengan alat ukur yang sama):
+- kartu tabel → `bg-elevated` + `rounded-xl` (12px)
+- `overflow-y: scroll` (track selalu ada, tidak berkedip) + gaya scrollbar CCTV (track 12px, thumb
+  `--ui-text-dimmed` pill dengan border 2px transparan). Disalin ke blok scoped halaman ini, BUKAN
+  memakai `.logbook-scroll` milik cctvacc, supaya dua halaman tidak saling terikat.
+- font tabel 13px → 14px
+- `th`: 12px, padding 10px 12px, tracking 0.025em (0.3px)
+- `td`: padding 10px 12px, border `border-default/60`
+- zebra: formula CCTV (`--ui-bg` 20% di atas elevated) — terukur `oklab(0.2612)`, sama dengan nilai
+  efektif CCTV
+- hover: `primary` 5% (dari 6%)
+- Actions: rata tengah, padding 8px 4px, dan pembungkus `inline-flex gap-1` DIHAPUS supaya tombolnya
+  seperti di CCTV
+- header band: campuran opaque `color-mix(bg 60%, elevated)` — terukur `oklab(0.2356)`, PERSIS warna
+  yang dihasilkan header CCTV (`bg-default/60 backdrop-blur-sm` di atas elevated). Opaque dan bukan
+  translucent karena di sini dua kolom pertama di-pin: header tembus pandang akan memperlihatkan kolom
+  yang lewat di bawahnya.
+
+Konsekuensi yang harus ikut berubah dan sudah dilakukan: karena kartu pindah ke permukaan elevated,
+`.pl-pin` WAJIB ikut pindah ke `var(--ui-bg-elevated)` — kalau tidak, kolom No dan Staff Name kembali
+berbeda warna (bug yang sama seperti sebelumnya). Terukur sekarang: sel pin baris ganjil =
+`oklch(0.274)` = permukaan kartu, dan baris genap = `oklab(0.2612)` sama dengan sel biasa, jadi band
+zebra tetap menerus melewati kolom pin.
+
+TIGA PERBEDAAN YANG SENGAJA DIBIARKAN (dan alasannya):
+1. **Warna teks header = accent**, bukan `text-muted` seperti CCTV. Ini permintaan HIRO satu pesan
+   sebelumnya ("buat header tabel text color sesuai warna accent, sama seperti NO"). Kalau yang
+   diinginkan benar-benar identik dengan CCTV, cukup bilang — satu baris untuk dikembalikan.
+2. **Model lebar kolom**: PC Ledger `table-layout: fixed` + `min-width: max-content` dengan lebar rem,
+   CCTV `min-w-[1180px]` dengan persentase. Tidak diubah karena fitur hide-column dan animasi bounce
+   bergantung pada kolom yang benar-benar bergeser.
+3. **Loading/empty state**: PC Ledger pakai div `p-12` biasa, CCTV pakai `<tbody>` khusus dengan
+   `py-10`/`py-12` plus tombol Clear filters. Ini bukan chrome tabel, jadi tidak disentuh.
+
+Catatan jujur soal zebra: formula CCTV itu di LIGHT mode hampir tidak terlihat (`--ui-bg` = putih di
+atas permukaan elevated yang juga hampir putih; terukur 0.9736 vs 0.967) — itu sifat band CCTV sendiri,
+bukan efek port ini, dan sudah didokumentasikan di komentar CSS-nya.
