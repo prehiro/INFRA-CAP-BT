@@ -2359,3 +2359,50 @@ supaya tetap hilang saat loading/kosong). Tidak ada lagi wrapper berpadding, tid
 286.067)`, border-top `1px solid oklch(0.274 0.006 286.033)` — semuanya identik; parent = `div`
 kartu dengan class string yang sama, tinggi kartu 795px (=CCTV 795 = scroll 756 + bar 37 + border 2),
 `barIsDirectChildOfCard: true`, `widthMatchesCard: true`, 26 baris tetap utuh.
+
+### Transisi baris saat filter chassis diperbaiki (2026-10-08)
+
+HIRO: *"pada saat filter by chasis transisi row kurang smooth, tolong perbaiki"*. Diperbaiki, dan
+yang menemukan penyebabnya adalah instrumentasi, bukan dugaan.
+
+**GEJALA TERUKUR SEBELUM PERBAIKAN (filter chassis Desktop, 26 → 16 baris):** baris yang tersisa
+berpindah **-387px dalam SATU frame**. Nol frame membawa transform. Tinggi tbody turun dalam 4
+langkah dengan lompatan terbesar -250px dalam satu frame. Jadi memang lompat, bukan meluncur.
+
+**TIGA MEKANISME DIUJI, DUA DIHAPUS:**
+1. **Transisi leave (fade + kolaps padding)** — sudah ada, dan justru inilah penyebabnya: selama
+   baris yang keluar masih memegang ruangnya, posisi baris yang tersisa tidak berubah saat "move"
+   diukur, jadi tidak ada transform yang pernah dipasang; saat leave selesai, sisa tingginya
+   dilepas sekaligus (terukur ~250px dalam satu frame). Varian kedua (kolaps penuh termasuk
+   `font-size: 0`) juga gagal: teksnya kolaps instan dan tombol Actions memegang tinggi baris di
+   ~25px. **Kedua rule `.row-leave-*` DIHAPUS.**
+2. **`move-class` milik Vue TransitionGroup** — dengan leave ada: 0 frame transform. Setelah leave
+   dibuang: jalan di satu run, tidak di run lain. Tidak dapat diandalkan. **`move-class` /
+   `move-active-class` DIHAPUS** beserta rule `.row-move` / `.row-move-active`.
+3. **FLIP sendiri (dipakai)** — pola yang sama dengan animasi kolom, dan disempurnakan dua kali
+   setelah diukur.
+
+**DUA BUG SAYA SENDIRI YANG KETAHUAN LEWAT INSTRUMENTASI:**
+- Watcher `flush: 'pre'` menerima **nilai BARU** sebagai argumen pertama, jadi "before" yang saya
+  simpan justru urutan baru → kedua list identik, dy = 0, tidak ada yang bergerak. Perlu `oldV`.
+- Pin dengan delta tetap diterapkan saat layout lama masih terpasang → baris didorong satu delta
+  penuh dari layout basi dan sempat "pop" (terukur: baris di 918 melompat ke 1004 satu frame, baru
+  meluncur ke 826). Penyebab lain: pada jalur filter, patch DOM Vue mendarat **lebih lambat** dari
+  hook mana pun — dengan logger sementara, setelah filter row count masih 26 satu tick kemudian,
+  satu frame kemudian, dan bahkan dari hook `flush: 'post'`.
+
+**PERBAIKAN AKHIR:** pin **self-correcting per frame pakai `offsetTop`** (posisi layout, tidak
+terpengaruh transform). `old offset - offset sekarang` = transform yang menahan baris di posisi
+visual lamanya, benar baik patch sudah mendarat atau belum. Pin diterapkan tiap frame sampai layout
+benar-benar bergerak dan bertahan satu frame lagi, baru dilepas ke kurva overshoot yang sama dengan
+kolom (340ms). `data-id` ditambahkan ke setiap `<tr>` supaya baris bisa diidentifikasi lintas update;
+baris baru/terhapus dilewati (yang baru milik animasi enter). Offset lama diambil di watcher pre-flush.
+
+**TERUKUR SETELAH PERBAIKAN:**
+- FILTER Desktop (26 → 16): 13 frame membawa transform; baris 200: `918 → 900 → 884 → 870 → 858 →
+  849 → 841 → 835 → 830 → 827 → 825 → 824` = **11 frame gerak beruntun, step terbesar hanya -18px**,
+  mulai dari posisi LAMA (tanpa pop) dan berhenti mulus. Sebelumnya: 1 frame, -86px.
+- FILTER Notebook (16 → 2): 15 frame transform.
+- SORT (25 baris bertukar posisi): 22 frame transform, 22 frame gerak per baris — jalur sort tetap
+  jalan dengan mekanisme yang sama (sebelumnya pun jalan, sekarang lewat kode yang sama, deterministik).
+- Tidak ada error di konsol; 26 baris utuh; tidak ada transform tertinggal setelah animasi.

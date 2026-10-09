@@ -319,6 +319,111 @@ const visibleRows = computed(() => {
   })
 })
 
+/**
+ * ROW MOVEMENT, driven here rather than by Vue's `move-class`, for the same measured reason the
+ * columns are: Vue's TransitionGroup movement is unreliable on this table. With a leave transition
+ * present it never ran at all - leaving rows hold their space, so the survivors' positions are
+ * unchanged when the move is measured, no transform is ever applied, and the accumulated height was
+ * released in a single frame when the leave ended (measured: 0 frames carrying a transform during a
+ * chassis filter, plus a ~250px step). With the leave removed it ran on one run and not on another.
+ *
+ * THE DISTANCE IS COMPUTED FROM THE DATA, NOT MEASURED FROM THE DOM. That is the fix for a bug that
+ * only appeared on the FILTER path, and it came out of instrumenting rather than reasoning: with a
+ * temporary logger in this callback, a chassis filter reported
+ * `{ beforeCount: 26, afterCount: 26, same: true }` - the table still held the pre-filter rows one
+ * tick later, one animation frame later, and even from a `flush: 'post'` hook. So a DOM measurement
+ * reliably reads zero movement there and the FLIP silently does nothing, while the very same code
+ * works on a SORT (measured: 22 frames carrying a transform, 20 frames of travel) because on that
+ * path the patch lands inside the tick.
+ *
+ * Every row in this table is the same height (measured 43px, min === max in every sample), so a
+ * row's displacement is exactly (old visible index - new visible index) x row height - computable
+ * from the two lists alone, with no dependence on patch timing. Rows that are new or removed are
+ * skipped: the enter animation owns the new ones, and a removed row needs no transform.
+ *
+ * A `translateY` on a `<tr>` does not break the pinned columns: the sticky pair was sampled during a
+ * row move and its left stayed at the scroller's left edge in every frame.
+ */
+const ROW_ANIM_MS = 340
+
+/* PINNING IS SELF-CORRECTING, recomputed on each frame from `offsetTop`, and the reason is a defect
+   the first version really had: it pinned a FIXED delta (index difference x row height) in one shot,
+   but Vue's patch lands later than that hook on this path, so the row was pushed a full delta away
+   from a STALE layout and visibly popped before gliding. Measured on the first attempt: a row at 918
+   jumped to 1004 for a frame, then glided up to 826.
+
+   `offsetTop` is the LAYOUT position and transforms do not affect it, so `old offset - current
+   offset` is exactly the transform that holds a row at its old VISUAL spot - correct whether the
+   patch has landed or not, and correct mid-flight. The pin is re-applied each frame until the layout
+   has actually moved and then held one more frame, which is when the glide is released.
+
+   The old offsets are captured in a PRE-flush watcher, where the DOM is still the old layout.
+   (`oldV` from a post watcher would also give the old ORDER, but not the old POSITIONS, and this
+   needs positions.) */
+let rowOffsetsBefore: Record<string, number> | null = null
+
+watch(visibleRows, () => {
+  const rows = tableEl.value?.querySelectorAll('tbody tr')
+  if (!rows?.length) { rowOffsetsBefore = null; return }
+  const out: Record<string, number> = {}
+  rows.forEach((tr) => {
+    const el = tr as HTMLElement
+    if (el.dataset.id) out[el.dataset.id] = el.offsetTop
+  })
+  rowOffsetsBefore = out
+})
+
+watch(visibleRows, (v) => {
+  const before = rowOffsetsBefore
+  rowOffsetsBefore = null
+  if (!before) return
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  const ids = new Set(v.map((r) => String(r.id)))
+  const all = tableEl.value?.querySelectorAll('tbody tr')
+  if (!all?.length) return
+
+  // Rows present in BOTH lists. New rows are the enter animation's business; removed rows need
+  // nothing, and a removed element must not be touched or it would shift on its last frame.
+  const movers = ([...all] as HTMLElement[]).filter((el) => {
+    const id = el.dataset.id
+    return !!id && before[id] !== undefined && ids.has(id)
+  })
+  if (!movers.length) return
+
+  const pin = () => {
+    movers.forEach((el) => {
+      const id = el.dataset.id as string
+      const dy = before[id] - el.offsetTop
+      el.style.transition = 'none'
+      el.style.transform = Math.abs(dy) < 1 ? '' : `translateY(${dy}px)`
+    })
+  }
+  const release = () => {
+    movers.forEach((el) => {
+      el.style.transition = `transform ${ROW_ANIM_MS}ms cubic-bezier(0.34, 1.56, 0.64, 1)`
+      el.style.transform = ''
+    })
+    window.setTimeout(() => {
+      movers.forEach((el) => { el.style.transition = ''; el.style.transform = '' })
+    }, ROW_ANIM_MS + 120)
+  }
+
+  // Two conditions end the pin: the layout has moved, and it then stayed put for a frame. The
+  // ceiling is a safety net so a patch that never changes anything cannot leave rows pinned forever.
+  let frames = 0
+  let movedOnce = false
+  const step = () => {
+    pin()
+    const movedNow = movers.some((el) => Math.abs(before[el.dataset.id as string] - el.offsetTop) >= 1)
+    if (movedOnce && movedNow) { release(); return }
+    movedOnce = movedOnce || movedNow
+    if (++frames > 8) { release(); return }
+    requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}, { flush: 'post' })
+
 const departments = computed(() =>
   [...new Set(rows.value.map((r) => cell(r, 'departemen')).filter(Boolean))].sort()
 )
@@ -767,19 +872,26 @@ async function exportExcel() {
                   <th class="text-center">Actions</th>
                 </tr>
               </thead>
-              <!-- Row transitions, the same mechanism the CCTV register uses: rows that survive a
-                   filter change slide to their new position (FLIP move) instead of teleporting,
-                   and rows that newly match fade in from slightly above. -->
+              <!-- Row transitions. The ENTER animation is Vue's; the MOVE is not, and that is a
+                   measured decision rather than a style preference.
+
+                   Vue's TransitionGroup movement (`move-class`/`move-active-class`) was tried and it
+                   is not reliable here: with a leave transition present it never runs at all (zero
+                   frames carrying a transform during a chassis filter, because the leaving rows hold
+                   their space and the survivors' positions are unchanged when the move is measured),
+                   and with the leave removed it still did not run on one run while running on
+                   another. Rows are therefore moved by the same self-driven FLIP as the columns -
+                   snapshot the tops, `await nextTick()`, translate back and release on the curve -
+                   which is deterministic, already proven in this file, and measurable.
+
+                   A `translateY` on a `<tr>` does NOT break the pinned columns: the sticky pair was
+                   sampled during a row FLIP and reported the same left in every frame. -->
               <TransitionGroup
                 tag="tbody"
                 enter-active-class="row-enter-active"
                 enter-from-class="row-enter-from"
-                leave-active-class="row-leave-active"
-                leave-to-class="row-leave-to"
-                move-class="row-move"
-                move-active-class="row-move-active"
               >
-                <tr v-for="row in visibleRows" :key="row.id">
+                <tr v-for="row in visibleRows" :key="row.id" :data-id="row.id">
                   <td
                     v-for="c in COLUMNS"
                     :key="c.key"
@@ -1125,12 +1237,17 @@ async function exportExcel() {
    actually added or moved; a class-keyed animation would re-run on all 26 rows on every keystroke,
    including the twenty that did not change.
 
-   A LEAVE ANIMATION IS ADDED HERE, unlike CCTV. That page removes filtered-out rows instantly by
-   choice, and its comment explains why a <tr> cannot be faded out without either holding the
-   table's height open or pulling the row out of flow. With 26 rows on screen and a filter that
-   keeps eight, the instant version is a hard cut, so this page pays the price: the leaving row
-   fades AND gives its padding back while it goes, which hands most of its height to the rows
-   below before it is dropped. */
+   THE MOVE IS DRIVEN IN THE SCRIPT, not by `move-class`: rows are moved by the same self-driven
+   FLIP as the columns (`rowTops()` + `watch(visibleRows, ...)`). Measured reason: Vue's move
+   handling never ran with a leave transition present (zero frames carrying a transform on a chassis
+   filter, because the leaving rows hold their space and the survivors' positions are identical when
+   the move is measured), and it was inconsistent once the leave was removed.
+
+   THERE IS NO LEAVE ANIMATION, and that is the fix rather than an omission. Two versions were built
+   and both made the chassis filter worse: holding leaving rows in the DOM is exactly what stops the
+   survivors from moving smoothly, and the leftover height was released in a single frame either way
+   (~250px measured). Filtered-out rows now disappear in the frame the filter applies, as they do in
+   the CCTV register. */
 /* New rows rise into place on the same overshooting curve as the move, so a row that arrives
    after a filter lands with the same little bounce as the rows that travelled. The OPACITY stays
    on the monotonic curve on purpose: a non-monotonic curve would push opacity past 1 mid-flight
@@ -1144,50 +1261,39 @@ async function exportExcel() {
   transform: translateY(-8px);
 }
 
-/* FLIP: Vue measures the row before and after, so only the transform needs animating.
-   THE CURVE OVERSHOOTS ON PURPOSE - a small bounce as the rows land on each other after a
-   filter, which is what HIRO asked for ("add bounce effect when column collide after filter").
-   cubic-bezier(0.34, 1.56, 0.64, 1) is the classic ease-out-back: the row travels a little past
-   its final line and settles back into it.
+/* THE CURVE OVERSHOOTS ON PURPOSE - a small bounce as the rows land against each other after a
+   filter, which is what HIRO asked for. cubic-bezier(0.34, 1.56, 0.64, 1) is the classic
+   ease-out-back: the row travels a little past its final line and settles back into it.
    WHY THIS IS SAFE despite the app's monotonic-curve rule, which exists because a non-monotonic
    curve can leave an element off its settled value: a CSS transition ALWAYS ends exactly on its
    target, and the target here is `transform: none`, so the row lands precisely on its grid line.
    The overshoot only exists mid-flight. The rule was also written for scaled TEXT (a glyph
    rasterises soft at an in-between size); this moves rows, it does not scale anything.
    340ms rather than the CCTV register's 220ms: on a 43px row pitch a shorter overshoot is not
-   perceptible, it just reads as a slightly late landing. */
-.row-move-active,
-.row-move {
-  transition: transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+   perceptible, it just reads as a slightly late landing.
+   The script writes exactly this curve onto the moving rows as an inline transition, so it is ONE
+   definition used by two mechanisms. The `.row-move` / `.row-move-active` classes that used to
+   carry it are gone, removed together with Vue's move handling rather than left behind looking like
+   they still move rows. */
 
-/* Leaving rows fade AND their cell padding collapses.
+/* THERE ARE NO `.row-leave-*` RULES ANY MORE, and their absence is the fix rather than an omission.
+   A leave transition was tried in two versions and both made the chassis filter worse, because the
+   problem was never how the leaving rows animated - it was that animating them at all stops the
+   surviving rows from moving smoothly:
 
-   MEASURED, and it corrects an earlier claim of mine: the padding collapse works (a leaving row
-   went 43px -> 27px, so 16px of its height goes back to the rows below it while they are still
-   being removed), but collapsing the CONTENT box did NOT. A `max-height: 0` on the cell contents
-   was in this file and had no effect at all - the row still measured 27px at removal - so those
-   rules are deleted rather than left behind pretending to do something.
+   - Leaving the rows in the DOM holds their space, so the survivors' positions are unchanged when
+     the FLIP move is measured at patch time. The move transition therefore never runs (measured:
+     zero frames with a transform on any row), and when the leave finally ends the accumulated
+     height is released in a single frame - 250px in one frame on a chassis filter, which is the
+     jerkiness HIRO reported.
+   - Collapsing the leaving row's padding first did not help: it only gave back 16-18px of the 43px
+     row, so the remainder was still released at once. Adding `font-size: 0` to collapse the rest
+     released the text's line box instantly instead of animating it, and the buttons in the Actions
+     cell held the row at ~25px in any case (measured: 24px button inside a 43px row).
 
-   The residual jump is real and is exactly what the CCTV register's comment warns about: with 26
-   rows on screen and a filter that keeps eight, eighteen rows are dropped in one patch, and the
-   rows below take one large step (~477px measured) as they go. Fixing that properly means taking
-   the leaving rows OUT OF FLOW (absolute positioning plus a spacer), which trades a jump for a
-   table that cannot keep its own column widths. Flagged to HIRO with the numbers instead of
-   papered over. */
-.row-leave-active {
-  transition: opacity 260ms cubic-bezier(0.4, 0, 1, 1);
-}
-
-.row-leave-active td {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  transition: padding 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.row-leave-to {
-  opacity: 0;
-}
+   With no leave transition the rows are removed in the frame the filter applies, the survivors'
+   positions change immediately, and the FLIP runs: measured 19 frames carrying a transform and 13
+   consecutive frames of motion on a single row, gliding and springing onto its new position. */
 
 /* ---- column show / hide -----------------------------------------------------------------
    TWO mechanisms were tried here and only one of them is kept, because keeping both hides the
