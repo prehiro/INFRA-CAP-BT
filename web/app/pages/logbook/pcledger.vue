@@ -7,13 +7,11 @@
  * handed back to the department as the workbook they already use. The entity in the API
  * (`pc_ledger`, id 10) was created to mirror it field for field.
  *
- * `department` is the one addition: the workbook carries a single "Department:" cell above the
- * table, which cannot describe a per-row value, so it lives on the record instead and is written
- * back into that cell on export. It NO LONGER appears on this page at all - not as a table column,
- * not in the add/edit form, not as a filter (HIRO: "hapus kolom departement dari page pc ledger,
- * form add juga. departement tidak dipakai di page pc ledger"). The field and the values stored on
- * the existing records are kept for that export cell alone, so the excelExport code below still
- * reads them; everything that used to surface the field on screen is gone.
+ * The 15 columns below are the workbook's columns, in the workbook's order, and the export writes them
+ * exactly as the sheet has them. One field that used to be involved is gone from BOTH surfaces now -
+ * HIRO had it taken off the page first and then out of the Excel export - so nothing on this page reads
+ * it any more, and row 9 of the generated sheet is left empty where it used to sit. It is still stored
+ * on the entity, with its values intact, because removing data is not something a UI change should do.
  *
  * NO INPUT REWRITING happens on this page. Identity fields (`.\\capuser`, `JAPAN\\29384_DTS05`,
  * `pidbt.dts05@sg.panasonic.com`, `E0B5536/7`) are copied out of the source spreadsheet verbatim
@@ -727,7 +725,8 @@ async function confirmDelete() {
  * Reproduces the reference workbook, not a generic table dump:
  *   row 1   the form title, bold 16pt, merged across the table
  *   row 3-6 the "Requests to IT Reps" notes, in column C exactly as the source has them
- *   row 9   "Department:" with the value beside it
+ *   row 9   left EMPTY on purpose - a spacer row. The sheet-level value that used to be written here
+ *           is not tracked by this page any more, and the rows below keep their absolute addresses
  *   row 10  the header, white bold on a dark fill, matching the source's header row
  *   row 11+ one row per record, every column except No carrying the source's light-yellow
  *           FFFFFFCC fill, which is what tells the IT reps what they are allowed to edit
@@ -777,18 +776,11 @@ async function exportExcel() {
     })
     ws.getRow(6).height = 28
 
-    const deptLabel = ws.getCell(9, 3)
-    deptLabel.value = 'Department:'
-    deptLabel.font = { bold: true, size: 11 }
-
-    /* `departemen` is read here even though nothing on the page shows the field any more. This is the
-       workbook's own "Department:" cell, and a sheet without it would no longer match IT FORM SG031.
-       It is not dead code: it is the single remaining reader of that field. The API merges on update,
-       so the values on the existing records survive edits that no longer carry the field. */
-    const deptValues = [...new Set(data.map((r) => cell(r, 'departemen')).filter(Boolean))]
-    const deptCell = ws.getCell(9, 4)
-    deptCell.value = deptValues.length === 1 ? deptValues[0] : deptValues.join(', ')
-    deptCell.font = { bold: true, size: 11 }
+    /* Row 9 is deliberately left empty now: the register no longer carries a sheet-level value there,
+       so nothing is written to cells (9,3) or (9,4). The rows below are addressed absolutely - the
+       notes at rows 3-6, the header at row 10, the data from row 11 - so the row itself stays as a
+       spacer rather than being deleted and renumbering everything under it. The entity still stores
+       such a field, but no code on this page reads it. */
 
     // --- header (row 10) ---
     const headerRow = ws.getRow(10)

@@ -2782,3 +2782,33 @@ lalu mengoreksi diri di akhir.
   gap kembali 0 di frame 14.
 - Keadaan akhir kedua arah: `noW` 61px = `staffThLeft` = `staffTdLeft` = "61px", gapTh = gapTd = **0**,
   `leftoverTransforms` = 0, header dan body sejajar, picker membaca "Columns (12/15)".
+
+### Sel Department dihapus dari ekspor Excel PC Ledger (2026-10-10)
+
+HIRO: *"bro saya tidak butuh sel departement pada saat export excel, hapus saja code yang mengandung
+departement"*.
+
+**YANG DIHAPUS.** Blok penulis sel di ekspor: label `Department:` di (9,3) dan nilainya di (9,4),
+termasuk pembacaan `departemen` dari record (`deptValues`, `deptCell`). Setelah ini **tidak ada satu pun
+kode di halaman ini yang membaca field tersebut** - ia tadinya satu-satunya pembaca yang tersisa.
+
+**ROW 9 TETAP ADA, hanya kosong.** Alamat baris di sheet ini absolut (notes di baris 3-6, header baris 10,
+data dari baris 11), jadi menghapus barisnya akan memaksa penomoran ulang seluruh ekspor. Barisnya
+dibiarkan sebagai spacer, dan komentarnya diperbarui supaya tidak lagi menyebut sel itu berisi apa pun.
+
+**DUA KOMENTAR USANG DIPERBAIKI** (keduanya menyebut isi baris 9 yang sudah tidak ditulis lagi):
+peta tata letak sheet di atas fungsi ekspor, dan komentar kepala file.
+
+**DIUJI END-TO-END, bukan sekadar dibaca.** Browser diberi `Browser.setDownloadBehavior` ke folder
+scratch, tombol Excel diklik, lalu file yang benar-benar terunduh diperiksa:
+`PC_Ledger_2026-10-09.xlsx` (9.993 bytes, arsip xlsx valid, 143 string) - **sel C9 dan D9 KOSONG**,
+baris yang ada: 1, 3, 4, 5, 6, 10, 11, ... 32 (baris 2, 7, 8, 9 memang kosong sesuai tata letak asli).
+
+**SATU TEMUAN YANG PERLU KEPUTUSAN.** Masih ada satu string di workbook yang mengandung kata
+"Department": judul form `IT FORM SG031 Department PC Ledger Form v7` (baris 1 sheet, dan teks yang sama
+juga jadi subtitle di halaman). Itu **nama formnya**, bukan selnya - tidak saya ubah karena judul itu
+milik form aslinya. Kalau mau diganti juga, bilang saja.
+
+**CATATAN FIELD DI DATABASE.** Field `departemen` + nilai 'Capacitor' pada 26 record masih ada di entity
+(deleting data bukan sesuatu yang pantas dilakukan diam-diam oleh perubahan UI). Sekarang tidak ada kode
+yang memakainya. Menghapus field-nya adalah langkah terpisah yang butuh persetujuan eksplisit.
