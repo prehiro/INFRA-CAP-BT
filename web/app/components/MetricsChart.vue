@@ -10,7 +10,7 @@
             <UIcon name="i-lucide-activity" class="size-5" />
           </span>
           <div class="min-w-0">
-            <h2 class="text-sm font-semibold leading-tight">System Metrics</h2>
+            <h2 class="text-sm font-semibold leading-tight">Server Metrics</h2>
             <p class="text-xs text-muted">Live host load, sampled every {{ INTERVAL_S }}s</p>
           </div>
         </div>

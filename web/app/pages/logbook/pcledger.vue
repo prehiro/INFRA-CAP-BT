@@ -54,8 +54,11 @@ const COLUMNS: Column[] = [
   { key: 'os_name', label: 'Computer O/S Name', short: 'O/S Name', w: 7 },
   { key: 'os_arch', label: 'Computer O/S Architecture', short: 'O/S Arch', w: 6 },
   { key: 'lokasi', label: 'Location', w: 9 },
-  { key: 'remark2', label: 'Remark2', w: 7 },
-  { key: 'remark3', label: 'Remark3', w: 4 }
+  /* The KEYS stay `remark2` / `remark3` - those are the database field names - while the LABELS are
+     Remark1 / Remark2. HIRO: "rename remark2 jadi Remark1, dan Remark3 jadi Remark2". Renaming the
+     keys would be a field rename in the EAV store, which is a different (and much larger) change. */
+  { key: 'remark2', label: 'Remark1', w: 7 },
+  { key: 'remark3', label: 'Remark2', w: 4 }
 ]
 
 /**
@@ -68,8 +71,34 @@ const COLUMNS: Column[] = [
  * `nomor` is not special-cased and can be hidden like any other column, but at least one column
  * always stays visible: an empty table with nothing to explain itself reads as a broken page.
  */
-const STORAGE_KEY = 'infra-cap.pcledger.columns'
-const visibleKeys = ref<string[]>(COLUMNS.map((c) => c.key))
+/**
+ * The columns on screen the FIRST time someone opens the register. HIRO picked these eleven:
+ * No, Staff Name, Email, GID, JAPAN Host, Model, S/N, Chassis, Location, Remark1, Remark2 - the
+ * register as it is actually read day to day. The four left out (Date, Vendor, O/S Name, O/S Arch)
+ * are one tick away in the column picker.
+ */
+const DEFAULT_VISIBLE = [
+  'nomor',
+  'staff_name',
+  'email',
+  'gid',
+  'japan_hostname',
+  'computer_model',
+  'computer_sn',
+  'chassis',
+  'lokasi',
+  'remark2',
+  'remark3'
+]
+
+/**
+ * VERSIONED STORAGE KEY, on purpose. The key used to be `infra-cap.pcledger.columns`, and every
+ * browser that had ever opened the register had its own fifteen-column choice stored under it -
+ * which would have quietly overridden this new default and left HIRO looking at no change at all.
+ * A new suffix lets the default take effect once; the old value is simply never read again.
+ */
+const STORAGE_KEY = 'infra-cap.pcledger.columns.v2'
+const visibleKeys = ref<string[]>([...DEFAULT_VISIBLE])
 
 const visibleColumns = computed(() => COLUMNS.filter((c) => visibleKeys.value.includes(c.key)))
 
@@ -96,7 +125,7 @@ function loadColumnChoice() {
     const known = saved.filter((k) => COLUMNS.some((c) => c.key === k))
     if (known.length) visibleKeys.value = known
   } catch {
-    // A corrupt value must never brick the page - fall back to showing every column.
+    // A corrupt value must never brick the page - fall back to the default column set.
   }
 }
 
@@ -301,8 +330,8 @@ const LABELS: Record<string, string> = {
   os_name: 'Computer O/S Name',
   os_arch: 'Computer O/S Architecture',
   lokasi: 'Location',
-  remark2: 'Remark2',
-  remark3: 'Remark3',
+  remark2: 'Remark1',
+  remark3: 'Remark2',
   departemen: 'Department'
 }
 

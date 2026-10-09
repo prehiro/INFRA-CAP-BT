@@ -2646,3 +2646,36 @@ tinggi sel yang terukur di tiap lebar; **nol label terpotong** di keempat lebar 
 pengaman untuk lebar yang lebih sempit lagi); ikon sortir tetap tampil ("NO ↑" terlihat di screenshot);
 26 baris; di 1440/1280 tabel mencapai `min-width: 1200px` sehingga muncul scroll horizontal yang memang
 disengaja, bukan kolom yang dipaksa sempit.
+
+### PC Ledger: default kolom + rename Remark (2026-10-10)
+
+HIRO: *"set default filter table column adalah no,staff name,email,gid,japanhost,model,SN,chasis,
+location,remark2,remark3. setelah itu rename remark2 jadi Remark1, dan Remark3 jadi Remark2"*.
+
+**1. DEFAULT KOLOM = 11 dari 15.** Tambah `DEFAULT_VISIBLE` (nomor, staff_name, email, gid,
+japan_hostname, computer_model, computer_sn, chassis, lokasi, remark2, remark3) dan `visibleKeys`
+diinisialisasi dari situ, bukan lagi semua kolom. Yang tetap tersembunyi: Date, Vendor (manufacturer),
+O/S Name, O/S Arch - tinggal satu klik di picker kolom.
+
+**PENTING - KUNCI STORAGE DINAJIKKAN:** pilihan kolom disimpan per-browser di localStorage
+(`infra-cap.pcledger.columns`). Setiap browser yang pernah membuka halaman ini sudah punya pilihan
+15 kolom tersimpan, yang akan MENIMPA default baru tanpa terlihat - HIRO akan melihat "tidak ada
+perubahan". Karena itu kuncinya jadi `infra-cap.pcledger.columns.v2`; nilai lama tidak pernah dibaca lagi.
+
+**2. RENAME Remark.** Label (yang tampil) berubah, KEY tetap `remark2`/`remark3` karena itu nama field
+di database; mengubah key = rename field di EAV store, perubahan yang jauh lebih besar.
+- `COLUMNS`: remark2 -> label **Remark1**, remark3 -> label **Remark2** (header tabel + ekspor Excel).
+- Peta label form (`os_arch`/`lokasi`/`remark2`/`remark3`/`departemen`) di file yang sama ikut diubah,
+  supaya form Add/Edit tidak menunjukkan nama lama.
+- Label field di DB ikut diubah lewat `PUT /api/fields/{id}`: remark2 (id 66) 'Remark2' -> 'Remark1',
+  remark3 (id 67) 'Remark3' -> 'Remark2', dan dibaca ulang untuk konfirmasi. Halaman designer
+  (/entities) jadi tidak lagi menampilkan kata lama.
+- `api/create-pc-ledger-entity.py` juga diedit agar seed ulang di masa depan memakai nama baru.
+Catatan: entity id pc_ledger sekarang **10** (bukan 7 - 7 adalah cctv_log_book; id bergeser setelah
+entity demo dihapus dan dibuat ulang).
+
+**TERUKUR SESUDAH (1920x1080):** label tombol picker "Columns (11/15)"; header tabel =
+NO, STAFF NAME, EMAIL, GID, JAPAN HOST, MODEL, S/N, **REMARK1**, **REMARK2**, LOCATION (+ACTIONS),
+4 kolom lain runtuh ke 0px; tinggi header tetap 35px satu baris; lebar tabel tetap 1650 = scrollWidth =
+clientWidth (kolom yang tersisa menyerap bagian kolom tersembunyi: NO 64px, STAFF 150px, dst - jumlah
+tetap 1650 sehingga tidak ada celah); 26 baris utuh.

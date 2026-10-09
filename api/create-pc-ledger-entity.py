@@ -76,8 +76,8 @@ FIELDS = [
     field("os_name", "Computer O/S Name", "Text", 10, max_len=100),
     field("os_arch", "Computer O/S Architecture", "Text", 11, max_len=50),
     field("lokasi", "Location", "Text", 12, max_len=200),
-    field("remark2", "Remark2", "Text", 13, max_len=200),
-    field("remark3", "Remark3", "Text", 14, max_len=200),
+    field("remark2", "Remark1", "Text", 13, max_len=200),
+    field("remark3", "Remark2", "Text", 14, max_len=200),
     field("departemen", "Department", "Text", 15, max_len=100, default="Capacitor"),
 ]
 
