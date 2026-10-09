@@ -1073,9 +1073,14 @@ async function exportExcel() {
       </div>
 
       <!-- ---------------- add / edit ---------------- -->
-      <UModal v-model:open="showForm" :ui="{ content: 'max-w-4xl' }">
+      <UModal v-model:open="showForm" :ui="{ content: 'max-w-4xl pl-record-modal' }">
         <template #content>
-          <div class="flex max-h-[85vh] flex-col">
+          <!-- `relative z-10` puts the whole dialog above the accent glow that the .pl-record-modal
+               rule paints as a ::after on the content element (see the non-scoped style block at the
+               foot of this file). One class on this wrapper is enough - it covers the header, body
+               and footer at once - where the CCTV and Users dialogs set it on their header and body
+               separately because those two use the vendor's header/body slots. -->
+          <div class="relative z-10 flex max-h-[85vh] flex-col">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <UIcon :name="editingId ? 'i-lucide-pencil' : 'i-lucide-plus'" class="size-5" />
@@ -1083,7 +1088,7 @@ async function exportExcel() {
               <div class="min-w-0">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New PC record' }}</h2>
                 <p class="text-xs text-muted">
-                  {{ editingId ? 'Changes are written to the ledger immediately.' : 'No is assigned automatically by the system.' }}
+                  {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new PC to the ledger system.' }}
                 </p>
               </div>
             </div>
@@ -1140,33 +1145,44 @@ async function exportExcel() {
       <!-- ---------------- delete ---------------- -->
       <UModal v-model:open="showDelete" :ui="{ content: 'max-w-md' }">
         <template #content>
-          <div class="p-5">
-            <div class="flex items-start gap-3">
-              <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
-                <UIcon name="i-lucide-trash-2" class="size-5" />
-              </span>
-              <div class="min-w-0">
-                <h2 class="text-sm font-semibold">Delete this record?</h2>
-                <p class="mt-1 text-xs text-muted">
-                  The register row disappears from the ledger. This cannot be undone from the UI.
-                </p>
+          <!-- Same construction as the CCTV row-delete and Users delete dialogs: a wrapper that clips,
+               a soft danger wash bleeding in from the top-right corner, the identity of the row on a
+               raised box above that wash, and a footer band on the elevated surface. The wash is a
+               real div here rather than a ::after, because it is part of the dialog's own content in
+               those two dialogs as well and it carries no vendor class to hang a rule on. -->
+          <div class="overflow-hidden rounded-xl">
+            <div class="relative overflow-hidden px-5 pb-5 pt-5">
+              <div
+                aria-hidden="true"
+                class="pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl"
+              />
+              <div class="relative flex items-start gap-3">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
+                  <UIcon name="i-lucide-trash-2" class="size-5" />
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-semibold">Delete this record?</h2>
+                  <p class="mt-1 text-xs text-muted">
+                    The register row disappears from the ledger. This cannot be undone from the UI.
+                  </p>
+                </div>
               </div>
+
+              <!-- The row identity is repeated because a destructive action on a register of
+                   numbered records has to prove WHICH row is about to vanish. -->
+              <dl v-if="deleteTarget" class="relative mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
+                <dt class="text-muted">No</dt>
+                <dd class="truncate font-medium">{{ cell(deleteTarget, 'nomor') }}</dd>
+                <dt class="text-muted">Staff Name</dt>
+                <dd class="truncate">{{ cell(deleteTarget, 'staff_name') || '-' }}</dd>
+                <dt class="text-muted">JAPAN Hostname</dt>
+                <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
+                <dt class="text-muted">Location</dt>
+                <dd class="truncate">{{ cell(deleteTarget, 'lokasi') || '-' }}</dd>
+              </dl>
             </div>
 
-            <!-- The row identity is repeated because a destructive action on a register of
-                 numbered records has to prove WHICH row is about to vanish. -->
-            <dl v-if="deleteTarget" class="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg border border-default bg-elevated p-3 text-xs">
-              <dt class="text-muted">No</dt>
-              <dd class="truncate font-medium">{{ cell(deleteTarget, 'nomor') }}</dd>
-              <dt class="text-muted">Staff Name</dt>
-              <dd class="truncate">{{ cell(deleteTarget, 'staff_name') || '-' }}</dd>
-              <dt class="text-muted">JAPAN Hostname</dt>
-              <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
-              <dt class="text-muted">Location</dt>
-              <dd class="truncate">{{ cell(deleteTarget, 'lokasi') || '-' }}</dd>
-            </dl>
-
-            <div class="mt-5 flex items-center justify-end gap-2">
+            <div class="flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="deleting" @click="showDelete = false" />
               <UButton color="error" label="Delete record" :loading="deleting" @click="confirmDelete" />
             </div>
@@ -1521,5 +1537,44 @@ async function exportExcel() {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+</style>
+
+<!-- NON-SCOPED, and it has to be. UModal teleports its content to <body>, so a scoped rule - which
+     compiles to .pl-record-modal[data-v-xxx] - can never match the dialog element, because it carries
+     no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
+     <style> block. -->
+<style>
+/* ---- accent glow in the top-right corner of the record dialog ----
+   The same recipe as the Users and CCTV dialogs, which was measured against the reference template:
+   it is NOT a CSS gradient, it is a plain circle of `bg-primary` with a large blur, so the
+   "gradient" is nothing but the blur falloff. `bg-primary` is a semantic token, so the glow follows
+   whichever accent the user picked in the sidebar Appearance menu.
+
+   HIRO: "style background modal new pc record samakan dengan yang lain" - before this the dialog had
+   no glow at all, which is why it read as flatter than the rest of the app.
+
+   `pointer-events: none` is essential: the orb sits over the header, and without it it would swallow
+   clicks on the close button. z-index 0 keeps it behind the dialog's own content, which carries
+   `relative z-10` in the component's markup. */
+.pl-record-modal[data-slot='content']::after {
+  content: '';
+  position: absolute;
+  top: -110px;
+  right: -90px;
+  width: 250px;
+  height: 250px;
+  border-radius: 9999px;
+  background-color: var(--ui-primary);
+  opacity: 0.14;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Light mode needs a lighter touch still: the value that is barely perceptible on the dark surface
+   turns into a visible stain on a near-white one. Same override the Users dialog uses. */
+:root:not(.dark) .pl-record-modal[data-slot='content']::after {
+  opacity: 0.09;
 }
 </style>

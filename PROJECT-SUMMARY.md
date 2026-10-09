@@ -2679,3 +2679,39 @@ NO, STAFF NAME, EMAIL, GID, JAPAN HOST, MODEL, S/N, **REMARK1**, **REMARK2**, LO
 4 kolom lain runtuh ke 0px; tinggi header tetap 35px satu baris; lebar tabel tetap 1650 = scrollWidth =
 clientWidth (kolom yang tersisa menyerap bagian kolom tersembunyi: NO 64px, STAFF 150px, dst - jumlah
 tetap 1650 sehingga tidak ada celah); 26 baris utuh.
+
+### Modal PC Ledger disamakan background-nya dengan modal lain (2026-10-10)
+
+HIRO: *"style background modal new pc record samakan dengan yang lain, begitu juga modal delete"*.
+
+**SEBABNYA.** Modal New PC record dan Delete record tidak punya lapisan background yang dipakai
+modal CCTV Access dan Users. Di dua halaman itu: modal form memakai kelas modal + glow aksen di sudut
+kanan atas (::after pada elemen content), dan modal delete memakai wash merah (div terpisah) + band
+footer di permukaan elevated. Di PC Ledger keduanya polos: `:ui="{ content: 'max-w-4xl' }"` dan
+`'max-w-md'` tanpa kelas/lapisan apa pun.
+
+**YANG DIUBAH (resepnya disalin apa adanya dari users.vue, yang memang jadi referensi):**
+1. Modal form: `content: 'max-w-4xl pl-record-modal'`; wrapper dalamnya diberi `relative z-10` supaya
+   seluruh dialog berada DI ATAS glow (satu kelas, karena modal ini memakai slot #content dengan
+   header/body/footer buatan sendiri - beda dengan CCTV/Users yang memakai slot header/body vendor).
+2. Blok `<style>` NON-SCOPED baru di kaki file dengan `.pl-record-modal[data-slot='content']::after`:
+   lingkaran `bg-primary` 250x250 di top -110px / right -90px, `blur(60px)`, opacity 0.14,
+   `pointer-events: none`, `z-index: 0`; plus override mode terang `:root:not(.dark) ... { opacity: 0.09 }`.
+   Non-scoped itu wajib: UModal meneleportasi konten ke <body>, jadi rule scoped (yang dikompilasi
+   jadi .pl-record-modal[data-v-xxx]) tidak akan pernah cocok.
+3. Modal delete: struktur disamakan dengan modal delete Users/CCTV - wrapper `overflow-hidden rounded-xl`,
+   wash merah `<div aria-hidden class="... -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl">`,
+   konten di atas wash, kotak identitas jadi `bg-elevated/60 ring-1 ring-inset ring-default` (dulu
+   `border border-default bg-elevated`), dan footer jadi band `bg-elevated/40 px-5 py-4` (dulu satu div
+   tanpa latar).
+
+**TERUKUR SESUDAH:** modal form - elemen berkelas `pl-record-modal` (896x656), ::after ada dengan
+w=250px h=250px bg=rgb(0,220,130) filter=blur(60px) opacity=0.14 top=-110px right=-90px z=0
+pointer-events=none, wrapper `relative z-10` ✓. Modal delete - wash ada (oklab(0.704 0.177 0.072/0.2),
+blur(64px), 192x192, aria-hidden="true"), kotak identitas `bg-elevated/60`, band footer `bg-elevated/40`;
+teks judul di atas wash (terlihat jelas di screenshot).
+
+**SENGAJA TIDAK DIUBAH:** animasi buka/tutup. Modal CCTV dan Users memakai keyframes reveal/dismiss
+yang dinamai per modal (`users-record-modal[data-state='open']` dst); modal PC Ledger tidak punya
+animasi itu sebelumnya, dan HIRO meminta bagian BACKGROUND-nya saja. Kalau animasinya juga mau
+disamakan, itu tambahan terpisah.
