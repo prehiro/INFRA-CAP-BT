@@ -967,8 +967,8 @@ async function exportExcel() {
                     ]"
                     @click="toggleSort(c.key)"
                   >
-                    <span class="inline-flex items-center gap-1">
-                      {{ c.short ?? c.label }}
+                    <span class="inline-flex min-w-0 items-center gap-1" :title="c.label">
+                      <span class="pl-th-label">{{ c.short ?? c.label }}</span>
                       <UIcon
                         v-if="sortKey === c.key"
                         :name="sortDir === 'asc' ? 'i-lucide-arrow-up' : 'i-lucide-arrow-down'"
@@ -1261,10 +1261,15 @@ async function exportExcel() {
      accent, sama seperti NO". Sorting no longer changes this colour (see the zebra note below), so
      the sorted column is marked by its arrow alone. */
   color: var(--ui-primary);
-  /* NO `white-space: nowrap` HERE ANY MORE, deliberately. With percentage columns a long header
-     ("Computer Manufacturer", "JAPAN Hostname") no longer fits its cell at a normal viewport, and a
-     nowrap header overflows into its neighbour instead of wrapping. The CCTV register's header wraps
-     for the same reason. */
+  /* THE HEADER IS ONE LINE AT EVERY VIEWPORT WIDTH - never two.
+     Measured before this: 35px at 1920 but 53px at 1600 / 1440 / 1280, because the labels wrapped to a
+     second line as the percentage columns narrowed - HIRO: "tolong adjust height nya header table ini".
+     A header whose height changes with the window width reads as a bug.
+     `nowrap` + `overflow: hidden` pins it to one line everywhere; the ellipsis itself belongs to
+     `.pl-th-label` below, so that the sort arrow beside the label is never the thing that gets cut.
+     The full name stays available in the column picker and in this header's own tooltip. */
+  white-space: nowrap;
+  overflow: hidden;
   cursor: pointer;
   user-select: none;
 }
@@ -1468,6 +1473,15 @@ async function exportExcel() {
   text-overflow: ellipsis;
   white-space: nowrap;
   transition: opacity 200ms ease-out;
+}
+
+/* The header label that truncates. It owns the ellipsis rather than the <th>, because the sort arrow
+   sits beside it in the same flex row: truncating at the <th> would clip the arrow instead of the text.
+   `min-width: 0` on the parent span lets this shrink below its content width. */
+.pl-th-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -2619,3 +2619,30 @@ Hasil: semua sel header **35px**, satu baris, tanpa pembungkusan (sebelumnya 57p
 
 **DIVERIFIKASI:** lebar tabel tetap 1650 = scrollWidth = clientWidth; 26 baris; header tetap lengket
 saat kontainer di-scroll (`theadTopVsScrollport: 0` pada scrollTop 300).
+
+### Tinggi header PC Ledger dibuat tetap 35px di semua lebar viewport (2026-10-10)
+
+HIRO: *"tolong adjust height nya header table ini"* + path DOM
+`#dashboard-panel-... > div.anim-fade-up...bg-elevated > div.pl-scroll > div > table > thead`.
+
+**SEBABNYA TINGGINYA TIDAK TETAP.** Diukur dulu (instrumentasi sebelum menulis mekanisme):
+`thead` = **35px di 1920** tetapi **53px di 1600 / 1440 / 1280** — label header membungkus jadi dua
+baris begitu kolom persentase menyempit (2 x 18px line-height + 16px padding + 1px border = 53px).
+Jadi tinggi header berubah mengikuti lebar jendela, dan di jendela yang tidak penuh (atau browser
+dengan zoom di atas 100%) headernya memang tampak besar. Perbaikan 57 -> 35 di sesi sebelumnya hanya
+terasa di 1920 saja.
+
+**PERBAIKAN.** Header dipatok SELALU satu baris:
+- `th` : `white-space: nowrap; overflow: hidden` (tidak lagi membungkus).
+- Rule baru `.pl-th-label` memegang ellipsis-nya sendiri (`overflow: hidden; text-overflow: ellipsis`),
+  dan label itu dibungkus `<span class="pl-th-label">`. Penting: label berada di dalam flex row bersama
+  ikon sortir, jadi kalau ellipsis dipasang di `th`, yang terpotong adalah ikon sortirnya, bukan teks.
+  `min-w-0` pada span pembungkus agar label boleh menyusut.
+- `<span ... :title="c.label">` pada label header: nama penuh tetap muncul saat hover, dan tetap ada di
+  popover pilihan kolom serta ekspor Excel (keduanya memakai `label`, bukan `short`).
+
+**TERUKUR SESUDAH (instrumentasi, 4 lebar):** `thead` **35px** di 1920 / 1600 / 1440 / 1280, satu-satunya
+tinggi sel yang terukur di tiap lebar; **nol label terpotong** di keempat lebar itu (ellipsis hanya jaring
+pengaman untuk lebar yang lebih sempit lagi); ikon sortir tetap tampil ("NO ↑" terlihat di screenshot);
+26 baris; di 1440/1280 tabel mencapai `min-width: 1200px` sehingga muncul scroll horizontal yang memang
+disengaja, bukan kolom yang dipaksa sempit.
