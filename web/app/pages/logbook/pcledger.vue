@@ -711,7 +711,14 @@ async function exportExcel() {
         />
 
         <!-- Register -->
-        <UCard class="anim-fade-up" :ui="{ root: 'rounded-xl bg-elevated', body: 'p-0 sm:p-0' }">
+        <!-- A plain div, NOT a UCard, and that is what makes the footer match. UCard renders its
+             #footer slot inside a wrapper carrying `p-4 sm:px-6`, so the bar came out 69px tall and
+             24px narrower than the card on each side, with a transparent band above it and UCard's
+             own `divide-y` drawing a second rule - while `bg-default/30` cannot paint outside that
+             wrapper. Measured on the real pages: CCTV's bar is a direct child of the card, 37px
+             tall and full width. Same class string as the CCTV card so the two registers share one
+             shape rather than two similar ones. -->
+        <div class="anim-fade-up overflow-hidden rounded-xl border border-default bg-elevated">
           <div v-if="loading" class="flex items-center justify-center gap-2 p-12 text-sm text-muted">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
             Loading the register...
@@ -803,18 +810,17 @@ async function exportExcel() {
             </table>
           </div>
 
-          <template v-if="!loading && rows.length" #footer>
-            <!-- Matched to the CCTV register's footer deliberately rather than approximately:
-                 same classes (border-t, bg-default/30, px-4 py-2.5), and the LEFT count follows
-                 the FILTERS so it can never disagree with the "Showing X of Y" next to it. The
-                 CCTV page once printed the raw total there and read "1 row / Showing 0 of 1",
-                 which looks like a bug. -->
-            <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
-              <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
-              <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
-            </div>
-          </template>
-        </UCard>
+          <!-- Sibling of the scroll area, exactly like the CCTV register, so the bar spans the full
+               card width and its `border-t` lands on the card's own edge instead of floating inside
+               a padded slot. Same class string as CCTV's footer verbatim.
+               The LEFT count follows the FILTERS so it can never disagree with the "Showing X of Y"
+               beside it - the CCTV page once printed the raw total there and read
+               "1 row / Showing 0 of 1", which looks like a bug. -->
+          <div v-if="!loading && rows.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+            <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
+            <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- ---------------- add / edit ---------------- -->

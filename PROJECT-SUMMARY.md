@@ -2331,3 +2331,31 @@ TIGA PERBEDAAN YANG SENGAJA DIBIARKAN (dan alasannya):
 Catatan jujur soal zebra: formula CCTV itu di LIGHT mode hampir tidak terlihat (`--ui-bg` = putih di
 atas permukaan elevated yang juga hampir putih; terukur 0.9736 vs 0.967) — itu sifat band CCTV sendiri,
 bukan efek port ini, dan sudah didokumentasikan di komentar CSS-nya.
+
+### Footer PC Ledger disamakan dengan CCTV (2026-10-08)
+
+HIRO: *"footer pc ladger berbeda, coba samakan"*. Class string footernya SUDAH sama sejak sebelumnya,
+jadi bedanya ada di WADAHNYA — dan itu terbukti begitu diukur, bukan diperkirakan.
+
+**Penyebab terukur:** footer PC Ledger berada di dalam slot `#footer` UCard, dan UCard membungkus
+slot itu dengan `<div class="p-4 sm:px-6">` (padding 16px 24px). Akibatnya:
+- bar footer jadi **69px** tinggi, bukan 37px (ada pita transparan 16px di atas dan bawahnya);
+- lebarnya **1616px** sementara kartunya 1664px — `bg-default/30` tidak bisa mengecat keluar dari
+  wrapper, jadi pita abu-abu itu tidak menyentuh tepi kartu (24px menganga di kiri-kanan);
+- UCard root memakai `ring` + `divide-y divide-default`, jadi ada garis pemisah ekstra di atas area
+  footer yang tidak ada di CCTV.
+
+Di CCTV, bar footer adalah **anak langsung** kartu (`div.overflow-hidden.rounded-xl.border.bg-elevated`):
+37px, lebar penuh 1662px.
+
+**Perbaikan:** `<UCard>` diganti `<div class="anim-fade-up overflow-hidden rounded-xl border
+border-default bg-elevated">` — persis class string kartu CCTV — dan footernya dikeluarkan dari slot
+`#footer` menjadi SIBLING dari area scroll di dalam kartu itu (dengan `v-if="!loading && rows.length"`
+supaya tetap hilang saat loading/kosong). Tidak ada lagi wrapper berpadding, tidak ada `divide-y`, dan
+`border-t` barnya mendarat di tepi kartu.
+
+**TERUKUR setelah perbaikan (dibandingkan angka CCTV):** tinggi bar 37px (=CCTV 37), lebar 1662px
+(=CCTV 1662), padding `10px 16px`, bg `oklab(0.21 ... / 0.3)`, font 12px, warna `oklch(0.705 0.015
+286.067)`, border-top `1px solid oklch(0.274 0.006 286.033)` — semuanya identik; parent = `div`
+kartu dengan class string yang sama, tinggi kartu 795px (=CCTV 795 = scroll 756 + bar 37 + border 2),
+`barIsDirectChildOfCard: true`, `widthMatchesCard: true`, 26 baris tetap utuh.
