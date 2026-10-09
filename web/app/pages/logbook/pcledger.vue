@@ -207,7 +207,7 @@ watch(visibleKeys, async () => {
  */
 function pinClass(i: number) {
   if (i === 0) return 'pl-pin pl-pin-first'
-  if (i === 1) return 'pl-pin pl-pin-second'
+  if (i === 1) return 'pl-pin'
   return ''
 }
 
@@ -743,7 +743,6 @@ async function exportExcel() {
                     :style="pinStyle(visibleIndex(c.key))"
                     :class="[
                       c.align === 'center' ? 'text-center' : 'text-left',
-                      sortKey === c.key ? 'is-sorted' : '',
                       isVisible(c.key) ? '' : 'pl-col-hidden',
                       pinClass(visibleIndex(c.key))
                     ]"
@@ -953,15 +952,19 @@ async function exportExcel() {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--ui-text-muted);
+  /* The accent colour, matching the No column - HIRO: "buat header tabel text color sesuai warna
+     accent, sama seperti NO". Sorting no longer changes this colour (see the zebra note below), so
+     the sorted column is marked by its arrow alone. */
+  color: var(--ui-primary);
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
 }
 
-.pl-table th.is-sorted {
-  color: var(--ui-primary);
-}
+/* `.pl-table th.is-sorted` used to live here, recolouring the sorted column to the accent colour.
+   With every header on the accent colour now, that rule had nothing left to do, so it and the
+   class binding in the markup are both gone rather than left behind looking meaningful. The sorted
+   column is marked by its arrow alone. */
 
 .pl-table td {
   padding: 0.5rem 0.75rem;
@@ -969,6 +972,23 @@ async function exportExcel() {
   color: var(--ui-text);
   /* Equal-width digits in the app's own font, so codes and numbers line up column-wise. */
   font-variant-numeric: tabular-nums;
+}
+
+/* ALTERNATING ROW COLOURS - HIRO: "warna antar row buat selang seling biar memudahkan view user".
+   A neutral lift rather than a tinted one: 7% of the text colour mixed into the base surface, which
+   reads as a slightly lighter band in dark mode and a slightly greyer one in light mode, following
+   the theme either way with no second colour to maintain. 5% was measurably there (L 0.2455 against
+   a base of 0.21) but too faint to help anyone scan a row, which is the whole point of the band.
+
+   TWO ORDERING DETAILS THAT ARE LOAD-BEARING:
+   - This rule is declared BEFORE the hover rule below. Both are (0,2,0), so source order decides,
+     and the hover must win or an even row would simply refuse to light up.
+   - It targets every `td`, including the pinned ones. `.pl-pin` is only (0,1,0), so the band runs
+     unbroken across the pinned pair instead of stopping at the first two columns - the same
+     failure that made No and Staff Name look like a different table. The pinned HOVER rule is
+     (0,3,0), so it still takes precedence over the band. */
+.pl-table tbody tr:nth-child(even) td {
+  background: color-mix(in oklab, var(--ui-text) 7%, var(--ui-bg));
 }
 
 .pl-table tbody tr:hover td {
@@ -997,9 +1017,11 @@ async function exportExcel() {
   left: 0;
 }
 
-.pl-pin-second {
-  box-shadow: 1px 0 0 var(--ui-border);
-}
+/* There is deliberately NO divider on the right edge of the second pinned column. There used to be
+   one - `box-shadow: 1px 0 0 var(--ui-border)` - which drew a line between Staff Name and Email
+   Address; HIRO asked for it gone. The cost, accepted knowingly: while the register is scrolled
+   sideways there is no visible seam where the pinned pair ends, only the opaque background hiding
+   what passes underneath. */
 
 .pl-table th.pl-pin {
   z-index: 4;

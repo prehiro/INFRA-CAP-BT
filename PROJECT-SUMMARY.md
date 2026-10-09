@@ -2243,3 +2243,41 @@ memang sengaja satu tone di atas body.
 `tokenBg`; `bodyNormal` tetap transparan; `headPin1` dan `headPin3` keduanya
 `oklch(0.274 0.006 286.033)` (pita header tetap seragam). Semua berbasis token, jadi light mode ikut
 benar tanpa hardcode.
+
+### Tiga penyesuaian tampilan tabel PC Ledger (2026-10-08)
+
+HIRO: *"hilangkan line antara kolom staff name dan email address. lalu buat header tabel text color
+sesuai warna accent, sama seperti NO. warna antar row buat selang seling biar memudahkan view user."*
+
+**1. Garis antara Staff Name dan Email Address — DIHAPUS.** Itu adalah `box-shadow: 1px 0 0
+var(--ui-border)` pada `.pl-pin-second`, yaitu garis di tepi kanan kolom pin kedua. Rule-nya dihapus
+dan kelasnya ikut dikeluarkan dari `pinClass()` supaya tidak meninggalkan CSS/kelas mati. Konsekuensi
+yang saya terima sadar: saat register di-scroll ke samping, tidak ada lagi batas visual di ujung
+pasangan kolom pin — yang menyembunyikan kolom yang lewat hanya latar opaque-nya. Terukur:
+`boxShadow` sel Staff Name = `none`, dan tidak ada garis di screenshot.
+
+**2. Warna teks header = accent, sama seperti NO.** `.pl-table th` dari `var(--ui-text-muted)` →
+`var(--ui-primary)`. Terukur: SEMUA `th` (termasuk yang di-pin) = `rgb(0, 220, 130)` = `#00DC82`,
+sama persis dengan token accent. Konsekuensinya `.pl-table th.is-sorted` (yang tugasnya cuma
+mewarnai kolom terurut dengan accent) jadi tidak punya efek apa-apa lagi → rule itu dan binding kelas
+`is-sorted` di markup keduanya dihapus, bukan dibiarkan terlihat bermakna. Penanda kolom terurut
+sekarang murni panah ↑/↓ yang memang sudah ada.
+
+**3. Warna baris selang seling.** Ditambahkan `.pl-table tbody tr:nth-child(even) td { background:
+color-mix(in oklab, var(--ui-text) 7%, var(--ui-bg)) }` — lift netral (bukan tint warna accent), jadi
+di dark mode jadi band lebih terang dan di light mode jadi band lebih abu, mengikuti tema tanpa
+warna kedua yang harus dirawat.
+
+Dua hal urutan yang penting dan sengaja didokumentasikan di file:
+- Rule zebra dideklarasikan **SEBELUM** rule hover. Keduanya (0,2,0), jadi yang menang adalah urutan
+  sumber — kalau terbalik, baris genap tidak akan menyala saat di-hover.
+- Rule ini mengenai **semua** `td` termasuk yang di-pin, karena `.pl-pin` hanya (0,1,0). Jadi bandnya
+  menerus melewati pasangan kolom pin, tidak berhenti di kolom kedua — kegagalan yang persis sama
+  dengan kasus "No dan Staff Name warnanya berbeda" sebelumnya. Rule hover pin tetap (0,3,0) sehingga
+  masih menang atas band.
+
+Kekuatan band sempat 5% dan saya naikkan ke 7%: pada 5% terukur L 0.2455 vs dasar 0.21 (ada, tapi
+terlalu tipis untuk membantu memindai baris, padahal itu tujuan bandnya). Pada 7% terukur L 0.2597 baik
+untuk sel pin maupun sel biasa, dan terlihat jelas di screenshot. Hover pada baris genap tetap
+bekerja: sel biasa jadi `oklab(... / 0.06)` translucent, sel pin jadi campuran opaque
+`oklab(0.244569 ...)`.
