@@ -2406,3 +2406,33 @@ baris baru/terhapus dilewati (yang baru milik animasi enter). Offset lama diambi
 - SORT (25 baris bertukar posisi): 22 frame transform, 22 frame gerak per baris — jalur sort tetap
   jalan dengan mekanisme yang sama (sebelumnya pun jalan, sekarang lewat kode yang sama, deterministik).
 - Tidak ada error di konsol; 26 baris utuh; tidak ada transform tertinggal setelah animasi.
+
+### Scrollbar tabel berkedip saat filter chassis (2026-10-08)
+
+HIRO: *"ketika saya apply filter chasis scrollbar pada tabel berkedip-kedip/flickering"*.
+
+**PENYEBAB TERUKUR.** Konfigurasi `.pl-scroll` sudah benar sejak awal (`overflow-y: scroll`,
+`overflow-x: auto`, `scrollbar-gutter: stable`, `max-height: 70vh`) dan kedua scrollbar memang selalu
+ada (terukur: `clientWidth` 1650 = 1662 - 12 untuk bar vertikal, `clientHeight` 744 = 756 - 12 untuk
+bar horizontal). Yang salah adalah **transform pada baris**: baris yang di-pin FLIP tetap dihitung
+sebagai *scrollable overflow* milik container, jadi saat baris ditahan di posisi bawahnya, tinggi
+area scroll ikut membengkak padahal konten aslinya baru saja MENJADI LEBIH PENDEK. Terukur saat filter
+chassis: `scrollHeight` berjalan **813 → 795 → 779 → 765 → 753 → 744 → 736 → 730 → 727** dalam 10
+frame sementara `clientHeight` 727 — artinya garis batas overflow bergerak terus di bawah scrollbar,
+dan thumb-nya di-repaint tiap frame. Itu kedipannya.
+
+**PERBAIKAN.** Tinggi area scroll **dibekukan selama animasi**: sebelum perubahan diambil
+`scrollHeight` container (di watcher pre-flush), lalu tabel diberi `min-height` sebesar nilai itu
+selama baris meluncur, dan dilepas setelah baris mendarat (`ROW_ANIM_MS + 120`). Karena baris yang
+di-pin tidak pernah melebihi tinggi lama, `scrollHeight` jadi konstan sepanjang animasi; thumb
+berubah tepat sekali setelah gerakan selesai, bukan berkedip.
+
+**TERUKUR SETELAH PERBAIKAN (filter Desktop, 26 → 16):** `vOverflowToggles: 0` (sebelumnya 1),
+`scrollHeightChanges: 0:1157, 61:1157px (min-height dipasang)` — tinggi **konstan 1157** sepanjang
+animasi, `clientHeight` tidak berubah (744), `scrollWidth`/`clientWidth` tidak berubah.
+
+**SISA YANG JUJUR BELUM BERES:** pada filter paling ekstrem (Notebook, 16 → 2) container-nya sendiri
+menyusut 727 → 125 px karena kartu register menjadi pendek — itu perubahan layout struktural
+(tinggi tabel mengikuti jumlah baris), bukan efek transform, dan pada jalur ini `min-height` beku
+tidak terpasang (0 frame), jadi status overflow masih beberapa kali berubah selama transisi.
+Perlu ditelusuri kenapa `movers` kosong di jalur itu.

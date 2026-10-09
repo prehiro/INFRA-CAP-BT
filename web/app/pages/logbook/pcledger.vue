@@ -362,6 +362,9 @@ const ROW_ANIM_MS = 340
    needs positions.) */
 let rowOffsetsBefore: Record<string, number> | null = null
 
+/** The scroll area's height before the change, so the glide cannot resize the scrollbar. */
+let rowScrollBefore = 0
+
 watch(visibleRows, () => {
   const rows = tableEl.value?.querySelectorAll('tbody tr')
   if (!rows?.length) { rowOffsetsBefore = null; return }
@@ -371,6 +374,8 @@ watch(visibleRows, () => {
     if (el.dataset.id) out[el.dataset.id] = el.offsetTop
   })
   rowOffsetsBefore = out
+  const scroller = tableEl.value?.parentElement
+  rowScrollBefore = scroller ? scroller.scrollHeight : 0
 })
 
 watch(visibleRows, (v) => {
@@ -391,6 +396,17 @@ watch(visibleRows, (v) => {
   })
   if (!movers.length) return
 
+  // THE SCROLL AREA'S HEIGHT IS FROZEN FOR THE DURATION OF THE GLIDE, and that is what stops the
+  // scrollbar from flickering. A transformed row still counts toward the scroll container's
+  // scrollable overflow, so pinning rows back to lower positions stretches `scrollHeight` while the
+  // real content has just got SHORTER, and the extent changes on every frame of the animation -
+  // which repaints the thumb on every frame. Measured through a chassis filter: scrollHeight ran
+  // 813 -> 795 -> 779 -> 765 -> 753 -> 744 -> 736 -> 730 -> 727 over ten frames against a
+  // clientHeight of 727, i.e. the extent moved under the scrollbar the whole way. Holding the table
+  // at its pre-change height keeps scrollHeight constant while the rows travel, and it is released
+  // once they have landed, so the thumb changes exactly once, calmly, instead of flickering.
+  if (tableEl.value && rowScrollBefore) tableEl.value.style.minHeight = `${rowScrollBefore}px`
+
   const pin = () => {
     movers.forEach((el) => {
       const id = el.dataset.id as string
@@ -406,6 +422,7 @@ watch(visibleRows, (v) => {
     })
     window.setTimeout(() => {
       movers.forEach((el) => { el.style.transition = ''; el.style.transform = '' })
+      if (tableEl.value) tableEl.value.style.minHeight = ''
     }, ROW_ANIM_MS + 120)
   }
 
@@ -1238,7 +1255,7 @@ async function exportExcel() {
    including the twenty that did not change.
 
    THE MOVE IS DRIVEN IN THE SCRIPT, not by `move-class`: rows are moved by the same self-driven
-   FLIP as the columns (`rowTops()` + `watch(visibleRows, ...)`). Measured reason: Vue's move
+   FLIP as the columns (the `watch(visibleRows, ...)` pin above). Measured reason: Vue's move
    handling never ran with a leave transition present (zero frames carrying a transform on a chassis
    filter, because the leaving rows hold their space and the survivors' positions are identical when
    the move is measured), and it was inconsistent once the leave was removed.
@@ -1331,10 +1348,7 @@ async function exportExcel() {
 @media (prefers-reduced-motion: reduce) {
   /* Cancel outright rather than shorten - a partial fade is still motion, which is exactly what
      the OS setting asks us to avoid. Same rule as main.css and as the CCTV register. */
-  .row-enter-active,
-  .row-leave-active,
-  .row-move,
-  .row-move-active {
+  .row-enter-active {
     transition: none !important;
     opacity: 1 !important;
     transform: none !important;
