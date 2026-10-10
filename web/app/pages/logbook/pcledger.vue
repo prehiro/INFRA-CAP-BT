@@ -255,6 +255,25 @@ watch(visibleKeys, async () => {
 
   if (!movers.length) return
 
+  /* SUPPRESS THE HORIZONTAL SCROLLBAR THE FLIP WOULD OTHERWISE SUMMON.
+   *
+   * A transformed cell still counts toward its scroll container's SCROLLABLE OVERFLOW - the same
+   * rule that caused the vertical flicker on a chassis filter, seen this time in the other axis.
+   * Measured on an untick: 405 cells carried a transform, scrollWidth ran 1650 -> 1657 -> ... -> 1650,
+   * a 12px horizontal scrollbar appeared for nine frames, and clientHeight fell 756 -> 744 -> 756, so
+   * the visible area jogged as well - HIRO: "setiap kali filter kolom di untick, ada scrollbar muncul
+   * sebentar dibagian bawah tabel, saya tidak mau itu terjadi".
+   *
+   * `overflow-x: hidden` for the length of the glide means the transient overflow cannot summon one.
+   * The container is left ALONE when it is already showing a scrollbar: this page's table is wider than
+   * a narrow viewport, so hiding and re-showing that bar would jog the content by the bar's own height -
+   * the same class of bug, in the axis nobody asked about. At a normal window there is no horizontal bar
+   * to begin with, so the switch is invisible and the final layout is untouched either way.
+   */
+  const scroller = tableWrapEl.value?.closest('.pl-scroll') as HTMLElement | null
+  const alreadyScrolls = scroller ? scroller.scrollWidth > scroller.clientWidth + 1 : false
+  if (scroller && !alreadyScrolls) scroller.style.overflowX = 'hidden'
+
   movers.forEach(([el, dx]) => {
     el.style.transition = 'none'
     el.style.transform = `translateX(${dx}px)`
@@ -267,6 +286,7 @@ watch(visibleKeys, async () => {
     })
     window.setTimeout(() => {
       movers.forEach(([el]) => { el.style.transition = ''; el.style.transform = '' })
+      if (scroller && !alreadyScrolls) scroller.style.overflowX = ''
       // The visible set has changed, so the first column may be a different one now - re-measure the
       // pinned offset once the animation has settled, not during it, or the pinned pair would jump.
       measurePinOffset()
@@ -763,7 +783,7 @@ async function exportExcel() {
     // --- title block ---
     ws.mergeCells(1, 1, 1, COLUMNS.length + 1)
     const title = ws.getCell(1, 1)
-    title.value = 'IT FORM SG031 Department PC Ledger Form v7'
+    title.value = 'List PC Ledger CAP Only'
     title.font = { bold: true, size: 16 }
     title.alignment = { horizontal: 'center', vertical: 'middle' }
     ws.getRow(1).height = 21
@@ -862,9 +882,9 @@ async function exportExcel() {
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-              <h1 class="text-lg font-bold tracking-wide">PC Ledger</h1>
+              <h1 class="text-lg font-bold tracking-wide">CAP Factory PC Ledger</h1>
               <p class="text-xs text-muted">
-                IT FORM SG031 &middot; Department PC Ledger Form v7
+                List of PC, Laptop, Tablet &middot; CAPACITOR Only
                 <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
               </p>
             </div>

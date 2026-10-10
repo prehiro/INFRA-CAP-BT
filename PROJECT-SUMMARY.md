@@ -2812,3 +2812,35 @@ milik form aslinya. Kalau mau diganti juga, bilang saja.
 **CATATAN FIELD DI DATABASE.** Field `departemen` + nilai 'Capacitor' pada 26 record masih ada di entity
 (deleting data bukan sesuatu yang pantas dilakukan diam-diam oleh perubahan UI). Sekarang tidak ada kode
 yang memakainya. Menghapus field-nya adalah langkah terpisah yang butuh persetujuan eksplisit.
+
+### Scrollbar horizontal yang berkedip saat kolom di-untick (2026-10-10)
+
+HIRO: *"setiap kali filter kolom di untick, ada scrollbar muncul sebentar dibagian bawah tabel, saya
+tidak mau itu terjadi"*.
+
+**AKAR MASALAH (diukur per-frame).** Sel yang sedang memakai `transform` FLIP tetap dihitung sebagai
+*scrollable overflow* milik scroll container - aturan yang sama yang dulu membuat scrollbar vertikal
+berkedip saat filter chassis, kali ini di sumbu lain. Rekaman pada satu untick:
+
+| frame | scrollWidth | clientHeight | scrollbar horizontal |
+|---|---|---|---|
+| 0 | 1650 | 756 | tidak |
+| 8 (405 sel ber-transform) | **1657** | **744** | **muncul (track 12px)** |
+| 17 | 1650 | 756 | tidak |
+
+Jadi overflow transien 7px memunculkan scrollbar 12px selama ~9 frame, dan scrollbar itu memakan 12px
+tinggi area tabel (clientHeight 756 -> 744) - dua gejala sekaligus.
+
+**PERBAIKAN.** Selama animasi, scroll container diberi `overflow-x: hidden` supaya overflow transien
+tidak bisa memunculkan scrollbar, lalu dikembalikan ke `auto` pada cleanup (timeout yang sama dengan
+pelepasan transform), memakai `.pl-scroll` yang ditemukan dari `tableWrapEl.closest()`.
+Container **dibiarkan apa adanya kalau scrollbar-nya memang sedang tampil** (layar sempit): menyembunyikan
+lalu memunculkan kembali bar itu akan menyentak konten setinggi barnya sendiri - bug yang sama di sumbu
+yang tidak diminta. Di lebar normal tidak ada bar horizontal sejak awal, jadi peralihannya tidak terlihat
+dan tata letak akhirnya tidak berubah sama sekali.
+
+**TERUKUR SESUDAH (rekaman per-frame, 1920x1080):** `overflow-x` auto -> **hidden** (frame 9) -> auto
+(frame 36); **tinggi track scrollbar tetap 0 sepanjang 70 frame**; **`clientHeight` tetap 756** (tidak ada
+sentakan); `scrollWidth` sempat 1651 pada frame 20 tapi karena overflow-x hidden tidak ada bar yang
+muncul, dan setelah dikembalikan tetap 1650; header sticky tetap bekerja
+(`theadTopVsScrollport: 0` saat scrollTop 300).
