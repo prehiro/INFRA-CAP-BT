@@ -3347,3 +3347,24 @@ benar-benar ditolak). Mengetik S/N duplikat: peringatan yang sama. Mengetik "De"
 CATATAN: keunikan ini ditegakkan di sisi klien (form menolak menyimpan duplikat). Kalau ingin ditegakkan
 juga di API/database, field perlu ditandai IsUnique - konsekuensinya importer Excel akan menolak baris
 yang hostname/S/N-nya duplikat.
+
+### Form New PC record: cek duplikat hanya saat Add record + placeholder (2026-10-10)
+
+**1. Tidak ada lagi live check.** Debounce 450 ms dan query per ketikan DIHAPUS. Pemeriksaan duplikat kini
+hanya berjalan saat tombol simpan ditekan (save() memanggil checkUnique untuk kedua field, lalu menolak
+menulis bila ada duplikat). Satu-satunya perilaku langsung yang tersisa adalah MENGHAPUS peringatan yang
+sudah tampil ketika nilainya diubah, supaya pesan merah tidak tertinggal di bawah field yang sudah
+diperbaiki; banner ringkasan (formError) juga ikut dibersihkan saat itu.
+
+**2. Placeholder.** Japan Hostname -> "PC hostname", Computer S/N -> "PC Serial number"
+(FIELD_PLACEHOLDERS di pcledger.vue).
+
+**VERIFIKASI (browser, 1920x1080).** Placeholder terbaca "PC hostname" dan "PC Serial number". Mengetik
+hostname duplikat TANPA menekan apa pun: tidak ada peringatan sama sekali ([]). Setelah klik Add record:
+muncul "Already used by No 26 - Capacitor Smart Wireless." di field dan banner ringkasan, modal tetap
+terbuka, total DB tetap 26 -> 26. Setelah nilai diganti: error di field hilang.
+
+CATATAN JUJUR: baris yang membersihkan banner berada di watcher yang sama dengan yang membersihkan error
+field, dan watcher itu sudah terbukti berjalan (error field hilang saat nilai diganti), tetapi saya belum
+sempat melihat banner-nya hilang sendiri di layar karena browser harness di sesi ini melepas halaman tepat
+saat verifikasi terakhir.

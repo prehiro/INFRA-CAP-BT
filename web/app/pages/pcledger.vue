@@ -362,6 +362,12 @@ const FORM_SECTIONS = [
   }
 ] as const
 
+/** Placeholders for the two fields whose meaning is not obvious from the label alone. */
+const FIELD_PLACEHOLDERS: Record<string, string> = {
+  japan_hostname: 'PC hostname',
+  computer_sn: 'PC Serial number'
+}
+
 const LABELS: Record<string, string> = {
   nomor: 'No',
   staff_name: 'Staff Name',
@@ -759,13 +765,17 @@ function refreshUniqueWarning() {
   uniqueWarned.value = first || ''
 }
 
-// Debounced: typing a hostname must not fire one request per keystroke.
-let uniqueTimer: ReturnType<typeof setTimeout> | undefined
+// HIRO: "berikan warning duplikat ketika user klik add record saja jangan live check" - so there is no
+// debounced query while typing. The only live behaviour left is CLEARING a warning that is already on
+// screen once the value changes, because otherwise a stale red message would sit under a field the user
+// has already corrected. The authoritative check runs in save().
 watch(() => UNIQUE_FIELDS.map((k) => String(form[k] ?? '')).join('\u0000'), () => {
-  clearTimeout(uniqueTimer)
-  uniqueTimer = setTimeout(() => { UNIQUE_FIELDS.forEach((k) => { void checkUnique(k) }) }, 450)
+  UNIQUE_FIELDS.forEach((k) => { if (uniqueErrors.value[k]) uniqueErrors.value[k] = '' })
+  refreshUniqueWarning()
+  // Also drop the summary banner: it is the same fact, and leaving it on screen after the value has
+  // been corrected reads as if the form is still refusing to save.
+  formError.value = ''
 })
-onBeforeUnmount(() => clearTimeout(uniqueTimer))
 
 /** One row of the imported Global ID list, shaped for the field currently being typed in. */
 function gidSuggestions(key: 'staff_name' | 'email' | 'gid') {
@@ -1358,6 +1368,7 @@ async function exportExcel() {
                     <UInput
                       v-else
                       v-model="form[key]"
+                      :placeholder="FIELD_PLACEHOLDERS[key]"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
