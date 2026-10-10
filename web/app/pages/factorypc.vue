@@ -1,6 +1,10 @@
 <script setup lang="ts">
-/**
- * Factory PC - the second device register, and a SIBLING of the PC Ledger page rather than a mode of it:
+/*
+ * Factory PC - the register of STANDALONE machines: PCs that are NOT joined to the corporate network or
+ * domain, so they never appear in the domain-joined PC Ledger or in its workbook. HIRO: "factory pc adalah
+ * PC yang tidak terhubung dengan network / domain perusahaan". The page description says exactly that.
+ *
+ * It is a SIBLING of the PC Ledger page rather than a mode of it:, and a SIBLING of the PC Ledger page rather than a mode of it:
  * its own entity (`factory_pc`, id 11), its own nine columns (No, PIC, Email, Chassis, Model, SN, OS,
  * Status, Remarks - the Actions column is the table's own), and NO Excel export, because there is no
  * workbook it has to reproduce. HIRO asked for it to sit beside PC Ledger under a "Device Ledger" menu
@@ -718,8 +722,7 @@ async function confirmDelete() {
             <div class="min-w-0">
               <h1 class="text-lg font-bold tracking-wide">Factory PC</h1>
               <p class="text-xs text-muted">
-                List of PC, Laptop, Tablet &middot; CAPACITOR Only
-                <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
+                Standalone PCs &mdash; not connected to the corporate network or domain. <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
               </p>
             </div>
 

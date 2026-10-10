@@ -2898,3 +2898,34 @@ sebelum `<template>`, dan `</script>` ada di antaranya). Akibatnya Vite menolak 
 Terdeteksi DARI VERIFIKASI BROWSER, bukan dari pembacaan kode - pelajaran: menghapus blok dengan regex
 "dari penanda X sampai sebelum Y" harus memeriksa pasangan tag yang berakhir di antaranya. Diperbaiki
 dengan menyisipkan `</script>` sebelum `<template>`; `curl /logbook/factorypc` kembali 200.
+
+### Factory PC: 10 record dummy, deskripsi, URL root, restart API (2026-10-10)
+
+**RESTART API (HIRO: "eksekusi resart API") - dan pelajaran soal prosesnya.** Ternyata SERVER yang
+memegang port 5099 bukan `dotnet.exe` melainkan **`Api.exe`** (PID 2776, anak dari run-host `dotnet.exe`),
+jadi `taskkill /F /IM dotnet.exe /T` tidak menyentuhnya sama sekali - itu sebabnya percobaan pertama
+"berhasil" tapi API masih memakai kode lama dan validasi `nomor` masih menolak. Selain itu bentuk
+`taskkill //F //IM ...` DITOLAK MSYS sebagai "Invalid argument/option - '//F'", dan `cmd //c "..."` yang
+dipakai lewat pipe hanya memunculkan banner cmd tanpa menjalankan perintahnya. Bentuk yang bekerja di
+bash: `taskkill /F /PID <pid> /T` (slash tunggal). Setelah PID 2776 dimatikan, port bebas, API dijalankan
+ulang dengan kode baru.
+
+**10 RECORD DUMMY FACTORY PC - berhasil, 10/10.** `nomor` terisi otomatis oleh LogbookNumberService
+(terlihat '10','9','8','7' pada urutan terbaru), yang sekaligus MEMBUKTIKAN restart + `FACTORY_PC_SLUG`
+bekerja. PIC: Ahmad Fauzi, Budi Santoso, Citra Lestari, Dedi Kurniawan, Eka Wulandari, Fajar Nugroho,
+Gita Permata, Hendra Wijaya, Indah Sari, Joko Prasetyo. Chassis Desktop/Notebook/Tablet, status
+In Use/Standby/Repair/Retired, masing-masing dengan Remarks realistis. Total di API: 10.
+
+**URL PINDAH KE ROOT.** `web/app/pages/logbook/pcledger.vue` -> `web/app/pages/pcledger.vue` dan
+`.../logbook/factorypc.vue` -> `web/app/pages/factorypc.vue` (git mv), link sidebar + command palette
+diubah ke `/pcledger` dan `/factorypc` (2+2 kemunculan). grep memastikan tidak ada sisa referensi
+`/logbook/pcledger` atau `/logbook/factorypc` di web/. `/logbook/` sekarang hanya berisi cctvacc + handover.
+`curl /factorypc` = 200.
+
+**DESKRIPSI HALAMAN (rekomendasi HIRO).** Dipilih: **"Standalone PCs - not connected to the corporate
+network or domain."** Alasannya: kalimat itu menyebutkan apa yang MEMBEDAKAN halaman ini dari PC Ledger
+(yang domain-joined), bukan mengulang isi kolom. Alternatif yang saya pertimbangkan dan tidak dipakai:
+a) "PCs outside the corporate domain - recorded separately for IT asset visibility." (lebih panjang,
+   menekankan tujuan pencatatan) b) "Non-domain factory computers." (paling ringkas, tapi tidak
+   menjelaskan kenapa dicatat terpisah). Deskripsi lama (warisan PC Ledger: "List of PC, Laptop, Tablet
+   &middot; CAPACITOR Only") sudah diganti, jumlah record di belakangnya tetap ditampilkan.
