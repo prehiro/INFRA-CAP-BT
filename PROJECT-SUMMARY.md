@@ -3096,3 +3096,26 @@ terbukti mengisi. (b) daftar opsi dropdown chassis belum dibuka. (c) saran model
 
 **KONDISI DATA:** saat verifikasi, register PC Ledger sempat terbaca 53 baris (impor 26 terduplikasi +
 sisa baris uji). Dibersihkan kembali ke 26 baris (nomor 1..26) lewat API.
+
+### Tiga perbaikan lanjutan (2026-10-10, setelah laporan HIRO)
+
+**1. FLICKER SAAT KLIK TAB di halaman Data Import — diperbaiki.** Instrumentasi `document.getAnimations()`
+per frame saat tab diklik menemukan `infra-fade-up` berjalan di `DIV.anim-fade-up.mx-auto`: kedua panel tab
+membawa kelas animasi masuk, dan karena keduanya ditukar oleh `v-if`, tiap ganti tab me-mount panel baru
+dan MEMUTAR ULANG animasi 340ms (fade + scale) di seluruh area halaman — itu yang terlihat sebagai
+"membesar-mengecil". Elemen lain (spinner brand, hover menu) memang animasi tetap, bukan penyebabnya.
+Perbaikan: animasi hanya untuk paint pertama (`entrance` ref, dilepas setelah 420ms); ganti tab bukan
+animasi masuk. Terukur sesudah: `infra-fade-up` TIDAK ada lagi (`[]`) setelah tab diklik.
+
+**2. KLIK SARAN MENUTUP MODAL — diperbaiki.** Sebelumnya panel saran di-teleport ke `<body>`, sehingga bagi
+Reka node itu ORANG LUAR dialog; klik di atasnya dibaca sebagai klik di luar dialog dan modal ditutup.
+Terukur: klik benar-benar mengenai list (`elementFromPoint` => node di dalam list) tetapi dialog tetap
+tertutup. Perbaikan: panel di-teleport ke elemen `[role=dialog]` milik input (di dalam dismissable layer),
+plus posisi dihitung dua tahap: panel diletakkan di 0,0, dibaca posisi nyatanya, lalu di-offset selisihnya
+(persis baik dialog punya transform/tidak), dan bila ruang di bawah tidak cukup panel dibalik ke atas field
+atau tingginya dibatasi. Terukur sesudah: `panel di dalam dialog: true`, klik baris saran mengisi Staff
+Name/Email/GID (KHENG HUA LIM / khlim@test.com / 70D8447, trace "Filled from GID list (70D8447)") dan
+dialog TETAP terbuka.
+
+**3. Z-INDEX IKON ↵ vs header.** Header panel kini `sticky top-0 z-10` dengan latar `bg-elevated`, jadi
+penanda ↵ pada baris tidak pernah tampil di atas header saat list digulir. Terukur: header z-index = 10.

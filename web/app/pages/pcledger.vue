@@ -1254,7 +1254,7 @@ async function exportExcel() {
                       :suggestions="gidSuggestions(key as 'staff_name' | 'email' | 'gid')"
                       :context="siblingValues(key)"
                       :placeholder="gidCandidates.length ? 'Type to search the GID list' : 'No GID list imported yet'"
-                      header="GID list - picking fills name, email and GID"
+                      header="Smart Suggestion - Click or Enter ↵"
                       @fill="applyGidSuggestion"
                     />
                     <UInput

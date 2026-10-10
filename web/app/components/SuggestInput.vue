@@ -61,6 +61,9 @@ const emit = defineEmits<{
 
 const inputEl = ref<any>(null)
 const rootEl = ref<HTMLElement | null>(null)
+const panelEl = ref<HTMLElement | null>(null)
+/** Where the panel is teleported. Resolved per open: the dialog that owns the input, or <body>. */
+const panelTarget = ref<HTMLElement>(document.body)
 const open = ref(false)
 const active = ref(0)
 const filledFrom = ref('')
@@ -115,36 +118,66 @@ function parts(value: unknown): { before: string; hit: string; after: string } {
   return { before: full.slice(0, i), hit: full.slice(i, i + q.length), after: full.slice(i + q.length) }
 }
 
-function place() {
+async function place() {
   const el = domInput()
   if (!el) return
   const r = el.getBoundingClientRect()
+
+  // WHERE THE PANEL LIVES IS PART OF THE FIX, not an implementation detail. A panel teleported to
+  // <body> is a DOM stranger to the dialog, so Reka reads a click on it as a click OUTSIDE the dialog
+  // and dismisses the whole form. Measured: the click landed inside the list (elementFromPoint
+  // returned a node with closest('[data-suggest-list]') true) and the dialog closed anyway - HIRO:
+  // "ketika saya click suggestion dropdown form modal langsung tertutup". Teleporting into the
+  // dialog's own [role=dialog] element makes the panel an insider, so no dismissal fires. That element
+  // is also the only box that clips it, hence the bounds keeping below.
+  const dlg = el.closest('[role="dialog"]') as HTMLElement | null
+  panelTarget.value = dlg ?? document.body
+
   const width = Math.max(260, Math.round(r.width))
   // Keep the list on screen: if the field is near the right edge, pull the list left instead of
   // letting it run off the viewport.
   const left = Math.min(Math.round(r.left), Math.max(8, window.innerWidth - width - 8))
-  dropStyle.value = {
-    position: 'fixed',
-    top: `${Math.round(r.bottom + 4)}px`,
-    left: `${left}px`,
-    width: `${width}px`,
-    zIndex: '60',
-    // THE ONE LINE THAT MAKES CLICKS WORK. Reka's dialog portal wraps what it renders in an element
-    // with `pointer-events: none` and re-enables it only on the dialog content, so a node teleported
-    // to <body> INHERITS none - the list painted correctly and the keyboard worked (Enter goes to the
-    // input, inside the dialog) while every mouse click was silently swallowed. Confirmed by
-    // measurement: elementFromPoint over a suggestion row returned the INPUT behind it, because hit
-    // testing skips pointer-events:none elements entirely - HIRO: "smart suggestion tidak bisa di
-    // click, hanya bisa enter".
+  let top = Math.round(r.bottom + 4)
+
+  // The dialog is translated (-50% -50%), which makes it the containing block for a fixed child, so
+  // top/left would be measured from the dialog rather than the viewport. Instead of assuming which it
+  // is, put the panel at 0,0, read where it actually landed and offset by the difference - exact
+  // either way, and it survives any future change to the dialog's transform.
+  const base: Record<string, string> = {
+    position: 'fixed', top: '0px', left: '0px', width: `${width}px`, zIndex: '20',
+    // Reka's portal wrapper sets pointer-events: none and re-enables it only on the dialog content;
+    // a teleported node inherits none and every mouse click on it is swallowed (Enter still worked
+    // because the keyboard goes to the input inside the dialog).
     pointerEvents: 'auto'
+  }
+  dropStyle.value = base
+  await nextTick()
+  const panel = panelEl.value
+  if (!panel) return
+  const origin = panel.getBoundingClientRect()
+  // Keep the whole list inside the dialog: flip above the field when there is no room below, and
+  // clamp the height when neither side fits.
+  const limitBottom = (dlg ? dlg.getBoundingClientRect().bottom : window.innerHeight) - 6
+  const limitTop = (dlg ? dlg.getBoundingClientRect().top : 0) + 6
+  let maxHeight = ''
+  if (top + panel.offsetHeight > limitBottom) {
+    const above = Math.round(r.top - 4 - panel.offsetHeight)
+    if (above >= limitTop) top = above
+    else maxHeight = `${Math.max(140, limitBottom - top)}px`
+  }
+  dropStyle.value = {
+    ...base,
+    top: `${Math.round(top - origin.top)}px`,
+    left: `${Math.round(left - origin.left)}px`,
+    ...(maxHeight ? { maxHeight } : {})
   }
 }
 
 function show() {
   if (!matches.value.length) { open.value = false; return }
-  place()
   open.value = true
   if (active.value >= matches.value.length) active.value = 0
+  void place()
 }
 
 function onInput(e: Event) {
@@ -238,16 +271,17 @@ onBeforeUnmount(() => {
       Filled from {{ filledFrom }}
     </p>
 
-    <Teleport to="body">
+    <Teleport :to="panelTarget">
       <div
         v-if="open && matches.length"
+        ref="panelEl"
         data-suggest-list
         :style="dropStyle"
         class="max-h-72 overflow-y-auto overscroll-contain rounded-lg border border-default bg-elevated shadow-lg"
       >
         <p
           v-if="header"
-          class="sticky top-0 flex items-center gap-1.5 border-b border-default bg-elevated px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted"
+          class="sticky top-0 z-10 flex items-center gap-1.5 border-b border-default bg-elevated px-3 py-1.5 text-[10px] uppercase tracking-wide text-muted"
         >
           <UIcon name="i-lucide-sparkles" class="size-3" />
           {{ header }}
