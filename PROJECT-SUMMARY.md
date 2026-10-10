@@ -3440,3 +3440,20 @@ per sumber tanpa menyentuh komponen.
 
 PELAJARAN: yang salah sebelumnya bukan cakupannya, melainkan KALIMATNYA yang belum cocok untuk pick biasa.
 Menghapus fitur untuk menyelesaikan masalah teks itu keputusan yang salah; seharusnya cukup mengganti teks.
+
+### Status baris uji beban di database (2026-10-10)
+
+HIRO bertanya apakah 1000 baris uji beban masih ada di DB karena soft delete. JAWABAN: YA. Delete di
+aplikasi ini soft (DynamicRecordService.cs baris 316-317: `if (rec.IsDeleted) return; rec.IsDeleted = true;`),
+dan SEMUA pembacaan memfilter `!IsDeleted` (daftar, hitung total, ambil satu record, validasi lookup, bahkan
+LogbookNumberService sengaja mengabaikan baris terhapus supaya nomornya bisa dipakai ulang). Jadi barisnya
+masih ada di tabel `Records` dengan IsDeleted = 1, tapi tidak muncul di mana pun di UI dan tidak ikut dihitung.
+
+Jumlahnya 1001 baris (1000 dummy uji beban + 1 baris sisa uji sebelumnya), hasil tiga kali jalan
+dedupe (500 + 500 + 1). Baris aktif pc_ledger tetap 26 (terverifikasi lewat API). Log Audit total 2406 entri
+- termasuk ~1000 pencatatan pembuatan dan ~1001 penghapusan dari uji ini, dan itu tidak bisa dibersihkan
+lewat API.
+
+Konsekuensi: baris itu hanya memakan ruang dan index. Bisa dibiarkan, bisa dikembalikan (IsDeleted = 0),
+atau dihapus permanen - dua yang terakhir butuh akses SQL langsung (SSMS), karena endpoint API hanya bisa
+soft delete dan mesin ini tidak punya sqlcmd/pyodbc.
