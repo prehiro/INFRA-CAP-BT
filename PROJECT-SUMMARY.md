@@ -3314,3 +3314,9 @@ dan virtualisasi isi tabel untuk menghindari blokir main thread.
 scratch) tetap ada kalau mau uji ulang. Catatan: karena delete adalah SOFT delete (IsDeleted=true), baris
 uji itu masih tersimpan di DB sebagai non-aktif - sama seperti baris yang dihapus lewat UI. Log Audit juga
 mencatat 1000 pembuatan + 1000 penghapusan dari uji ini dan itu tidak bisa dibersihkan lewat API.
+
+KOREKSI: pass pertama hanya menghapus 500 baris, bukan 1000 - karena script pembersihnya sendiri mengambil
+satu halaman dan API membatasi pageSize ke 500. Ini persis masalah yang diukur di uji beban (klien yang
+mengandalkan satu halaman akan diam-diam kehilangan sisanya), dan kali ini menimpa script saya sendiri.
+Perlu dua pass sampai bersih total 27 baris (500 + 500). Pelajaran: setiap konsumen endpoint berpaginasi
+WAJIB mengulang selama `page * pageSize < total`, tidak boleh mengasumsikan satu halaman cukup.
