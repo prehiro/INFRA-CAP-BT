@@ -298,17 +298,19 @@ onBeforeUnmount(() => {
       @keydown="onKeydown"
     />
 
-    <!-- The trace line is ALWAYS in the layout, only invisible when empty. It used to be v-if, so the
-         moment a suggestion was applied the form grew taller and everything below it moved - HIRO:
-         "form melebar keatas ketika muncul Filled from GID list dibawah teksbox. tolong reserve space
-         untuk text ini agar form tidak melebar ketika smart sugestion di apply". h-4 reserves exactly
-         the line the text occupies, so no field ever shifts. -->
-    <p
-      class="mt-1 flex h-4 items-center gap-1 text-[10px] text-primary"
-      :class="filledFrom ? '' : 'invisible'"
-    >
-      <UIcon name="i-lucide-sparkles" class="size-3 shrink-0" />
-      <span v-if="filledFrom" class="truncate">Filled from {{ filledFrom }}</span>
+    <!-- The trace under the box is a CHIP rather than a line of stray text: same language as the filter
+         badges elsewhere in the app (soft primary wash, inset ring, tiny icon). HIRO: "teks smartfill
+         Filled from..dibawah box ganti yang bagus".
+         The row is reserved (h-5) whether or not there is a chip, so applying a suggestion never moves
+         the form, and the chip fades in with the existing anim-fade-in instead of appearing abruptly. -->
+    <p class="mt-1 flex h-5 items-center">
+      <span
+        class="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium leading-none text-primary ring-1 ring-inset ring-primary/20"
+        :class="filledFrom ? 'anim-fade-in' : 'invisible'"
+      >
+        <UIcon name="i-lucide-sparkles" class="size-3 shrink-0" />
+        <span class="truncate">Filled from {{ filledFrom }}</span>
+      </span>
     </p>
 
     <Teleport :to="panelTarget">

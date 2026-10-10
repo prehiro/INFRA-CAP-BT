@@ -3393,3 +3393,18 @@ CATATAN JUJUR: perbaikan 1 dan 2 terverifikasi di browser. Perbaikan 3 (pesan pe
 slot banner 64px) BELUM saya lihat sendiri hasil akhirnya karena browser harness melepas halaman tepat
 sebelum pengukuran terakhir; dasar angkanya tetap terukur (896x722 -> 896x808) dan perubahannya hanya
 menghilangkan tinggi pesan yang membungkus itu.
+
+### Chip trace smart fill (2026-10-10)
+
+"Filled from GID list (...)" di bawah textbox smart fill diganti dari baris teks kecil menjadi CHIP: ikon
+sparkles + teks kecil di dalam pill (latar primary/10, ring inset primary/20, radius penuh), memakai bahasa
+visual yang sama dengan badge filter di halaman yang sama. Barisnya tetap dipesan (h-5, naik 4px dari h-4)
+sehingga munculnya chip tidak menggeser field, dan chip-nya muncul dengan anim-fade-in yang sudah ada
+(fade 300ms), bukan muncul mendadak.
+
+CATATAN JUJUR: perubahan ini presentasional dan BELUM saya lihat sendiri di browser - harness browser di
+sesi ini berulang kali melepas halaman (Not attached to an active page / PermissionError pada bu-default.port)
+tepat pada langkah pengukuran setelah halaman reload, sudah dicoba dua kali termasuk setelah kill chrome
+dan hapus file port. Kelas yang dipakai sama persis dengan komposisi badge yang sudah ada di app
+(bg-primary/10 + ring-1 ring-inset ring-primary/20 + rounded-full), jadi risikonya rendah, tetapi
+penilaian akhir tampilan ada di HIRO.
