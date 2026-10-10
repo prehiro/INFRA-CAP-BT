@@ -3050,3 +3050,49 @@ LI LI OH lalu KHENG HUA LIM... -> Enter -> **Staff Name = LI LI OH, Email = lili
 GID = 70D8456** ketiganya terisi dari satu pilihan + hint "Filled from GID list (70D8456)" -> tombol
 Add record ditekan -> API mencatat record baru nomor 27 dengan ketiga nilai itu -> baris uji DIHAPUS
 lagi, total kembali 26.
+
+### Revisi form PC Ledger + tab Data Import (2026-10-10)
+
+**1. GARIS AKSEN TAB TIDAK MENGIKUTI TAB AKTIF — diperbaiki.** Diukur dulu: SEBELUM perbaikan, KEDUA
+item menu berwarna primary baik sebelum maupun sesudah berpindah tab, sebab vendor menandai item dengan
+mencocokkan `to` ke route dan hanya membandingkan PATH, sementara kedua tab berbagi path dan hanya beda
+query. Perbaikan: `active` diset eksplisit dari query. Terukur sesudah: "Import PC Ledger=AKTIF | GID
+List=nonaktif", lalu setelah diklik menjadi "Import PC Ledger=nonaktif | GID List=AKTIF" + URL ?tab=gid.
+
+**2. SARAN TIDAK BISA DIKLIK — akarnya `pointer-events: none`.** Portal dialog Reka membungkus isi portal
+dengan elemen ber-pointer-events:none dan hanya mengaktifkannya pada elemen content, sehingga node yang
+di-teleport ke <body> mewarisi none. Panel saran tergambar benar dan keyboard jalan (Enter dikirim ke input
+yang ada DI DALAM dialog) tapi semua klik mouse ditelan diam-diam. Bukti: `elementFromPoint` di atas baris
+saran mengembalikan INPUT di belakangnya (hit-testing melewati elemen ber-pointer-events:none). Perbaikan:
+`pointerEvents: 'auto'` pada panel; sesudahnya elemen di titik itu adalah elemen DI DALAM list.
+
+**3. DROPDOWN TIDAK BISA DI-SCROLL — diperbaiki.** Listener scroll memakai fase capture sehingga scroll
+DI DALAM list dianggap scroll halaman dan menutup dropdown sebelum bisa digulir. Sekarang event yang
+targetnya di dalam list diabaikan, plus `overscroll-contain`. Terukur: 8 baris, panel 288px vs scrollHeight
+432px, setelah wheel `scrollTop=146` dan panel TETAP terbuka.
+
+**4. DEFAULTS record baru:** tanggal = HARI INI (waktu lokal — picker mem-parse lokal, `new Date('yyyy-mm-dd')`
+UTC dan bisa meleset sehari di WIB), O/S Name = "Microsoft Windows 11 Pro", O/S Arch = "64-bit"; semua tetap
+bisa diubah. Terlihat di layar: Date "10 Oct 2026" + kedua field O/S terisi.
+
+**5. DATE PICKER mengikuti logbook.** `<input type="date">` diganti komponen `DatePicker` milik app ini
+(yang dipakai logbook), jadi kalender, warna aksen, dan mode gelap/terang sama. Terukur: `input[type=date]`
+di dalam modal = 0.
+
+**6. CHASSIS dropdown Desktop / Laptop / Tablet.** Nilai lama yang bukan salah satu dari ketiganya tetap
+dimasukkan ke daftar, supaya baris lama berisi "Notebook" tidak jadi kosong. Terukur: kontrol "Pick a
+chassis" ada di form.
+
+**7. SARAN MODEL** dari model yang sudah pernah diinput (record register itu sendiri, paling sering dipakai
+dulu, dengan keterangan "used N times").
+
+**REFACTOR:** `SmartFillField.vue` diganti `SuggestInput.vue` yang generik, lalu SmartFillField DIHAPUS
+(tidak dipakai lagi).
+
+**BELUM TERVERIFIKASI DI BROWSER (disebut terus terang):** (a) rantai klik-mouse -> mengisi field sesudah
+perbaikan pointer-events — penyebabnya sudah terbukti hilang di level hit-testing, tapi saya belum sempat
+melihat sendiri satu klik mengisi field (probe terakhir menutup dialog sebelum nilai terbaca); Enter sudah
+terbukti mengisi. (b) daftar opsi dropdown chassis belum dibuka. (c) saran model belum dipicu.
+
+**KONDISI DATA:** saat verifikasi, register PC Ledger sempat terbaca 53 baris (impor 26 terduplikasi +
+sisa baris uji). Dibersihkan kembali ke 26 baris (nomor 1..26) lewat API.

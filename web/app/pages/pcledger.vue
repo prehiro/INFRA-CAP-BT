@@ -652,6 +652,58 @@ const formError = ref('')
 
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
+  // Defaults HIRO asked for on a NEW record. The date is today in LOCAL time - the picker parses
+  // local, and `new Date('yyyy-mm-dd')` is UTC and can land on the previous day in WIB. Both O/S
+  // fields are the standard build and stay editable.
+  const now = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  form.tanggal = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
+  form.os_name = 'Microsoft Windows 11 Pro'
+  form.os_arch = '64-bit'
+}
+
+/** HIRO: "computer chasis model dropdown list berisi Desktop, Laptop, Tablet". A value already on the
+ *  record is kept when it is something else, so opening an older row that reads "Notebook" shows its
+ *  own value instead of going blank. */
+const CHASSIS_OPTIONS = ['Desktop', 'Laptop', 'Tablet']
+const chassisOptions = computed(() => {
+  const cur = String(form.chassis ?? '').trim()
+  const list = cur && !CHASSIS_OPTIONS.includes(cur) ? [...CHASSIS_OPTIONS, cur] : [...CHASSIS_OPTIONS]
+  return list.map((v) => ({ label: v, value: v }))
+})
+
+/** Models ALREADY in the register, most used first - so the field offers what the factory really has
+ *  instead of everyone inventing a spelling. */
+const modelSuggestions = computed(() => {
+  const counts = new Map<string, number>()
+  for (const r of rows.value) {
+    const v = String(cell(r, 'computer_model') ?? '').trim()
+    if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, n]) => ({ value, label: value, meta: n === 1 ? 'used once' : `used ${n} times` }))
+})
+
+/** One row of the imported Global ID list, shaped for the field currently being typed in. */
+function gidSuggestions(key: 'staff_name' | 'email' | 'gid') {
+  const own = key === 'staff_name' ? 'name' : key
+  return gidCandidates.value
+    .map((r) => ({
+      value: String(r[own] ?? '').trim(),
+      label: String(r.name ?? '').trim() || String(r.gid ?? '').trim(),
+      meta: [r.email, r.gid, r.employee_no].filter(Boolean).map(String).join('   |   '),
+      keys: [r.name, r.email, r.gid, r.employee_no].map((v) => String(v ?? '')),
+      fill: r,
+      hint: `GID list (${String(r.gid ?? '').trim()})`
+    }))
+    .filter((s) => s.value)
+}
+
+/** The other two fields, so a suggestion that agrees with them can be lifted. */
+function siblingValues(key: string) {
+  const others = key === 'staff_name' ? ['email', 'gid'] : key === 'email' ? ['staff_name', 'gid'] : ['staff_name', 'email']
+  return others.map((k) => String(form[k] ?? ''))
 }
 
 /* ---------------- smart fill from the imported GID list ----------------
@@ -682,11 +734,13 @@ async function ensureGidCandidates() {
 
 watch(showForm, (isOpen) => { if (isOpen) ensureGidCandidates() })
 
-/** One pick fills all three - that is the whole point of importing the list. */
-function applyGidSuggestion(row: any) {
-  form.staff_name = String(row?.name ?? form.staff_name ?? '')
-  form.email = String(row?.email ?? form.email ?? '')
-  form.gid = String(row?.gid ?? form.gid ?? '')
+/** One pick fills all three - that is the whole point of importing the list. The suggestion carries
+ *  the list row in `fill`, so the three fields come from one source instead of three lookups. */
+function applyGidSuggestion(s: any) {
+  const row = s?.fill ?? {}
+  form.staff_name = String(row.name ?? form.staff_name ?? '')
+  form.email = String(row.email ?? form.email ?? '')
+  form.gid = String(row.gid ?? form.gid ?? '')
 }
 
 function openCreate() {
@@ -1174,20 +1228,33 @@ async function exportExcel() {
                     :label="LABELS[key]"
                     :ui="{ label: 'text-xs font-medium' }"
                   >
-                    <UInput
+                    <DatePicker
                       v-if="key === 'tanggal'"
                       v-model="form[key]"
-                      type="date"
+                      placeholder="Pick a date"
+                    />
+                    <USelect
+                      v-else-if="key === 'chassis'"
+                      v-model="form[key]"
+                      :items="chassisOptions"
+                      placeholder="Pick a chassis"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
-                    <SmartFillField
+                    <SuggestInput
+                      v-else-if="key === 'computer_model'"
+                      v-model="form[key]"
+                      :suggestions="modelSuggestions"
+                      placeholder="Type or pick a model"
+                      header="Models already in the register"
+                    />
+                    <SuggestInput
                       v-else-if="(SUGGEST_FIELDS as readonly string[]).includes(key)"
                       v-model="form[key]"
-                      :field-key="key as 'staff_name' | 'email' | 'gid'"
-                      :candidates="gidCandidates"
-                      :form="form"
+                      :suggestions="gidSuggestions(key as 'staff_name' | 'email' | 'gid')"
+                      :context="siblingValues(key)"
                       :placeholder="gidCandidates.length ? 'Type to search the GID list' : 'No GID list imported yet'"
+                      header="GID list - picking fills name, email and GID"
                       @fill="applyGidSuggestion"
                     />
                     <UInput

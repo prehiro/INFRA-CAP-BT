@@ -38,8 +38,12 @@ const links = computed<NavigationMenuItem[][]>(() => [
     label: t.label,
     icon: t.icon,
     to: { path: '/data-import', query: { tab: t.key } },
-    // `exact` is what makes the two entries distinguishable at all: they share a path and differ
-    // only by query, so a prefix match would light up both of them at once.
+    // `active` is set EXPLICITLY, and that is the whole point. The vendor marks an item by matching
+    // its `to` against the route, and it compares the PATH only - the two tabs share a path and
+    // differ by query, so BOTH were marked active and the accent line never moved (measured: both
+    // items carried the primary colour before and after switching). Setting `active` from the query
+    // takes the decision away from the route matcher entirely.
+    active: activeTab.value === t.key,
     exact: true
   }))
 ])
