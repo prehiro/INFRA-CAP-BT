@@ -62,6 +62,12 @@ const emit = defineEmits<{
 const inputEl = ref<any>(null)
 const rootEl = ref<HTMLElement | null>(null)
 const panelEl = ref<HTMLElement | null>(null)
+/** Echo guard: the parent owns the value, so our own keystroke comes back as a prop change and used
+ *  to fire a SECOND placement pass concurrently with the one started by onInput. */
+let lastEmitted = ''
+/** Sequence guard for the two-pass placement: a superseded pass must never write its result, because
+ *  it measured a position that a newer pass had already corrected. */
+let placeSeq = 0
 /** Where the panel is teleported. Resolved per open: the dialog that owns the input, or <body>. */
 const panelTarget = ref<HTMLElement>(document.body)
 const open = ref(false)
@@ -139,19 +145,36 @@ async function place() {
   const left = Math.min(Math.round(r.left), Math.max(8, window.innerWidth - width - 8))
   let top = Math.round(r.bottom + 4)
 
-  // The dialog is translated (-50% -50%), which makes it the containing block for a fixed child, so
-  // top/left would be measured from the dialog rather than the viewport. Instead of assuming which it
-  // is, put the panel at 0,0, read where it actually landed and offset by the difference - exact
-  // either way, and it survives any future change to the dialog's transform.
+  // Position WITHOUT ever parking the panel in the corner.
+  //
+  // The panel is teleported into the dialog, and the dialog's translate makes IT the containing
+  // block, so a fixed child's top/left are measured from the dialog rather than the viewport. Rather
+  // than assume which it is, seed the style with the dialog-relative position and then measure once
+  // and correct the residual: correct either way, and - critically - the seed is already a sensible
+  // position, so if the panel happens not to be rendered at measure time the fallback is the seeded
+  // spot instead of 0,0.
+  //
+  // The sequence guard exists because two placement passes can overlap (onInput's and the value
+  // watcher's). Each pass used to reset the panel to 0,0 and then measure; the later pass measured
+  // the EARLIER pass's finished position and subtracted it, so the list jumped to the top-left
+  // corner - HIRO: "posisi suggestion list berpindah ke pojok kiri atas ketika saya ketik 2
+  // karakter". Now only the newest pass writes.
+  const seq = ++placeSeq
+  const dlgRect = dlg?.getBoundingClientRect() ?? null
   const base: Record<string, string> = {
-    position: 'fixed', top: '0px', left: '0px', width: `${width}px`, zIndex: '20',
+    position: 'fixed',
+    width: `${width}px`,
+    zIndex: '20',
     // Reka's portal wrapper sets pointer-events: none and re-enables it only on the dialog content;
     // a teleported node inherits none and every mouse click on it is swallowed (Enter still worked
     // because the keyboard goes to the input inside the dialog).
     pointerEvents: 'auto'
   }
-  dropStyle.value = base
+  const seedTop = dlgRect ? top - dlgRect.top : top
+  const seedLeft = dlgRect ? left - dlgRect.left : left
+  dropStyle.value = { ...base, top: `${Math.round(seedTop)}px`, left: `${Math.round(seedLeft)}px` }
   await nextTick()
+  if (seq !== placeSeq) return
   const panel = panelEl.value
   if (!panel) return
   const origin = panel.getBoundingClientRect()
@@ -165,10 +188,12 @@ async function place() {
     if (above >= limitTop) top = above
     else maxHeight = `${Math.max(140, limitBottom - top)}px`
   }
+  const correctedTop = seedTop + (top - origin.top)
+  const correctedLeft = seedLeft + (left - origin.left)
   dropStyle.value = {
     ...base,
-    top: `${Math.round(top - origin.top)}px`,
-    left: `${Math.round(left - origin.left)}px`,
+    top: `${Math.round(correctedTop)}px`,
+    left: `${Math.round(correctedLeft)}px`,
     ...(maxHeight ? { maxHeight } : {})
   }
 }
@@ -182,15 +207,21 @@ function show() {
 
 function onInput(e: Event) {
   filledFrom.value = ''
-  emit('update:modelValue', (e.target as HTMLInputElement).value)
+  lastEmitted = (e.target as HTMLInputElement).value
+  emit('update:modelValue', lastEmitted)
   // The parent owns the value, so `matches` cannot see the new text until the prop comes back
   // around: calling show() synchronously matched an empty list and the dropdown never opened.
   nextTick(show)
 }
 
-// When the value changes from outside - a pick in a sibling field filling this one - keep an open
-// list in step rather than showing stale suggestions.
-watch(() => props.modelValue, () => { if (open.value) show() })
+// When the value changes from OUTSIDE - a pick in a sibling field filling this one - keep an open
+// list in step rather than showing stale suggestions. Our OWN keystrokes also come back as a prop
+// change, and reacting to those started a second placement pass alongside onInput's; see the
+// sequence guard in place(). Hence the echo guard: ignore the value we just sent out.
+watch(() => props.modelValue, (v) => {
+  if (v === lastEmitted) return
+  if (open.value) show()
+})
 
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
@@ -214,7 +245,8 @@ function onKeydown(e: KeyboardEvent) {
 }
 
 function pick(s: Suggestion) {
-  emit('update:modelValue', text(s.value))
+  lastEmitted = text(s.value)
+  emit('update:modelValue', lastEmitted)
   emit('fill', s)
   filledFrom.value = s.hint ?? text(s.value)
   open.value = false

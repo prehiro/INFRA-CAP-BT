@@ -720,9 +720,9 @@ async function confirmDelete() {
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-              <h1 class="text-lg font-bold tracking-wide">Factory PC</h1>
+              <h1 class="text-lg font-bold tracking-wide">Standalone PC</h1>
               <p class="text-xs text-muted">
-                Standalone PCs &mdash; not connected to the corporate network or domain. <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
+                List of PC not connected to the corporate network or domain. <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
               </p>
             </div>
 

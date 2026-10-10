@@ -3234,3 +3234,31 @@ saat mount — ritme dua langkah yang sama dengan logbook.
 **VERIFIKASI.** PC Ledger: baris>0 mulai t=898ms, animasi kartu t=917ms; kartu tercatat opacity 0 (26 baris)
 -> 0.21 -> 0.87 -> 1 selama ~904-1251ms = tabel terisi yang fade-up. Factory PC: baris>0 t=1213ms, animasi
 t=1224ms; opacity 0 (10 baris) -> 1 pada ~1216-1557ms.
+
+### Bug: suggestion list lompat ke pojok kiri atas (2026-10-10)
+
+**Keluhan HIRO:** di form New PC record, posisi suggestion list berpindah ke pojok kiri atas begitu mengetik
+2 karakter, di semua textbox identity dan textbox Computer Model.
+
+**PENYEBAB.** Nilai yang diketik dikirim ke parent (v-model), lalu kembali sebagai prop. Ada DUA pemicu yang
+lalu berjalan bersamaan: `onInput` memanggil `show()` (lewat nextTick) DAN `watch(props.modelValue)` juga
+memanggil `show()` karena nilainya berubah. Setiap pemanggilan menjalankan pass penempatan dua tahap: set
+panel ke 0,0, tunggu satu tick, ukur posisi nyatanya, lalu kurangi. Dengan dua pass yang tumpang tindih,
+pass kedua mengukur posisi hasil AKHIR pass pertama lalu menguranginya, sehingga hasilnya mendekati nol =
+pojok. Klik pertama (1 karakter) tidak terlihat karena saat itu `open` masih false sehingga watcher
+melewatinya; ketikan kedua adalah saat `open` sudah true, jadi keduanya jalan - persis "ketika saya ketik 2
+karakter".
+
+**PERBAIKAN (tiga lapis).**
+1. Echo guard: `lastEmitted` mencatat nilai yang kita kirim sendiri, dan watcher mengabaikan prop yang
+   nilainya sama - jadi satu ketikan hanya memicu satu pass. Watcher tetap bekerja untuk perubahan dari
+   LUAR (mis. field sebelah terisi oleh smart fill).
+2. Sequence guard: tiap pass mengambil nomor urut dan hanya pass TERBARU yang boleh menulis hasilnya,
+   sehingga pass yang sudah usang tidak bisa merusak posisi.
+3. Seed + koreksi residu: alih-alih menaruh panel di 0,0 lalu mengukur, posisi awal diisi langsung dari
+   koordinat dialog dan pengukuran hanya mengoreksi sisa selisihnya. Kalau panel belum sempat dirender saat
+   pengukuran, yang berlaku adalah posisi seed - bukan 0,0 - jadi pojok tidak mungkin lagi terjadi.
+
+**VERIFIKASI.** Staff Name: ketikan 'l','i' -> dxKiri 0, jarakBawah 5px, pojok=false; 'a' -> panel tertutup
+karena tidak ada yang cocok (benar). Computer Model: 'o','p' -> jarakBawah 4-5px, pojok=false. Klik satu
+baris saran tetap mengisi field dengan modal TETAP terbuka ("Optiplex 7010" masuk ke Computer Model).
