@@ -678,18 +678,94 @@ const chassisOptions = computed(() => {
   return list.map((v) => ({ label: v, value: v }))
 })
 
-/** Models ALREADY in the register, most used first - so the field offers what the factory really has
- *  instead of everyone inventing a spelling. */
-const modelSuggestions = computed(() => {
+/** Distinct values ALREADY in the register, most used first - so the field offers what the factory
+ *  really has instead of everyone inventing a spelling. Shared by model, manufacturer and location;
+ *  before this only the model had it. */
+const REGISTER_SUGGEST_FIELDS = ['computer_model', 'manufacturer', 'lokasi']
+const SUGGEST_HEADERS: Record<string, string> = {
+  computer_model: 'Models already in the register',
+  manufacturer: 'Manufacturers already in the register',
+  lokasi: 'Locations already used in the register'
+}
+function registerSuggestPlaceholder(key: string) {
+  if (key === 'manufacturer') return 'Type or pick a manufacturer'
+  if (key === 'lokasi') return 'Type or pick a location'
+  return 'Type or pick a model'
+}
+function registerSuggestionsFor(key: string) {
   const counts = new Map<string, number>()
   for (const r of rows.value) {
-    const v = String(cell(r, 'computer_model') ?? '').trim()
+    const v = String(cell(r, key) ?? '').trim()
     if (v) counts.set(v, (counts.get(v) ?? 0) + 1)
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([value, n]) => ({ value, label: value, meta: n === 1 ? 'used once' : `used ${n} times` }))
+}
+
+/** ---------------- uniqueness of Japan Hostname and Computer S/N ----------------
+ *
+ *  HIRO: "textboxt japan hostname dan SN harus unik tidak boleh ada record yang sama, berikan warning
+ *  jika ada duplikat dengan record di db".
+ *
+ *  Checked in two steps on purpose. The local scan over `rows` is instant and covers the page, but the
+ *  page holds AT MOST 500 rows (the API clamps pageSize), so a duplicate further down the table would
+ *  slip through. The second step therefore asks the API, whose `search` finds matching rows anywhere,
+ *  and compares the values exactly. A failed check never blocks saving - it clears the warning and lets
+ *  the server decide, because a network hiccup must not make the form unusable.
+ */
+const UNIQUE_FIELDS = ['japan_hostname', 'computer_sn']
+const uniqueErrors = ref<Record<string, string>>({})
+const uniqueWarned = ref('')
+
+/** How a duplicate is described to the user: the ledger number and who holds it. */
+function recordLabel(r: any) {
+  const no = String(cell(r, 'nomor') ?? '').trim()
+  const who = String(cell(r, 'staff_name') ?? '').trim()
+  return [no ? 'No ' + no : '', who].filter(Boolean).join(' - ') || 'record ' + r.id
+}
+
+function findDuplicate(list: any[], key: string, value: string) {
+  return list.find((r) => String(r.id) !== String(editingId.value) &&
+    String(cell(r, key) ?? '').trim().toLowerCase() === value.toLowerCase())
+}
+
+async function checkUnique(key: string) {
+  if (!UNIQUE_FIELDS.includes(key)) return
+  const value = String(form[key] ?? '').trim()
+  if (!value) { uniqueErrors.value[key] = ''; refreshUniqueWarning(); return }
+  const local = findDuplicate(rows.value, key, value)
+  if (local) {
+    uniqueErrors.value[key] = `Already used by ${recordLabel(local)}.`
+    refreshUniqueWarning()
+    return
+  }
+  try {
+    const id = entityId.value
+    if (!id) return
+    const page = await apiListRecords(id, { page: 1, pageSize: 5, search: value })
+    const hit = findDuplicate(page.items ?? [], key, value)
+    uniqueErrors.value[key] = hit ? `Already used by ${recordLabel(hit)}.` : ''
+  } catch {
+    uniqueErrors.value[key] = ''
+  } finally {
+    refreshUniqueWarning()
+  }
+}
+
+/** One warning line for the whole form, so the reason is visible even when the field is scrolled away. */
+function refreshUniqueWarning() {
+  const first = UNIQUE_FIELDS.map((k) => uniqueErrors.value[k]).filter(Boolean)[0]
+  uniqueWarned.value = first || ''
+}
+
+// Debounced: typing a hostname must not fire one request per keystroke.
+let uniqueTimer: ReturnType<typeof setTimeout> | undefined
+watch(() => UNIQUE_FIELDS.map((k) => String(form[k] ?? '')).join('\u0000'), () => {
+  clearTimeout(uniqueTimer)
+  uniqueTimer = setTimeout(() => { UNIQUE_FIELDS.forEach((k) => { void checkUnique(k) }) }, 450)
 })
+onBeforeUnmount(() => clearTimeout(uniqueTimer))
 
 /** One row of the imported Global ID list, shaped for the field currently being typed in. */
 function gidSuggestions(key: 'staff_name' | 'email' | 'gid') {
@@ -786,6 +862,13 @@ async function save() {
   formError.value = ''
   saving.value = true
   try {
+    // Re-checked here rather than trusting the debounced watcher: pressing Save right after typing must
+    // not slip a duplicate past a timer that has not fired yet.
+    await Promise.all(UNIQUE_FIELDS.map((k) => checkUnique(k)))
+    if (uniqueWarned.value) {
+      formError.value = `${uniqueWarned.value} Japan Hostname and Computer S/N must be unique - use a different value, or edit the record that already has it.`
+      return
+    }
     if (editingId.value) {
       await apiUpdateRecord(entityId.value, editingId.value, payload())
     } else {
@@ -1240,6 +1323,7 @@ async function exportExcel() {
                     v-for="key in section.fields"
                     :key="key"
                     :label="LABELS[key]"
+                    :error="uniqueErrors[key]"
                     :ui="{ label: 'text-xs font-medium' }"
                   >
                     <DatePicker
@@ -1256,11 +1340,11 @@ async function exportExcel() {
                       :ui="{ base: 'h-9' }"
                     />
                     <SuggestInput
-                      v-else-if="key === 'computer_model'"
+                      v-else-if="REGISTER_SUGGEST_FIELDS.includes(key)"
                       v-model="form[key]"
-                      :suggestions="modelSuggestions"
-                      placeholder="Type or pick a model"
-                      header="Models already in the register"
+                      :suggestions="registerSuggestionsFor(key)"
+                      :placeholder="registerSuggestPlaceholder(key)"
+                      :header="SUGGEST_HEADERS[key]"
                     />
                     <SuggestInput
                       v-else-if="(SUGGEST_FIELDS as readonly string[]).includes(key)"

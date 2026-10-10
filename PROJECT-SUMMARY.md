@@ -3320,3 +3320,30 @@ satu halaman dan API membatasi pageSize ke 500. Ini persis masalah yang diukur d
 mengandalkan satu halaman akan diam-diam kehilangan sisanya), dan kali ini menimpa script saya sendiri.
 Perlu dua pass sampai bersih total 27 baris (500 + 500). Pelajaran: setiap konsumen endpoint berpaginasi
 WAJIB mengulang selama `page * pageSize < total`, tidak boleh mengasumsikan satu halaman cukup.
+
+### Form New PC record: keunikan Hostname/SN + saran Manufacturer dan Location (2026-10-10)
+
+**1. Japan Hostname dan Computer S/N wajib unik, dengan peringatan duplikat.** Pemeriksaan dilakukan dua
+tahap dengan sengaja: (a) pindai lokal atas baris yang sudah dimuat - instan, tapi halaman hanya memuat
+maksimal 500 baris (API membatasi pageSize), jadi duplikat di luar halaman itu akan lolos; (b) tanya API
+dengan `search=<nilai>` lalu bandingkan persis, karena search API menemukan baris di mana pun. Peringatan
+muncul di dua tempat: teks merah di bawah field ("Already used by No 26 - Capacitor Smart Wireless.") dan
+banner ringkasan di bawah form saat tombol simpan ditekan. Tombol simpan MEMERIKSA ULANG sebelum menulis
+(tidak mempercayai debounce 450 ms), dan bila ada duplikat penyimpanan dibatalkan. Saat mengedit record,
+nilai record itu sendiri tidak dianggap duplikat. Kalau pemeriksaan API gagal (mis. jaringan), peringatan
+dikosongkan dan penyimpanan TIDAK diblokir - kesalahan jaringan tidak boleh membuat form tidak bisa dipakai.
+
+**2. Computer Manufacturer dan Location kini punya smart suggestion.** Sebelumnya hanya Computer Model.
+Ketiganya memakai sumber yang sama: nilai berbeda yang sudah ada di register, diurutkan paling sering
+dipakai, dengan keterangan "used N times" (satu helper `registerSuggestionsFor(key)` menggantikan computed
+khusus model yang lama - tidak ada kode mati tersisa).
+
+**VERIFIKASI (browser, 1920x1080).** Mengetik hostname yang sudah ada: muncul "Already used by No 26 -
+Capacitor Smart Wireless." di field dan di banner, modal tetap terbuka, dan total DB tetap 26 (penyimpanan
+benar-benar ditolak). Mengetik S/N duplikat: peringatan yang sama. Mengetik "De" di Manufacturer ->
+"MANUFACTURERS ALREADY IN THE REGISTER | Dell Inc. | used 16 times". Mengetik "Off" di Location ->
+"LOCATIONS ALREADY USED IN THE REGISTER | Office | used 4 times".
+
+CATATAN: keunikan ini ditegakkan di sisi klien (form menolak menyimpan duplikat). Kalau ingin ditegakkan
+juga di API/database, field perlu ditandai IsUnique - konsekuensinya importer Excel akan menolak baris
+yang hostname/S/N-nya duplikat.
