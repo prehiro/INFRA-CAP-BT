@@ -817,7 +817,10 @@ async function confirmDelete() {
              wrapper. Measured on the real pages: CCTV's bar is a direct child of the card, 37px
              tall and full width. Same class string as the CCTV card so the two registers share one
              shape rather than two similar ones. -->
-        <div class="anim-fade-up overflow-hidden rounded-xl border border-default bg-elevated">
+        <!-- Same rule as the PC Ledger register: the fade starts when the rows are in, otherwise
+             the 340ms motion finishes while the card still shows its loader and the table looks
+             like it appeared out of nowhere. -->
+        <div :class="{ 'anim-fade-up': !loading }" class="overflow-hidden rounded-xl border border-default bg-elevated">
           <div v-if="loading" class="flex items-center justify-center gap-2 p-12 text-sm text-muted">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
             Loading the register...

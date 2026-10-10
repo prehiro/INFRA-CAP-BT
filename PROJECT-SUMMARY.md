@@ -3213,3 +3213,24 @@ Refresh, yang memang memuat data).
 tersita/hilang — kelas bug "geser 15px saat bar muncul/hilang" tidak mungkin terjadi di sana. Pengukuran
 juga menunjukkan seluruh container gulir di halaman ini konstan (distinct=1) selama load + 3x ganti tab.
 `scrollbar-gutter: stable` sengaja TIDAK ditambahkan karena akan menjadi perubahan visual tanpa manfaat.
+
+### Animasi masuk PC Ledger & Factory PC (2026-10-10)
+
+**Keluhan HIRO:** halaman dan tabel muncul tiba-tiba di /pcledger dan /factorypc; dia mau efek visual smooth
+seperti halaman logbook.
+
+**TEMUAN: animasinya JALAN, tapi habis sebelum data datang.** Diukur per frame. Sebelum perbaikan:
+kartu tabel punya `anim-fade-up` sejak render pertama, jadi fade 340ms diputar SAAT kartu masih menampilkan
+loader; pada frame ketika 26 baris akhirnya muncul, kartu sudah di opacity 0.875 — praktis gerakannya sudah
+selesai dan tabel tampak muncul mendadak. Di logbook urutannya kebalikan (baris 13 sudah ada di t=4034ms,
+animasi kartu baru di t=4174ms) sehingga yang terlihat adalah tabel terisi yang fade-in — itu sebabnya
+logbook terasa smooth.
+
+**PERBAIKAN.** Kelas animasi pada kartu tabel kedua halaman diganti dari statis menjadi
+`:class="{ 'anim-fade-up': !loading }"` (pcledger + factorypc). Animasi kini dimulai tepat ketika fetch
+selesai, jadi yang beranimasi adalah tabel yang SUDAH terisi. Kartu judul (sheet header) tetap beranimasi
+saat mount — ritme dua langkah yang sama dengan logbook.
+
+**VERIFIKASI.** PC Ledger: baris>0 mulai t=898ms, animasi kartu t=917ms; kartu tercatat opacity 0 (26 baris)
+-> 0.21 -> 0.87 -> 1 selama ~904-1251ms = tabel terisi yang fade-up. Factory PC: baris>0 t=1213ms, animasi
+t=1224ms; opacity 0 (10 baris) -> 1 pada ~1216-1557ms.

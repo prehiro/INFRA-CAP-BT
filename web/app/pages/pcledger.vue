@@ -1077,7 +1077,15 @@ async function exportExcel() {
              wrapper. Measured on the real pages: CCTV's bar is a direct child of the card, 37px
              tall and full width. Same class string as the CCTV card so the two registers share one
              shape rather than two similar ones. -->
-        <div class="anim-fade-up overflow-hidden rounded-xl border border-default bg-elevated">
+        <!-- The entrance animation must start when the DATA is in, not when the card mounts.
+             With `anim-fade-up` present from the first render the 340ms fade ran while the card was
+             still showing its loader, so the rows appeared after the motion had finished - measured:
+             the card sat at opacity 0.875 at the exact frame the 26 rows arrived. HIRO: "halaman dan
+             table muncul secara tiba-tiba. saya mau ada animasi untuk memberikan efek visual smooth
+             seperti halaman logbook". Gating the class on !loading makes the POPULATED table fade
+             up, and the sheet header above still animates at mount - the same two-step rhythm the
+             logbook has. -->
+        <div :class="{ 'anim-fade-up': !loading }" class="overflow-hidden rounded-xl border border-default bg-elevated">
           <div v-if="loading" class="flex items-center justify-center gap-2 p-12 text-sm text-muted">
             <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
             Loading the register...
