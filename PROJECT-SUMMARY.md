@@ -3457,3 +3457,34 @@ lewat API.
 Konsekuensi: baris itu hanya memakan ruang dan index. Bisa dibiarkan, bisa dikembalikan (IsDeleted = 0),
 atau dihapus permanen - dua yang terakhir butuh akses SQL langsung (SSMS), karena endpoint API hanya bisa
 soft delete dan mesin ini tidak punya sqlcmd/pyodbc.
+
+### Paket migrasi flashdisk ke server produksi (2026-10-10)
+
+HIRO minta panduan step by step yang newbie friendly dalam bentuk .docx plus semua file yang harus
+dipindahkan, diletakkan di D:\WORK\PANASONIC\Web\INFRA-CAP\reff\Migration. Isi paket (131 MB):
+
+- Panduan-Migrasi-INFRA-CAP.docx - 41 KB, 106 paragraf, 7 tabel, 10 bagian plus Lampiran A (penanganan
+  masalah) dan Lampiran B (daftar isi flashdisk). Bahasa Indonesia, langkah bisa disalin apa adanya.
+- deploy\api\ - hasil dotnet publish self-contained win-x64 (386 file, Api.exe, web.config,
+  appsettings.Production.json). Tidak perlu memasang .NET runtime di server.
+- deploy\web\ - hasil nuxt generate dengan NUXT_APP_BASE_URL=/INFRA-CAP, ditambah web.config buatan sendiri
+  berisi aturan rewrite SPA dan MIME woff2/webmanifest.
+- scripts\1-create-entities.ps1 dan scripts\entity-definitions.json - membuat 5 modul di DB baru
+  (cctv 12 field, handover 10, pc_ledger 16, factory_pc 9, gid_list 4). Aman dijalankan berulang.
+- excel\PC_Ledger.xlsx (26 baris) dan excel\gid_list.xlsx (32 baris) - data masuk lewat halaman Data Import.
+- README-PERTAMA-BACA.txt dan _generate_guide.py (generator docx, supaya panduan bisa diperbarui).
+
+RANCANGAN PENTING: server baru memakai database KOSONG. MigrateAsync membuat tabel, SeedAsync membuat role,
+user admin, dan modul CCTV, lalu script membuat empat modul sisanya. Data hanya lewat impor Excel, jadi 1001
+baris soft-deleted dan 2406 entri audit uji tidak ikut terbawa. Panduan menguji Api.exe secara berdiri sendiri
+sebelum menyentuh IIS, supaya sumber masalah mudah dilacak.
+
+KEBERSIHAN RAHASIA: appsettings.json bawaan publish tadinya memuat connection string dan password admin dev;
+keduanya sudah diganti placeholder GANTI_. Sisa yang sengaja dibiarkan: Jwt.Key masih string dev yang
+menjelaskan dirinya sendiri, tidak berbahaya karena appsettings.Production.json menimpanya dan environment
+default sudah Production. Login SQL di appsettings.Production.json disamakan jadi infracap agar cocok dengan
+langkah 2.2 di panduan.
+
+CATATAN: installer .NET Hosting Bundle TIDAK bisa diunduh otomatis - aka.ms/dotnet/10.0/HostingBundle/win-x64
+sekarang dialihkan ke bing.com dan mengembalikan 0 byte. Panduan menyuruh memeriksa Control Panel dulu
+(cari Windows Server Hosting) dan hanya mengunduh dari dotnet.microsoft.com/download/dotnet/10.0 bila belum ada.
