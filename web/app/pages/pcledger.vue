@@ -654,6 +654,41 @@ function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
 }
 
+/* ---------------- smart fill from the imported GID list ----------------
+ * Staff Name, Email Address and GID are three views of the same person, and they used to be typed by
+ * hand three times - a typo in any of them silently breaks the link between a machine and its owner.
+ * The Global ID list imported on the Data Import page is turned into suggestions here: type any part
+ * of a name, an email, a GID or an employee number, pick the person once, and all three fields are
+ * filled from the same source. Nothing else on this page reads that list.
+ */
+const SUGGEST_FIELDS = ['staff_name', 'email', 'gid'] as const
+const gidCandidates = ref<any[]>([])
+const gidCandidatesLoaded = ref(false)
+
+async function ensureGidCandidates() {
+  if (gidCandidatesLoaded.value) return
+  try {
+    const all = await apiListEntities(true)
+    const gidEntity = all.find((e: any) => e.slug === 'gid_list')
+    if (!gidEntity) return
+    const page = await apiListRecords(gidEntity.id, { page: 1, pageSize: 500 })
+    gidCandidates.value = ((page.items ?? []) as any[]).map((r) => r.values ?? {})
+    gidCandidatesLoaded.value = true
+  } catch (e) {
+    // A missing list must never block the form: without it the fields simply stay hand-typed.
+    console.error('[pc-ledger] gid list', e)
+  }
+}
+
+watch(showForm, (isOpen) => { if (isOpen) ensureGidCandidates() })
+
+/** One pick fills all three - that is the whole point of importing the list. */
+function applyGidSuggestion(row: any) {
+  form.staff_name = String(row?.name ?? form.staff_name ?? '')
+  form.email = String(row?.email ?? form.email ?? '')
+  form.gid = String(row?.gid ?? form.gid ?? '')
+}
+
 function openCreate() {
   editingId.value = null
   formError.value = ''
@@ -1145,6 +1180,15 @@ async function exportExcel() {
                       type="date"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
+                    />
+                    <SmartFillField
+                      v-else-if="(SUGGEST_FIELDS as readonly string[]).includes(key)"
+                      v-model="form[key]"
+                      :field-key="key as 'staff_name' | 'email' | 'gid'"
+                      :candidates="gidCandidates"
+                      :form="form"
+                      :placeholder="gidCandidates.length ? 'Type to search the GID list' : 'No GID list imported yet'"
+                      @fill="applyGidSuggestion"
                     />
                     <UInput
                       v-else

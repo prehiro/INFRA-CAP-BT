@@ -3012,3 +3012,41 @@ menambah yang belum ada. Datanya disimpan di entity baru **`gid_list`** (id 12, 
 required+unique, name, email, employee_no) - bukan di cache browser - karena ini akan jadi sumber
 saran di form PC Ledger, dan supaya semua admin melihat daftar yang sama. Tab ini juga menampilkan
 daftar tersimpan (Global ID / Name / E-mail / Employee No) dengan pencarian dan tombol Refresh.
+
+### Smart suggestion + smart fill di form PC Ledger (2026-10-10)
+
+HIRO: *"data [gid list] ini sebagai sumber data pada form add new pc record pada halaman /pcledger.
+saya mau fungsi smart suggestion / smart fill pada saat user ngetik di text box staff name, email
+address, gid. design fungsi yang saya mau bagus sebaik mungkin"*.
+
+**KOMPONEN BARU `SmartFillField.vue`** dipakai untuk tiga field itu (Staff Name, Email Address, GID).
+Tiga keputusan desain yang membuatnya terasa benar:
+
+1. **Dropdown di-TELEPORT ke <body> dan berposisi `fixed`.** Form ini hidup di dalam body dialog yang
+   `overflow-y-auto`; dropdown absolute di dalamnya akan TERPOTONG di tepi body - saran hilang justru
+   saat field-nya ada di bagian bawah form. Teleport keluar dari kliping itu, `fixed` + rect input
+   menjaga posisinya menempel di field. Konsekuensinya daftar ditutup saat scroll, karena input bisa
+   bergeser di bawah panel fixed.
+2. **Pencocokan DIRANKING, bukan sekadar difilter.** Prefix pada field yang sedang diketik > prefix pada
+   tiga kolom lain > substring. Terukur: mengetik "li" di Staff Name menaruh **LI LI OH** di paling atas,
+   lalu KHENG HUA **LIM**, KHWAN HOON LIEW - bukan urutan acak.
+3. **CROSS-FIELD BOOST.** Kalau form sudah berisi nama/email/GID yang cocok dengan kandidat, kandidat itu
+   dinaikkan. Jadi mengetik email setelah memilih nama akan menyarankan orang yang sama.
+4. **PICKING FILLS, TYPING NEVER DOES.** Tidak ada yang ditulis ke field lain saat mengetik; hanya saat
+   memilih. Setelah memilih, field menampilkan jejak kecil "Filled from GID list (70D8456)" yang hilang
+   begitu diketik ulang - jadi jelas nilai itu datang dari mana tanpa perlu toast yang berisik.
+   Keyboard: panah atas/bawah, Enter memilih, Esc menutup, Tab menerima. Kandidat di-dedupe per GID,
+   maksimal 8 baris, teks yang cocok di-highlight.
+
+**BUG YANG KETAHUAN DARI VERIFIKASI BROWSER (bukan dari baca kode):** dropdown tidak pernah muncul saat
+mengetik. Sebabnya `show()` dipanggil sinkron tepat setelah `emit('update:modelValue')`, sementara
+`matches` dihitung dari PROP milik parent yang baru kembali satu tick kemudian - jadi saat show()
+berjalan daftarnya masih kosong dan fungsi itu keluar lebih awal. Diperbaiki dengan `nextTick(show)`
+plus watcher nilai agar daftar ikut segar saat field lain mengisi field ini.
+
+**TERVERIFIKASI END-TO-END (1920x1080):** membuka Add Record, mengetik "li" di Staff Name ->
+dropdown muncul (fixed, z=60, header "GID list - picking fills name, email and GID"), urutan kandidat
+LI LI OH lalu KHENG HUA LIM... -> Enter -> **Staff Name = LI LI OH, Email = lili.oh@test.com,
+GID = 70D8456** ketiganya terisi dari satu pilihan + hint "Filled from GID list (70D8456)" -> tombol
+Add record ditekan -> API mencatat record baru nomor 27 dengan ketiga nilai itu -> baris uji DIHAPUS
+lagi, total kembali 26.
