@@ -40,6 +40,9 @@ public class LogbookNumberService : ISequentialNumberProvider
     /// <summary>The PC Ledger, added 2026-10-08. Same sequential-NO shape again.</summary>
     public const string PC_LEDGER_SLUG = "pc_ledger";
 
+        /// <summary>Factory PC - the second device register, added 2026-10-10. Numbered like the others.</summary>
+        public const string FACTORY_PC_SLUG = "factory_pc";
+
     /// <summary>Field name holding the printed NO value on the CCTV Log Book entity.</summary>
     public const string NO_FIELD = "nomor";
 
@@ -54,6 +57,7 @@ public class LogbookNumberService : ISequentialNumberProvider
         CCTV_SLUG,
         HANDOVER_SLUG,
         PC_LEDGER_SLUG,
+        FACTORY_PC_SLUG,
     };
 
     public async Task<string> NextCctvNumberAsync(DateTime? forDate, CancellationToken ct = default)

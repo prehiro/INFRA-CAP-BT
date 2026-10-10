@@ -2844,3 +2844,46 @@ dan tata letak akhirnya tidak berubah sama sekali.
 sentakan); `scrollWidth` sempat 1651 pada frame 20 tapi karena overflow-x hidden tidak ada bar yang
 muncul, dan setelah dikembalikan tetap 1650; header sticky tetap bekerja
 (`theadTopVsScrollport: 0` saat scrollTop 300).
+
+### Menu Device Ledger + halaman Factory PC (2026-10-10)
+
+HIRO: *"sekarang ubah struktur menu sidebar, saya mau seperti ini: Device Ledger |- PC Ledger -> link url
+tetap /pcledger |- Factory PC -> link url /factorypc. Pada halaman factory PC design/style/animasi
+identik dengan halaman /pcledger, namun kolom tabel nya No, PIC, Email, Chasis, Model, SN, OS, Status,
+Remarks, Actions"*.
+
+**ENTITY BARU.** `factory_pc` (id 11) dibuat lewat API dengan 9 field: nomor (No, required+unique),
+pic, email, chassis, model, sn, os, status, remarks. 0 record.
+
+**HALAMAN BARU.** `web/app/pages/logbook/factorypc.vue` adalah SALINAN `pcledger.vue` yang diadaptasi -
+bukan implementasi kedua - supaya design/style/animasi identik secara konstruksi: chrome tabel, hide
+kolom + FLIP-nya, pasangan kolom pinned dengan offset terukur, tinggi header tetap 35px, penanganan
+scrollbar, modal record dengan glow aksen, modal delete dengan wash merah. Yang diadaptasi: ENTITY_SLUG,
+COLUMNS (9 kolom: No 4%, PIC 12%, Email 16%, Chassis 10%, Model 12%, SN 12%, OS 10%, Status 8%,
+Remarks 11% = 95% + Actions 5%), DEFAULT_VISIBLE (9 kolom), FORM_SECTIONS (Ownership / Hardware /
+Status and notes), LABELS, filter kedua (Location -> Status, karena entity baru tidak punya `lokasi`),
+judul halaman, dan identitas baris di modal delete (PIC/Chassis).
+**Excel export SENGAJA DIHAPUS** dari halaman ini (tombol + fungsinya) - tidak ada workbook yang harus
+direproduksi, dan export itu khas IT FORM SG031 (judul, 4 baris catatan, lebar kolom). Kalau nanti mau
+export untuk Factory PC, itu pekerjaan terpisah.
+
+**BUG YANG SAYA TEMUKAN SENDIRI:** kunci localStorage pilihan kolom masih milik PC Ledger
+(`infra-cap.pcledger.columns.v2`). Karena dua halaman ini punya daftar kolom berbeda, kunci bersama akan
+membuat tiap halaman membuang pilihan halaman lain saat dimuat dan diam-diam kembali ke default. Sudah
+diganti jadi `infra-cap.factorypc.columns`.
+
+**MENU.** Grup "Device Ledger" (trigger, defaultOpen, ikon hard-drive) berisi PC Ledger (/logbook/pcledger)
+dan Factory PC (/logbook/factorypc); entri flat untuk command palette juga ditambah.
+CATATAN URL: HIRO menulis "/pcledger" dan "/factorypc"; URL PC Ledger yang berjalan adalah
+`/logbook/pcledger` dan dia minta yang itu "tetap", jadi Factory PC diletakkan bersebelahan di
+`/logbook/factorypc`. Kalau yang dimaksud adalah URL root `/pcledger` + `/factorypc`, itu memindahkan
+kedua route dan perlu satu langkah terpisah.
+
+**BELUM SELESAI DI TURN INI (jujur):**
+1. `api/Services/LogbookNumberService.cs` sudah ditambah `FACTORY_PC_SLUG = "factory_pc"` dan dimasukkan
+   ke set slug bernomor, TAPI API yang berjalan belum direstart. Kill proses `dotnet.exe` tadi BUTUH
+   PERSETUJUAN dan promptnya tidak dijawab, jadi API masih memakai kode lama: membuat record Factory PC
+   dari UI akan gagal validasi (field `nomor` required) sampai API direstart.
+2. Verifikasi visual halaman Factory PC belum selesai karena daemon browser harness wedged
+   (PermissionError pada bu-default.port); yang sudah terbukti: file bersih (0 referensi pc_ledger/
+   staff_name/gid/Department/exportExcel) dan entity factory_pc ada di API dengan 9 field.

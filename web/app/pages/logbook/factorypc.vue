@@ -1,26 +1,20 @@
 <script setup lang="ts">
 /**
- * PC Ledger — the app's replacement for the manual Excel sheet (IT FORM SG031, sheet "Ledger").
+ * Factory PC - the second device register, and a SIBLING of the PC Ledger page rather than a mode of it:
+ * its own entity (`factory_pc`, id 11), its own nine columns (No, PIC, Email, Chassis, Model, SN, OS,
+ * Status, Remarks - the Actions column is the table's own), and NO Excel export, because there is no
+ * workbook it has to reproduce. HIRO asked for it to sit beside PC Ledger under a "Device Ledger" menu
+ * group and to be identical to that page in design, style and animation - so everything below is the
+ * PC Ledger implementation: the table chrome, the column show/hide with its FLIP, the pinned pair with
+ * its measured offset, the fixed header height, the scrollbar handling, the record dialog with its
+ * accent glow and the delete dialog with its danger wash.
  *
- * COLUMN SET AND ORDER ARE NOT A DESIGN CHOICE. They are the reference workbook's 16 columns,
- * in the reference's order, because the whole point of the page is that its export can be
- * handed back to the department as the workbook they already use. The entity in the API
- * (`pc_ledger`, id 10) was created to mirror it field for field.
- *
- * The 15 columns below are the workbook's columns, in the workbook's order, and the export writes them
- * exactly as the sheet has them. One field that used to be involved is gone from BOTH surfaces now -
- * HIRO had it taken off the page first and then out of the Excel export - so nothing on this page reads
- * it any more, and row 9 of the generated sheet is left empty where it used to sit. It is still stored
- * on the entity, with its values intact, because removing data is not something a UI change should do.
- *
- * NO INPUT REWRITING happens on this page. Identity fields (`.\\capuser`, `JAPAN\\29384_DTS05`,
- * `pidbt.dts05@sg.panasonic.com`, `E0B5536/7`) are copied out of the source spreadsheet verbatim
- * and the app has a standing rule that identity and credential surfaces are never
- * auto-capitalised or otherwise "tidied".
+ * `No` is filled by the API's LogbookNumberService, which numbers any entity whose slug is registered
+ * in its numbered-slug set and which carries a required+unique field named `nomor`.
  */
 import type { EntityMeta, RecordRow } from '~/types'
 
-const ENTITY_SLUG = 'pc_ledger'
+const ENTITY_SLUG = 'factory_pc'
 /** Reference workbook sheet name, used for the exported worksheet tab. */
 const SHEET_NAME = 'Ledger'
 
@@ -28,39 +22,22 @@ const toast = useToast()
 
 /* ---------------- columns (mirror of the reference sheet) ---------------- */
 /**
- * `w` IS A PERCENTAGE SHARE of the table's width, not a fixed width. Every column used to carry an
- * explicit rem width that added up to 269rem - 4304px measured inside a 1650px viewport - so the
- * register was 2.6 screens wide and each column was as wide as its longest possible value. HIRO:
- * "buat lebar kolomnya responsive? tujuanya agar lebih ramping dan tidak terlalu melebar".
- * Percentages let the columns share whatever width is available: the register fits the viewport and
- * grows only when the screen does.
- *
- * The shares are hand-picked rather than the old rem values scaled down mechanically - a proportional
- * conversion would have given the No column 1.8% (30px) and the Date column 4%. The columns carrying
- * long values (Email, Hostname, Location) still get the biggest shares. They sum to 95%, leaving 5%
- * for Actions, and the pinned pair is positioned by MEASUREMENT now - see pinOffset.
+ * `w` IS A PERCENTAGE SHARE of the table's width, not a fixed width - the same model the PC Ledger
+ * page uses, so the two registers shrink and grow together. They sum to 95%, leaving 5% for the
+ * Actions column the table adds for itself.
  */
 type Column = { key: string; label: string; short?: string; w: number; align?: 'center' }
 
 const COLUMNS: Column[] = [
-  { key: 'nomor', label: 'No', w: 3, align: 'center' },
-  { key: 'staff_name', label: 'Staff Name', w: 7 },
-  { key: 'email', label: 'Email Address', short: 'Email', w: 9 },
-  { key: 'gid', label: 'GID', w: 5 },
-  { key: 'japan_hostname', label: 'JAPAN Hostname', short: 'JAPAN Host', w: 8 },
-  { key: 'computer_model', label: 'Computer Model', short: 'Model', w: 7 },
-  { key: 'computer_sn', label: 'Computer S/N', short: 'S/N', w: 7 },
-  { key: 'tanggal', label: 'Date', w: 4, align: 'center' },
-  { key: 'chassis', label: 'Computer Chassis', short: 'Chassis', w: 6 },
-  { key: 'manufacturer', label: 'Computer Manufacturer', short: 'Vendor', w: 6 },
-  { key: 'os_name', label: 'Computer O/S Name', short: 'O/S Name', w: 7 },
-  { key: 'os_arch', label: 'Computer O/S Architecture', short: 'O/S Arch', w: 6 },
-  { key: 'lokasi', label: 'Location', w: 9 },
-  /* The KEYS stay `remark2` / `remark3` - those are the database field names - while the LABELS are
-     Remark1 / Remark2. HIRO: "rename remark2 jadi Remark1, dan Remark3 jadi Remark2". Renaming the
-     keys would be a field rename in the EAV store, which is a different (and much larger) change. */
-  { key: 'remark2', label: 'Remark1', w: 7 },
-  { key: 'remark3', label: 'Remark2', w: 4 }
+  { key: 'nomor', label: 'No', w: 4, align: 'center' },
+  { key: 'pic', label: 'PIC', w: 12 },
+  { key: 'email', label: 'Email', w: 16 },
+  { key: 'chassis', label: 'Chassis', w: 10 },
+  { key: 'model', label: 'Model', w: 12 },
+  { key: 'sn', label: 'SN', w: 12 },
+  { key: 'os', label: 'OS', w: 10 },
+  { key: 'status', label: 'Status', w: 8 },
+  { key: 'remarks', label: 'Remarks', w: 11 }
 ]
 
 /**
@@ -81,25 +58,19 @@ const COLUMNS: Column[] = [
  */
 const DEFAULT_VISIBLE = [
   'nomor',
-  'staff_name',
+  'pic',
   'email',
-  'gid',
-  'japan_hostname',
-  'computer_model',
-  'computer_sn',
   'chassis',
-  'lokasi',
-  'remark2',
-  'remark3'
+  'model',
+  'sn',
+  'os',
+  'status',
+  'remarks'
 ]
 
-/**
- * VERSIONED STORAGE KEY, on purpose. The key used to be `infra-cap.pcledger.columns`, and every
- * browser that had ever opened the register had its own fifteen-column choice stored under it -
- * which would have quietly overridden this new default and left HIRO looking at no change at all.
- * A new suffix lets the default take effect once; the old value is simply never read again.
- */
-const STORAGE_KEY = 'infra-cap.pcledger.columns.v2'
+/* Its own storage key, NOT the PC Ledger's: the two registers have different columns, so one shared key
+   would make each page drop the other's choices on load and silently fall back to its default set. */
+const STORAGE_KEY = 'infra-cap.factorypc.columns'
 const visibleKeys = ref<string[]>([...DEFAULT_VISIBLE])
 
 const visibleColumns = computed(() => COLUMNS.filter((c) => visibleKeys.value.includes(c.key)))
@@ -340,38 +311,32 @@ function pinStyle(i: number) {
 /** Kept in sync with COLUMNS by key; the modal groups the fields into three sections. */
 const FORM_SECTIONS = [
   {
-    title: 'Identity',
+    title: 'Ownership',
     icon: 'i-lucide-user-round',
-    fields: ['staff_name', 'email', 'gid']
+    fields: ['pic', 'email']
   },
   {
     title: 'Hardware',
     icon: 'i-lucide-hard-drive',
-    fields: ['japan_hostname', 'computer_model', 'computer_sn', 'tanggal', 'chassis', 'manufacturer']
+    fields: ['chassis', 'model', 'sn', 'os']
   },
   {
-    title: 'System and placement',
+    title: 'Status and notes',
     icon: 'i-lucide-wrench',
-    fields: ['os_name', 'os_arch', 'lokasi', 'remark2', 'remark3']
+    fields: ['status', 'remarks']
   }
 ] as const
 
 const LABELS: Record<string, string> = {
   nomor: 'No',
-  staff_name: 'Staff Name',
-  email: 'Email Address',
-  gid: 'GID',
-  japan_hostname: 'JAPAN Hostname',
-  computer_model: 'Computer Model',
-  computer_sn: 'Computer S/N',
-  tanggal: 'Date',
-  chassis: 'Computer Chassis',
-  manufacturer: 'Computer Manufacturer',
-  os_name: 'Computer O/S Name',
-  os_arch: 'Computer O/S Architecture',
-  lokasi: 'Location',
-  remark2: 'Remark1',
-  remark3: 'Remark2'
+  pic: 'PIC',
+  email: 'Email',
+  chassis: 'Chassis',
+  model: 'Model',
+  sn: 'SN',
+  os: 'OS',
+  status: 'Status',
+  remarks: 'Remarks'
 }
 
 /* ---------------- data ---------------- */
@@ -391,7 +356,7 @@ const searching = ref('')
  */
 const ALL = '__all__'
 const filterChassis = ref(ALL)
-const filterLocation = ref(ALL)
+const filterStatus = ref(ALL)
 const sortKey = ref<string>('nomor')
 const sortDir = ref<'asc' | 'desc'>('asc')
 
@@ -419,7 +384,7 @@ const visibleRows = computed(() => {
   let out = rows.value
   if (q) out = out.filter((r) => haystack(r).includes(q))
   if (filterChassis.value !== ALL) out = out.filter((r) => cell(r, 'chassis') === filterChassis.value)
-  if (filterLocation.value !== ALL) out = out.filter((r) => cell(r, 'lokasi') === filterLocation.value)
+  if (filterStatus.value !== ALL) out = out.filter((r) => cell(r, 'status') === filterStatus.value)
 
   const key = sortKey.value
   const dir = sortDir.value === 'asc' ? 1 : -1
@@ -587,16 +552,13 @@ watch(visibleRows, (v) => {
 // whole page fails to render (measured: a 500 reading "Cannot read properties of undefined").
 watch(rows, () => { measurePinOffset() }, { flush: 'post' })
 
-/* The Department field is gone from this page entirely (HIRO: "hapus kolom departement dari page pc
-   ledger, form add juga. departement tidak dipakai di page pc ledger"), so `departments` went with it -
-   it had survived the removal of the Department FILTER only to seed the form's Department input, and
-   that input no longer exists. `locations` is the filter's source, built the same way as `chassisTypes`
-   so the two behave identically. */
+/* Sources for the two toolbar filters. Built from the loaded rows, the same way for both, so the two
+   controls behave identically. */
 const chassisTypes = computed(() =>
   [...new Set(rows.value.map((r) => cell(r, 'chassis')).filter(Boolean))].sort()
 )
-const locations = computed(() =>
-  [...new Set(rows.value.map((r) => cell(r, 'lokasi')).filter(Boolean))].sort()
+const statuses = computed(() =>
+  [...new Set(rows.value.map((r) => cell(r, 'status')).filter(Boolean))].sort()
 )
 
 function toggleSort(key: string) {
@@ -628,7 +590,7 @@ async function load() {
   try {
     entities.value = await apiListEntities(true)
     const id = entityId.value
-    if (!id) throw new Error('entity pc_ledger not found')
+    if (!id) throw new Error('entity factory_pc not found')
     const page = await apiListRecords(id, { page: 1, pageSize: 500 })
     rows.value = page.items ?? []
   } catch (e) {
@@ -740,140 +702,10 @@ async function confirmDelete() {
   }
 }
 
-/* ---------------- export ---------------- */
-/**
- * Reproduces the reference workbook, not a generic table dump:
- *   row 1   the form title, bold 16pt, merged across the table
- *   row 3-6 the "Requests to IT Reps" notes, in column C exactly as the source has them
- *   row 9   left EMPTY on purpose - a spacer row. The sheet-level value that used to be written here
- *           is not tracked by this page any more, and the rows below keep their absolute addresses
- *   row 10  the header, white bold on a dark fill, matching the source's header row
- *   row 11+ one row per record, every column except No carrying the source's light-yellow
- *           FFFFFFCC fill, which is what tells the IT reps what they are allowed to edit
- * Column widths are the source's own (including the 2.44-wide spacer in column A), so the file
- * opens looking like the spreadsheet it replaces rather than like a raw export.
- */
-const SHEET_WIDTHS = [2.44, 6.11, 35.89, 45.44, 15.89, 23.33, 25.66, 21, 17.66, 23, 23.55, 35.66, 18.89, 42.11, 42.66, 33.33]
-const YELLOW = 'FFFFFFCC'
-const HEADER_FILL = 'FF233D4D'
-
-const NOTES = [
-  'Requests to IT Reps:-',
-  '1. Please fill in yellow columns',
-  '2. For corporate PCs that is not listed, do insert new rows and inform ISD.  ',
-  '3. Factory Used PC will not be include in this List. \nPlease record by yourself in another separate list.'
-]
-
-async function exportExcel() {
-  const data = visibleRows.value
-  if (!data.length) {
-    toast.add({ title: 'Nothing to export', description: 'No records match the current filters.', icon: 'i-lucide-info', color: 'warning' })
-    return
-  }
-  exporting.value = true
-  try {
-    const ExcelJS = (await import('exceljs')).default ?? (await import('exceljs'))
-    const wb = new (ExcelJS as any).Workbook()
-    wb.creator = 'INFRA-CAP'
-    wb.created = new Date()
-
-    const ws = wb.addWorksheet(SHEET_NAME, { views: [{ state: 'frozen', ySplit: 10 }] })
-    SHEET_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w })
-
-    // --- title block ---
-    ws.mergeCells(1, 1, 1, COLUMNS.length + 1)
-    const title = ws.getCell(1, 1)
-    title.value = 'List PC Ledger CAP Only'
-    title.font = { bold: true, size: 16 }
-    title.alignment = { horizontal: 'center', vertical: 'middle' }
-    ws.getRow(1).height = 21
-
-    NOTES.forEach((text, i) => {
-      const c = ws.getCell(3 + i, 3) // column C, matching the source sheet
-      c.value = text
-      c.font = { bold: true, size: 11 }
-      c.alignment = { wrapText: true, vertical: 'top' }
-    })
-    ws.getRow(6).height = 28
-
-    /* Row 9 is deliberately left empty now: the register no longer carries a sheet-level value there,
-       so nothing is written to cells (9,3) or (9,4). The rows below are addressed absolutely - the
-       notes at rows 3-6, the header at row 10, the data from row 11 - so the row itself stays as a
-       spacer rather than being deleted and renumbering everything under it. The entity still stores
-       such a field, but no code on this page reads it. */
-
-    // --- header (row 10) ---
-    const headerRow = ws.getRow(10)
-    headerRow.height = 31.2
-    ws.getCell(10, 2).value = 'No'
-    COLUMNS.slice(1).forEach((c, i) => { ws.getCell(10, i + 3).value = c.label })
-    for (let col = 2; col <= COLUMNS.length + 1; col++) {
-      const c = ws.getCell(10, col)
-      c.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } }
-      c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: HEADER_FILL } }
-      c.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }
-      c.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
-    }
-
-    // --- data (row 11+) ---
-    data.forEach((r, i) => {
-      const excelRow = 11 + i
-      ws.getRow(excelRow).height = 15
-
-      const noCell = ws.getCell(excelRow, 2)
-      noCell.value = Number(cell(r, 'nomor')) || cell(r, 'nomor')
-      noCell.alignment = { horizontal: 'center', vertical: 'middle' }
-
-      COLUMNS.slice(1).forEach((c, ci) => {
-        const target = ws.getCell(excelRow, ci + 3)
-        const raw = cell(r, c.key)
-        if (c.key === 'tanggal' && raw) {
-          const d = new Date(raw)
-          if (!Number.isNaN(d.getTime())) {
-            target.value = d
-            target.numFmt = 'dd-mmm-yy'
-          }
-        } else {
-          target.value = raw
-        }
-        target.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW } }
-        target.alignment = { vertical: 'middle', wrapText: false }
-        target.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } }
-        target.font = { size: 11 }
-      })
-    })
-
-    const buf = await wb.xlsx.writeBuffer()
-    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    const stamp = new Date().toISOString().slice(0, 10)
-    const suffix = (searching.value || filterChassis.value !== ALL || filterLocation.value !== ALL) ? '_filtered' : ''
-    a.href = url
-    a.download = `PC_Ledger_${stamp}${suffix}.xlsx`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 2000)
-    toast.add({
-      title: 'Export ready',
-      description: `${data.length} row${data.length === 1 ? '' : 's'} written to PC_Ledger_${stamp}${suffix}.xlsx`,
-      icon: 'i-lucide-file-spreadsheet',
-      color: 'success'
-    })
-  } catch (e) {
-    console.error('[pc-ledger export]', e)
-    toast.add({ title: 'Export failed', description: String((e as Error)?.message ?? e), icon: 'i-lucide-triangle-alert', color: 'error' })
-  } finally {
-    exporting.value = false
-  }
-}
-</script>
-
 <template>
   <UDashboardPanel :ui="{ body: 'p-6' }">
     <template #header>
-      <PageHeader title="PC Ledger" />
+      <PageHeader title="Factory PC" />
     </template>
 
     <template #body>
@@ -882,7 +714,7 @@ async function exportExcel() {
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="min-w-0">
-              <h1 class="text-lg font-bold tracking-wide">Domain Joined PC Ledger</h1>
+              <h1 class="text-lg font-bold tracking-wide">Factory PC</h1>
               <p class="text-xs text-muted">
                 List of PC, Laptop, Tablet &middot; CAPACITOR Only
                 <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
@@ -893,7 +725,7 @@ async function exportExcel() {
               <UInput
                 v-model="searching"
                 icon="i-lucide-search"
-                placeholder="Search staff, hostname, S/N, location..."
+                placeholder="Search PIC, email, chassis, model, S/N..."
                 class="w-72"
                 :ui="{ base: 'h-9' }"
               >
@@ -910,8 +742,8 @@ async function exportExcel() {
               />
 
               <USelect
-                v-model="filterLocation"
-                :items="[{ label: 'All locations', value: ALL }, ...locations.map(d => ({ label: d, value: d }))]"
+                v-model="filterStatus"
+                :items="[{ label: 'All statuses', value: ALL }, ...statuses.map(d => ({ label: d, value: d }))]"
                 class="w-64"
                 :ui="{ base: 'h-9' }"
               />
@@ -949,19 +781,11 @@ async function exportExcel() {
                       />
                     </div>
                     <p class="mt-2 text-[11px] leading-snug text-muted">
-                      Remembered for this browser. Excel keeps exporting all 15 columns.
+                      Remembered for this browser.
                     </p>
                   </div>
                 </template>
               </UPopover>
-
-              <UButton
-                color="soft"
-                icon="i-lucide-file-spreadsheet"
-                label="Excel"
-                :loading="exporting"
-                @click="exportExcel"
-              />
               <UButton
                 color="primary"
                 icon="i-lucide-plus"
@@ -998,7 +822,7 @@ async function exportExcel() {
             <UIcon name="i-lucide-hard-drive" class="mx-auto size-8 text-dimmed" />
             <p class="mt-3 text-sm font-medium">No PCs recorded yet</p>
             <p class="mt-1 text-xs text-muted">
-              Start with Add Record, or copy the rows across from the existing spreadsheet.
+              Start with Add Record, or or add the first one.
             </p>
           </div>
 
@@ -1205,12 +1029,12 @@ async function exportExcel() {
               <dl v-if="deleteTarget" class="relative mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
                 <dt class="text-muted">No</dt>
                 <dd class="truncate font-medium">{{ cell(deleteTarget, 'nomor') }}</dd>
-                <dt class="text-muted">Staff Name</dt>
-                <dd class="truncate">{{ cell(deleteTarget, 'staff_name') || '-' }}</dd>
-                <dt class="text-muted">JAPAN Hostname</dt>
-                <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
+                <dt class="text-muted">PIC</dt>
+                <dd class="truncate">{{ cell(deleteTarget, 'pic') || '-' }}</dd>
+                <dt class="text-muted">Chassis</dt>
+                <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'chassis') || '-' }}</dd>
                 <dt class="text-muted">Location</dt>
-                <dd class="truncate">{{ cell(deleteTarget, 'lokasi') || '-' }}</dd>
+                <dd class="truncate">{{ cell(deleteTarget, 'status') || '-' }}</dd>
               </dl>
             </div>
 

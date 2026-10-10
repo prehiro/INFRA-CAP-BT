@@ -23,14 +23,23 @@ const links = computed<NavigationMenuItem[][]>(() => [
     { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' }
   ],
   [
-    // PC Ledger is a register of assets, not a log of events, so it sits OUTSIDE the Log Book
-    // group and above it. Inside the group it disappeared whenever Log Book was collapsed,
-    // which is the wrong place for the page that gets opened most.
+    // Device Ledger groups the two asset registers, and is a `trigger` group like Log Book so it can
+    // be collapsed. HIRO: "saya mau seperti ini: Device Ledger |- PC Ledger -> /pcledger
+    // |- Factory PC -> /factorypc".
     //
-    // Giving it its own group also leaves the layout's `mt-auto` rule untouched: the LAST group
-    // is still Log Audit + User Management, which is what pins them directly above the profile
-    // button. Inserting it into an existing group instead would have moved that slot.
-    { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' }
+    // PC Ledger used to sit in this slot on its own. Keeping the pair in their own group also leaves
+    // the layout's `mt-auto` rule untouched: the LAST group is still Log Audit + User Management,
+    // which is what pins them directly above the profile button.
+    {
+      label: 'Device Ledger',
+      icon: 'i-lucide-hard-drive',
+      type: 'trigger',
+      defaultOpen: true,
+      children: [
+        { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' },
+        { label: 'Factory PC', icon: 'i-lucide-factory', to: '/logbook/factorypc' }
+      ]
+    }
   ],
   [
     {
@@ -69,6 +78,7 @@ const groups = computed(() => [
     items: [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
       { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/logbook/pcledger' },
+      { label: 'Factory PC', icon: 'i-lucide-factory', to: '/logbook/factorypc' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
