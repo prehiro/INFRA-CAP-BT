@@ -3119,3 +3119,42 @@ dialog TETAP terbuka.
 
 **3. Z-INDEX IKON ↵ vs header.** Header panel kini `sticky top-0 z-10` dengan latar `bg-elevated`, jadi
 penanda ↵ pada baris tidak pernah tampil di atas header saat list digulir. Terukur: header z-index = 10.
+
+### Flickering teks sidebar + header (2026-10-10, lanjutan)
+
+**INSTRUMENTASI (3 metode, sesuai kronologi HIRO: refresh lalu klik tab GID List).**
+(1) `document.getAnimations()` per frame, (2) `animationstart`/`animationend` di document, (3) MutationObserver
+pada atribut `data-collapsed` sidebar dan pada `header h1`. Hasil: saat tab DIKLIK tidak ada apa pun yang
+berubah pada sidebar maupun judul header (tidak ada animasi, tidak ada mutasi atribut, geometri konstan:
+sidebar 208px, judul 114x28). Jadi klik tab di lingkungan ini bersih.
+
+**TAPI penyebabnya ketemu di jalur LOAD, dan itu struktural.** Animasi spring sidebar dipicu LANGSUNG oleh
+atribut vendor `data-collapsed` di CSS (`#dashboard-sidebar-app-v2[data-collapsed='false']`). Selector itu
+juga cocok pada render PERTAMA, jadi setiap load memutar ulang translate 360ms di SELURUH batang sidebar —
+semua teks menu bergerak serentak, persis keluhan "flickering teks pada seluruh menu sidebar". Hal yang
+sama terjadi pada tombol collapse di header: kelas animasinya sudah ada sejak render pertama sehingga
+tombol bounce (scale 0.88 -> 1.06 -> 1) di SETIAP load. Di mode dev keduanya bahkan baru jalan ~3.5 detik
+setelah dokumen dimuat (terukur: animationstart pada t=3471ms), sehingga tampak seperti dipicu oleh klik
+tab yang kebetulan dilakukan saat itu.
+
+**PERBAIKAN.**
+- Sidebar: animasi TIDAK lagi di-key ke atribut vendor. Layout menonton `data-collapsed` lewat
+  MutationObserver (di `document.body`, `subtree: true`, agar tetap hidup setelah re-mount - versi lama
+  pernah menonton elemennya sendiri lalu diam-diam mengawasi node yang sudah terlepas) dan menulis
+  `data-spring-dir="close"|"open"` HANYA ketika nilainya benar-benar berubah. CSS-nya sekarang
+  `[data-spring-dir=...]`, jadi CSS tidak bisa lagi memulai animasi sendiri: load bersih, dan penulisan
+  atribut yang berulang/nir-perubahan juga tidak memicu apa-apa. Karena flip selalu bergantian
+  close/open, nama animasinya berubah dan spring tetap restart saat dipakai.
+- Tombol collapse di header: `armed` hanya di-set setelah flip PERTAMA yang nyata; nilai pertama yang
+  terlihat (kondisi mount) hanya dicatat. Bounce jadi milik aksi collapse/expand saja.
+
+**VERIFIKASI.** Saat load: `infra-sidebar-*` dan `infra-collapse-*` TIDAK ada, `data-spring-dir` = null.
+Saat tombol collapse diklik: `infra-collapse-open` pada tombol DAN `infra-sidebar-open` pada sidebar
+berjalan (`data-spring-dir` = open), jadi fitur aslinya tidak hilang.
+
+**CATATAN JUSTRU:** saat load animasi `infra-fade-up` pada konten tercatat DUA kali (bukan bagian dari
+sidebar/header). Belum saya ubah karena keluhan menyangkut sidebar dan header.
+
+**BELUM BISA DIUJI DI SINI:** bila flicker itu ternyata berasal dari geometri scrollbar (bar yang
+muncul/hilang mencuri ~15px lebar sehingga konten bergeser), lingkungan headless di mesin ini memakai
+scrollbar OVERLAY sehingga lebar tidak pernah tersita - kelas bug ini tidak bisa direproduksi lokal.

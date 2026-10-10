@@ -33,10 +33,18 @@ const props = defineProps<{
  * it avoids depending on internals while staying perfectly in sync.
  */
 const collapsed = ref(false)
+/** Armed only after a REAL flip, see below. */
+const armed = ref(false)
 
 function syncCollapsedState() {
   const label = current?.getAttribute('aria-label') ?? ''
-  collapsed.value = /expand/i.test(label)
+  const next = /expand/i.test(label)
+  // The first value observed is the MOUNT state: it is recorded but does NOT arm the animation.
+  // The class used to be applied from the first render, so the button also bounced on every page
+  // load - part of the flicker HIRO reported in the page header. The bounce now belongs to the
+  // collapse/expand action only.
+  if (next !== collapsed.value) { collapsed.value = next; armed.value = true }
+  else collapsed.value = next
 }
 
 // The vendor mutates aria-label after this component renders, so observing that attribute
@@ -79,7 +87,7 @@ const bounceKey = computed(() => (collapsed.value ? 'expanded' : 'collapsed'))
       <UDashboardSidebarCollapse
         :key="bounceKey"
         :ref="setCollapseBtn"
-        :class="collapsed ? 'anim-collapse-open' : 'anim-collapse-closed'"
+        :class="armed ? (collapsed ? 'anim-collapse-open' : 'anim-collapse-closed') : ''"
         :title="collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
         :ui="{ base: 'sidebar-collapse-btn hidden lg:flex' }"
       />

@@ -92,6 +92,46 @@ const groups = computed(() => [
     ]
   }
 ])
+
+/**
+ * The sidebar spring is a response to the collapse/expand ACTION, never to a page load.
+ *
+ * The animation used to be keyed straight off the vendor's `data-collapsed` attribute in CSS, and
+ * that selector also matches on the first render: every load replayed a 360ms translate across the
+ * whole sidebar (all of its text moving at once), and a redundant write of the same attribute could
+ * replay it again. HIRO: "flickering teks pada seluruh menu sidebar dan page header title".
+ *
+ * Watching the attribute here and writing `data-spring-dir` only when the VALUE really changes puts
+ * the spring back on the flip alone. The observer is attached to <body> with subtree: true rather
+ * than to the sidebar element: an earlier version watched the element itself and silently stopped
+ * working after a re-mount, because it was watching a detached node.
+ */
+const SPRING_ARM_MS = 700
+let springArmed = false
+let springObserver: MutationObserver | undefined
+
+onMounted(() => {
+  // Everything the vendor writes while mounting the shell is ignored: arming late is what keeps the
+  // spring off the initial paint, and a real user flip can only happen after the shell is up.
+  window.setTimeout(() => { springArmed = true }, SPRING_ARM_MS)
+  springObserver = new MutationObserver((records) => {
+    if (!springArmed) return
+    for (const rec of records) {
+      const el = rec.target as HTMLElement
+      const now = el.getAttribute('data-collapsed')
+      if (now === null || now === rec.oldValue) continue
+      el.setAttribute('data-spring-dir', now === 'true' ? 'open' : 'close')
+    }
+  })
+  springObserver.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['data-collapsed'],
+    attributeOldValue: true,
+    subtree: true
+  })
+})
+
+onBeforeUnmount(() => springObserver?.disconnect())
 </script>
 
 <template>
@@ -223,16 +263,17 @@ main[data-dashboard] {
   100% { transform: translateX(0); }
 }
 
-/* Driven by the vendor's own data-collapsed attribute rather than by a JS-bound class.
-   An earlier version tracked the state in a composable and toggled a class; that silently
-   stopped updating (the MutationObserver ended up watching a detached node after a
-   re-mount), leaving the spring stuck on one side. Keying the animation off the attribute
-   the vendor already maintains removes the state tracking entirely — and because the
-   matched selector changes on every flip, the animation restarts by itself. */
-#dashboard-sidebar-app-v2[data-collapsed='false'] { animation: infra-sidebar-close 360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
-#dashboard-sidebar-app-v2[data-collapsed='true']  { animation: infra-sidebar-open  360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+/* Driven by `data-spring-dir`, which the layout writes ONLY when the vendor's data-collapsed value
+   actually changes (see the observer in the script block).
+   Keying the animation straight off `data-collapsed` looked simpler but also matched on the first
+   render, so every page load replayed the 360ms translate across the whole sidebar - and any
+   redundant attribute write could replay it again. HIRO: "flickering teks pada seluruh menu
+   sidebar". With the animation off the vendor's own attribute, CSS can no longer start it by
+   itself; a real flip alternates close/open, so the animation name changes and the spring restarts. */
+#dashboard-sidebar-app-v2[data-spring-dir='close'] { animation: infra-sidebar-close 360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
+#dashboard-sidebar-app-v2[data-spring-dir='open']  { animation: infra-sidebar-open  360ms cubic-bezier(0.34, 1.4, 0.64, 1); }
 
 @media (prefers-reduced-motion: reduce) {
-  #dashboard-sidebar-app-v2[data-collapsed] { animation: none !important; }
+  #dashboard-sidebar-app-v2[data-spring-dir] { animation: none !important; }
 }
 </style>
