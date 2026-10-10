@@ -798,7 +798,7 @@ function gidSuggestions(key: 'staff_name' | 'email' | 'gid') {
       meta: [r.email, r.gid, r.employee_no].filter(Boolean).map(String).join('   |   '),
       keys: [r.name, r.email, r.gid, r.employee_no].map((v) => String(v ?? '')),
       fill: r,
-      hint: `GID list (${String(r.gid ?? '').trim()})`
+      hint: 'Auto-filled from the GID List'
     }))
     .filter((s) => s.value)
 }

@@ -3408,3 +3408,20 @@ tepat pada langkah pengukuran setelah halaman reload, sudah dicoba dua kali term
 dan hapus file port. Kelas yang dipakai sama persis dengan komposisi badge yang sudah ada di app
 (bg-primary/10 + ring-1 ring-inset ring-primary/20 + rounded-full), jadi risikonya rendah, tetapi
 penilaian akhir tampilan ada di HIRO.
+
+### Kalimat chip smart fill + koreksi cakupannya (2026-10-10)
+
+**Kalimat baru:** "Filled from GID list (70D8456)" -> **"Auto-filled from the GID List"**. Komponen chip
+sekarang menampilkan teks dari pemanggil apa adanya (tanpa prefiks "Filled from"), dan kalimatnya disetel di
+pcledger.vue sebagai `hint` pada saran dari GID List. Nomor GID dihapus karena sudah tampil di field GID itu
+sendiri, jadi tidak ada informasi yang hilang.
+
+**KOREKSI YANG DITEMUKAN SAAT ITU:** chip ternyata juga muncul di field Computer Model, Manufacturer, dan
+Location, padahal pick di sana hanya mengganti satu field (autocomplete biasa), bukan smart fill. Akibatnya
+chip bisa berbunyi aneh, mis. "Filled from Dell Inc.". Sekarang chip hanya muncul bila saran membawa payload
+`fill` (yaitu smart fill yang benar-benar mengisi beberapa field sekaligus); pick biasa tidak mengumumkan
+apa pun.
+
+**STATUS VERIFIKASI:** harness browser di sesi ini masih tidak bisa dipakai (lihat catatan chip sebelumnya),
+jadi tampilan kalimat baru belum saya lihat sendiri. Perubahannya hanya teks dan satu kondisi, tidak
+menyentuh layout.

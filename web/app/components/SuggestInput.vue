@@ -248,7 +248,10 @@ function pick(s: Suggestion) {
   lastEmitted = text(s.value)
   emit('update:modelValue', lastEmitted)
   emit('fill', s)
-  filledFrom.value = s.hint ?? text(s.value)
+  // The chip is for a pick that FILLED OTHER FIELDS as well - which is what the suggestion's `fill`
+  // payload means. A plain completion (model, manufacturer, location) only replaces the value the user
+  // was already typing, so announcing it would be noise; the caller supplies the sentence via `hint`.
+  filledFrom.value = s.fill ? (s.hint ?? text(s.value)) : ''
   open.value = false
 }
 
@@ -309,7 +312,7 @@ onBeforeUnmount(() => {
         :class="filledFrom ? 'anim-fade-in' : 'invisible'"
       >
         <UIcon name="i-lucide-sparkles" class="size-3 shrink-0" />
-        <span class="truncate">Filled from {{ filledFrom }}</span>
+        <span class="truncate">{{ filledFrom }}</span>
       </span>
     </p>
 
