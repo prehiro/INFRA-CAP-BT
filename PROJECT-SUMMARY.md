@@ -3280,3 +3280,29 @@ urutan visual baris per baris.
 - PLACEMENT AND REMARKS: Location | Remark1 | Remark2
 Pasangan O/S dipindah dari section terakhir ke section mesin; section terakhir menyusut jadi tiga field.
 Label field tidak diubah (lihat catatan di laporan) - yang diubah hanya urutan dan judul section.
+
+### Uji beban 1000 baris PC Ledger (2026-10-10, permintaan HIRO)
+
+1000 baris dummy dibuat lewat API (63,7 detik, ~64 ms/request; biaya insert naik dari 49 ke 64 ms seiring
+tabel membesar karena validasi nomor unik). Total di DB saat uji: 1027 baris. Baris dummy DIBIARKAN di
+database supaya HIRO bisa mencoba sendiri; id-nya tersimpan di loadtest-ids.json (scratch) dan generator
+serta penghapusnya siap dijalankan lagi.
+
+**HASIL PENGUKURAN.**
+- API: satu halaman 500 baris = **542 ms, 291 KB** (583 byte/baris). `pageSize=1000` dan `5000` tetap
+  mengirim 500 baris - **API membatasi 500**, jadi 527 baris tidak bisa dijangkau endpoint ini.
+- Halaman: DOM 500 baris = **8000 sel**, scrollHeight 21.535 px, footer berbunyi **"Showing 500 of 500"**
+  padahal DB berisi 1027 - halaman tidak membaca `total` dari API, jadi jumlahnya menyesatkan.
+- Waktu sampai baris terlihat (cache hangat, 2 kali): **3125 ms** dan **2912 ms**, dengan **satu frame
+  macet 1617 ms / 1578 ms** tepat sebelum baris muncul - main thread diblokir saat merakit 8000 sel
+  ditambah snapshot FLIP.
+- Baca posisi seluruh sel (biaya snapshot FLIP): 7,8 ms untuk 8000 sel (0,98 us/sel) ~ 16 ms di 1000 baris
+  - jadi snapshot-nya sendiri bukan masalah.
+- Klik sort (jalur FLIP penuh): **satu jeda 334 ms** plus tiga hitch 60-80 ms = jelas terasa patah-patah.
+- Search di API bekerja dari sisi server: "LOAD TEST 05" mengembalikan 100 baris dalam 198 ms.
+
+**KESIMPULAN.** Di 1000 baris halaman masih terbuka, dan lambatnya bukan soal jaringan (LAN) melainkan
+render 8000+ sel di klien plus snapshot animasi; yang lebih penting, separuh data tidak pernah termuat dan
+angka di footer menyesatkan. Perbaikan yang disarankan: pakai paging + search/sort sisi server (API sudah
+mendukung search dan sudah mengembalikan total/page/pageSize), naikkan batas pageSize khusus export Excel,
+dan virtualisasi isi tabel untuk menghindari blokir main thread.

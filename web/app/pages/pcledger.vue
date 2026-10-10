@@ -370,7 +370,7 @@ const LABELS: Record<string, string> = {
   japan_hostname: 'JAPAN Hostname',
   computer_model: 'Computer Model',
   computer_sn: 'Computer S/N',
-  tanggal: 'Date',
+  tanggal: 'Date Inserted',
   chassis: 'Computer Chassis',
   manufacturer: 'Computer Manufacturer',
   os_name: 'Computer O/S Name',
