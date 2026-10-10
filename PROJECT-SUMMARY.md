@@ -3425,3 +3425,18 @@ apa pun.
 **STATUS VERIFIKASI:** harness browser di sesi ini masih tidak bisa dipakai (lihat catatan chip sebelumnya),
 jadi tampilan kalimat baru belum saya lihat sendiri. Perubahannya hanya teks dan satu kondisi, tidak
 menyentuh layout.
+
+### Chip dikembalikan di Manufacturer, Model, Location (2026-10-10)
+
+KOREKSI ATAS KESALAHAN SAYA: pada commit sebelumnya saya membatasi chip hanya untuk saran yang membawa
+payload `fill` (smart fill GID List), sehingga chip hilang dari Computer Manufacturer, Computer Model, dan
+Location. HIRO menolaknya: "kenapa chip nya lu hilangin di bagian comp manufacture, model, dan location".
+Sekarang setiap pick menampilkan chip lagi, dan tiap sumber punya kalimatnya sendiri yang benar:
+- saran dari GID List -> "Auto-filled from the GID List" (satu pick mengisi nama, email, dan GID sekaligus)
+- saran dari nilai yang sudah ada di register (Model, Manufacturer, Location) -> "Selected from existing
+  records"
+Kalimatnya diambil dari properti `hint` saran, jadi komponen chip tetap generik dan kalimatnya bisa diubah
+per sumber tanpa menyentuh komponen.
+
+PELAJARAN: yang salah sebelumnya bukan cakupannya, melainkan KALIMATNYA yang belum cocok untuk pick biasa.
+Menghapus fitur untuk menyelesaikan masalah teks itu keputusan yang salah; seharusnya cukup mengganti teks.

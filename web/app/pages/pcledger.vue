@@ -706,7 +706,13 @@ function registerSuggestionsFor(key: string) {
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([value, n]) => ({ value, label: value, meta: n === 1 ? 'used once' : `used ${n} times` }))
+    .map(([value, n]) => ({
+      value,
+      label: value,
+      meta: n === 1 ? 'used once' : `used ${n} times`,
+      // Shown in the chip under the box after a pick, alongside the GID list's own sentence.
+      hint: 'Selected from existing records'
+    }))
 }
 
 /** ---------------- uniqueness of Japan Hostname and Computer S/N ----------------

@@ -248,10 +248,11 @@ function pick(s: Suggestion) {
   lastEmitted = text(s.value)
   emit('update:modelValue', lastEmitted)
   emit('fill', s)
-  // The chip is for a pick that FILLED OTHER FIELDS as well - which is what the suggestion's `fill`
-  // payload means. A plain completion (model, manufacturer, location) only replaces the value the user
-  // was already typing, so announcing it would be noise; the caller supplies the sentence via `hint`.
-  filledFrom.value = s.fill ? (s.hint ?? text(s.value)) : ''
+  // Every pick announces where the value came from, using the caller's sentence when it provides one.
+  // An earlier version showed this only for suggestions that also filled other fields, which silently
+  // dropped the chip from Manufacturer, Model and Location - HIRO: "kenapa chip nya lu hilangin di bagian
+  // comp manufacture, model, dan location". Each source now carries its own truthful sentence via `hint`.
+  filledFrom.value = s.hint ?? text(s.value)
   open.value = false
 }
 
