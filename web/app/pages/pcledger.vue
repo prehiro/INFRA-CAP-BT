@@ -337,7 +337,9 @@ function pinStyle(i: number) {
   return { left: `${pinOffset.value}px` }
 }
 
-/** Kept in sync with COLUMNS by key; the modal groups the fields into three sections. */
+/** Kept in sync with COLUMNS by key. HIRO's layout: Identity, then one Hardware & System block, then
+ *  Placement and remarks. The grid is three columns (1 / 2 / 3 by breakpoint), so the order of this
+ *  array IS the visual order, read row by row. */
 const FORM_SECTIONS = [
   {
     title: 'Identity',
@@ -345,14 +347,18 @@ const FORM_SECTIONS = [
     fields: ['staff_name', 'email', 'gid']
   },
   {
-    title: 'Hardware',
+    // HIRO: "HARDWARE & SYSTEM / Japan Hostname | Computer S/N | Computer Chasis / Computer
+    // Manufacture | Computer Model | Date Inserted / Computer O/S Name | Computer OS Architecture".
+    // The O/S pair used to sit in the last section; it describes the machine, so it belongs here.
+    title: 'Hardware & System',
     icon: 'i-lucide-hard-drive',
-    fields: ['japan_hostname', 'computer_model', 'computer_sn', 'tanggal', 'chassis', 'manufacturer']
+    fields: ['japan_hostname', 'computer_sn', 'chassis', 'manufacturer', 'computer_model', 'tanggal', 'os_name', 'os_arch']
   },
   {
-    title: 'System and placement',
+    // HIRO: "PLACEMENT AND REMARKS / Location Remark1 Remark2".
+    title: 'Placement and remarks',
     icon: 'i-lucide-wrench',
-    fields: ['os_name', 'os_arch', 'lokasi', 'remark2', 'remark3']
+    fields: ['lokasi', 'remark2', 'remark3']
   }
 ] as const
 

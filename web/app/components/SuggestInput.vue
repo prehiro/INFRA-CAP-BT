@@ -298,9 +298,17 @@ onBeforeUnmount(() => {
       @keydown="onKeydown"
     />
 
-    <p v-if="filledFrom" class="mt-1 flex items-center gap-1 text-[10px] text-primary">
-      <UIcon name="i-lucide-sparkles" class="size-3" />
-      Filled from {{ filledFrom }}
+    <!-- The trace line is ALWAYS in the layout, only invisible when empty. It used to be v-if, so the
+         moment a suggestion was applied the form grew taller and everything below it moved - HIRO:
+         "form melebar keatas ketika muncul Filled from GID list dibawah teksbox. tolong reserve space
+         untuk text ini agar form tidak melebar ketika smart sugestion di apply". h-4 reserves exactly
+         the line the text occupies, so no field ever shifts. -->
+    <p
+      class="mt-1 flex h-4 items-center gap-1 text-[10px] text-primary"
+      :class="filledFrom ? '' : 'invisible'"
+    >
+      <UIcon name="i-lucide-sparkles" class="size-3 shrink-0" />
+      <span v-if="filledFrom" class="truncate">Filled from {{ filledFrom }}</span>
     </p>
 
     <Teleport :to="panelTarget">

@@ -3262,3 +3262,21 @@ karakter".
 **VERIFIKASI.** Staff Name: ketikan 'l','i' -> dxKiri 0, jarakBawah 5px, pojok=false; 'a' -> panel tertutup
 karena tidak ada yang cocok (benar). Computer Model: 'o','p' -> jarakBawah 4-5px, pojok=false. Klik satu
 baris saran tetap mengisi field dengan modal TETAP terbuka ("Optiplex 7010" masuk ke Computer Model).
+
+### Form New PC record: space untuk trace + urutan section baru (2026-10-10)
+
+**1. Form tidak melebar lagi saat saran dipakai.** Baris "Filled from GID list (...)" sebelumnya memakai
+`v-if`, jadi begitu saran diterapkan baris itu muncul dan seluruh field di bawahnya bergeser. Sekarang
+baris itu SELALU ada di layout dengan `h-4` (tinggi tetap) dan hanya disembunyikan dengan `invisible`
+saat kosong. Verifikasi: `scrollHeight` form 502 sebelum dan 502 sesudah apply saran, dan label `Date`
+tetap di Y=532 - tidak ada satu field pun yang bergeser, sementara trace-nya sendiri tampil
+("Filled from GID list (70D8456)").
+
+**2. Urutan section form disusun ulang sesuai permintaan HIRO.** Grid 3 kolom, jadi urutan array =
+urutan visual baris per baris.
+- IDENTITY: Staff Name | Email Address | GID (tidak berubah)
+- HARDWARE dan SYSTEM: JAPAN Hostname | Computer S/N | Computer Chassis // Computer Manufacturer |
+  Computer Model | Date // Computer O/S Name | Computer O/S Architecture
+- PLACEMENT AND REMARKS: Location | Remark1 | Remark2
+Pasangan O/S dipindah dari section terakhir ke section mesin; section terakhir menyusut jadi tiga field.
+Label field tidak diubah (lihat catatan di laporan) - yang diubah hanya urutan dan judul section.
