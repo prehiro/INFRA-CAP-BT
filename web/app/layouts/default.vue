@@ -62,6 +62,11 @@ const links = computed<NavigationMenuItem[][]>(() => [
     // up out of its position - HIRO: "jgn pindah posisi menu user management. posisi tetap
     // diatas tombol profile". Sharing the group keeps User Management last, so it keeps the
     // slot, and Log Audit simply sits above it in the same block.
+    //
+    // Data Import joins the same group, ABOVE Log Audit - HIRO: "posisi halaman ada diatas menu
+    // log audit". It is admin-only like the other two, and bulk import is an administration task
+    // rather than daily register work, so it belongs here and not next to the registers themselves.
+    { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },
     { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' },
     { label: 'User Management', icon: 'i-lucide-users', to: '/users' }
   ] as NavigationMenuItem[][]
@@ -81,6 +86,7 @@ const groups = computed(() => [
       { label: 'Factory PC', icon: 'i-lucide-factory', to: '/factorypc' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
+      { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
       { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]

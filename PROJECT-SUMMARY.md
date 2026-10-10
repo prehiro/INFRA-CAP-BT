@@ -2929,3 +2929,50 @@ a) "PCs outside the corporate domain - recorded separately for IT asset visibili
    menekankan tujuan pencatatan) b) "Non-domain factory computers." (paling ringkas, tapi tidak
    menjelaskan kenapa dicatat terpisah). Deskripsi lama (warisan PC Ledger: "List of PC, Laptop, Tablet
    &middot; CAPACITOR Only") sudah diganti, jumlah record di belakangnya tetap ditampilkan.
+
+### Halaman Data Import dengan tab (2026-10-10)
+
+HIRO: *"buat halaman untuk data import, admin bisa import data file excel untuk halaman pc ledger.
+posisi halaman ada diatas menu log audit. pada halaman tersebut saya mau ada navigation tab seperti di
+web https://dashboard-template.nuxt.dev/settings (#dashboard-panel-settings > div.shrink-0...
+min-h-[49px] > nav). Tab pertama Import PC Ledger, kedua GID List. pastikan style dan transisi sama
+seperti page lain"*.
+
+**HALAMAN BARU `/data-import`** (`web/app/pages/data-import.vue`). Tab bar-nya memakai komponen vendor
+yang PERSIS dipakai template yang dia tunjuk - pola yang sama juga sudah dipakai halaman register di app
+ini: `UDashboardPanel` + `UDashboardNavbar title="Data Import"` lalu `UDashboardToolbar` yang memuat
+`UNavigationMenu` horizontal dengan prop `highlight`. Jadi tinggi bar (min-h 49px), border bawah, padding
+dan indikator aktifnya adalah milik vendor, bukan tiruan. Tab diletakkan di QUERY STRING
+(`/data-import?tab=import` / `?tab=gid`) dengan `exact: true` supaya menu bisa menandai satu tab aktif
+tanpa child route. Transisi panel memakai `anim-fade-up` - kelas animasi standar app ini (main.css),
+lengkap dengan guard prefers-reduced-motion yang sama seperti halaman lain.
+
+**TAB 1 - Import PC Ledger.** File dibaca DULU di browser dengan ExcelJS, tidak ada yang ditulis sebelum
+tombol Import ditekan:
+- Baris header tidak di-hardcode. Skor tiap baris 1-15 berdasarkan berapa banyak label kolom yang
+  dikenali; baris dengan skor terbanyak jadi header (pada export asli terdeteksi **Row 10**).
+- Pemetaan label -> field `pc_ledger` (14 kolom; `No` sengaja TIDAK dipetakan karena API yang memberi
+  nomor - field `nomor` required+unique, jadi mengirim nomor sendiri bisa bentrok).
+- Ringkasan: nama sheet, baris header, jumlah kolom dikenali, jumlah baris siap import, baris kosong
+  yang dilewati; plus badge kolom, preview 5 baris, lalu tombol "Import N record(s)" + ringkasan hasil
+  (berhasil/gagal + pesan error pertama).
+
+**TAB 2 - GID List.** Diturunkan dari record PC Ledger itu sendiri (tanpa entity baru): GID, pemiliknya,
+dan jumlah PC per GID, dengan jumlah total di footer.
+
+**MENU.** `Data Import` (ikon file-up) di grup yang sama, **DI ATAS Log Audit**, sesuai permintaan;
+command palette ikut ditambah.
+
+**TERVERIFIKASI DI BROWSER (1920x1080):** sidebar = Dashboard | Device Ledger (PC Ledger, Factory PC) |
+Log Book (CCTV Access, Handover) | **Data Import** | Log Audit | User Management, dan menunya menyala
+saat halaman dibuka. Tab bar menampilkan "Import PC Ledger" | "GID List"; klik GID List memindahkan URL
+ke `?tab=gid`, mengganti isi panel, dan underline hijau pindah ke tab itu. GID List memuat data nyata:
+8 GID, 26 PC tercakup (`.\capuser` 5, 7008269 Sepriadi 1, 7008318 Edy Purnomo 1, 7008386 Roestan 1,
+7008512 Ratna Dewi 1, 29384_BALFI 4, 29384_DTS05 5, E0B5536/7 8). Tab Import diuji dengan file xlsx
+nyata (hasil export halaman PC Ledger): "Sheet Ledger | Header row found Row 10 | Columns recognised 14
+| Rows to import 26" + preview 5 baris + toast "File read - 26 row(s) ready to import".
+
+**BELUM DIUJI, disebutkan terus terang:** langkah TULIS (menekan "Import 26 record(s)") sengaja tidak
+saya jalankan supaya tidak menumpuk 26 baris duplikat di register dev. Panggilan per barisnya adalah
+`apiCreateRecord` yang sama dengan tombol Add Record di halaman register (sudah terbukti jalan), tapi
+klaim bahwa seluruh alur import 26 baris lolos belum saya buktikan.
