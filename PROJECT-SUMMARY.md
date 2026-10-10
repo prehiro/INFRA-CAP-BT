@@ -2976,3 +2976,39 @@ nyata (hasil export halaman PC Ledger): "Sheet Ledger | Header row found Row 10 
 saya jalankan supaya tidak menumpuk 26 baris duplikat di register dev. Panggilan per barisnya adalah
 `apiCreateRecord` yang sama dengan tombol Add Record di halaman register (sudah terbukti jalan), tapi
 klaim bahwa seluruh alur import 26 baris lolos belum saya buktikan.
+
+### Data Import: header, import PC Ledger (layout tetap), import GID list (2026-10-10)
+
+HIRO minta tiga hal di halaman Data Import, plus menjelaskan tujuan tab GID List.
+
+**1. HEADER DISAMAKAN (ada tombol collapse).** Sebelumnya halaman ini memakai `UDashboardNavbar`
+langsung; halaman lain memakai komponen lokal `PageHeader`, yang di komentarnya sendiri disebut
+"carries the sidebar collapse control in the navbar's #leading slot, on every page". Sekarang halaman
+ini memakai `PageHeader` juga - jadi tombol collapse, gaya, dan animasinya sama secara konstruksi.
+Terverifikasi: tombol collapse terdeteksi di header (1), termasuk saat sidebar sedang runtuh.
+
+**2. IMPORT PC LEDGER = LAYOUT TETAP.** Aturan deteksi header otomatis DIBUANG, diganti layout tetap
+sesuai instruksi: data dibaca dari **row 11**, kolom **B..P (15 kolom)** sesuai urutan register
+(No, Staff Name, Email Address, GID, JAPAN Hostname, Computer Model, Computer S/N, Date, Computer
+Chassis, Computer Manufacturer, Computer O/S Name, Computer O/S Architecture, Location, Remark1,
+Remark2). Kolom B (No) DIBACA tapi tidak dikirim: API yang memberi nomor (`nomor` required+unique).
+- **Masalah nyata yang ketahuan dari uji:** percobaan pertama hanya 23 dari 26 baris masuk. Sebabnya
+  kolom Date di file referensi bukan selalu tanggal - sebagian sel berisi angka serial Excel, dan
+  beberapa berisi teks yang bukan tanggal sama sekali (di file referensi ada sel berisi "20"). API
+  menolak field Date yang tidak bisa diparse, sehingga seluruh baris gagal. Ditambahkan
+  `normaliseDate()`: Date asli, serial Excel 1900, dan string ISO semuanya diterima; yang benar-benar
+  tidak bisa dibaca DIBUANG dan jumlahnya dilaporkan di ringkasan ("Unreadable dates dropped: 3"),
+  bukan menggagalkan barisnya secara senyap.
+- **UJI GANTI-ISI (HIRO mengizinkan hapus data lama):** 26 record lama dihapus lewat API, lalu file
+  `D:\WORK\PANASONIC\Web\INFRA-CAPeff\PC_Ledger.xlsx` diimpor lewat halaman: ringkasan
+  "Row 11, columns B-P | 26 of 26 row(s) | 3 unreadable dates dropped", hasil **"26 imported, 0 failed"**,
+  API `pc_ledger` total 26, nomor otomatis 1..26. Data verbatim (mis. "Surface GO  4" dengan dua spasi,
+  email "#NA", gid "E0B5536/7") tetap apa adanya.
+
+**3. IMPORT GID LIST.** File `gid_list.xlsx` (header di baris 1) hanya dibaca kolom **A, C, E, H** =
+Global ID, Alphabet Name, E-mail Address, Employee No. Hasil uji: **32 added, 0 failed**
+(32 baris, semua punya Global ID). GID yang sudah ada DILEWATI, jadi mengimpor ekspor baru hanya
+menambah yang belum ada. Datanya disimpan di entity baru **`gid_list`** (id 12, 4 field: gid
+required+unique, name, email, employee_no) - bukan di cache browser - karena ini akan jadi sumber
+saran di form PC Ledger, dan supaya semua admin melihat daftar yang sama. Tab ini juga menampilkan
+daftar tersimpan (Global ID / Name / E-mail / Employee No) dengan pencarian dan tombol Refresh.
