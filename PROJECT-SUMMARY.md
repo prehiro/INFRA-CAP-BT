@@ -3194,3 +3194,22 @@ swap. Label sidebar dan sidebar root juga 0 perubahan. Berkas font tersaji 200 d
 **CATATAN TERKAIT (sudah dikerjakan sebelumnya di sesi ini).** Spring sidebar dan bounce tombol collapse
 di header tidak lagi dipicu oleh atribut vendor `data-collapsed` (dulu ikut main di setiap load, seluruh
 teks sidebar bergerak 360ms) — sekarang hanya saat aksi collapse/expand nyata.
+
+### Rapikan dua catatan terbuka (2026-10-10)
+
+**1. Animasi masuk halaman Data Import tidak bisa lagi jalan dua kali.** Sebelumnya kelas `anim-fade-up`
+ada di dua wrapper per-tab yang ditukar `v-if`, jadi tab yang berubah tepat setelah mount bisa me-mount
+wrapper baru dan memutar ulang fade 340ms (pernah terukur dua kali dalam satu load). Sekarang animasinya
+dipindah ke elemen BODY milik panel (`:ui="{ body: 'p-6 anim-fade-up' }"`): elemen itu dibuat sekali dan
+tidak pernah dibuat ulang oleh pergantian tab, jadi tidak ada yang bisa diulang. Ref `entrance` dan timer
+420ms yang jadi tambalan sebelumnya DIHAPUS (tidak meninggalkan dead code).
+
+**Verifikasi.** Saat load: `infra-fade-up` tepat SATU kali, targetnya `DIV.flex.flex-col.gap-4` (body panel).
+Setelah 3x ganti tab bolak-balik: TIDAK ada `infra-fade-up` sama sekali (hanya spinner loader milik tombol
+Refresh, yang memang memuat data).
+
+**2. Area gulir tabel GID di halaman Data Import — sudah aman, tidak diubah.** Container-nya memakai
+`overflow-y-scroll` (bukan `auto`), sehingga jalur scrollbar selalu tergambar dan lebarnya tidak pernah
+tersita/hilang — kelas bug "geser 15px saat bar muncul/hilang" tidak mungkin terjadi di sana. Pengukuran
+juga menunjukkan seluruh container gulir di halaman ini konstan (distinct=1) selama load + 3x ganti tab.
+`scrollbar-gutter: stable` sengaja TIDAK ditambahkan karena akan menjadi perubahan visual tanpa manfaat.

@@ -33,16 +33,12 @@ const TABS = [
 
 const activeTab = computed(() => (route.query.tab === 'gid' ? 'gid' : 'import'))
 
-/** The entrance animation must play ONCE, on load, and never again.
- *
- *  HIRO: "ketika click gid list seluruh teks di webpage flickering, memebesar-mengecil". Both tab
- *  panels carried `anim-fade-up`, and the two are swapped with v-if - so every tab switch mounted a
- *  fresh panel and replayed the 340ms fade/scale over the whole page. Switching a tab is not an
- *  entrance, and the local (non-scaled) alternative is worse: it would leave the page without the
- *  entrance the other pages have. So the animation is kept for the first paint only.
- */
-const entrance = ref(true)
-onMounted(() => { window.setTimeout(() => { entrance.value = false }, 420) })
+// The page's entrance animation lives on the panel BODY element, via :ui on UDashboardPanel below.
+// That element is created once and is never re-created by the tab swap, so the fade can run only on
+// the first paint. It used to sit on the two per-tab wrappers, which are swapped with v-if, so a tab
+// that flipped just after mount could mount a fresh wrapper and replay the 340ms fade - HIRO saw the
+// page flicker and grow/shrink when switching tabs, and the fade was measured running twice on some
+// loads even after the wrapper was gated with a timer. An element that is never re-created cannot replay.
 
 const links = computed<NavigationMenuItem[][]>(() => [
   TABS.map((t) => ({
@@ -390,7 +386,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
 </script>
 
 <template>
-  <UDashboardPanel id="data-import" :ui="{ body: 'p-6' }">
+  <UDashboardPanel id="data-import" :ui="{ body: 'p-6 anim-fade-up' }">
     <template #header>
       <PageHeader title="Data Import" />
 
@@ -408,7 +404,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
 
     <template #body>
       <!-- ---------------- tab 1: import PC Ledger ---------------- -->
-      <div v-if="activeTab === 'import'" key="import" class="mx-auto w-full max-w-6xl" :class="entrance ? 'anim-fade-up' : ''">
+      <div v-if="activeTab === 'import'" key="import" class="mx-auto w-full max-w-6xl">
         <div class="overflow-hidden rounded-xl border border-default bg-elevated">
           <div class="flex items-start gap-3 border-b border-default px-4 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
@@ -518,7 +514,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
       </div>
 
       <!-- ---------------- tab 2: GID list ---------------- -->
-      <div v-else key="gid" class="mx-auto w-full max-w-6xl" :class="entrance ? 'anim-fade-up' : ''">
+      <div v-else key="gid" class="mx-auto w-full max-w-6xl">
         <div class="mb-4 overflow-hidden rounded-xl border border-default bg-elevated">
           <div class="flex items-start gap-3 border-b border-default px-4 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
