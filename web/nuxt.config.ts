@@ -1,5 +1,28 @@
 import { defineNuxtConfig } from 'nuxt/config'
 
+// Public Sans is declared HERE, in the document head, and the files are preloaded.
+//
+// WHY NOT IN THE CSS: in dev the app's CSS is injected by JavaScript, so during the first render
+// the browser does not yet know the @font-face. The text painted with the system fallback, the
+// real font arrived a moment later, and everything re-rendered - the sidebar labels and the page
+// title visibly shifted on EVERY refresh (HIRO: "setiap kali refresh page seluruh teks yang ada di
+// sidebar dan title header bergetar ... terjadi di semua halaman"). Measured before the fix: the
+// header title's width stepped 115.19px -> 113.70px with its left/top unchanged, which is the
+// exact signature of a late font swap.
+//
+// Declaring the faces in the head makes them known at parse time, and the preload asks for the
+// files in parallel with the app's JavaScript, so the font is ready before the first paint and
+// there is nothing left to swap. The files are static assets under public/fonts, which is why the
+// base URL is prefixed by hand: the production app is served under /INFRA-CAP.
+const BASE_URL = process.env.NUXT_APP_BASE_URL || '/'
+
+const PUBLIC_SANS_WEIGHTS = [400, 500, 600, 700]
+
+const PUBLIC_SANS_FACES = PUBLIC_SANS_WEIGHTS.map((w) =>
+  `@font-face{font-family:'Public Sans';font-style:normal;font-display:swap;font-weight:${w};` +
+  `src:url(${BASE_URL}fonts/public-sans-latin-${w}-normal.woff2) format('woff2')}`
+).join('')
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: false },
@@ -49,6 +72,16 @@ export default defineNuxtConfig({
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
     head: {
       title: 'INFRA-CAP',
+      // See PUBLIC_SANS_FACES above: faces in the head + preload = the font is ready before the
+      // first paint, so a refresh never re-renders the chrome text mid-load.
+      style: [{ innerHTML: PUBLIC_SANS_FACES }],
+      link: PUBLIC_SANS_WEIGHTS.map((w) => ({
+        rel: 'preload',
+        as: 'font',
+        type: 'font/woff2',
+        href: `${BASE_URL}fonts/public-sans-latin-${w}-normal.woff2`,
+        crossorigin: 'anonymous'
+      })),
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },

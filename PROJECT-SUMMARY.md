@@ -3158,3 +3158,39 @@ sidebar/header). Belum saya ubah karena keluhan menyangkut sidebar dan header.
 **BELUM BISA DIUJI DI SINI:** bila flicker itu ternyata berasal dari geometri scrollbar (bar yang
 muncul/hilang mencuri ~15px lebar sehingga konten bergeser), lingkungan headless di mesin ini memakai
 scrollbar OVERLAY sehingga lebar tidak pernah tersita - kelas bug ini tidak bisa direproduksi lokal.
+
+### Teks chrome "bergetar" setiap refresh — akarnya FONT SWAP (2026-10-10)
+
+**Kronologi yang benar (dari HIRO):** bukan klik tab, tetapi SETIAP REFRESH, dan terjadi di SEMUA halaman.
+
+**BUKTI PENGUKURAN.** Perekam dipasang lewat `Page.addScriptToEvaluateOnNewDocument` sehingga ikut selamat
+melewati refresh dan mulai dari awal dokumen, lalu merekam rect sidebar, label sidebar, judul header, dan
+panel setiap frame. Hasil sebelum perbaikan: pada t=3668ms **lebar judul berubah 115.19px -> 113.70px
+sementara left/top-nya TIDAK berubah** (270 / 17.5). Perubahan lebar tanpa pergeseran posisi adalah tanda
+khas teks dirender ulang dengan font berbeda — bukan animasi, bukan scrollbar. `font-display: swap` pada
+@font-face membuat paint pertama memakai font fallback, lalu Public Sans datang dan menggantinya.
+
+**MENGAPA TERJADI DI SEMUA HALAMAN DAN SETIAP REFRESH.** @font-face Public Sans hanya dideklarasikan di
+CSS aplikasi (`@import "@fontsource/public-sans/*.css"`), dan CSS itu di-inject oleh JavaScript. Pada
+render pertama browser belum mengenal face-nya, jadi seluruh teks chrome (label sidebar + judul header)
+digambar dengan fallback lebih dulu, kemudian dirender ulang begitu face dikenal dan berkas font tiba.
+Karena itu letaknya di shell (semua halaman), bukan di satu page.
+
+**PERBAIKAN.**
+- Berkas font disalin ke `web/public/fonts/` sebagai aset statis (4 bobot latin: 400/500/600/700 woff2)
+  supaya URL-nya stabil dan bisa di-preload.
+- Deklarasi @font-face DIPINDAH dari CSS ke `nuxt.config.ts` -> `app.head.style`, jadi browser mengenal
+  face-nya saat parsing HTML, sebelum JavaScript aplikasi jalan.
+- Keempat berkas di-preload (`rel=preload as=font type=font/woff2 crossorigin`) sehingga font siap sebelum
+  paint pertama. `app.head.link` dan URL di CSS memakai prefix `NUXT_APP_BASE_URL` karena produksi dilayani
+  di bawah /INFRA-CAP.
+- `@import "@fontsource/public-sans/*.css"` dihapus dari main.css agar tidak ada deklarasi ganda, dengan
+  komentar yang menjelaskan mengapa deklarasinya sekarang ada di head.
+
+**VERIFIKASI SESUDAH.** Judul header: **0 perubahan** — pengukuran pertamanya (t=6041ms, saat shell pertama
+muncul) sudah [270, 17.5, **113.7**], yaitu lebar Public Sans, nilai yang sebelumnya hanya tercapai SETELAH
+swap. Label sidebar dan sidebar root juga 0 perubahan. Berkas font tersaji 200 dengan 14632 byte asli.
+
+**CATATAN TERKAIT (sudah dikerjakan sebelumnya di sesi ini).** Spring sidebar dan bounce tombol collapse
+di header tidak lagi dipicu oleh atribut vendor `data-collapsed` (dulu ikut main di setiap load, seluruh
+teks sidebar bergerak 360ms) — sekarang hanya saat aksi collapse/expand nyata.

@@ -1,7 +1,10 @@
-@import "@fontsource/public-sans/400.css";
-@import "@fontsource/public-sans/500.css";
-@import "@fontsource/public-sans/600.css";
-@import "@fontsource/public-sans/700.css";
+/* Public Sans is NOT imported here any more. The @font-face declarations live in
+   nuxt.config.ts's app.head so the browser knows the faces BEFORE the app's JavaScript boots.
+   In dev the bundled CSS is injected by JS, so a font declared only here is unknown during the
+   first render: the text painted with the system fallback and then swapped, re-rendering every
+   piece of chrome text on every refresh (measured: the header title's width stepped
+   115.19px -> 113.70px with its position unchanged - the signature of a late font swap).
+   The files themselves are served from /public/fonts as static assets. */
 
 @import "tailwindcss" theme(static);
 @import "@nuxt/ui";
