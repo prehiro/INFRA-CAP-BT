@@ -702,6 +702,8 @@ async function confirmDelete() {
   }
 }
 
+</script>
+
 <template>
   <UDashboardPanel :ui="{ body: 'p-6' }">
     <template #header>

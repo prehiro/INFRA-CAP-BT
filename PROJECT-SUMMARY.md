@@ -2887,3 +2887,14 @@ kedua route dan perlu satu langkah terpisah.
 2. Verifikasi visual halaman Factory PC belum selesai karena daemon browser harness wedged
    (PermissionError pada bu-default.port); yang sudah terbukti: file bersih (0 referensi pc_ledger/
    staff_name/gid/Department/exportExcel) dan entity factory_pc ada di API dengan 9 field.
+
+### Perbaikan: `</script>` hilang di factorypc.vue (2026-10-10)
+
+Skrip adaptasi yang membuang blok Excel export ikut memakan tag `</script>` (rentangnya berakhir tepat
+sebelum `<template>`, dan `</script>` ada di antaranya). Akibatnya Vite menolak file itu:
+`[plugin:vite:vue] Element is missing end tag` dan halaman /logbook/factorypc menampilkan 500
+"Failed to fetch dynamically imported module".
+
+Terdeteksi DARI VERIFIKASI BROWSER, bukan dari pembacaan kode - pelajaran: menghapus blok dengan regex
+"dari penanda X sampai sebelum Y" harus memeriksa pasangan tag yang berakhir di antaranya. Diperbaiki
+dengan menyisipkan `</script>` sebelum `<template>`; `curl /logbook/factorypc` kembali 200.
