@@ -742,7 +742,7 @@ async function checkUnique(key: string) {
   if (!value) { uniqueErrors.value[key] = ''; refreshUniqueWarning(); return }
   const local = findDuplicate(rows.value, key, value)
   if (local) {
-    uniqueErrors.value[key] = `Already used by ${recordLabel(local)}.`
+    uniqueErrors.value[key] = `${LABELS[key]} "${value}" is already used by ${recordLabel(local)}.`
     refreshUniqueWarning()
     return
   }
@@ -751,7 +751,7 @@ async function checkUnique(key: string) {
     if (!id) return
     const page = await apiListRecords(id, { page: 1, pageSize: 5, search: value })
     const hit = findDuplicate(page.items ?? [], key, value)
-    uniqueErrors.value[key] = hit ? `Already used by ${recordLabel(hit)}.` : ''
+    uniqueErrors.value[key] = hit ? `${LABELS[key]} "${value}" is already used by ${recordLabel(hit)}.` : ''
   } catch {
     uniqueErrors.value[key] = ''
   } finally {
@@ -776,6 +776,17 @@ watch(() => UNIQUE_FIELDS.map((k) => String(form[k] ?? '')).join('\u0000'), () =
   // been corrected reads as if the form is still refusing to save.
   formError.value = ''
 })
+
+/** Japan Hostname and Computer S/N are codes and are stored upper-case. HIRO: "saya mau value di textbox
+ *  hostname dan sn full jadi kapital". A watcher rather than a keydown handler so paste and the smart-fill
+ *  paths are covered too; `sync` because otherwise the lowercase would be painted for a frame. */
+const UPPER_FIELDS = ['japan_hostname', 'computer_sn']
+watch(() => UPPER_FIELDS.map((k) => String(form[k] ?? '')), (vals) => {
+  UPPER_FIELDS.forEach((k, i) => {
+    const up = vals[i].toUpperCase()
+    if (vals[i] !== up) form[k] = up
+  })
+}, { flush: 'sync' })
 
 /** One row of the imported Global ID list, shaped for the field currently being typed in. */
 function gidSuggestions(key: 'staff_name' | 'email' | 'gid') {
@@ -876,7 +887,7 @@ async function save() {
     // not slip a duplicate past a timer that has not fired yet.
     await Promise.all(UNIQUE_FIELDS.map((k) => checkUnique(k)))
     if (uniqueWarned.value) {
-      formError.value = `${uniqueWarned.value} Japan Hostname and Computer S/N must be unique - use a different value, or edit the record that already has it.`
+      formError.value = `${uniqueWarned.value} Hostname and Serial number must be unique.`
       return
     }
     if (editingId.value) {
@@ -1302,7 +1313,7 @@ async function exportExcel() {
       </div>
 
       <!-- ---------------- add / edit ---------------- -->
-      <UModal v-model:open="showForm" :ui="{ content: 'max-w-4xl pl-record-modal' }">
+      <UModal v-model:open="showForm" :ui="{ content: 'w-full max-w-4xl pl-record-modal' }">
         <template #content>
           <!-- `relative z-10` puts the whole dialog above the accent glow that the .pl-record-modal
                rule paints as a ::after on the content element (see the non-scoped style block at the
@@ -1333,8 +1344,8 @@ async function exportExcel() {
                     v-for="key in section.fields"
                     :key="key"
                     :label="LABELS[key]"
-                    :error="uniqueErrors[key]"
-                    :ui="{ label: 'text-xs font-medium' }"
+                    :error="uniqueErrors[key] || undefined"
+                    :ui="{ label: 'text-xs font-medium', error: 'hidden' }"
                   >
                     <DatePicker
                       v-if="key === 'tanggal'"
@@ -1376,14 +1387,23 @@ async function exportExcel() {
                 </div>
               </div>
 
-              <UAlert
-                v-if="formError"
-                color="error"
-                variant="soft"
-                icon="i-lucide-circle-alert"
-                :title="formError"
-                class="mt-4"
-              />
+              <!-- The banner's row is RESERVED (min-h) so showing it does not resize the dialog. HIRO:
+                   "tolong atur animasi pelebaran modal ketika notifikasi duplikat yang dibawah muncul
+                   karena saat ini modal melebar secara tiba-tiba jelek secara visual".
+                   The per-field message is hidden (`error: 'hidden'` on the UFormField) and carried here
+                   instead: the message would wrap to three lines inside a one-third-width column and the
+                   dialog grew 86px every time it appeared. The field keeps its red ring, so which box is
+                   wrong is still obvious, and the dialog now has the same height before and after. -->
+              <div class="mt-4 min-h-[64px]">
+                <UAlert
+                  v-if="formError"
+                  color="error"
+                  variant="soft"
+                  icon="i-lucide-circle-alert"
+                  :title="formError"
+                  class="anim-fade-in"
+                />
+              </div>
             </div>
 
             <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">

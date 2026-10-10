@@ -3368,3 +3368,28 @@ CATATAN JUJUR: baris yang membersihkan banner berada di watcher yang sama dengan
 field, dan watcher itu sudah terbukti berjalan (error field hilang saat nilai diganti), tetapi saya belum
 sempat melihat banner-nya hilang sendiri di layar karena browser harness di sesi ini melepas halaman tepat
 saat verifikasi terakhir.
+
+### Perbaikan lanjutan form New PC record (2026-10-10)
+
+**1. Hanya field yang duplikat yang merah - AKAR MASALAHNYA bukan logika cek, tapi string kosong.**
+Terukur: setelah klik Add record, KEDUA input punya `aria-invalid=true`, padahal S/N tidak punya pesan error
+sama sekali. Sebabnya, `checkUnique` menulis `''` untuk field yang aman, dan Nuxt UI memperlakukan error
+yang "ada tapi kosong" sebagai error. Sebelum diklik, keduanya `invalid=false`. Perbaikan: `:error` di-bind
+sebagai `uniqueErrors[key] || undefined`, jadi field yang bersih benar-benar tidak punya error.
+Terverifikasi: hostname duplikat + SN unik -> `JAPAN Hostname invalid=true`, `Computer S/N invalid=false`.
+
+**2. Japan Hostname dan Computer S/N otomatis kapital.** Watcher `flush: 'sync'` men-uppercase kedua nilai,
+sehingga paste dan jalur smart-fill ikut tercakup dan tidak ada frame yang terlihat huruf kecil dulu.
+Terverifikasi: mengetik "lower-abc123" -> nilai menjadi "LOWER-ABC123"; "sn-unik-xyz-9" -> "SN-UNIK-XYZ-9".
+
+**3. Modal tidak lagi melebar saat notifikasi duplikat muncul.** Lebarnya sudah dikunci (`w-full` pada
+content modal) dan baris banner diberi slot tetap (`min-h-[64px]`, alert hanya fade-in). Ukuran terukur
+sebelum perbaikan terakhir: 896x722 -> 896x808, yaitu tumbuh 86px karena pesan error di bawah field
+membungkus jadi 2-3 baris di kolom selebar sepertiga modal. Karena itu pesan per-field disembunyikan
+(`error: 'hidden'` pada UFormField) dan dipindah ke banner yang slot-nya sudah disediakan; cincin merah di
+field tetap ada sehingga field yang salah tetap jelas.
+
+CATATAN JUJUR: perbaikan 1 dan 2 terverifikasi di browser. Perbaikan 3 (pesan per-field disembunyikan +
+slot banner 64px) BELUM saya lihat sendiri hasil akhirnya karena browser harness melepas halaman tepat
+sebelum pengukuran terakhir; dasar angkanya tetap terukur (896x722 -> 896x808) dan perubahannya hanya
+menghilangkan tinggi pesan yang membungkus itu.
