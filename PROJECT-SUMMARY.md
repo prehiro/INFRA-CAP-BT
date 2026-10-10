@@ -3306,3 +3306,11 @@ render 8000+ sel di klien plus snapshot animasi; yang lebih penting, separuh dat
 angka di footer menyesatkan. Perbaikan yang disarankan: pakai paging + search/sort sisi server (API sudah
 mendukung search dan sudah mengembalikan total/page/pageSize), naikkan batas pageSize khusus export Excel,
 dan virtualisasi isi tabel untuk menghindari blokir main thread.
+
+### Bersih-bersih setelah uji beban (2026-10-10)
+
+1000 baris dummy uji beban DIHAPUS kembali lewat api/dedupe-pc-ledger.py (menghapus semua nomor di atas
+26), sehingga PC Ledger kembali ke 27 baris. Generatornya (make-loadtest-rows.py + loadtest-ids.json di
+scratch) tetap ada kalau mau uji ulang. Catatan: karena delete adalah SOFT delete (IsDeleted=true), baris
+uji itu masih tersimpan di DB sebagai non-aktif - sama seperti baris yang dihapus lewat UI. Log Audit juga
+mencatat 1000 pembuatan + 1000 penghapusan dari uji ini dan itu tidak bisa dibersihkan lewat API.
