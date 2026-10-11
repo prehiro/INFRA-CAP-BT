@@ -41,27 +41,17 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui'],
 
   // OFFLINE-SAFE: the production server (10.89.6.237) has no internet access.
-  // Default @nuxt/ui icon resolution calls https://api.iconify.design at RUNTIME,
-  // which would make every icon silently vanish on the target machine.
-  // Lucide and Carbon are installed locally from npm and bundled at build time.
+  // All three collections are installed locally and used icons are bundled at build time.
+  // No runtime provider or API fallback: missing icons must not try the internet.
   icon: {
     clientBundle: {
       scan: true,
-      // Explicit inclusion also covers the dynamic add/edit icon expression in both PC forms.
-      icons: ['carbon:data-add'],
-      size: 200000
+      icons: ['carbon:data-add', 'streamline-cyber:network'],
+      sizeLimitKb: 256
     },
-    provider: 'iconify',
-    // Existing fallback option retained; offline availability of Carbon is explicit above.
-    clientBundleFallback: ''
-  },
-
-  ui: {
-    icons: {
-      serverBundle: {
-        collections: ['lucide', 'carbon']
-      }
-    }
+    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber'] },
+    provider: 'none',
+    fallbackToApi: false
   },
 
   css: ['~/assets/css/main.css'],
@@ -85,6 +75,12 @@ export default defineNuxtConfig({
         crossorigin: 'anonymous'
       })),
       meta: [
+        // Production-only guard: allow this origin, embedded images and local downloads,
+        // never remote scripts/fonts/images/API calls. Dev keeps its Vite websocket/HMR.
+        ...(process.env.NODE_ENV === 'production' ? [{
+          'http-equiv': 'Content-Security-Policy',
+          content: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; object-src 'none'; base-uri 'self'"
+        }] : []),
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
         { name: 'description', content: 'Aplikasi internal INFRA-CAP' }
@@ -107,7 +103,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Overridable at runtime without a rebuild (NUXT_PUBLIC_* env vars).
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/api'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || (BASE_URL === '/' ? '/api' : '/INFRA-CAP-api/api')
     }
   },
 

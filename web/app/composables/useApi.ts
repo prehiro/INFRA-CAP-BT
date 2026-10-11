@@ -4,7 +4,7 @@ import type {
 
 /**
  * Single API surface. In dev the Vite proxy forwards /api to the ASP.NET Core
- * server; in production /api is rewritten by IIS to the INFRA-CAP-api application.
+ * server; in production the same-origin /INFRA-CAP-api/api path reaches the sibling IIS application.
  * Both cases are same-origin, so no CORS preflight is involved.
  */
 export class ApiError extends Error {
@@ -40,7 +40,9 @@ function authHeaders(): Record<string, string> {
 
 async function request<T>(path: string, opts: { method?: string; body?: any } = {}): Promise<T> {
   const config = useRuntimeConfig()
-  const res = await $fetch.raw<T>(`${config.public.apiBase}${path}`, {
+  // An explicit baseURL prevents Nuxt's app base (/INFRA-CAP/) being prepended to the API URL.
+  const res = await $fetch.raw<T>(path, {
+    baseURL: config.public.apiBase,
     method: (opts.method || 'GET') as any,
     body: opts.body,
     headers: authHeaders()

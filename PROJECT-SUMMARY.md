@@ -3,6 +3,16 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### Full offline runtime and Add-icon animation preview (2026-10-11)
+
+Installed local `@iconify-json/streamline-cyber` 1.2.2; sidebar and login network logo are explicitly in clientBundle with Carbon data-add. Fixed unsupported icon options: `provider: 'none'`, `fallbackToApi: false`, `sizeLimitKb: 256`, and serverBundle under icon, not ui.icons. Removed obsolete clientBundleFallback/size options. Sidebar uses canonical streamline-cyber:network, same appearance/animation as before. Production-only CSP allows same-origin scripts/styles/fonts/API plus embedded images/local blob downloads; external fetches/resources are denied.
+
+Production-path testing exposed a real API URL problem: Nuxt prepended /INFRA-CAP/ to concatenated API paths. useApi now passes path and explicit baseURL separately; dev default remains /api, production base (/INFRA-CAP/) defaults to /INFRA-CAP-api/api (the sibling IIS app plus the backend /api routes). Tested the actual static build under /INFRA-CAP/ using a read-only proxy that strips the IIS application path, not fake responses. Dashboard metrics, PC Ledger 27 rows, Factory PC 10, CCTV 13, Handover 5, Users 3 and Audit all loaded real data. Login logo also works offline.
+
+Audit of 9 unique current pages (Dashboard, PC Ledger, Factory PC, Data Import, CCTV, Handover, Users, Audit, Login) with cold cache and remote endpoints blocked: zero external fetch/XHR, zero remote resources, zero missing visible icons, zero normal CSP violations/errors. Deliberate Iconify fetch was rejected by CSP connect-src before any remote resource request. Actual Excel export produced a valid 10180-byte workbook; Data Import parsed packaged Excel into 26 preview rows without importing. Local API traffic remains allowed. No CRUD writes. Source-only build/restart performed; Migration package NOT changed.
+
+ANIMATION PREVIEW, NOT YET COMMITTED (taste changes wait for HIRO): new shared RecordAddIcon.vue used ONLY by Add modal headers in PC Ledger/Factory PC. Glyph gently tilts -4 to +5 degrees and drifts 1.5px; separate accent halo breathes, without scaling the glyph or modal. 3.6s CSS cycle; reduced-motion disables both. Static production verification sampled 225/230 frames, 224/230 distinct glyph transforms, constant modal width 896 and heights 743.40625/519.421875, no network/CSP issues. Dev preview also verified live at localhost:3000 after clean restart. Edit pencil/toolbar unaffected. Leave these two page edits + new component pending approval; commit/push the offline/network/API fix separately.
+
 ### Carbon Add icons, local/offline (2026-10-11)
 
 Only the Add modal header icons in PC Ledger and Factory PC now use `i-carbon-data-add` (Iconify `carbon:data-add`). Edit retains Lucide pencil, toolbar Add Record retains Lucide plus. Added exact dependency `@iconify-json/carbon` 1.2.28 and lockfile; local icon set at `web/node_modules/@iconify-json/carbon/icons.json`, containing data-add. Explicit `icon.clientBundle.icons: ['carbon:data-add']` guarantees bundling of the dynamic add/edit name; collection list includes carbon alongside lucide.
