@@ -52,11 +52,14 @@ const props = withDefaults(defineProps<{
   header?: string
   /** Values already in the form, used to lift the candidate that agrees with them. */
   context?: string[]
+  /** Optional parent-owned trace, for a retrieval that fills several sibling inputs. */
+  sourceHint?: string
 }>(), { placeholder: '', header: '', context: () => [] })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
   (e: 'fill', s: Suggestion): void
+  (e: 'update:sourceHint', v: string): void
 }>()
 
 const inputEl = ref<any>(null)
@@ -73,6 +76,7 @@ const panelTarget = ref<HTMLElement>(document.body)
 const open = ref(false)
 const active = ref(0)
 const filledFrom = ref('')
+const visibleHint = computed(() => props.sourceHint ?? filledFrom.value)
 const dropStyle = ref<Record<string, string>>({})
 
 const text = (v: unknown) => String(v ?? '').trim()
@@ -207,6 +211,7 @@ function show() {
 
 function onInput(e: Event) {
   filledFrom.value = ''
+  emit('update:sourceHint', '')
   lastEmitted = (e.target as HTMLInputElement).value
   emit('update:modelValue', lastEmitted)
   // The parent owns the value, so `matches` cannot see the new text until the prop comes back
@@ -310,10 +315,10 @@ onBeforeUnmount(() => {
     <p class="mt-1 flex h-5 items-center">
       <span
         class="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium leading-none text-primary ring-1 ring-inset ring-primary/20"
-        :class="filledFrom ? 'anim-fade-in' : 'invisible'"
+        :class="visibleHint ? 'anim-fade-in' : 'invisible'"
       >
         <UIcon name="i-lucide-sparkles" class="size-3 shrink-0" />
-        <span class="truncate">{{ filledFrom }}</span>
+        <span class="truncate">{{ visibleHint }}</span>
       </span>
     </p>
 

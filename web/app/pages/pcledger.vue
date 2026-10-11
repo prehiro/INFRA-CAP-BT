@@ -47,7 +47,7 @@ const COLUMNS: Column[] = [
   { key: 'staff_name', label: 'Staff Name', w: 7 },
   { key: 'email', label: 'Email Address', short: 'Email', w: 9 },
   { key: 'gid', label: 'GID', w: 5 },
-  { key: 'japan_hostname', label: 'JAPAN Hostname', short: 'JAPAN Host', w: 8 },
+  { key: 'japan_hostname', label: 'JAPAN Hostname', short: 'Hostname', w: 8 },
   { key: 'computer_model', label: 'Computer Model', short: 'Model', w: 7 },
   { key: 'computer_sn', label: 'Computer S/N', short: 'S/N', w: 7 },
   { key: 'tanggal', label: 'Date', w: 4, align: 'center' },
@@ -661,8 +661,10 @@ const showForm = ref(false)
 const editingId = ref<number | null>(null)
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
+const identityHints = reactive<Record<string, string>>({ staff_name: '', email: '', gid: '' })
 
 function blankForm() {
+  for (const key of Object.keys(identityHints)) identityHints[key] = ''
   for (const k of Object.keys(LABELS)) form[k] = ''
   // Defaults HIRO asked for on a NEW record. The date is today in LOCAL time - the picker parses
   // local, and `new Date('yyyy-mm-dd')` is UTC and can land on the previous day in WIB. Both O/S
@@ -846,10 +848,16 @@ watch(showForm, (isOpen) => { if (isOpen) ensureGidCandidates() })
 /** One pick fills all three - that is the whole point of importing the list. The suggestion carries
  *  the list row in `fill`, so the three fields come from one source instead of three lookups. */
 function applyGidSuggestion(s: any) {
-  const row = s?.fill ?? {}
+  const row = s?.fill
+  if (!row) return
   form.staff_name = String(row.name ?? form.staff_name ?? '')
   form.email = String(row.email ?? form.email ?? '')
   form.gid = String(row.gid ?? form.gid ?? '')
+  // Mark every field actually retrieved, not just the input where the pick happened.
+  for (const key of SUGGEST_FIELDS) {
+    const sourceKey = key === 'staff_name' ? 'name' : key
+    identityHints[key] = String(row[sourceKey] ?? '').trim() ? 'Auto-filled from the GID List' : ''
+  }
 }
 
 function openCreate() {
@@ -1378,6 +1386,7 @@ async function exportExcel() {
                       v-model="form[key]"
                       :suggestions="gidSuggestions(key as 'staff_name' | 'email' | 'gid')"
                       :context="siblingValues(key)"
+                      v-model:source-hint="identityHints[key]"
                       :placeholder="gidCandidates.length ? 'Type to search the GID list' : 'No GID list imported yet'"
                       header="Smart Suggestion - Click or Enter ↵"
                       @fill="applyGidSuggestion"
