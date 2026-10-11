@@ -43,21 +43,23 @@ export default defineNuxtConfig({
   // OFFLINE-SAFE: the production server (10.89.6.237) has no internet access.
   // Default @nuxt/ui icon resolution calls https://api.iconify.design at RUNTIME,
   // which would make every icon silently vanish on the target machine.
-  // 'lucide' is installed from npm (@iconify-json/lucide) and bundled at build time.
+  // Lucide and Carbon are installed locally from npm and bundled at build time.
   icon: {
     clientBundle: {
       scan: true,
+      // Explicit inclusion also covers the dynamic add/edit icon expression in both PC forms.
+      icons: ['carbon:data-add'],
       size: 200000
     },
     provider: 'iconify',
-    // No remote fetch. Anything not in the local lucide collection is simply omitted.
+    // Existing fallback option retained; offline availability of Carbon is explicit above.
     clientBundleFallback: ''
   },
 
   ui: {
     icons: {
       serverBundle: {
-        collections: ['lucide']
+        collections: ['lucide', 'carbon']
       }
     }
   },

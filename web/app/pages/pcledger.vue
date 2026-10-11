@@ -1337,7 +1337,7 @@ async function exportExcel() {
           <div class="relative z-10 flex max-h-[85vh] flex-col">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-                <UIcon :name="editingId ? 'i-lucide-pencil' : 'i-lucide-plus'" class="size-5" />
+                <UIcon :name="editingId ? 'i-lucide-pencil' : 'i-carbon-data-add'" class="size-5" />
               </span>
               <div class="min-w-0">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New PC record' }}</h2>

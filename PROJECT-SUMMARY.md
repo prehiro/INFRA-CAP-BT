@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### Carbon Add icons, local/offline (2026-10-11)
+
+Only the Add modal header icons in PC Ledger and Factory PC now use `i-carbon-data-add` (Iconify `carbon:data-add`). Edit retains Lucide pencil, toolbar Add Record retains Lucide plus. Added exact dependency `@iconify-json/carbon` 1.2.28 and lockfile; local icon set at `web/node_modules/@iconify-json/carbon/icons.json`, containing data-add. Explicit `icon.clientBundle.icons: ['carbon:data-add']` guarantees bundling of the dynamic add/edit name; collection list includes carbon alongside lucide.
+
+Verified actual static `.output/public` build served from localhost:4181, not merely the dev server. Browser cache disabled and HTTPS/Iconify endpoints blocked: both Add forms render Carbon's embedded data:image/svg+xml mask, primary green color, 19x19px. Both Edit forms retain pencil; toolbar plus unchanged. Build exit 0; no CRUD writes. Flashdisk Migration package NOT touched.
+
+Separate offline risk discovered during verification: existing sidebar `streamline-cyber:network` still attempts https://api.iconify.design/streamline-cyber.json?icons=network. Earlier comments claiming all runtime icon fallback is disabled were not reliable. Carbon itself makes no remote request and renders under the block. Sidebar icon left unchanged as outside this Add-form revision; needs its own local bundling fix. npm install also reported 18 audit vulnerabilities (1 low, 2 moderate, 9 high, 6 critical); no broad dependency upgrades were performed.
+
 ### Toasts follow the selected accent (2026-10-11)
 
 Success notifications previously used fixed semantic `success` (green), not the user's selected accent. PC Ledger, Factory PC, Users and Data Import success toast calls now use `primary`; CCTV/Handover notify wrappers map success to primary. Errors remain error/red; import warnings remain warning/amber. No global success token or non-toast component styling was changed. Nuxt UI's default toast color already resolves to primary.
