@@ -467,9 +467,8 @@ onMounted(() => {
            Cancel/Save row therefore lives INSIDE the UForm here too, not in #footer: that
            footer slot is separately known to swallow @click on a submit button.
 
-           The title/description are passed as UModal props rather than hand-built markup,
-           which is also what makes the header, close button and layout identical to CCTV's
-           without any duplicated CSS. -->
+           Keep the vendor's title/description and close button, including their accessible IDs.
+           The title slot adds an animated local icon; the form stays in #body. -->
       <!-- The header and body get `relative z-10` so they sit ABOVE the ::after glow painted below.
            The glow itself is a ::after on the content element (CSS in the non-scoped block at the
            foot of this file), NOT a div in the #content slot: that slot previously made the form's
@@ -480,6 +479,7 @@ onMounted(() => {
         :ui="{
           content: 'sm:max-w-xl users-record-modal',
           header: 'relative z-10',
+          wrapper: 'relative min-h-9 pl-12',
           body: 'relative z-10 p-4 sm:p-5'
         }"
         :title="editing ? 'Edit user' : 'Add user'"
@@ -487,6 +487,12 @@ onMounted(() => {
           ? 'Update this account. The username cannot be changed.'
           : 'Create a new account and assign at least one role.'"
       >
+        <template #title>
+          <span class="absolute left-0 top-0 grid size-9 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+            <RecordAddIcon :name="editing ? 'i-lucide-user-pen' : 'i-lucide-user-plus'" />
+          </span>
+          {{ editing ? 'Edit user' : 'Add user' }}
+        </template>
         <template #body>
           <!-- Every UFormField below carries a `name` matching a key of `form`, and that is
                load-bearing, not decoration. UForm's submit wrapper runs _validate() BEFORE

@@ -855,7 +855,7 @@ await init()
           class="cctv-modal-icon flex w-10 shrink-0 items-center justify-center self-stretch
                  rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 dark:bg-primary/15"
         >
-          <UIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-video'" class="size-5" />
+          <RecordAddIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-video'" />
         </span>
 
         <!-- Title and subtitle as ONE block, not two stacked lines with a gap between them.

@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### Animation approval and publication (2026-10-11)
+
+HIRO approved publishing all pending animation changes with "push up date memory". This supersedes the uncommitted/awaiting-approval status in the historical preview notes below. Publish the shared RecordAddIcon component, PC Ledger and Factory PC Add/Edit headers, CCTV and Handover Add/Edit headers, both Data Import card-header icons, Users Add/Edit header plates, and explicit offline user-icon bundle entries to origin/main. No pending visual approval remains for this set.
+
+Verification already completed on the exact source being published: npm run build and git diff --check passed; actual browser sampling at 1920x1080 proved changing glyph transforms with constant modal/header dimensions and reduced-motion support. Static production previews with internet blocked proved embedded SVGs for every branch tested and zero remote resource entries. User title/description accessibility preserved. No CRUD data changed, no migration package updated. Project state is synchronized with holographic memory; migration-package updates still require a separate explicit request.
+
 ### PC Edit and User header-icon animation preview (2026-10-11)
 
 Animated the existing pencil on Edit PC record in both PC Ledger and Factory PC using RecordAddIcon; their Carbon Add icons retain the same animation. Added header plates to Add user (lucide:user-plus) and Edit user (lucide:user-pen), with the same accent halo and 3.6s sway/drift. Users uses UModal's title slot and a per-instance relative padded wrapper; vendor accessible title/description IDs, close button, #body UForm, actions and account behavior remain unchanged. Title and description align at x744 with the icon plate ending x732 (12px gap). Backup: scratch/user-and-pc-edit-icon-backup.

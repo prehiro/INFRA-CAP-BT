@@ -408,7 +408,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
         <div class="overflow-hidden rounded-xl border border-default bg-elevated">
           <div class="flex items-start gap-3 border-b border-default px-4 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-              <UIcon name="i-lucide-file-up" class="size-5" />
+              <RecordAddIcon name="i-lucide-file-up" />
             </span>
             <div class="min-w-0">
               <h2 class="text-sm font-semibold leading-tight">Import PC Ledger workbook</h2>
@@ -518,7 +518,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
         <div class="mb-4 overflow-hidden rounded-xl border border-default bg-elevated">
           <div class="flex items-start gap-3 border-b border-default px-4 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-              <UIcon name="i-lucide-upload" class="size-5" />
+              <RecordAddIcon name="i-lucide-upload" />
             </span>
             <div class="min-w-0">
               <h2 class="text-sm font-semibold leading-tight">Import GID list</h2>

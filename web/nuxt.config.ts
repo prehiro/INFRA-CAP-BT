@@ -46,7 +46,8 @@ export default defineNuxtConfig({
   icon: {
     clientBundle: {
       scan: true,
-      icons: ['carbon:data-add', 'streamline-cyber:network'],
+      // Dynamic header-icon props are not reliably discovered by the template scanner.
+      icons: ['carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen'],
       sizeLimitKb: 256
     },
     serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber'] },

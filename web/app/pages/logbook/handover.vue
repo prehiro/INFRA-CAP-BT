@@ -671,7 +671,7 @@ await init()
         >
           <!-- Package/box for a part being handed over; the pen variant when editing, matching
                the CCTV dialog's create-vs-edit icon swap. -->
-          <UIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-package'" class="size-5" />
+          <RecordAddIcon :name="editing ? 'i-lucide-square-pen' : 'i-lucide-package'" />
         </span>
 
         <!-- Title and subtitle as ONE block: `leading-tight` on the title and a 0 gap before the
