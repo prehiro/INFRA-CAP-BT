@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### PC Edit and User header-icon animation preview (2026-10-11)
+
+Animated the existing pencil on Edit PC record in both PC Ledger and Factory PC using RecordAddIcon; their Carbon Add icons retain the same animation. Added header plates to Add user (lucide:user-plus) and Edit user (lucide:user-pen), with the same accent halo and 3.6s sway/drift. Users uses UModal's title slot and a per-instance relative padded wrapper; vendor accessible title/description IDs, close button, #body UForm, actions and account behavior remain unchanged. Title and description align at x744 with the icon plate ending x732 (12px gap). Backup: scratch/user-and-pc-edit-icon-backup.
+
+Runtime caught a missing user-pen mask: dynamic props on a custom component were not included by the icon scanner. Explicitly bundled lucide:user-plus and lucide:user-pen in nuxt.config.ts; no fallback/provider/network policy relaxed. Rebuilt and retested both branches. At 1920x1080 all six probes (PC Add/Edit x2 plus User Add/Edit) sampled 80 frames/80 distinct glyph transforms each; PC modal stays 896x743.5, Factory 896x519.5, User Add 576x649.5 and User Edit 576x725.5. Reduced-motion disables glyph and halo for all six. User accessible title/description preserved; final rendered screenshot inspected. Actual static production preview with internet blocked confirms all six embedded SVG masks, running animation, zero remote resource entries. npm build and diffcheck passed. No record/user saves or deletions. Dev preview live on localhost:3000; ALL visual animation edits and two added bundle entries remain uncommitted pending HIRO visual approval. Documentation alone committed/pushed; migration package untouched.
+
 ### Extended header-icon animation preview (2026-10-11)
 
 HIRO requested animation on CCTV Access Add/Edit, Handover Add/Edit, and the specific content-card header plates for Import PC Ledger and Import GID List (not navbar/tab/button icons). RecordAddIcon now accepts optional name with the original Carbon data-add default; those six targets opt in using their existing video/package/square-pen/file-up/upload glyphs. Existing outer plates, modal entrance animations, typography, layout, and original PC Add animation remain unchanged. Same gentle 3.6s sway/drift and accent halo; no scaling of glyph/text/modal. Backup: scratch/icon-animation-extend-backup.
