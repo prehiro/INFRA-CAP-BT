@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### Extended header-icon animation preview (2026-10-11)
+
+HIRO requested animation on CCTV Access Add/Edit, Handover Add/Edit, and the specific content-card header plates for Import PC Ledger and Import GID List (not navbar/tab/button icons). RecordAddIcon now accepts optional name with the original Carbon data-add default; those six targets opt in using their existing video/package/square-pen/file-up/upload glyphs. Existing outer plates, modal entrance animations, typography, layout, and original PC Add animation remain unchanged. Same gentle 3.6s sway/drift and accent halo; no scaling of glyph/text/modal. Backup: scratch/icon-animation-extend-backup.
+
+Verified all SIX targets at 1920x1080: 80 sampled frames and 80 distinct glyph transforms each. CCTV Add/Edit modal stays 896x618.75, Handover Add/Edit stays 896x662.75, each import plate stays 36x36. Reduced motion disables glyph and halo in all six. Build and git diff --check passed. Actual static production preview with internet blocked also rendered all six embedded SVG masks and active animations with zero remote resource entries. No saves/imports/deletes, no record mutations. Preview is live on localhost:3000; these visual edits remain UNCOMMITTED pending HIRO's visual approval, together with the original PC Add preview. Only this state documentation is committed/pushed. Migration package remains untouched.
+
 ### Full offline runtime and Add-icon animation preview (2026-10-11)
 
 Installed local `@iconify-json/streamline-cyber` 1.2.2; sidebar and login network logo are explicitly in clientBundle with Carbon data-add. Fixed unsupported icon options: `provider: 'none'`, `fallbackToApi: false`, `sizeLimitKb: 256`, and serverBundle under icon, not ui.icons. Removed obsolete clientBundleFallback/size options. Sidebar uses canonical streamline-cyber:network, same appearance/animation as before. Production-only CSP allows same-origin scripts/styles/fonts/API plus embedded images/local blob downloads; external fetches/resources are denied.
