@@ -196,7 +196,7 @@ function removeChip(key: string) {
 const form = reactive<Record<string, any>>({})
 
 function notify(msg: string, kind: 'success' | 'error' = 'success') {
-  toast.add({ title: msg, color: kind })
+  toast.add({ title: msg, color: kind === 'success' ? 'primary' : kind })
 }
 
 function resetForm() {

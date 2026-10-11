@@ -116,7 +116,7 @@ async function save() {
         password: form.password || null,
         roleIds: normaliseRoleIds(form.roleIds)
       })
-      toast.add({ title: 'User updated', color: 'success' })
+      toast.add({ title: 'User updated', color: 'primary' })
     } else {
       await apiCreateUser({
         username: form.username,
@@ -126,7 +126,7 @@ async function save() {
         isActive: form.isActive,
         roleIds: normaliseRoleIds(form.roleIds)
       })
-      toast.add({ title: 'User created', color: 'success' })
+      toast.add({ title: 'User created', color: 'primary' })
     }
     modalOpen.value = false
     await load()
@@ -179,7 +179,7 @@ async function confirmDelete() {
   deleting.value = true
   try {
     await apiDeleteUser(deleteTarget.value.id)
-    toast.add({ title: 'User deleted', color: 'success' })
+    toast.add({ title: 'User deleted', color: 'primary' })
     showDelete.value = false
     deleteTarget.value = null
     await load()

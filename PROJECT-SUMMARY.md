@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-11
 
+### Toasts follow the selected accent (2026-10-11)
+
+Success notifications previously used fixed semantic `success` (green), not the user's selected accent. PC Ledger, Factory PC, Users and Data Import success toast calls now use `primary`; CCTV/Handover notify wrappers map success to primary. Errors remain error/red; import warnings remain warning/amber. No global success token or non-toast component styling was changed. Nuxt UI's default toast color already resolves to primary.
+
+Verified live at 1920x1080 on all six routes using toast-rendering probes (no CRUD writes): violet then orange, including changing accent while the same toast remained open. Progress bars and available icons exactly matched resolved primary colors, violet oklch(0.702 0.183 293.541) and orange oklch(0.75 0.183 55.934). CCTV/Handover probes used their actual notify wrapper. Actual PC Ledger Excel export also produced a primary-colored Export ready toast. Error probe stayed red. Build exit 0; theme restored to green/zinc in the isolated test browser.
+
+HIRO explicitly requires that the migration package NOT be updated or rebuilt until he asks. No migration files were changed by this revision.
+
 ### Identity retrieval chips (2026-10-11)
 
 New PC record: picking a GID List suggestion from Staff Name, Email Address, or GID now displays `Auto-filled from the GID List` under all three retrieved Identity fields, rather than only the input where the pick occurred. PC Ledger owns `identityHints`; SuggestInput accepts optional `sourceHint` with `update:sourceHint` and defaults to its existing local chip behaviour for other callers. Typing manually clears only that field's chip. `blankForm()` clears all Identity chips on create/edit reset; missing source values are not marked as retrieved. Manufacturer/Model/Location retain their existing local chips.

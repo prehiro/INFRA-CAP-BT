@@ -188,7 +188,7 @@ function onPcFile(e: Event) {
       }
       parsed.value = { fileName: file.name, sheetName: ws.name, rows, skipped, lastRow: ws.rowCount, datesSkipped }
       if (rows.length) {
-        toast.add({ title: 'File read', description: `${rows.length} row(s) ready to import.`, icon: 'i-lucide-circle-check', color: 'success' })
+        toast.add({ title: 'File read', description: `${rows.length} row(s) ready to import.`, icon: 'i-lucide-circle-check', color: 'primary' })
       }
     } catch (err: any) {
       parseError.value = err?.message || 'Could not read that file.'
@@ -226,7 +226,7 @@ async function runPcImport() {
       title: failed ? 'Import finished with errors' : 'Import finished',
       description: `${ok} record(s) imported${failed ? `, ${failed} failed` : ''}.`,
       icon: failed ? 'i-lucide-triangle-alert' : 'i-lucide-circle-check',
-      color: failed ? 'warning' : 'success'
+      color: failed ? 'warning' : 'primary'
     })
   } catch (err: any) {
     importResult.value = { ok: 0, failed: parsed.value.rows.length, firstError: err?.message || 'Import failed.' }
@@ -314,7 +314,7 @@ function onGidFile(e: Event) {
         rows.push(values)
       }
       gidParsed.value = { fileName: file.name, sheetName: ws.name, rows, skipped }
-      toast.add({ title: 'File read', description: `${rows.length} GID row(s) ready.`, icon: 'i-lucide-circle-check', color: 'success' })
+      toast.add({ title: 'File read', description: `${rows.length} GID row(s) ready.`, icon: 'i-lucide-circle-check', color: 'primary' })
     } catch (err: any) {
       gidParseError.value = err?.message || 'Could not read that file.'
     } finally {
@@ -356,7 +356,7 @@ async function runGidImport() {
       title: failed ? 'Import finished with errors' : 'Import finished',
       description: `${ok} added${skippedExisting ? `, ${skippedExisting} already present` : ''}${failed ? `, ${failed} failed` : ''}.`,
       icon: failed ? 'i-lucide-triangle-alert' : 'i-lucide-circle-check',
-      color: failed ? 'warning' : 'success'
+      color: failed ? 'warning' : 'primary'
     })
     await loadGids()
   } catch (err: any) {

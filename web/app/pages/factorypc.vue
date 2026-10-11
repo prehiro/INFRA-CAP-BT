@@ -667,7 +667,7 @@ async function save() {
     toast.add({
       title: editingId.value ? 'Record updated' : 'Record created',
       icon: 'i-lucide-circle-check',
-      color: 'success'
+      color: 'primary'
     })
   } catch (e: any) {
     formError.value = e?.data?.message || e?.message || 'Could not save the record.'
@@ -693,7 +693,7 @@ async function confirmDelete() {
     await apiDeleteRecord(entityId.value, target.id)
     showDelete.value = false
     await load()
-    toast.add({ title: 'Record deleted', icon: 'i-lucide-trash-2', color: 'success' })
+    toast.add({ title: 'Record deleted', icon: 'i-lucide-trash-2', color: 'primary' })
   } catch (e: any) {
     toast.add({
       title: 'Delete failed',
