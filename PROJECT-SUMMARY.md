@@ -3,7 +3,13 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-12
 
-### Factory PC Edit segmented status (2026-10-12)
+### Factory PC statuses consolidated to Active / Inactive (2026-10-12)
+
+HIRO explicitly requested only two choices in Edit and table values matching them. This supersedes the legacy-third-option behavior described in older sections below. `factorypc.vue` now uses the same fixed Active/Inactive segmented options for New and Edit, removes editOriginalStatus/statusOptions dead code, and refuses Save with a clear error if an unmigrated record in another environment still carries a foreign status (no silent conversion on open/save). The table and status filter remain bound to the real API data; they were not faked with display-only mappings.
+
+Before changing live data, read all ten Factory PC dev rows (entity 11, IDs 211-220), verified their known status set and saved the full original API response to `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/factorypc-status-before-2026-10-12.json` outside the repository. Chosen operational mapping: In Use and Standby -> Active (in service/available); Repair and Retired -> Inactive (out of service). PUT only `{values:{status}}` to each row, then GET that exact row and compare ALL other field values to the snapshot. All ten updates/readbacks passed. Final API has 8 Active, 2 Inactive, total 10; live table has only those statuses; status filter lists All statuses, Active, Inactive; Add/Edit both show only the two equal-width segments, default/select state correct. `npm run build` and `git diff --check` passed. Ten record-update audit entries are expected. Migration package was not changed; the separate production DB, if it has legacy rows, requires its own explicitly approved data migration.
+
+### Historical Edit status behavior (superseded 2026-10-12)
 
 The same segmented status control now appears in Edit, replacing its old free-text Status box. Existing rows contain four legacy values (In Use, Standby, Repair, Retired), not Active/Inactive: each Edit form therefore adds its own original status as a third selectable segment rather than silently mapping or dropping it. That original option remains available after choosing Active/Inactive, so the choice can be reversed before Save. New still shows exactly two equal-width segments, Active selected by default; rows already storing Active/Inactive will show two on Edit. Controls are scoped to Factory PC; no database migration.
 

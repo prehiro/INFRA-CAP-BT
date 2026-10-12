@@ -625,14 +625,6 @@ const STATUS_OPTIONS = [
   { label: 'Active', value: 'Active' },
   { label: 'Inactive', value: 'Inactive' }
 ]
-// Keep the original option available throughout Edit, even after switching to Active/Inactive.
-// Existing rows may still contain In Use, Standby, Repair or Retired.
-const editOriginalStatus = ref('')
-const statusOptions = computed(() =>
-  editingId.value && editOriginalStatus.value && !STATUS_OPTIONS.some(option => option.value === editOriginalStatus.value)
-    ? [...STATUS_OPTIONS, { label: editOriginalStatus.value, value: editOriginalStatus.value }]
-    : STATUS_OPTIONS
-)
 
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
@@ -641,7 +633,6 @@ function blankForm() {
 
 function openCreate() {
   editingId.value = null
-  editOriginalStatus.value = ''
   formError.value = ''
   blankForm()
   showForm.value = true
@@ -654,7 +645,6 @@ function openEdit(row: RecordRow) {
   for (const k of Object.keys(LABELS)) {
     form[k] = k === 'tanggal' ? toDateInput(row.values?.[k]) : (row.values?.[k] ?? '')
   }
-  editOriginalStatus.value = String(form.status ?? '')
   showForm.value = true
 }
 
@@ -676,6 +666,12 @@ function payload(): Record<string, any> {
 async function save() {
   if (!entityId.value) return
   formError.value = ''
+  // An unmigrated record on another server must be chosen explicitly, never saved
+  // with a legacy value while the control displays only Active / Inactive.
+  if (!STATUS_OPTIONS.some(option => option.value === form.status)) {
+    formError.value = 'Choose Active or Inactive before saving.'
+    return
+  }
   saving.value = true
   try {
     if (editingId.value) {
@@ -992,17 +988,16 @@ async function confirmDelete() {
                     :label="LABELS[key]"
                     :ui="{ label: 'text-xs font-medium' }"
                   >
-                    <!-- Edit preserves a legacy status as a third selectable segment. It never
-                         silently maps In Use/Standby/Repair/Retired to Active or Inactive. -->
+                    <!-- The Factory PC register uses only Active and Inactive for New and Edit. -->
                     <URadioGroup
                       v-if="key === 'status'"
                       v-model="form.status"
-                      :items="statusOptions"
+                      :items="STATUS_OPTIONS"
                       orientation="horizontal"
                       size="sm"
                       class="w-full"
                       :ui="{
-                        fieldset: `grid h-9 ${statusOptions.length === 3 ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-md border border-default bg-elevated/40 p-1`,
+                        fieldset: 'grid h-9 grid-cols-2 gap-1 rounded-md border border-default bg-elevated/40 p-1',
                         item: 'relative min-w-0 flex items-center justify-center rounded-sm has-[[data-state=checked]]:bg-primary/10 transition-colors duration-150 motion-reduce:transition-none',
                         container: 'absolute inset-0 flex h-full',
                         base: 'size-full rounded-sm ring-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1',
