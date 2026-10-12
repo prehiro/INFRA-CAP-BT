@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-12
 
+### Factory PC compact field layout (2026-10-12)
+
+Moved Status and Remarks into the Hardware section after OS; removed the separate Status and notes section. Desktop layout is Chassis | Model | SN, then OS | Status | Remarks. Shared Add/Edit field ordering updated; controls and data behavior unchanged (New Active/Inactive radios and placeholders, Edit legacy status textbox). Browser verified at 1920x1080 in both Add/Edit: the three labels have identical Y positions and increasing X positions; no Status and notes heading. Screenshot inspected, build and diff-check passed. No records saved, migration package untouched.
+
 ### New Factory PC placeholders and status radios (2026-10-12)
 
 Only the New Factory PC record form now shows seven textbox placeholders: PIC "Name of person in charge", Email "name@company.local", Chassis "Desktop, Notebook, or Tablet", Model "PC model", SN "PC serial number", OS "Operating system (e.g. Windows 11)", Remarks "Additional notes (optional)". Status uses Nuxt UI URadioGroup, horizontal, Active / Inactive with Active as the new-record default. Label Inactive replaces the awkward "not Active". The default is in blankForm so Cancel/reopen resets it.

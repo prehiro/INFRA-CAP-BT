@@ -312,7 +312,7 @@ function pinStyle(i: number) {
   return { left: `${pinOffset.value}px` }
 }
 
-/** Kept in sync with COLUMNS by key; the modal groups the fields into three sections. */
+/** Two sections; Hardware's second desktop row is OS, Status, Remarks. */
 const FORM_SECTIONS = [
   {
     title: 'Ownership',
@@ -322,12 +322,7 @@ const FORM_SECTIONS = [
   {
     title: 'Hardware',
     icon: 'i-lucide-hard-drive',
-    fields: ['chassis', 'model', 'sn', 'os']
-  },
-  {
-    title: 'Status and notes',
-    icon: 'i-lucide-wrench',
-    fields: ['status', 'remarks']
+    fields: ['chassis', 'model', 'sn', 'os', 'status', 'remarks']
   }
 ] as const
 
