@@ -616,8 +616,24 @@ const editingId = ref<number | null>(null)
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 
+const FIELD_PLACEHOLDERS: Record<string, string> = {
+  pic: 'Name of person in charge',
+  email: 'name@company.local',
+  chassis: 'Desktop, Notebook, or Tablet',
+  model: 'PC model',
+  sn: 'PC serial number',
+  os: 'Operating system (e.g. Windows 11)',
+  remarks: 'Additional notes (optional)'
+}
+
+const STATUS_OPTIONS = [
+  { label: 'Active', value: 'Active' },
+  { label: 'Inactive', value: 'Inactive' }
+]
+
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
+  form.status = 'Active'
 }
 
 function openCreate() {
@@ -951,9 +967,9 @@ async function confirmDelete() {
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'i-carbon-data-add'" />
               </span>
               <div class="min-w-0">
-                <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New PC record' }}</h2>
+                <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New Factory PC record' }}</h2>
                 <p class="text-xs text-muted">
-                  {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new PC to the ledger system.' }}
+                  {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new Factory PC to the ledger system.' }}
                 </p>
               </div>
             </div>
@@ -971,8 +987,19 @@ async function confirmDelete() {
                     :label="LABELS[key]"
                     :ui="{ label: 'text-xs font-medium' }"
                   >
+                    <!-- New records use two explicit states. Existing legacy statuses stay
+                         editable verbatim; opening Edit must not silently remap their values. -->
+                    <URadioGroup
+                      v-if="key === 'status' && !editingId"
+                      v-model="form.status"
+                      :items="STATUS_OPTIONS"
+                      orientation="horizontal"
+                      size="sm"
+                      class="min-h-9"
+                      :ui="{ fieldset: 'items-center min-h-9' }"
+                    />
                     <UInput
-                      v-if="key === 'tanggal'"
+                      v-else-if="key === 'tanggal'"
                       v-model="form[key]"
                       type="date"
                       class="w-full"
@@ -981,6 +1008,7 @@ async function confirmDelete() {
                     <UInput
                       v-else
                       v-model="form[key]"
+                      :placeholder="!editingId ? FIELD_PLACEHOLDERS[key] : undefined"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />

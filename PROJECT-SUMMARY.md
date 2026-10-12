@@ -1,7 +1,15 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-11
+> Terakhir diupdate: 2026-10-12
+
+### New Factory PC placeholders and status radios (2026-10-12)
+
+Only the New Factory PC record form now shows seven textbox placeholders: PIC "Name of person in charge", Email "name@company.local", Chassis "Desktop, Notebook, or Tablet", Model "PC model", SN "PC serial number", OS "Operating system (e.g. Windows 11)", Remarks "Additional notes (optional)". Status uses Nuxt UI URadioGroup, horizontal, Active / Inactive with Active as the new-record default. Label Inactive replaces the awkward "not Active". The default is in blankForm so Cancel/reopen resets it.
+
+Existing records still carry legacy statuses (In Use/Standby/Repair/Retired); Edit keeps its original status textbox/value rather than silently converting data to the new two-state vocabulary. No database fields or existing values migrated, no changes to PC Ledger or other pages. Factory-only optional placeholders do not appear in Edit. Backup: scratch/factorypc-form-controls-backup.vue.
+
+Verified actual browser at 1920x1080: all seven placeholders, real pointer selection of Inactive unchecks Active and produces payload {status: "Inactive"}, Cancel/reopen restores Active, modal remains 896x519.5 before/after selection. Opened an existing row in Edit: zero radio controls and payload status "In Use" preserved. No Save/create/delete action executed; ten rows remain. npm run build and git diff --check passed. Memory synchronized; source/doc changes committed and pushed together. Migration package untouched.
 
 ### Animation approval and publication (2026-10-11)
 
