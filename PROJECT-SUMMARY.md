@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-12
 
+### CCTV Access and Handover table-header accent (2026-10-12)
+
+Changed only the table `<th>` text class from `text-muted` to `text-primary` on CCTV Access and Handover, including the Actions header. No table backgrounds, cells, other pages, global theme settings, layout or data changed. Verified at 1920x1080 in the live browser: all 11 CCTV and 10 Handover headers used green `rgb(0,220,130)` with the default dark theme; selecting violet through the actual UserMenu changed all headers on both pages to `oklch(0.702 0.183 293.541)`. In light mode with violet they resolved to `oklch(0.606 0.25 292.717)`. Screenshot checked in light and dark; restored isolated browser to green/dark. `npm run build` and `git diff --check` passed. Migration package untouched.
+
 ### Factory PC statuses consolidated to Active / Inactive (2026-10-12)
 
 HIRO explicitly requested only two choices in Edit and table values matching them. This supersedes the legacy-third-option behavior described in older sections below. `factorypc.vue` now uses the same fixed Active/Inactive segmented options for New and Edit, removes editOriginalStatus/statusOptions dead code, and refuses Save with a clear error if an unmigrated record in another environment still carries a foreign status (no silent conversion on open/save). The table and status filter remain bound to the real API data; they were not faked with display-only mappings.

@@ -678,12 +678,12 @@ await init()
             <tr class="bg-default/60 backdrop-blur-sm">
               <th v-for="c in COLUMNS" :key="c.key"
                   scope="col"
-                  class="border-b border-default px-3 py-2.5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted"
+                  class="border-b border-default px-3 py-2.5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-primary"
                   :class="c.w">
                 {{ c.label }}
               </th>
               <th scope="col"
-                  class="w-[5%] border-b border-default px-2 py-2.5 text-center align-middle text-xs font-semibold uppercase tracking-wide text-muted print:hidden">
+                  class="w-[5%] border-b border-default px-2 py-2.5 text-center align-middle text-xs font-semibold uppercase tracking-wide text-primary print:hidden">
                 Actions
               </th>
             </tr>
