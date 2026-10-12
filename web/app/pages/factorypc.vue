@@ -990,9 +990,21 @@ async function confirmDelete() {
                       :items="STATUS_OPTIONS"
                       orientation="horizontal"
                       size="sm"
-                      class="min-h-9"
-                      :ui="{ fieldset: 'items-center min-h-9' }"
-                    />
+                      class="w-full"
+                      :ui="{
+                        fieldset: 'grid h-9 grid-cols-2 gap-1 rounded-md border border-default bg-elevated/40 p-1',
+                        item: 'relative min-w-0 flex items-center justify-center rounded-sm has-[[data-state=checked]]:bg-primary/10 transition-colors duration-150 motion-reduce:transition-none',
+                        container: 'absolute inset-0 flex h-full',
+                        base: 'size-full rounded-sm ring-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-1',
+                        indicator: 'hidden',
+                        wrapper: 'relative pointer-events-none text-center ms-0',
+                        label: 'text-xs font-medium text-muted',
+                      }"
+                    >
+                      <template #label="{ item, modelValue }">
+                        <span :class="modelValue === item.value ? 'text-primary' : 'text-muted'">{{ item.label }}</span>
+                      </template>
+                    </URadioGroup>
                     <UInput
                       v-else-if="key === 'tanggal'"
                       v-model="form[key]"

@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-12
 
+### Factory PC segmented status (2026-10-12)
+
+Replaced the New-form bare radio appearance with an Active / Inactive segmented control via per-instance URadioGroup UI slots; vendor single-selection, keyboard focus and Space activation retained. Equal-width halves, 36px outer height matching OS/Remarks, rounded border, soft primary selected surface, neutral inactive text, 150ms color transition disabled for reduced motion. Hidden circular indicator, full segment hit area; no repeated animation. Active default/reset and legacy Edit textbox unchanged. Browser at 1920x1080 verified pointer selection near segment bottom, ArrowLeft focus then Space activation, exact 36px alignment, equal halves within subpixel rounding, unchanged 415px modal height, reset Active, and reduced-motion transition none. No CRUD writes. Migration package untouched.
+
 ### Factory PC compact field layout (2026-10-12)
 
 Moved Status and Remarks into the Hardware section after OS; removed the separate Status and notes section. Desktop layout is Chassis | Model | SN, then OS | Status | Remarks. Shared Add/Edit field ordering updated; controls and data behavior unchanged (New Active/Inactive radios and placeholders, Edit legacy status textbox). Browser verified at 1920x1080 in both Add/Edit: the three labels have identical Y positions and increasing X positions; no Status and notes heading. Screenshot inspected, build and diff-check passed. No records saved, migration package untouched.
