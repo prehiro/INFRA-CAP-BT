@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-12
 
+### Factory PC Edit segmented status (2026-10-12)
+
+The same segmented status control now appears in Edit, replacing its old free-text Status box. Existing rows contain four legacy values (In Use, Standby, Repair, Retired), not Active/Inactive: each Edit form therefore adds its own original status as a third selectable segment rather than silently mapping or dropping it. That original option remains available after choosing Active/Inactive, so the choice can be reversed before Save. New still shows exactly two equal-width segments, Active selected by default; rows already storing Active/Inactive will show two on Edit. Controls are scoped to Factory PC; no database migration.
+
+Verified real browser at 1920x1080 on one row of each of the four legacy statuses: three options shown, original selected, payload status untouched on open; selecting Active changes payload, selecting original restores payload, control remains 36px tall and modal height 415px throughout. New still has two choices, default Active, ten rows unchanged. No Save, Delete or Create action; npm build and diff-check passed. Backup at scratch/factorypc-edit-segment-backup.vue. Migration package untouched.
+
 ### Factory PC segmented status (2026-10-12)
 
 Replaced the New-form bare radio appearance with an Active / Inactive segmented control via per-instance URadioGroup UI slots; vendor single-selection, keyboard focus and Space activation retained. Equal-width halves, 36px outer height matching OS/Remarks, rounded border, soft primary selected surface, neutral inactive text, 150ms color transition disabled for reduced motion. Hidden circular indicator, full segment hit area; no repeated animation. Active default/reset and legacy Edit textbox unchanged. Browser at 1920x1080 verified pointer selection near segment bottom, ArrowLeft focus then Space activation, exact 36px alignment, equal halves within subpixel rounding, unchanged 415px modal height, reset Active, and reduced-motion transition none. No CRUD writes. Migration package untouched.
