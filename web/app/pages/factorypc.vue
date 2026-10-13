@@ -611,12 +611,26 @@ const editingId = ref<number | null>(null)
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 
-/** New form only: PIC comes from GID `name`; hardware options come from the matching PC
- * Ledger columns. A suggestion completes just its own field, never Email or other fields. */
-type FactorySuggestion = { value: string; label: string; meta: string; hint: string }
+/** New form only: selecting either GID identity field fills its paired PIC/Email value;
+ * hardware suggestions still complete only their own field. Typing alone fills nothing else. */
+type FactorySuggestion = {
+  value: string; label: string; meta: string; hint: string
+  keys?: string[]; fill?: Record<string, any>
+}
 const factorySuggestions = reactive<Record<string, FactorySuggestion[]>>({
-  pic: [], chassis: [], model: [], os: []
+  pic: [], email: [], chassis: [], model: [], os: []
 })
+const identityHints = reactive<Record<string, string>>({ pic: '', email: '' })
+
+function applyGidIdentitySuggestion(s: { fill?: Record<string, any> }) {
+  if (!s.fill) return
+  // Blank source values clear a previous person's value rather than saving a mismatched pair.
+  for (const [target, source] of [['pic', 'name'], ['email', 'email']] as const) {
+    const value = String(s.fill[source] ?? '').trim()
+    form[target] = value
+    identityHints[target] = value ? 'Auto-filled from the GID List' : ''
+  }
+}
 
 async function loadFactorySuggestions() {
   try {
@@ -647,7 +661,18 @@ async function loadFactorySuggestions() {
     }
     // Failure in one reference source must not disable the other or block free-text entry.
     const [gid, ledger] = await Promise.allSettled([readValues('gid_list'), readValues('pc_ledger')])
-    setSuggestions('pic', gid.status === 'fulfilled' ? gid.value : [], 'name', 'Selected from GID List')
+    const gidRows = gid.status === 'fulfilled' ? gid.value : []
+    for (const [target, source] of [['pic', 'name'], ['email', 'email']] as const) {
+      factorySuggestions[target] = gidRows.map((row) => ({
+        value: String(row[source] ?? '').trim(),
+        label: String(row[source] ?? '').trim(),
+        meta: [row[target === 'pic' ? 'email' : 'name'], row.employee_no, row.gid]
+          .filter(Boolean).map(String).join('   |   '),
+        keys: [row.name, row.email, row.employee_no, row.gid].map((v) => String(v ?? '')),
+        fill: row,
+        hint: 'Auto-filled from the GID List'
+      })).filter((s) => s.value)
+    }
     for (const [target, key] of [
       ['chassis', 'chassis'], ['model', 'computer_model'], ['os', 'os_name']
     ] as const) {
@@ -656,7 +681,7 @@ async function loadFactorySuggestions() {
     if (gid.status === 'rejected') console.error('[factory-pc] gid list', gid.reason)
     if (ledger.status === 'rejected') console.error('[factory-pc] pc ledger', ledger.reason)
   } catch (e) {
-    for (const key of ['pic', 'chassis', 'model', 'os']) factorySuggestions[key] = []
+    for (const key of ['pic', 'email', 'chassis', 'model', 'os']) factorySuggestions[key] = []
     console.error('[factory-pc] suggestion sources', e)
   }
 }
@@ -678,6 +703,8 @@ const STATUS_OPTIONS = [
 
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
+  identityHints.pic = ''
+  identityHints.email = ''
   form.status = 'Active'
 }
 
@@ -1069,9 +1096,23 @@ async function confirmDelete() {
                       :ui="{ base: 'h-9' }"
                     />
                     <SuggestInput
-                      v-else-if="!editingId && ['pic', 'chassis', 'model', 'os'].includes(key)"
+                      v-else-if="!editingId && (key === 'pic' || key === 'email')"
+                      v-model="form[key]"
+                      :source-hint="identityHints[key]"
+                      @update:source-hint="identityHints[key] = $event"
+                      :suggestions="factorySuggestions[key] ?? []"
+                      :context="[String(form[key === 'pic' ? 'email' : 'pic'] ?? '')]"
+                      :type="key === 'email' ? 'email' : 'text'"
+                      :show-on-suggestions-update="true"
+                      :placeholder="FIELD_PLACEHOLDERS[key]"
+                      :header="key === 'pic' ? 'Names from GID List' : 'Emails from GID List'"
+                      @fill="applyGidIdentitySuggestion"
+                    />
+                    <SuggestInput
+                      v-else-if="!editingId && ['chassis', 'model', 'os'].includes(key)"
                       v-model="form[key]"
                       :suggestions="factorySuggestions[key] ?? []"
+                      :show-on-suggestions-update="true"
                       :placeholder="FIELD_PLACEHOLDERS[key]"
                       :header="key === 'pic' ? 'Names from GID List' : `${LABELS[key]} from PC Ledger`"
                     />

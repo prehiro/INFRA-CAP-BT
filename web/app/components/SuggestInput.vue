@@ -56,7 +56,11 @@ const props = withDefaults(defineProps<{
   sourceHint?: string
   /** Match the parent form's existing required-field outline without wrapping the hint row. */
   invalid?: boolean
-}>(), { placeholder: '', header: '', context: () => [], invalid: false })
+  /** Native email type keeps manual addresses out of the app's text auto-capitaliser. */
+  type?: 'text' | 'email'
+  /** Opt in when suggestions arrive asynchronously after the user has started typing. */
+  showOnSuggestionsUpdate?: boolean
+}>(), { placeholder: '', header: '', context: () => [], invalid: false, type: 'text', showOnSuggestionsUpdate: false })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
@@ -230,6 +234,14 @@ watch(() => props.modelValue, (v) => {
   if (open.value) show()
 })
 
+// Reference lists can finish loading after a fast user types the first query. Default off to
+// preserve other pages' behaviour; the opt-in callers refresh only while their input has focus.
+watch(() => props.suggestions, () => {
+  if (props.showOnSuggestionsUpdate && rootEl.value?.contains(document.activeElement) && text(props.modelValue)) {
+    nextTick(show)
+  }
+})
+
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
     if (!open.value) { show(); if (!open.value) return }
@@ -300,6 +312,7 @@ onBeforeUnmount(() => {
       ref="inputEl"
       :model-value="modelValue"
       :placeholder="placeholder"
+      :type="type"
       autocomplete="off"
       class="w-full"
       :ui="{ base: invalid ? 'h-9 ring-2 ring-error' : 'h-9' }"
