@@ -46,6 +46,44 @@ const gidCandidates = ref<Record<string, any>[]>([])
 const gidCandidatesLoaded = ref(false)
 const recipientHints = reactive({ no_pegawai: '', nama: '' })
 const sectionSuggestions = ref<{ value: string; label: string; meta: string; hint: string }[]>([])
+type PartField = 'nama_barang' | 'merek'
+type PartSuggestion = { value: string; label: string; meta: string; hint: string }
+const partSuggestions = reactive<Record<PartField, PartSuggestion[]>>({ nama_barang: [], merek: [] })
+
+/** Suggest each field from that same column of existing Handover rows. A pick completes
+ * only its own field (it must not silently replace the other field on an existing Edit). */
+async function loadPartSuggestions() {
+  try {
+    if (!entity.value) return
+    const counts: Record<PartField, Map<string, number>> = {
+      nama_barang: new Map(), merek: new Map()
+    }
+    for (let pageNo = 1; ; pageNo++) {
+      const page = await apiListRecords(entity.value.id, { page: pageNo, pageSize: 500 })
+      for (const record of page.items ?? []) {
+        for (const key of ['nama_barang', 'merek'] as const) {
+          const value = String((record as any).values?.[key] ?? '').trim()
+          if (value) counts[key].set(value, (counts[key].get(value) ?? 0) + 1)
+        }
+      }
+      if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
+    }
+    for (const key of ['nama_barang', 'merek'] as const) {
+      partSuggestions[key] = [...counts[key].entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([value, count]) => ({
+          value, label: value,
+          meta: count === 1 ? 'used once' : `used ${count} times`,
+          hint: 'Selected from Handover records'
+        }))
+    }
+  } catch (e) {
+    // Failure must leave both inputs usable as ordinary text fields.
+    partSuggestions.nama_barang = []
+    partSuggestions.merek = []
+    console.error('[handover] part suggestions', e)
+  }
+}
 
 async function ensureGidCandidates() {
   if (gidCandidatesLoaded.value) return
@@ -326,6 +364,7 @@ async function openCreate() {
   form.tanggal_ambil = todayIso()
   form.qty = '1'
   showForm.value = true
+  void loadPartSuggestions()
   void ensureGidCandidates()
   void loadPcLocations()
 }
@@ -339,6 +378,7 @@ function openEdit(row: Row) {
   // required field, then blocks the submit and makes Edit look like it does nothing.
   form.tanggal_ambil = String(form.tanggal_ambil ?? '').slice(0, 10)
   showForm.value = true
+  void loadPartSuggestions()
   void ensureGidCandidates()
   void loadPcLocations()
 }
@@ -824,11 +864,15 @@ await init()
                             :invalid="fieldInvalid('tanggal_ambil')" />
               </UFormField>
               <UFormField label="Part Name" name="nama_barang" required>
-                <UInput v-model="form.nama_barang" name="nama_barang" placeholder="Keyboard / Mouse / Monitor / etc..." class="w-full"
-                         :ui="fieldInvalid('nama_barang') ? { base: 'ring-2 ring-error' } : undefined" />
+                <SuggestInput v-model="form.nama_barang" :suggestions="partSuggestions.nama_barang"
+                              :invalid="fieldInvalid('nama_barang')"
+                              placeholder="Keyboard / Mouse / Monitor / etc..."
+                              header="Part names from Handover records" />
               </UFormField>
               <UFormField label="Brand" name="merek">
-                <UInput v-model="form.merek" name="merek" placeholder="Dell / Lenovo / HP / etc..." class="w-full" />
+                <SuggestInput v-model="form.merek" :suggestions="partSuggestions.merek"
+                              placeholder="Dell / Lenovo / HP / etc..."
+                              header="Brands from Handover records" />
               </UFormField>
               <UFormField label="QTY" name="qty" required>
                 <UInput v-model="form.qty" name="qty" type="number" min="1" placeholder="1" class="w-full"
