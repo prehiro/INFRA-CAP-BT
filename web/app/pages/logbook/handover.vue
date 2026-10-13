@@ -40,6 +40,83 @@ const search = ref('')
 const showForm = ref(false)
 const editing = ref<Row | null>(null)
 
+/** Recipient identity comes from GID, while Section suggestions use PC Ledger Location.
+ * Neither source changes an existing handover until a suggestion is explicitly picked. */
+const gidCandidates = ref<Record<string, any>[]>([])
+const gidCandidatesLoaded = ref(false)
+const recipientHints = reactive({ no_pegawai: '', nama: '' })
+const sectionSuggestions = ref<{ value: string; label: string; meta: string; hint: string }[]>([])
+
+async function ensureGidCandidates() {
+  if (gidCandidatesLoaded.value) return
+  try {
+    const all = await apiListEntities(true)
+    const gid = all.find((e: any) => e.slug === 'gid_list')
+    if (!gid) return
+    const page = await apiListRecords(gid.id, { page: 1, pageSize: 500 })
+    gidCandidates.value = (page.items ?? []).map((r: any) => r.values ?? {})
+    gidCandidatesLoaded.value = true
+  } catch (e) {
+    // Missing reference data must not prevent manual input.
+    console.error('[handover] gid list', e)
+  }
+}
+
+/** Location is stored under `lokasi`; walk every page rather than silently stopping at
+ * the records API's 500-row page-size limit. */
+async function loadPcLocations() {
+  try {
+    const all = await apiListEntities(true)
+    const ledger = all.find((e: any) => e.slug === 'pc_ledger')
+    if (!ledger) { sectionSuggestions.value = []; return }
+    const counts = new Map<string, number>()
+    for (let pageNo = 1; ; pageNo++) {
+      const page = await apiListRecords(ledger.id, { page: pageNo, pageSize: 500 })
+      for (const record of page.items ?? []) {
+        const value = String((record as any).values?.lokasi ?? '').trim()
+        if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+      }
+      if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
+    }
+    sectionSuggestions.value = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({
+        value, label: value,
+        meta: count === 1 ? 'used once' : `used ${count} times`,
+        hint: 'Auto-filled from PC Ledger locations'
+      }))
+  } catch (e) {
+    sectionSuggestions.value = []
+    console.error('[handover] pc ledger locations', e)
+  }
+}
+
+function recipientSuggestions(key: 'no_pegawai' | 'nama') {
+  const own = key === 'no_pegawai' ? 'employee_no' : 'name'
+  return gidCandidates.value.map((r) => ({
+    value: String(r[own] ?? '').trim(),
+    label: String(r.name ?? '').trim() || String(r.employee_no ?? '').trim(),
+    meta: [r.employee_no, r.email, r.gid].filter(Boolean).map(String).join('   |   '),
+    keys: [r.employee_no, r.name, r.email, r.gid].map((v) => String(v ?? '')),
+    fill: r,
+    hint: 'Auto-filled from the GID List'
+  })).filter((s) => s.value)
+}
+
+function applyRecipientSuggestion(s: { fill?: Record<string, any> }) {
+  const row = s.fill
+  if (!row) return
+  for (const [field, source] of [
+    ['no_pegawai', 'employee_no'], ['nama', 'name']
+  ] as const) {
+    const value = String(row[source] ?? '').trim()
+    if (value) {
+      form[field] = value
+      recipientHints[field] = 'Auto-filled from the GID List'
+    }
+  }
+}
+
 /**
  * Column order and width, per HIRO's list. `taken` is the only date, so the date filter
  * on this page reads `tanggal_ambil` rather than CCTV's `tanggal` - the field names differ
@@ -202,6 +279,8 @@ function notify(msg: string, kind: 'success' | 'error' = 'success') {
 function resetForm() {
   for (const c of COLUMNS) form[c.key] = c.sign ? null : ''
   for (const k of HIDDEN_FIELDS) form[k] = ''
+  recipientHints.no_pegawai = ''
+  recipientHints.nama = ''
   editing.value = null
   showErrors.value = false
 }
@@ -247,6 +326,8 @@ async function openCreate() {
   form.tanggal_ambil = todayIso()
   form.qty = '1'
   showForm.value = true
+  void ensureGidCandidates()
+  void loadPcLocations()
 }
 
 function openEdit(row: Row) {
@@ -258,6 +339,8 @@ function openEdit(row: Row) {
   // required field, then blocks the submit and makes Edit look like it does nothing.
   form.tanggal_ambil = String(form.tanggal_ambil ?? '').slice(0, 10)
   showForm.value = true
+  void ensureGidCandidates()
+  void loadPcLocations()
 }
 
 async function save() {
@@ -759,8 +842,8 @@ await init()
                Employee No | Name
                Section    | Remarks
                The identity pair sits on the first row - the number and the person who owns the
-               account belong together - and the org details with them. Name is prefilled from
-               the session.
+               account belong together - and the org details with them. Name starts blank on New
+               and existing values remain intact on Edit. Suggestions are optional.
 
                Remarks is a free-text box rather than an input because condition notes run to a
                sentence or two: "screen has a hairline scratch, charger included" is exactly the
@@ -774,14 +857,24 @@ await init()
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <UFormField label="Employee No" name="no_pegawai">
-                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="939432" class="w-full" />
+                <SuggestInput v-model="form.no_pegawai" v-model:source-hint="recipientHints.no_pegawai"
+                              :suggestions="recipientSuggestions('no_pegawai')"
+                              :context="[String(form.nama ?? '')]"
+                              placeholder="939432"
+                              header="GID List - Click or Enter" @fill="applyRecipientSuggestion" />
               </UFormField>
               <UFormField label="Name" name="nama" required>
-                <UInput v-model="form.nama" name="nama" placeholder="Recipient" class="w-full"
-                         :ui="fieldInvalid('nama') ? { base: 'ring-2 ring-error' } : undefined" />
+                <SuggestInput v-model="form.nama" v-model:source-hint="recipientHints.nama"
+                              :suggestions="recipientSuggestions('nama')"
+                              :context="[String(form.no_pegawai ?? '')]"
+                              :invalid="fieldInvalid('nama')"
+                              placeholder="Recipient"
+                              header="GID List - Click or Enter" @fill="applyRecipientSuggestion" />
               </UFormField>
               <UFormField label="Section" name="departemen">
-                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP" class="w-full" />
+                <SuggestInput v-model="form.departemen" :suggestions="sectionSuggestions"
+                              placeholder="ISD / CAP"
+                              header="Locations from PC Ledger" />
               </UFormField>
               <UFormField label="Remarks" name="catatan">
                 <UTextarea v-model="form.catatan" name="catatan" :rows="1" class="w-full"
@@ -1051,6 +1144,13 @@ await init()
   table, td, th { border-color: #000 !important; }
   th, td { border: 1px solid #000 !important; }
   tr { page-break-inside: avoid; }
+}
+
+/* SuggestInput teleports its fixed dropdown into this dialog. Nuxt UI's divide-y adds a
+   bottom border to the modal body when that panel becomes the last child; the 1px height
+   change moves the centred dialog. Keep the border at zero only on this Handover modal. */
+.handover-record-modal[data-slot='content'] > [data-slot='body'] {
+  border-bottom-width: 0;
 }
 
 /* ============================================================================================
