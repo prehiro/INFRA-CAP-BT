@@ -1392,7 +1392,7 @@ async function exportExcel() {
                       :suggestions="gidSuggestions(key as 'staff_name' | 'email' | 'gid')"
                       :context="siblingValues(key)"
                       v-model:source-hint="identityHints[key]"
-                      :placeholder="gidCandidates.length ? 'Type to search the GID list' : 'No GID list imported yet'"
+                      :placeholder="key === 'staff_name' ? 'Search or enter a staff name' : key === 'email' ? 'Search or enter an email address' : 'Search or enter a Global ID'"
                       header="Smart Suggestion - Click or Enter ↵"
                       @fill="applyGidSuggestion"
                     />

@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-13
 
+### PC Ledger Identity placeholders remain stable (2026-10-13)
+
+Identity SuggestInput placeholders in `pcledger.vue` are now static per field: Staff Name = `Search or enter a staff name`, Email Address = `Search or enter an email address`, GID = `Search or enter a Global ID`. Previously the first modal opening showed `No GID list imported yet` until the asynchronous fetch completed, then switched to search text. The placeholder no longer depends on candidate count; suggestion loading and manual entry remain unchanged. Browser MutationObserver during a delayed-network first opening captured exactly one placeholder state; the last synthetic GID suggestion still appeared. Cancel only, no record saved. Build and diff-check passed. Migration untouched; unrelated CCTV/Handover wording edits excluded.
+
 ### Added 500 varied synthetic GID records in DEV (2026-10-13)
 
 Authorized addition only to `gid_list` entity 12 in the local DEV API (`InternalApp_Dev` on 192.168.4.3); no old rows were changed or deleted. Before writing, all 32 old rows were backed up to `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/gid-list-before-500-2026-10-13.json`; the exact 500-row generated manifest is `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/gid-list-synthetic-500-2026-10-13.json`. Generated records are clearly synthetic: GIDs start `T26`, emails use reserved `.test` domains, names combine 80 given and 50 family names. All 500 new GIDs, names, emails and employee numbers are each unique; five safe email subdomains contain 100 records apiece. Authenticated API GET all pages verified 532 total (32 original unchanged + 500 new), with no missing/mismatched generated values. This is DEV data, not a production seed; the migration package and production database remain untouched.
