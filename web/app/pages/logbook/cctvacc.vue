@@ -182,7 +182,7 @@ function composeDateTime(time: unknown): string {
 /**
  * MANDATORY FIELDS (HIRO, 2026-10-04): every field on the sheet is required - only the
  * hidden NO is optional, because the server generates it. The warning lists fields in
- * New Record's visual order: Requestor, Access Time, Signature. Edit keeps its own layout.
+ * New/Edit visual order: Requestor, Access Time, Signature.
  *
  * `required` on <UFormField> is used purely for the red asterisk - it renders
  * `after:content-['*']` on the label. It deliberately does NOT drive validation: UForm's
@@ -406,6 +406,8 @@ function openEdit(row: Row) {
   }
 
   showForm.value = true
+  void ensureGidCandidates()
+  void loadPcLocations()
 }
 
 async function save() {
@@ -1002,16 +1004,15 @@ await init()
              screen at 768px. -->
         <div class="cctv-record-grid space-y-4">
           <!-- ============ REQUEST ============ -->
-          <!-- New: Employee No, PIC Name, Section. Edit keeps its existing field order and
-               plain inputs. Identity suggestions use GID; Section uses distinct PC Ledger
-               locations, never a nonexistent GID division field. Row two stays unchanged. -->
+          <!-- New and Edit: Employee No, PIC Name, Section. Identity suggestions use GID;
+               Section uses distinct PC Ledger locations, never a nonexistent GID division
+               field. Existing Edit values stay untouched until an explicit selection. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-file-text" class="size-3.5" />
               Requestor
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <template v-if="!editing">
                 <UFormField label="Employee No" name="no_pegawai" required>
                   <SuggestInput v-model="form.no_pegawai" v-model:source-hint="requestorHints.no_pegawai"
                                 :suggestions="requestorSuggestions('no_pegawai')"
@@ -1034,21 +1035,6 @@ await init()
                                 placeholder="Type or pick a location"
                                 header="Locations from PC Ledger" />
                 </UFormField>
-              </template>
-              <template v-else>
-                <UFormField label="Section" name="departemen" required>
-                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
-                          class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
-                <UFormField label="Employee No" name="no_pegawai" required>
-                  <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
-                          class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
-                <UFormField label="PIC Name" name="nama_pemohon" required>
-                  <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
-                          :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
-                </UFormField>
-              </template>
 
               <!-- Purpose FIRST at two columns, then PIC by ISD in the third (HIRO, 2026-10-05: "swap
                    position of PIC by ISD and Purpose, keep purpose use 2 grid"). Purpose is the

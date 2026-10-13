@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-13
 
+### CCTV Access Edit Row smart suggestions (2026-10-13)
+
+Edit Row now reuses the same three Requestor suggestion fields and order as New Record: Employee No | PIC Name from GID List, Section from PC Ledger Location (`lokasi`). Opening Edit loads both sources, without overwriting its existing values; only explicitly picking a GID suggestion changes Employee No/PIC Name, and only explicitly picking a Location changes Section. Free text remains supported. No change to save payload, signatures, table rows, API, schema, or other pages.
+
+Verified against an existing live CCTV row at 1920x1080: Edit opened with its three persisted Requestor values intact and the requested order; typing `Off` offered Office (4 uses) and clicking it changed only Section. Typing a known GID employee number then Enter updated only the two identity fields; Section stayed Office. Dropdown did not shift modal/Requestor geometry at 1920x1080, 1280x720 or 1280x640. Cancelling and reopening restored all three original persisted values; New Record still opened blank in the same order. No test row was saved. `npm run build` and `git diff --check` passed. A separate pre-existing uncommitted copy edit to the Section provenance wording was preserved but excluded from this commit. Migration package untouched.
+
 ### CCTV Access Section suggestions from PC Ledger Location (2026-10-13)
 
 On New Record only, Section now uses the same SuggestInput as the identity fields, but its source is the real `pc_ledger` entity's `lokasi` (Location) values, NOT the GID List or CCTV's own Section values. It fetches the ledger on each New form open (paginating at the API's 500-row ceiling), trims and counts nonempty values, dedupes exact strings and sorts by frequency then name. Selection fills only Section, displays the reserved 'Selected from PC Ledger locations' chip, and remains editable as free text; typing a new Section clears the chip. Employee No and PIC Name continue using GID with two-field smart fill. Edit form keeps its original Section plain input and order. No data/schema changes, other pages untouched.
