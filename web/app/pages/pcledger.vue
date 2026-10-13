@@ -834,8 +834,13 @@ async function ensureGidCandidates() {
     const all = await apiListEntities(true)
     const gidEntity = all.find((e: any) => e.slug === 'gid_list')
     if (!gidEntity) return
-    const page = await apiListRecords(gidEntity.id, { page: 1, pageSize: 500 })
-    gidCandidates.value = ((page.items ?? []) as any[]).map((r) => r.values ?? {})
+    const rows: any[] = []
+    for (let page = 1; ; page++) {
+      const result = await apiListRecords(gidEntity.id, { page, pageSize: 500 })
+      rows.push(...(result.items ?? []))
+      if (rows.length >= result.total || !(result.items ?? []).length) break
+    }
+    gidCandidates.value = rows.map((r) => r.values ?? {})
     gidCandidatesLoaded.value = true
   } catch (e) {
     // A missing list must never block the form: without it the fields simply stay hand-typed.

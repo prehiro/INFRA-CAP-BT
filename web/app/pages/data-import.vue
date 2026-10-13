@@ -276,8 +276,13 @@ async function loadGids() {
     const entities = await apiListEntities(true)
     const entity = entities.find((e: any) => e.slug === GID_LIST_SLUG)
     if (!entity) { gidError.value = 'The gid_list entity was not found on the API.'; return }
-    const page = await apiListRecords(entity.id, { page: 1, pageSize: 500 })
-    gidList.value = ((page.items ?? []) as any[]).map((r) => r.values ?? {})
+    const rows: any[] = []
+    for (let page = 1; ; page++) {
+      const result = await apiListRecords(entity.id, { page, pageSize: 500 })
+      rows.push(...(result.items ?? []))
+      if (rows.length >= result.total || !(result.items ?? []).length) break
+    }
+    gidList.value = rows.map((r) => r.values ?? {})
       .sort((a, b) => String(a.gid ?? '').localeCompare(String(b.gid ?? ''), undefined, { numeric: true }))
   } catch (err: any) {
     gidError.value = err?.message || 'Could not load the GID list.'
