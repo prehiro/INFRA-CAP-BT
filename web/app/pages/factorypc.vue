@@ -611,6 +611,56 @@ const editingId = ref<number | null>(null)
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 
+/** New form only: PIC comes from GID `name`; hardware options come from the matching PC
+ * Ledger columns. A suggestion completes just its own field, never Email or other fields. */
+type FactorySuggestion = { value: string; label: string; meta: string; hint: string }
+const factorySuggestions = reactive<Record<string, FactorySuggestion[]>>({
+  pic: [], chassis: [], model: [], os: []
+})
+
+async function loadFactorySuggestions() {
+  try {
+    const all = await apiListEntities(true)
+    const readValues = async (slug: string): Promise<Record<string, any>[]> => {
+      const source = all.find((e) => e.slug === slug)
+      if (!source) return []
+      const values: Record<string, any>[] = []
+      for (let pageNo = 1; ; pageNo++) {
+        const page = await apiListRecords(source.id, { page: pageNo, pageSize: 500 })
+        values.push(...(page.items ?? []).map((r) => r.values ?? {}))
+        if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
+      }
+      return values
+    }
+    const setSuggestions = (target: string, records: Record<string, any>[], key: string, hint: string) => {
+      const counts = new Map<string, number>()
+      for (const row of records) {
+        const value = String(row[key] ?? '').trim()
+        if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+      }
+      factorySuggestions[target] = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([value, count]) => ({
+          value, label: value,
+          meta: count === 1 ? 'used once' : `used ${count} times`, hint
+        }))
+    }
+    // Failure in one reference source must not disable the other or block free-text entry.
+    const [gid, ledger] = await Promise.allSettled([readValues('gid_list'), readValues('pc_ledger')])
+    setSuggestions('pic', gid.status === 'fulfilled' ? gid.value : [], 'name', 'Selected from GID List')
+    for (const [target, key] of [
+      ['chassis', 'chassis'], ['model', 'computer_model'], ['os', 'os_name']
+    ] as const) {
+      setSuggestions(target, ledger.status === 'fulfilled' ? ledger.value : [], key, 'Selected from PC Ledger')
+    }
+    if (gid.status === 'rejected') console.error('[factory-pc] gid list', gid.reason)
+    if (ledger.status === 'rejected') console.error('[factory-pc] pc ledger', ledger.reason)
+  } catch (e) {
+    for (const key of ['pic', 'chassis', 'model', 'os']) factorySuggestions[key] = []
+    console.error('[factory-pc] suggestion sources', e)
+  }
+}
+
 const FIELD_PLACEHOLDERS: Record<string, string> = {
   pic: 'Name of person in charge',
   email: 'name@company.local',
@@ -636,6 +686,7 @@ function openCreate() {
   formError.value = ''
   blankForm()
   showForm.value = true
+  void loadFactorySuggestions()
 }
 
 function openEdit(row: RecordRow) {
@@ -962,7 +1013,7 @@ async function confirmDelete() {
                foot of this file). One class on this wrapper is enough - it covers the header, body
                and footer at once - where the CCTV and Users dialogs set it on their header and body
                separately because those two use the vendor's header/body slots. -->
-          <div class="relative z-10 flex max-h-[85vh] flex-col">
+          <div class="factory-record-shell relative z-10 flex max-h-[85vh] flex-col">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'i-carbon-data-add'" />
@@ -1016,6 +1067,13 @@ async function confirmDelete() {
                       type="date"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
+                    />
+                    <SuggestInput
+                      v-else-if="!editingId && ['pic', 'chassis', 'model', 'os'].includes(key)"
+                      v-model="form[key]"
+                      :suggestions="factorySuggestions[key] ?? []"
+                      :placeholder="FIELD_PLACEHOLDERS[key]"
+                      :header="key === 'pic' ? 'Names from GID List' : `${LABELS[key]} from PC Ledger`"
                     />
                     <UInput
                       v-else
@@ -1449,6 +1507,13 @@ async function confirmDelete() {
      no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
      <style> block. -->
 <style>
+/* SuggestInput's dropdown is teleported into this modal to keep pointer clicks inside it.
+   Once appended, Nuxt UI's divide-y would add a 1px border under the custom content
+   wrapper and move the centred form up 0.5px. Limit the correction to Factory PC only. */
+.pl-record-modal[data-slot='content'] > .factory-record-shell {
+  border-bottom-width: 0;
+}
+
 /* ---- accent glow in the top-right corner of the record dialog ----
    The same recipe as the Users and CCTV dialogs, which was measured against the reference template:
    it is NOT a CSS gradient, it is a plain circle of `bg-primary` with a large blur, so the
