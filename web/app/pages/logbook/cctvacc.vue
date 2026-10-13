@@ -39,11 +39,42 @@ const search = ref('')
 const showForm = ref(false)
 const editing = ref<Row | null>(null)
 
-/** Imported GID list has employee_no and name, but NO Section column. Suggestions can fill
- * only the two identity fields; Section remains a deliberate, manually entered value. */
+/** Imported GID list has employee_no and name, but NO Section column. Requestor identity
+ * comes from GID; Section suggestions instead come from the PC Ledger `lokasi` column. */
 const gidCandidates = ref<Record<string, any>[]>([])
 const gidCandidatesLoaded = ref(false)
 const requestorHints = reactive({ no_pegawai: '', nama_pemohon: '' })
+const sectionSuggestions = ref<{ value: string; label: string; meta: string; hint: string }[]>([])
+
+/** Read the actual PC Ledger, not the CCTV rows. Location is stored as `lokasi`, and the
+ * API caps each records page at 500; fetch every page so later locations are not omitted. */
+async function loadPcLocations() {
+  try {
+    const all = await apiListEntities(true)
+    const ledger = all.find((e: any) => e.slug === 'pc_ledger')
+    if (!ledger) { sectionSuggestions.value = []; return }
+    const counts = new Map<string, number>()
+    for (let pageNo = 1; ; pageNo++) {
+      const page = await apiListRecords(ledger.id, { page: pageNo, pageSize: 500 })
+      for (const record of page.items ?? []) {
+        const value = String((record as any).values?.lokasi ?? '').trim()
+        if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+      }
+      if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
+    }
+    sectionSuggestions.value = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([value, count]) => ({
+        value, label: value,
+        meta: count === 1 ? 'used once' : `used ${count} times`,
+        hint: 'Selected from PC Ledger locations'
+      }))
+  } catch (e) {
+    // An unavailable ledger never blocks manual Section entry.
+    sectionSuggestions.value = []
+    console.error('[cctv-access] pc ledger locations', e)
+  }
+}
 
 async function ensureGidCandidates() {
   if (gidCandidatesLoaded.value) return
@@ -351,6 +382,7 @@ async function openCreate() {
   form.pic_isd = currentUserName()
   showForm.value = true
   void ensureGidCandidates()
+  void loadPcLocations()
 }
 
 function openEdit(row: Row) {
@@ -971,8 +1003,8 @@ await init()
         <div class="cctv-record-grid space-y-4">
           <!-- ============ REQUEST ============ -->
           <!-- New: Employee No, PIC Name, Section. Edit keeps its existing field order and
-               plain inputs. The imported GID list has no Section, so only the first two
-               New fields get smart suggestions. Purpose and PIC by ISD stay on row two. -->
+               plain inputs. Identity suggestions use GID; Section uses distinct PC Ledger
+               locations, never a nonexistent GID division field. Row two stays unchanged. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-file-text" class="size-3.5" />
@@ -997,8 +1029,10 @@ await init()
                                 header="GID List - Click or Enter" @fill="applyRequestorSuggestion" />
                 </UFormField>
                 <UFormField label="Section" name="departemen" required>
-                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
-                          class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
+                  <SuggestInput v-model="form.departemen" :suggestions="sectionSuggestions"
+                                :invalid="fieldInvalid('departemen')"
+                                placeholder="Type or pick a location"
+                                header="Locations from PC Ledger" />
                 </UFormField>
               </template>
               <template v-else>
