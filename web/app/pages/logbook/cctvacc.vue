@@ -39,6 +39,53 @@ const search = ref('')
 const showForm = ref(false)
 const editing = ref<Row | null>(null)
 
+/** Imported GID list has employee_no and name, but NO Section column. Suggestions can fill
+ * only the two identity fields; Section remains a deliberate, manually entered value. */
+const gidCandidates = ref<Record<string, any>[]>([])
+const gidCandidatesLoaded = ref(false)
+const requestorHints = reactive({ no_pegawai: '', nama_pemohon: '' })
+
+async function ensureGidCandidates() {
+  if (gidCandidatesLoaded.value) return
+  try {
+    const all = await apiListEntities(true)
+    const gidEntity = all.find((e: any) => e.slug === 'gid_list')
+    if (!gidEntity) return
+    const page = await apiListRecords(gidEntity.id, { page: 1, pageSize: 500 })
+    gidCandidates.value = (page.items ?? []).map((r: any) => r.values ?? {})
+    gidCandidatesLoaded.value = true
+  } catch (e) {
+    // The form must remain usable when the optional import is absent or unavailable.
+    console.error('[cctv-access] gid list', e)
+  }
+}
+
+function requestorSuggestions(key: 'no_pegawai' | 'nama_pemohon') {
+  const own = key === 'no_pegawai' ? 'employee_no' : 'name'
+  return gidCandidates.value.map((r) => ({
+    value: String(r[own] ?? '').trim(),
+    label: String(r.name ?? '').trim() || String(r.employee_no ?? '').trim(),
+    meta: [r.employee_no, r.email, r.gid].filter(Boolean).map(String).join('   |   '),
+    keys: [r.employee_no, r.name, r.email, r.gid].map((v) => String(v ?? '')),
+    fill: r,
+    hint: 'Auto-filled from the GID List'
+  })).filter((s) => s.value)
+}
+
+function applyRequestorSuggestion(s: { fill?: Record<string, any> }) {
+  const row = s.fill
+  if (!row) return
+  for (const [field, source] of [
+    ['no_pegawai', 'employee_no'], ['nama_pemohon', 'name']
+  ] as const) {
+    const value = String(row[source] ?? '').trim()
+    if (value) {
+      form[field] = value
+      requestorHints[field] = 'Auto-filled from the GID List'
+    }
+  }
+}
+
 /** Column order and width of the printed sheet. */
 const COLUMNS = [
   { key: 'tanggal', label: 'Date', w: 'w-[8%]' },
@@ -103,8 +150,8 @@ function composeDateTime(time: unknown): string {
 
 /**
  * MANDATORY FIELDS (HIRO, 2026-10-04): every field on the sheet is required - only the
- * hidden NO is optional, because the server generates it. The order here is the order the
- * warning message lists them in, i.e. the order they appear on the form.
+ * hidden NO is optional, because the server generates it. The warning lists fields in
+ * New Record's visual order: Requestor, Access Time, Signature. Edit keeps its own layout.
  *
  * `required` on <UFormField> is used purely for the red asterisk - it renders
  * `after:content-['*']` on the label. It deliberately does NOT drive validation: UForm's
@@ -114,14 +161,14 @@ function composeDateTime(time: unknown): string {
  * submit handler and show its own per-field errors instead.
  */
 const REQUIRED = [
-  { key: 'tanggal', label: 'Date' },
-  { key: 'departemen', label: 'Section' },
   { key: 'no_pegawai', label: 'Employee No' },
   { key: 'nama_pemohon', label: 'PIC Name' },
+  { key: 'departemen', label: 'Section' },
   { key: 'tujuan', label: 'Purpose / Details' },
+  { key: 'pic_isd', label: 'PIC by ISD' },
+  { key: 'tanggal', label: 'Date' },
   { key: 'pic_mulai', label: 'Start Time' },
   { key: 'pic_selesai', label: 'End Time' },
-  { key: 'pic_isd', label: 'PIC by ISD' },
   { key: 'tanda_pemohon', label: 'PIC Sign' },
   { key: 'tanda_isd', label: 'ISD Sign' }
 ] as const
@@ -254,6 +301,8 @@ function notify(msg: string, kind: 'success' | 'error' = 'success') {
 function resetForm() {
   for (const c of COLUMNS) form[c.key] = c.sign ? null : ''
   for (const k of HIDDEN_FIELDS) form[k] = ''
+  requestorHints.no_pegawai = ''
+  requestorHints.nama_pemohon = ''
   editing.value = null
   showErrors.value = false
 }
@@ -301,6 +350,7 @@ async function openCreate() {
   form.pic_selesai = `${hh}:${mm}`
   form.pic_isd = currentUserName()
   showForm.value = true
+  void ensureGidCandidates()
 }
 
 function openEdit(row: Row) {
@@ -920,30 +970,51 @@ await init()
              screen at 768px. -->
         <div class="cctv-record-grid space-y-4">
           <!-- ============ REQUEST ============ -->
-          <!-- HIRO's order (2026-10-05): Section, Employee No, PIC Name on one line, then
-               Purpose and PIC by ISD below. All five fit a single 3-column grid as
-               3 + (2 + 1): the second row gives Purpose two columns - it is the long
-               free-text value - and PIC by ISD the third, because it is a name prefilled
-               from the session. One grid, one row break, no second row's height wasted on a
-               mostly-empty field. -->
+          <!-- New: Employee No, PIC Name, Section. Edit keeps its existing field order and
+               plain inputs. The imported GID list has no Section, so only the first two
+               New fields get smart suggestions. Purpose and PIC by ISD stay on row two. -->
           <section>
             <p class="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-dimmed">
               <UIcon name="i-lucide-file-text" class="size-3.5" />
               Requestor
             </p>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <UFormField label="Section" name="departemen" required>
-                <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
-                         class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
-              </UFormField>
-              <UFormField label="Employee No" name="no_pegawai" required>
-                <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
-                         class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
-              </UFormField>
-              <UFormField label="PIC Name" name="nama_pemohon" required>
-                <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
-                         :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
-              </UFormField>
+              <template v-if="!editing">
+                <UFormField label="Employee No" name="no_pegawai" required>
+                  <SuggestInput v-model="form.no_pegawai" v-model:source-hint="requestorHints.no_pegawai"
+                                :suggestions="requestorSuggestions('no_pegawai')"
+                                :context="[String(form.nama_pemohon ?? '')]"
+                                :invalid="fieldInvalid('no_pegawai')"
+                                placeholder="Type to search the GID list"
+                                header="GID List - Click or Enter" @fill="applyRequestorSuggestion" />
+                </UFormField>
+                <UFormField label="PIC Name" name="nama_pemohon" required>
+                  <SuggestInput v-model="form.nama_pemohon" v-model:source-hint="requestorHints.nama_pemohon"
+                                :suggestions="requestorSuggestions('nama_pemohon')"
+                                :context="[String(form.no_pegawai ?? '')]"
+                                :invalid="fieldInvalid('nama_pemohon')"
+                                placeholder="Type to search the GID list"
+                                header="GID List - Click or Enter" @fill="applyRequestorSuggestion" />
+                </UFormField>
+                <UFormField label="Section" name="departemen" required>
+                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
+                          class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
+                </UFormField>
+              </template>
+              <template v-else>
+                <UFormField label="Section" name="departemen" required>
+                  <UInput v-model="form.departemen" name="departemen" placeholder="ISD / CAP"
+                          class="w-full" :ui="fieldInvalid('departemen') ? { base: 'ring-2 ring-error' } : undefined" />
+                </UFormField>
+                <UFormField label="Employee No" name="no_pegawai" required>
+                  <UInput v-model="form.no_pegawai" name="no_pegawai" placeholder="940900"
+                          class="w-full" :ui="fieldInvalid('no_pegawai') ? { base: 'ring-2 ring-error' } : undefined" />
+                </UFormField>
+                <UFormField label="PIC Name" name="nama_pemohon" required>
+                  <UInput v-model="form.nama_pemohon" name="nama_pemohon" placeholder="Name of the requester" class="w-full"
+                          :ui="fieldInvalid('nama_pemohon') ? { base: 'ring-2 ring-error' } : undefined" />
+                </UFormField>
+              </template>
 
               <!-- Purpose FIRST at two columns, then PIC by ISD in the third (HIRO, 2026-10-05: "swap
                    position of PIC by ISD and Purpose, keep purpose use 2 grid"). Purpose is the

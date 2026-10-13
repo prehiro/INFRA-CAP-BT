@@ -1,7 +1,13 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-12
+> Terakhir diupdate: 2026-10-13
+
+### CCTV Access New Record requestor layout and GID smart suggestions (2026-10-13)
+
+New Record only: Requestor first row is Employee No | PIC Name | Section (existing label spelling preserved); Purpose and PIC by ISD remain on row two. Reused the existing SuggestInput component for Employee No and PIC Name, loading the real imported `gid_list` lazily on New form open. Its rows contain employee_no, name, email, gid, but no Section; an explicit pointer or keyboard pick fills the first two fields and leaves Section manual and untouched. Typing alone never fills siblings. Both fields show the existing reserved provenance chip and required-field ring; form Edit retains its original Section | Employee No | PIC Name order and plain inputs. Required-field warning order now matches New form. No database schema, record, table, export or other page changed. The shared SuggestInput gained only an optional invalid prop (default false), preserving other callers.
+
+Verified live at 1920x1080: first-row labels x=532/821/1111; real GID suggestion for LI LI OH selected both by mouse and Enter, filling employee number 006455 and name while Section stayed manual; modal stayed open and Purpose Y/section height were identical before/after pick. Blank-input Save attempt produced red rings on both smart fields (no record saved). Edit opened in its original order without suggestions. Dark/light screenshots checked. At 1366x768 and 1280x720 the action buttons remain visible without body overflow; at 1280x640 the body scrolls 66px and actions require scrolling (do not claim no overflow at that height). `npm run build` and `git diff --check` passed. Migration package untouched.
 
 ### CCTV Access and Handover table-header accent (2026-10-12)
 

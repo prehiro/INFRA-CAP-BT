@@ -54,7 +54,9 @@ const props = withDefaults(defineProps<{
   context?: string[]
   /** Optional parent-owned trace, for a retrieval that fills several sibling inputs. */
   sourceHint?: string
-}>(), { placeholder: '', header: '', context: () => [] })
+  /** Match the parent form's existing required-field outline without wrapping the hint row. */
+  invalid?: boolean
+}>(), { placeholder: '', header: '', context: () => [], invalid: false })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
@@ -300,7 +302,7 @@ onBeforeUnmount(() => {
       :placeholder="placeholder"
       autocomplete="off"
       class="w-full"
-      :ui="{ base: 'h-9' }"
+      :ui="{ base: invalid ? 'h-9 ring-2 ring-error' : 'h-9' }"
       @input="onInput"
       @focus="show"
       @blur="dismiss"
