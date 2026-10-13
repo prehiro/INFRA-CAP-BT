@@ -1419,6 +1419,14 @@ await init()
    0.14) purely because this dialog is much larger - sm:max-w-4xl - and the users-sized orb
    disappeared into its top-right corner. It is the same visual weight, not a stronger one.
    ------------------------------------------------------------------------------------------ */
+/* SuggestInput teleports its list as a direct child of this dialog so Reka treats clicks as
+   inside it. Nuxt UI's divide-y then gives the body (no longer the last child) a 1px bottom
+   border. That extra pixel enlarges the centred modal and shifts every field up. Preserve the
+   body's original zero border; the header divider and the overlay remain unchanged. */
+.cctv-record-modal[data-slot='content'] > [data-slot='body'] {
+  border-bottom-width: 0;
+}
+
 .cctv-record-modal[data-slot='content']::after {
   content: '';
   position: absolute;
