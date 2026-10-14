@@ -260,10 +260,10 @@ onMounted(() => {
           <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <div
               v-for="card in [
-                { key: 'total', label: 'Events shown', value: stats?.total ?? 0, icon: 'i-lucide-activity', tone: 'text-primary', ring: 'ring-primary/20', glow: 'bg-primary/10' },
-                { key: 'logins', label: 'Sign-in attempts', value: stats?.logins ?? 0, icon: 'i-lucide-log-in', tone: 'text-info', ring: 'ring-info/20', glow: 'bg-info/10' },
-                { key: 'deletes', label: 'Deletions', value: stats?.deletes ?? 0, icon: 'i-lucide-trash-2', tone: DELETE_TONE, ring: 'ring-error/20', glow: 'bg-error/10' },
-                { key: 'failed', label: 'Failed attempts', value: stats?.failed ?? 0, icon: 'i-lucide-shield-alert', tone: 'text-error', ring: 'ring-error/20', glow: 'bg-error/10' }
+                { key: 'total', label: 'Events shown', value: stats?.total ?? 0, tone: 'text-primary', ring: 'ring-primary/20', glow: 'bg-primary/10' },
+                { key: 'logins', label: 'Sign-in attempts', value: stats?.logins ?? 0, tone: 'text-info', ring: 'ring-info/20', glow: 'bg-info/10' },
+                { key: 'deletes', label: 'Deletions', value: stats?.deletes ?? 0, tone: DELETE_TONE, ring: 'ring-error/20', glow: 'bg-error/10' },
+                { key: 'failed', label: 'Failed attempts', value: stats?.failed ?? 0, tone: 'text-error', ring: 'ring-error/20', glow: 'bg-error/10' }
               ]"
               :key="card.key"
               class="audit-stat relative overflow-hidden rounded-xl border border-default bg-elevated p-4 ring-1 ring-inset"
@@ -284,7 +284,7 @@ onMounted(() => {
                   </p>
                 </div>
                 <span :class="['grid size-9 shrink-0 place-items-center rounded-lg', card.glow, card.tone]">
-                  <UIcon :name="card.icon" class="size-5" />
+                  <AuditStatIcon :kind="card.key" />
                 </span>
               </div>
             </div>

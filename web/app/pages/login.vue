@@ -175,7 +175,7 @@ onBeforeUnmount(() => cleanup?.())
               <span class="logo-ring" />
               <span class="logo-ring logo-ring--2" />
               <span class="logo-icon">
-                <UIcon name="streamline-cyber:network" class="size-8" />
+                <LoginNetworkIcon />
               </span>
             </div>
             <h1 class="text-xl font-bold tracking-wide text-slate-100">INFRA-BTCAP</h1>
@@ -238,8 +238,15 @@ onBeforeUnmount(() => cleanup?.())
             size="lg"
             :loading="loading"
             label="Sign In"
+            :disabled="loading"
             class="sign-btn bg-[#00dc82] hover:bg-[#1af09a] text-[#04130c] font-semibold"
-          />
+          >
+            <template #trailing>
+              <svg class="sign-arrow size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 12h15m-6-6 6 6-6 6" />
+              </svg>
+            </template>
+          </UButton>
         </UForm>
       </UCard>
     </div>
@@ -343,47 +350,43 @@ onBeforeUnmount(() => cleanup?.())
   50%      { transform: scale(1.6);  opacity: 0.05; }
 }
 
-/* The glyph itself turns slowly while its brightness breathes, so the mark reads as live rather
-   than as a static sticker inside a glowing box.
-   THE TWO ANIMATIONS LIVE ON TWO ELEMENTS ON PURPOSE: both would otherwise want `transform`, and
-   on a single element the later `animation` shorthand silently wins per property - the rotation
-   and the sway would fight and one would simply not run. So the wrapper owns the rotation and the
-   icon only owns opacity, which cannot collide.
-   NO SCALING: an SVG glyph rasterises at the intermediate size while it is being scaled and reads
-   soft mid-motion, the same reason the app never scales text. Rotation and opacity are both
-   compositor-friendly and stay crisp.
-   18s per turn is slow enough to read as "steady signal" instead of a spinning logo, and the
-   3.5s sway keeps it from looking like a motor. */
-.logo-icon {
-  display: grid;
-  place-items: center;
-  animation: logo-spin 18s linear infinite;
-}
+.logo-icon { display: grid; place-items: center; }
 
-.logo-icon > * {
-  animation: logo-sway 3.5s ease-in-out infinite;
+/* Login-only interaction: lift, traveling highlight, and a forward arrow. */
+.sign-btn {
+  position: relative; overflow: hidden; isolation: isolate;
+  box-shadow: 0 8px 24px -8px rgba(0, 220, 130, .6);
+  transition: transform 180ms ease, box-shadow 220ms ease, background-color 180ms ease;
 }
-
-@keyframes logo-spin {
-  to { transform: rotate(360deg); }
-}
-
-@keyframes logo-sway {
-  0%, 100% { opacity: 0.7; }
-  50%      { opacity: 1; }
-}
-
-/* sign-in button shine */
-.sign-btn { position: relative; overflow: hidden; box-shadow: 0 8px 24px -8px rgba(0, 220, 130, 0.6); }
 .sign-btn::after {
-  content: ''; position: absolute; top: 0; left: -60%;
-  width: 40%; height: 100%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
-  transform: skewX(-20deg);
-  transition: left 0.6s;
-  pointer-events: none;
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.35) 50%, transparent 75%);
+  transform: translateX(-140%);
 }
-.sign-btn:hover::after { left: 130%; }
+.sign-arrow { flex: none; }
+@keyframes sign-highlight { to { transform: translateX(140%); } }
+@keyframes sign-forward {
+  0%,100% { transform: translateX(0); opacity: 1; }
+  40% { transform: translateX(5px); opacity: 0; }
+  41% { transform: translateX(-5px); opacity: 0; }
+  75% { transform: translateX(0); opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .sign-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px -6px rgba(0,220,130,.65), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .sign-btn:not(:disabled):hover::after { animation: sign-highlight 700ms ease-out both; }
+  .sign-btn:not(:disabled):hover .sign-arrow { animation: sign-forward 650ms ease-in-out; }
+}
+.sign-btn:not(:disabled):focus-visible .sign-arrow { animation: sign-forward 650ms ease-in-out; }
+.sign-btn:not(:disabled):active { transform: translateY(0) scale(.985); }
+.sign-btn:disabled .sign-arrow { opacity: .4; }
+@media (prefers-reduced-motion: reduce) {
+  .sign-btn { transition: none; transform: none !important; }
+  .sign-btn::after { display: none; }
+  .sign-arrow { animation: none !important; }
+}
 
 .fade-enter-active, .fade-leave-active { transition: opacity 0.25s, transform 0.25s; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(-4px); }

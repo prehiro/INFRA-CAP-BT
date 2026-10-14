@@ -1183,7 +1183,7 @@ async function exportExcel() {
               <UButton
                 color="primary"
                 icon="i-lucide-plus"
-                label="Add Record"
+                label="Add Record" class="record-add-hover"
                 @click="openCreate"
               />
             </div>

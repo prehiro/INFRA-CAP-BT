@@ -9,6 +9,49 @@
 @import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
+/* Opt-in toolbar actions only: never animate Save, Excel, or other buttons. */
+.record-add-hover {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.record-add-hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, rgb(255 255 255 / .23) 50%, transparent 75%);
+  transform: translateX(-140%);
+}
+@keyframes record-add-sheen { to { transform: translateX(140%); } }
+@keyframes record-add-pop {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-2px) scale(1.2); }
+  65% { transform: translateY(1px) scale(.95); }
+}
+@media (hover: hover) and (pointer: fine) {
+  .record-add-hover:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--ui-primary) 25%, transparent);
+  }
+  .record-add-hover:not(:disabled):hover::after { animation: record-add-sheen 650ms ease-out both; }
+  .record-add-hover:not(:disabled):hover [data-slot='leadingIcon'] { animation: record-add-pop 500ms ease-out; }
+  .record-add-hover:not(:disabled):active { transform: translateY(0); box-shadow: none; }
+}
+.record-add-hover:not(:disabled):focus-visible [data-slot='leadingIcon'] { animation: record-add-pop 500ms ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .record-add-hover { transition: none; }
+  .record-add-hover:not(:disabled):hover { transform: none; }
+  .record-add-hover::after { display: none; }
+  .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
+}
+@media print {
+  .record-add-hover { transform: none !important; box-shadow: none !important; }
+  .record-add-hover::after { display: none; }
+  .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
+}
+
 @theme static {
   /* Bundled from node_modules, NOT a CDN: the production server (10.89.6.237) has no
      internet access, so a remote @font-face would silently fall back to the system

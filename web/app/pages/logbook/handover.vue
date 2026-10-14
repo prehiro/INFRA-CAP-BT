@@ -579,7 +579,7 @@ await init()
               />
               <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
                        :loading="exporting" @click="exportExcel" />
-              <UButton icon="i-lucide-plus" label="Add Record" @click="openCreate" />
+              <UButton icon="i-lucide-plus" label="Add Record" class="record-add-hover" @click="openCreate" />
             </div>
           </div>
         </div>

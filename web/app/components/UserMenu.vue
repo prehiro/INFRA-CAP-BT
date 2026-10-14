@@ -159,6 +159,10 @@ const items = computed<DropdownMenuItem[][]>(() => ([
         class="data-[state=open]:bg-elevated"
         :ui="{ trailingIcon: 'text-dimmed' }"
       >
+        <span class="sidebar-user-orbit">
+          <svg class="sidebar-user-dots" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray=".1 9.325" />
+          </svg>
         <UAvatar
           :alt="displayName"
           size="sm"
@@ -166,6 +170,7 @@ const items = computed<DropdownMenuItem[][]>(() => ([
         >
           {{ initials }}
         </UAvatar>
+        </span>
 
       <span v-if="!collapsed" class="truncate text-left">
           <span class="block truncate text-sm font-medium">{{ displayName }}</span>
@@ -204,5 +209,32 @@ const items = computed<DropdownMenuItem[][]>(() => ([
 .signout-item[data-highlighted] .iconify,
 .signout-item[data-state='open'] .iconify {
   color: var(--ui-error) !important;
+}
+/* Only the sidebar avatar is orbited; its initials and dimensions stay still. */
+.sidebar-user-orbit { position: relative; display: inline-flex; flex: none; }
+.sidebar-user-dots {
+  position: absolute; width: calc(100% + 8px); height: calc(100% + 8px);
+  left: -4px; top: -4px; color: var(--ui-primary); opacity: .75;
+  pointer-events: none; animation: sidebar-user-orbit 12s linear infinite;
+}
+@keyframes sidebar-user-orbit { to { transform: rotate(360deg); } }
+.signout-item { position: relative; overflow: hidden; }
+.signout-item::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 25%, color-mix(in srgb, var(--ui-error) 16%, transparent) 50%, transparent 75%);
+  transform: translateX(-140%);
+}
+.signout-item[data-highlighted]::after { animation: signout-sweep 600ms ease-out both; }
+.signout-item[data-highlighted] .iconify { animation: signout-depart 550ms ease-in-out; }
+@keyframes signout-sweep { to { transform: translateX(140%); } }
+@keyframes signout-depart {
+  0%, 100% { transform: translateX(0); opacity: 1; }
+  40% { transform: translateX(4px); opacity: .25; }
+  41% { transform: translateX(-3px); opacity: .25; }
+  80% { transform: translateX(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-user-dots, .signout-item[data-highlighted] .iconify { animation: none !important; }
+  .signout-item::after { display: none; }
 }
 </style>

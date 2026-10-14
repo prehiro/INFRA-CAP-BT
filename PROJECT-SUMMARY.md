@@ -1,7 +1,15 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-13
+> Terakhir diupdate: 2026-10-14
+
+### Approved animation set: audit, metrics, branding and actions (2026-10-14)
+
+User approved publishing the pending previews with `ok push adn update memory`. Final login/sidebar identity is the local SVG server rack/network mark in LoginNetworkIcon.vue (32px login, 22px sidebar inside unchanged 32px badge). Port lights and packets animate sequentially; old whole-glyph rotation removed, existing rings retained. Network-grid and fingerprint experiments are superseded. Sidebar colors inherit currentColor; no remote assets added.
+
+AuditStatIcon.vue gives the four Log Audit cards distinct motions: activity trace, entering arrow, lifting bin lid with falling paper, shield pulse/echo. ServerMetricsIcon.vue animates the Dashboard header activity line/packet/ripple only while metrics status is live; polling/chart logic unchanged. Add Record toolbar actions on PC Ledger, Factory PC, CCTV and Handover opt into record-add-hover: 2px lift, accent shadow, single sheen and plus bounce, idle otherwise. Sign In has hover lift/sheen/forward arrow and pressed feedback; loading disables submit. Sign Out preserves red styling and uses a hover/keyboard-highlight sweep with departing icon. Sidebar avatar keeps its initials still while accent dots orbit its circumference; collapsed alignment retained.
+
+Verification across the preview turns: actual builds and diff checks passed; browser traces proved distinct icon motion without layout shifts, all four Add Record actions opened their dialogs and were cancelled, login succeeded, Sign Out cleared the token and returned to /login. Dark/light and reduced-motion checks passed; collapsed brand/avatar centres remained at x=32. Changes are frontend-only and use local SVG/CSS. No production database or migration package changes. Pre-existing unrelated CCTV/Handover suggestion wording edits remain outside this animation commit.
 
 ### PC Ledger Identity placeholders remain stable (2026-10-13)
 

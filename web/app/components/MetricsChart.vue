@@ -7,7 +7,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
         <div class="flex items-center gap-3">
           <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-            <UIcon name="i-lucide-activity" class="size-5" />
+            <ServerMetricsIcon :active="status === 'live'" />
           </span>
           <div class="min-w-0">
             <h2 class="text-sm font-semibold leading-tight">Server Metrics</h2>
