@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### Audit Action-column icon animation preview (2026-10-15)
+
+Only audit.vue list Action-column glyphs now animate: sign-in moves inward, failed sign-in gives a small alert tilt, create rises, update makes a short writing tilt, delete lowers/fades slightly then returns. Eight existing action identifiers map to five shared CSS keyframes. Labels, semantic colors, Rejected tags, original icons, filters, stats cards, table layout and API behavior remain unchanged. Each 5.6s cycle includes a long rest and uses stable row-id phase staggering. Reduced motion and print leave fully visible static glyphs; no timers or network calls added. Backup outside repo: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/audit-action-before.vue`.
+
+Build and diff-check passed. Read-only browser filters found seven real categories; each recorded 91-92 frames over 6.1s with multiple icon states but exactly one label/row geometry state, and reduced-motion fallback passed. User updated currently has no real audit rows, so its live-record branch is unverified; it shares the tested Record updated keyframe/selector group. Light/dark inheritance, stationary text, unchanged filter icons and print suppression verified. No records/users created, edited or deleted for testing; saved admin sign-in adds its normal login audit event. Audit visual edit remains UNCOMMITTED pending HIRO approval, along with the earlier Save/Delete preview; only this documentation is published. Migration package untouched.
+
 ### Save Changes / Delete record hover animation preview (2026-10-15)
 
 PC Ledger, Factory PC, CCTV Access and Handover now opt in their Edit Save Changes and confirmation Delete record buttons to a 2px hover/focus lift, theme-aware shadow and single sheen. Existing check icons nod; existing trash icons gently tilt. Ledger buttons remain text-only with their original dimensions. New/Add submit actions and other pages are unchanged. Handlers, native submit types, loading props and labels remain intact; disabled states, reduced motion and print suppress motion. CSS is shared but opt-in only.
