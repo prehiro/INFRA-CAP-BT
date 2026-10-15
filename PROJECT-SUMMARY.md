@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### Sidebar chevron direction animation preview (2026-10-15)
+
+HIRO requested collapse/expand signs moving in their own direction. PageHeader.vue now splits the existing local Lucide panel-left-close/open paint into two data-URI SVG masks on its native leadingIcon pseudo-elements: stationary panel frame and a chevron nudging 2px left for Collapse sidebar / 2px right for Expand sidebar. Cycle 1.6s with a rest. Native aria-label selects the direction; vendor button, dimensions, observer/remount/tooltip behavior, click handler and pre-existing click bounce remain unchanged. No icon provider/network or dashboard state rewrite added. Reduced motion/print leaves the readable static icon. Backup: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/sidebar-arrow-before.vue`.
+
+Live browser: four pointer toggles with 115 sampled frames per state proved correct signed x movement, static frame transform and one button geometry state; labels/tooltips and actual sidebar collapsed state matched. Native keyboard Space toggled correctly; reduced motion passed; currentColor inheritance checked in both themes and magnified screenshot confirmed unduplicated frame/chevron. All eight shared-header routes rendered the expected expanded-state arrow. Sidebar restored expanded. Build and diff-check passed; dev restarted. No records/account status changed by testing. This PageHeader visual edit remains UNCOMMITTED pending approval; documentation only published. Previously approved user-status source is already on origin/main in 23901c9; unrelated CCTV/Handover wording edits remain local. Migration package untouched.
+
 ### Synchronized User status animation approved for publication (2026-10-15)
 
 HIRO approved with `push github`: publish users.vue Active/Inactive decorative status outlines with shared 2.8s timing, zero delay and matching pulse phases. This supersedes the pending-preview status in both User status notes below. Exact source already passed build/diff-check, three-account browser synchronization (205 frames), stable-size and reduced-motion checks; no implementation changes since those tests. No account data, backend or Migration package changes. Include this state documentation; leave unrelated CCTV/Handover wording edits intact and uncommitted.
