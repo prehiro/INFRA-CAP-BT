@@ -430,6 +430,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
               <UButton
                 icon="i-lucide-upload"
                 :label="parsed ? 'Choose another file' : 'Choose Excel file'"
+                class="record-save-hover"
                 :loading="parsing"
                 @click="fileInput?.click()"
               />
@@ -541,6 +542,7 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
               <UButton
                 icon="i-lucide-upload"
                 :label="gidParsed ? 'Choose another file' : 'Choose Excel file'"
+                class="record-save-hover"
                 :loading="gidParsing"
                 @click="gidFileInput?.click()"
               />

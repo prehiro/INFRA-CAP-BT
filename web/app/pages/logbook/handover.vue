@@ -988,7 +988,7 @@ await init()
                 </p>
                 <div class="flex items-center gap-2">
                   <UButton type="button" variant="ghost" label="Cancel" @click="showForm = false" />
-                  <UButton type="submit" :loading="saving" icon="i-lucide-check"
+                  <UButton type="submit" :class="{ 'record-save-hover': editing }" :loading="saving" icon="i-lucide-check"
                            :label="editing ? 'Save Changes' : 'Save Row'" />
                 </div>
               </div>
@@ -1068,7 +1068,7 @@ await init()
             @click="showDelete = false"
           />
           <UButton
-            label="Delete record"
+            label="Delete record" class="record-delete-hover"
             icon="i-lucide-trash-2"
             color="error"
             :loading="deleting"

@@ -1139,7 +1139,7 @@ async function confirmDelete() {
 
             <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save" />
+              <UButton color="primary" :class="{ 'record-save-hover': editingId }" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save" />
             </div>
           </div>
         </template>
@@ -1187,7 +1187,7 @@ async function confirmDelete() {
 
             <div class="flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="deleting" @click="showDelete = false" />
-              <UButton color="error" label="Delete record" :loading="deleting" @click="confirmDelete" />
+              <UButton color="error" class="record-delete-hover" label="Delete record" :loading="deleting" @click="confirmDelete" />
             </div>
           </div>
         </template>

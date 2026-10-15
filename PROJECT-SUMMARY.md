@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### Animation previews approved for GitHub publication (2026-10-15)
+
+HIRO approved the pending visual set with `push github`. Publish the Save Changes/Delete record actions across all four registers, Audit list Action icons, both Data Import Choose Excel file buttons, and Users Add/Create/Delete buttons. This supersedes the uncommitted/awaiting-approval status in the three preview notes below. Their recorded build, browser, layout, theme and reduced-motion verification remains applicable; no source changes were made after those tests other than a CSS comment. Keep the pre-existing unrelated CCTV/Handover suggestion wording/log-message edits out of this animation commit and leave them intact locally. No backend, database or Migration package changes.
+
 ### Import and User action-button animation preview (2026-10-15)
 
 Choose Excel file (both PC Ledger import and GID List tabs, including the Choose another file state) now opts into existing save-style hover/focus lift, sheen and upload-icon nod. Users toolbar Add User reuses Add Record's plus pop/lift; New Create user uses the existing primary lift/sheen without adding an icon or changing width; Delete user uses the existing error-colored lift/sheen/trash tilt. Edit user's Save changes is intentionally unchanged. Only opt-in classes in data-import.vue/users.vue and a CSS comment changed; no handlers, types, labels, validation, parsing or API changes. Backup: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/import-user-animation-backup`.

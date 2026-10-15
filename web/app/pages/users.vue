@@ -298,7 +298,7 @@ onMounted(() => {
                   placeholder="Search..."
                   class="w-48"
                 />
-                <UButton icon="i-lucide-plus" label="Add User" @click="openCreate" />
+                <UButton icon="i-lucide-plus" label="Add User" class="record-add-hover" @click="openCreate" />
               </div>
             </div>
           </div>
@@ -612,7 +612,7 @@ onMounted(() => {
 
             <div class="mt-5 flex items-center justify-end gap-2 border-t border-default pt-4">
               <UButton type="button" variant="ghost" color="neutral" label="Cancel" @click="modalOpen = false" />
-              <UButton type="submit" :loading="saving" :label="editing ? 'Save changes' : 'Create user'" />
+              <UButton type="submit" :class="{ 'record-save-hover': !editing }" :loading="saving" :label="editing ? 'Save changes' : 'Create user'" />
             </div>
           </UForm>
         </template>
@@ -668,7 +668,7 @@ onMounted(() => {
 
             <div class="flex items-center justify-end gap-2 bg-elevated/40 px-6 py-4">
               <UButton label="Cancel" color="neutral" variant="ghost" :disabled="deleting" @click="showDelete = false" />
-              <UButton label="Delete user" icon="i-lucide-trash-2" color="error" :loading="deleting" @click="confirmDelete" />
+              <UButton label="Delete user" class="record-delete-hover" icon="i-lucide-trash-2" color="error" :loading="deleting" @click="confirmDelete" />
             </div>
           </div>
         </template>

@@ -471,8 +471,9 @@ onMounted(() => {
                            and names the action, with the red state carried by the small
                            "Rejected" tag — previously it swapped the icon for a generic cross,
                            which lost WHICH action had been rejected. -->
-                      <span :class="['inline-flex items-center gap-1.5 text-sm font-medium', actionMeta(row.action).tone, !row.success && 'text-error']">
-                        <UIcon :name="actionMeta(row.action).icon" class="size-4 shrink-0" />
+                      <span :class="['audit-action inline-flex items-center gap-1.5 text-sm font-medium', actionMeta(row.action).tone, !row.success && 'text-error']"
+                            :data-action="row.action" :style="{ '--audit-action-delay': `${-(row.id % 11) * 0.47}s` }">
+                        <UIcon :name="actionMeta(row.action).icon" class="audit-action-icon size-4 shrink-0" />
                         <span class="truncate">{{ actionMeta(row.action).label }}</span>
                         <span v-if="!row.success" class="shrink-0 rounded bg-error/15 px-1 py-px text-[10px] font-semibold uppercase tracking-wide text-error">
                           Rejected
@@ -602,6 +603,50 @@ onMounted(() => {
 .audit-row {
   animation: infra-audit-row 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: 18ms;
+}
+
+/* Decorative motion only on Action-column glyphs. Text, state colors and row geometry stay still.
+   Each five-second loop has a long rest; stable id-based phases avoid synchronized table flashing. */
+.audit-action-icon {
+  animation-duration: 5.6s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-delay: var(--audit-action-delay, 0s);
+  transform-origin: center;
+}
+.audit-action[data-action='login'] .audit-action-icon { animation-name: audit-action-enter; }
+.audit-action[data-action='login_failed'] .audit-action-icon { animation-name: audit-action-alert; }
+.audit-action:is([data-action='record_create'], [data-action='user_create']) .audit-action-icon { animation-name: audit-action-create; }
+.audit-action:is([data-action='record_update'], [data-action='user_update']) .audit-action-icon { animation-name: audit-action-update; }
+.audit-action:is([data-action='record_delete'], [data-action='user_delete']) .audit-action-icon { animation-name: audit-action-delete; }
+@keyframes audit-action-enter {
+  0%, 8%, 36%, 100% { transform: translateX(0); }
+  20% { transform: translateX(2px); }
+  28% { transform: translateX(-1px); }
+}
+@keyframes audit-action-alert {
+  0%, 8%, 36%, 100% { transform: rotate(0); }
+  16% { transform: rotate(-9deg); }
+  23% { transform: rotate(7deg); }
+  29% { transform: rotate(-3deg); }
+}
+@keyframes audit-action-create {
+  0%, 8%, 36%, 100% { transform: translateY(0); }
+  20% { transform: translateY(-2px); }
+  28% { transform: translateY(.5px); }
+}
+@keyframes audit-action-update {
+  0%, 8%, 36%, 100% { transform: rotate(0); }
+  19% { transform: rotate(-10deg); }
+  28% { transform: rotate(5deg); }
+}
+@keyframes audit-action-delete {
+  0%, 8%, 36%, 100% { transform: translateY(0); opacity: 1; }
+  20% { transform: translateY(2px); opacity: .55; }
+  28% { transform: translateY(-.5px); opacity: .85; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .audit-action .audit-action-icon { animation: none !important; transform: none !important; opacity: 1 !important; }
 }
 
 /* Summary cards fade up once, on the element, never on a data flag. */
