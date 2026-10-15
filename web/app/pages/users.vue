@@ -406,7 +406,8 @@ onMounted(() => {
                     </div>
                   </td>
                   <td class="px-4 py-3">
-                    <UBadge :color="u.isActive ? 'success' : 'error'" variant="soft" size="sm">
+                    <UBadge :color="u.isActive ? 'success' : 'error'" variant="soft" size="sm"
+                            class="users-status" :data-status="u.isActive ? 'active' : 'inactive'">
                       {{ u.isActive ? 'Active' : 'Inactive' }}
                     </UBadge>
                   </td>
@@ -683,6 +684,41 @@ onMounted(() => {
    stays correct in both themes and against whatever accent is chosen. */
 .users-sticky-head {
   backdrop-filter: saturate(140%) blur(6px);
+}
+
+/* Decorative outline only: persisted status, labels and semantic colors remain authoritative.
+   Shared timing keeps every status outline in sync, as requested. */
+.users-status { position: relative; }
+.users-status::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid currentColor;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  animation-delay: 0s;
+  animation-duration: 2.8s;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+}
+.users-status[data-status='active']::after {
+  animation-name: users-status-active;
+}
+.users-status[data-status='inactive']::after {
+  animation-name: users-status-inactive;
+}
+@keyframes users-status-active {
+  0%, 8% { transform: scale(1); opacity: 0; }
+  15% { transform: scale(1); opacity: .4; }
+  48%, 100% { transform: scale(1.16, 1.35); opacity: 0; }
+}
+@keyframes users-status-inactive {
+  0%, 8%, 48%, 100% { opacity: 0; }
+  15% { opacity: .35; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .users-status::after { display: none; animation: none !important; }
 }
 
 .users-row {

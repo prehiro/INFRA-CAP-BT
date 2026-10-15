@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### Synchronized User status animation approved for publication (2026-10-15)
+
+HIRO approved with `push github`: publish users.vue Active/Inactive decorative status outlines with shared 2.8s timing, zero delay and matching pulse phases. This supersedes the pending-preview status in both User status notes below. Exact source already passed build/diff-check, three-account browser synchronization (205 frames), stable-size and reduced-motion checks; no implementation changes since those tests. No account data, backend or Migration package changes. Include this state documentation; leave unrelated CCTV/Handover wording edits intact and uncommitted.
+
 ### User status preview timing revised: synchronized and faster (2026-10-15)
 
 HIRO requested `buat efeknya bersamaan, timingnya agak cepat`. Removed the row-id inline delay and its CSS custom-property dependency; both Active and Inactive outline animations now share 2.8s duration and zero delay. Both use the same pulse start/peak/rest percentages, keeping distinct ring/breath visuals but synchronized cadence. This supersedes the staggered 4.8s/5.6s timings in the original preview below. Text, colors, geometry, account state and reduced-motion/print fallback unchanged. Backup before revision: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/users-status-before-sync.vue`.
