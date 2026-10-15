@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### Import and User action-button animation preview (2026-10-15)
+
+Choose Excel file (both PC Ledger import and GID List tabs, including the Choose another file state) now opts into existing save-style hover/focus lift, sheen and upload-icon nod. Users toolbar Add User reuses Add Record's plus pop/lift; New Create user uses the existing primary lift/sheen without adding an icon or changing width; Delete user uses the existing error-colored lift/sheen/trash tilt. Edit user's Save changes is intentionally unchanged. Only opt-in classes in data-import.vue/users.vue and a CSS comment changed; no handlers, types, labels, validation, parsing or API changes. Backup: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/import-user-animation-backup`.
+
+Browser measured all five targets at 1920x1080: 73 frames per target, multiple button/sheen states, stable button/dialog dimensions at 0.001px precision, exact opt-in/no-opt-in size equality, no idle animation, and reduced-motion/disabled fallback passed. Both themes checked. Clicking each Choose button reached its real hidden file input with native chooser intercepted; no workbook selected/imported. Add opened the real Create dialog; native submit type retained; Create/Delete dialogs cancelled without submission, existing three users remained displayed. Edit confirmed no Create-only class. Build and diff-check passed, dev restarted. All visual source changes (including earlier record actions and Audit list preview) remain UNCOMMITTED awaiting HIRO approval; only this state note is published. Migration package untouched.
+
 ### Audit Action-column icon animation preview (2026-10-15)
 
 Only audit.vue list Action-column glyphs now animate: sign-in moves inward, failed sign-in gives a small alert tilt, create rises, update makes a short writing tilt, delete lowers/fades slightly then returns. Eight existing action identifiers map to five shared CSS keyframes. Labels, semantic colors, Rejected tags, original icons, filters, stats cards, table layout and API behavior remain unchanged. Each 5.6s cycle includes a long rest and uses stable row-id phase staggering. Reduced motion and print leave fully visible static glyphs; no timers or network calls added. Backup outside repo: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/audit-action-before.vue`.
