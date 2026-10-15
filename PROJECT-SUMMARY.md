@@ -1,7 +1,13 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-14
+> Terakhir diupdate: 2026-10-15
+
+### Save Changes / Delete record hover animation preview (2026-10-15)
+
+PC Ledger, Factory PC, CCTV Access and Handover now opt in their Edit Save Changes and confirmation Delete record buttons to a 2px hover/focus lift, theme-aware shadow and single sheen. Existing check icons nod; existing trash icons gently tilt. Ledger buttons remain text-only with their original dimensions. New/Add submit actions and other pages are unchanged. Handlers, native submit types, loading props and labels remain intact; disabled states, reduced motion and print suppress motion. CSS is shared but opt-in only.
+
+Backed up all five affected files outside the repo to `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/record-action-animation-backup`. Build and git diff --check passed. Live browser tested all eight Edit/Delete targets: 85 frames each, multiple lift/sheen states, exactly one button/dialog size state, idle motion absent, reduced-motion fallback correct. Both themes and disabled Delete controls checked on all four pages; all four New forms lack the Edit-only animation class. All dialogs cancelled; no Save/Delete submitted. Dev restarted after build and remains live on localhost:3000. Source animation changes remain UNCOMMITTED pending HIRO visual approval; only this preview-state documentation is published. Pre-existing CCTV/Handover wording edits preserved. Migration package untouched.
 
 ### Approved animation set: audit, metrics, branding and actions (2026-10-14)
 
