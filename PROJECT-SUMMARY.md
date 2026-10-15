@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### User status preview timing revised: synchronized and faster (2026-10-15)
+
+HIRO requested `buat efeknya bersamaan, timingnya agak cepat`. Removed the row-id inline delay and its CSS custom-property dependency; both Active and Inactive outline animations now share 2.8s duration and zero delay. Both use the same pulse start/peak/rest percentages, keeping distinct ring/breath visuals but synchronized cadence. This supersedes the staggered 4.8s/5.6s timings in the original preview below. Text, colors, geometry, account state and reduced-motion/print fallback unchanged. Backup before revision: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/users-status-before-sync.vue`.
+
+Actual browser: three live Active badges recorded 205 frames, identical outline transform/opacity on every frame, 2.8s duration/0s delay on all, 89 motion states and one badge-size state. Reduced-motion suppression passed; no account writes. Source remains uncommitted pending visual approval; documentation-only publication continues. Migration package and unrelated local CCTV/Handover edits untouched.
+
 ### User Management status-badge animation preview (2026-10-15)
 
 Only table Active/Inactive badges in users.vue opt into decorative outline motion. Active uses a subtle outward green ring over a 4.8s cycle with a long rest; Inactive uses a slower 5.6s outline-opacity breath. Phase follows stable user id, so rows do not pulse together. Existing status boolean, labels, colors, badge dimensions and all account/auth/API behavior stay unchanged; no dot/icon or extra width added. The pseudo-element never intercepts clicks; reduced motion and print hide it. Backup: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/users-status-before.vue`.
