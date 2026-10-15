@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-15
 
+### User Management status-badge animation preview (2026-10-15)
+
+Only table Active/Inactive badges in users.vue opt into decorative outline motion. Active uses a subtle outward green ring over a 4.8s cycle with a long rest; Inactive uses a slower 5.6s outline-opacity breath. Phase follows stable user id, so rows do not pulse together. Existing status boolean, labels, colors, badge dimensions and all account/auth/API behavior stay unchanged; no dot/icon or extra width added. The pseudo-element never intercepts clicks; reduced motion and print hide it. Backup: `C:/Users/HIRO/AppData/Local/hermes/cache/scratch/users-status-before.vue`.
+
+Actual browser measured all three existing Active accounts for 6.1s (92 frames each): multiple outline states, exactly one badge/row geometry state, text transform none, proper light/dark inherited success color, reduced-motion and print suppression. No real Inactive users currently exist: its animation was tested only by temporarily switching the DOM data-status selector (Active label/account untouched), recording 89 frames/52 opacity states and stable dimensions, then restoring the attribute. This is CSS-branch evidence, not a real inactive-account flow. No users created, edited, deleted or status toggled. Build/diff-check passed and dev restarted. This new visual edit remains UNCOMMITTED awaiting approval; documentation only published. Previously approved animations are already on origin/main in 65acb9b. Unrelated CCTV/Handover wording edits preserved; Migration package untouched.
+
 ### Animation previews approved for GitHub publication (2026-10-15)
 
 HIRO approved the pending visual set with `push github`. Publish the Save Changes/Delete record actions across all four registers, Audit list Action icons, both Data Import Choose Excel file buttons, and Users Add/Create/Delete buttons. This supersedes the uncommitted/awaiting-approval status in the three preview notes below. Their recorded build, browser, layout, theme and reduced-motion verification remains applicable; no source changes were made after those tests other than a CSS comment. Keep the pre-existing unrelated CCTV/Handover suggestion wording/log-message edits out of this animation commit and leave them intact locally. No backend, database or Migration package changes.
