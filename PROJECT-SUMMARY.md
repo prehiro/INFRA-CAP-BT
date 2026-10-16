@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-16
 
+### Thin green letter contour matching each icon (2026-10-16)
+
+HIRO requested a thin GREEN line matching the icon. AnimatedBrandText.vue reduces the moving stroke to 0.06em and resolves its color from the same --ui-primary token as the sidebar badge; login passes --brand-trace-color:#00dc82 to match its fixed green network icon. Actual computed colors match exactly: dark/login rgb(0,220,130), light sidebar rgb(0,193,106). Removed the gray keyline path/styles and white glow instead of keeping a thick double border; no keyline/underline references remain in app source. Existing 2.4s contour motion retained; solid white base still paints last, geometry and surrounding icon/subtitle unchanged. Component backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-green-20261016-232408.
+
+Full-cycle browser checks on login/sidebar dark/light and cold-cache production login with HTTPS blocked verify exact icon color match, opaque white fill, moving edges and fixed wordmark geometry. Screenshot inspected; reduced motion/print passed, production had no external resources. Build and all 10 hostname tests passed, DEV restarted, temporary static server stopped. Initial login probe caught the existing page entrance; rechecked after local fonts/entrance settled, then geometry stayed fixed. Only the shared component and login trace-color attribute changed for this revision; other edits/data/migration untouched. Visual source remains UNCOMMITTED pending approval; state documentation only published. Supersedes the white/gray contour below.
+
 ### Letter-edge animation restored with visible contrast (2026-10-16)
 
 HIRO explicitly clarified: animation must stay on the LETTER EDGES as before, not become an underline; make it more visible against white text. Removed the underline DOM/CSS/keyframe completely (zero app-source references). AnimatedBrandText.vue now renders each glyph's normalized 90/270 dash contour with a neutral slate keyline (0.13em stroke) and brighter wider white line (0.08em plus restrained edge-only halo), synchronized at 2.4s linear continuous motion. Both moving paths paint BEFORE the opaque white base glyph, ensuring the filled interior remains white and is never covered. No text transform/fade, no underline, no geometry/icon/subtitle changes. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-contour-20261016-231628.
