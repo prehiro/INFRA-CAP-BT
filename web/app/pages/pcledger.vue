@@ -686,10 +686,9 @@ function blankForm() {
   form.os_arch = '64-bit'
 }
 
-/** HIRO: "computer chasis model dropdown list berisi Desktop, Laptop, Tablet". A value already on the
- *  record is kept when it is something else, so opening an older row that reads "Notebook" shows its
- *  own value instead of going blank. */
-const CHASSIS_OPTIONS = ['Desktop', 'Laptop', 'Tablet']
+/** Notebook is the canonical NB chassis, matching the imported workbook.
+ *  Other legacy/custom values remain visible when editing their existing records. */
+const CHASSIS_OPTIONS = ['Desktop', 'Notebook', 'Tablet']
 /** New only: commit the highlighted chassis on forward Tab, then let native tab order
  *  move to Computer S/N in the reordered hardware row. Search text is never stored. */
 function onNewChassisKeydown(event: KeyboardEvent) {
@@ -1187,7 +1186,7 @@ async function exportExcel() {
             <div class="min-w-0">
               <h1 class="text-lg font-bold tracking-wide">Domain Joined PC Ledger</h1>
               <p class="text-xs text-muted">
-                List of PC, Laptop, Tablet &middot; CAPACITOR Only
+                List of PC, Notebook, Tablet &middot; CAPACITOR Only
                 <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
               </p>
             </div>

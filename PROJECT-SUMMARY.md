@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-16
 
+### Canonical chassis corrected to Notebook, not Laptop (2026-10-16)
+
+HIRO explicitly corrected the direction during clarification: `terbalik saya mau pakai chasis Notebook sesuai file xlxs yang di import. chasis laptop hapus saja`. Notebook is now canonical. PC Ledger New choices and sheet description are Desktop/Notebook/Tablet, and the hostname helper maps Notebook -> NB; Laptop is no longer supported by the generator. This supersedes the Laptop naming in the earlier hostname/Tab notes. Existing custom/legacy values remain truthfully visible in Edit, but no current DEV record contains Laptop after the authorized conversion. Factory PC already used Notebook; no Factory source/data change was needed.
+
+Before writing, backed up all three source files and complete snapshots of both DEV registers to C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/notebook-canonical-20261016-221345. PUT only values.chassis='Notebook' on PC Ledger entity 10 IDs 1835 and 1332 (the only two Laptop rows). Each exact record was immediately re-read and every other value compared unchanged. Full readback verified PC Ledger stays 28 records: Desktop 16, Notebook 4, Tablet 8, zero Laptop; Factory PC stays 10 records with its original 5 Desktop/3 Notebook/2 Tablet. No record deletion or hostname/SN/identity rewrite; two normal update-audit events expected. Verified change manifest is in that backup folder.
+
+Ten Node tests passed after switching NB cases to Notebook and asserting Laptop is unsupported. Browser confirmed no Laptop in PC Ledger's filter/New/Edit choices, Notebook + Tab focuses Computer S/N, and the real NB hostname candidate remains BAL141NB29384. Both migrated records' Edit dialogs showed Notebook and were cancelled. Build/diff-check passed; dev restarted. Publish canonicalization and state docs only. Independent local PC Hostname wording edits, PageHeader chevron preview and old CCTV/Handover wording edits are preserved outside this commit. Production database and flashdisk Migration package untouched.
+
 ### New PC hardware order and next-hostname suggestion (2026-10-16)
 
 New PC record's first Hardware & System row is now Computer Chassis | Computer S/N | JAPAN Hostname (HIRO's `computer n/n` interpreted as the existing Computer S/N label, not a rename). Remaining rows/labels are unchanged. Edit retains its original order and legacy select. Native Tab after committing Chassis now goes to S/N, then Hostname, following the new New-form order; this supersedes the earlier Chassis-to-Manufacturer destination. The existing Identity-completion-to-Hostname behavior is intentionally retained.

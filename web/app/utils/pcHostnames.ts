@@ -1,5 +1,5 @@
 /** The numeric sequence is independent for each chassis code; holes are never reused. */
-const CHASSIS_CODES: Record<string, string> = { desktop: 'PC', laptop: 'NB', tablet: 'TB' }
+const CHASSIS_CODES: Record<string, string> = { desktop: 'PC', notebook: 'NB', tablet: 'TB' }
 
 export function nextPcHostname(chassis: string, hostnames: Iterable<unknown>): string | null {
   const code = CHASSIS_CODES[chassis.trim().toLowerCase()]
