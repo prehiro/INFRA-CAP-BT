@@ -680,6 +680,22 @@ function blankForm() {
  *  record is kept when it is something else, so opening an older row that reads "Notebook" shows its
  *  own value instead of going blank. */
 const CHASSIS_OPTIONS = ['Desktop', 'Laptop', 'Tablet']
+/** New only: commit the highlighted chassis on forward Tab, then let the browser's native
+ *  tab order move to Computer Manufacturer. Search text is never stored as a chassis value. */
+function onNewChassisKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Tab' || event.shiftKey || event.isComposing) return
+  const input = event.target as HTMLInputElement
+  if (input.getAttribute('aria-expanded') !== 'true' || !input.value.trim()) return
+  const menuId = input.getAttribute('aria-controls')
+  const menu = menuId ? document.getElementById(menuId) : null
+  const options = [...(menu?.querySelectorAll<HTMLElement>('[role="option"]') ?? [])]
+    .filter(option => option.getAttribute('aria-disabled') !== 'true' && CHASSIS_OPTIONS.includes(option.textContent?.trim() ?? ''))
+  const activeId = input.getAttribute('aria-activedescendant')
+  const selected = options.find(option => option.id === activeId) ?? options[0]
+  // Use the real item's selection path so the combobox also resets its displayed search text.
+  selected?.click()
+  // Do not preventDefault: the native Tab moves focus to Computer Manufacturer.
+}
 const chassisOptions = computed(() => {
   const cur = String(form.chassis ?? '').trim()
   const list = cur && !CHASSIS_OPTIONS.includes(cur) ? [...CHASSIS_OPTIONS, cur] : [...CHASSIS_OPTIONS]
@@ -1370,6 +1386,15 @@ async function exportExcel() {
                       v-if="key === 'tanggal'"
                       v-model="form[key]"
                       placeholder="Pick a date"
+                    />
+                    <UInputMenu
+                      v-else-if="key === 'chassis' && !editingId"
+                      v-model="form[key]"
+                      :items="CHASSIS_OPTIONS"
+                      placeholder="Pick a chassis"
+                      class="pc-new-chassis w-full"
+                      :ui="{ base: 'h-9' }"
+                      @keydown.capture="onNewChassisKeydown"
                     />
                     <USelect
                       v-else-if="key === 'chassis'"
