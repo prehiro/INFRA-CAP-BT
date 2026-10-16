@@ -841,6 +841,23 @@ function siblingValues(key: string) {
  * filled from the same source. Nothing else on this page reads that list.
  */
 const SUGGEST_FIELDS = ['staff_name', 'email', 'gid'] as const
+const identityComplete = computed(() => SUGGEST_FIELDS.every(key => String(form[key] ?? '').trim()))
+
+function focusNewJapanHostname() {
+  if (editingId.value || !showForm.value || !identityComplete.value) return
+  nextTick(() => {
+    if (editingId.value || !showForm.value || !identityComplete.value) return
+    document.querySelector<HTMLInputElement>('.pl-record-modal[data-state="open"] input[data-pc-input="japan_hostname"]')?.focus()
+  })
+}
+
+function onNewIdentityKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.isComposing || editingId.value || !identityComplete.value) return
+  // A Tab pick fills the whole identity before this bubbled event. Prevent its default step
+  // so it cannot move focus again after we jump directly to the Hardware & System section.
+  event.preventDefault()
+  focusNewJapanHostname()
+}
 const gidCandidates = ref<any[]>([])
 const gidCandidatesLoaded = ref(false)
 
@@ -879,6 +896,7 @@ function applyGidSuggestion(s: any) {
     const sourceKey = key === 'staff_name' ? 'name' : key
     identityHints[key] = String(row[sourceKey] ?? '').trim() ? 'Auto-filled from the GID List' : ''
   }
+  focusNewJapanHostname()
 }
 
 function openCreate() {
@@ -1355,7 +1373,7 @@ async function exportExcel() {
                foot of this file). One class on this wrapper is enough - it covers the header, body
                and footer at once - where the CCTV and Users dialogs set it on their header and body
                separately because those two use the vendor's header/body slots. -->
-          <div class="relative z-10 flex max-h-[85vh] flex-col">
+          <div class="relative z-10 flex max-h-[85vh] flex-col" :class="{ 'pc-new-record-content': !editingId }">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'i-carbon-data-add'" />
@@ -1416,15 +1434,19 @@ async function exportExcel() {
                       v-model="form[key]"
                       :suggestions="gidSuggestions(key as 'staff_name' | 'email' | 'gid')"
                       :context="siblingValues(key)"
+                      :select-on-tab="!editingId"
+                      :data-pc-identity="key"
                       v-model:source-hint="identityHints[key]"
                       :placeholder="key === 'staff_name' ? 'Search or enter a staff name' : key === 'email' ? 'Search or enter an email address' : 'Search or enter a Global ID'"
                       header="Smart Suggestion - Click or Enter ↵"
                       @fill="applyGidSuggestion"
+                      @keydown="onNewIdentityKeydown"
                     />
                     <UInput
                       v-else
                       v-model="form[key]"
                       :placeholder="FIELD_PLACEHOLDERS[key]"
+                      :data-pc-input="key"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
@@ -1862,6 +1884,10 @@ async function exportExcel() {
      no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
      <style> block. -->
 <style>
+/* A teleported suggestion becomes the modal's last child; suppress only the NEW form's
+   accidental divide-y border so opening a dropdown cannot grow/move the dialog by 1px. */
+.pl-record-modal[data-slot='content'] > .pc-new-record-content { border-bottom-width: 0; }
+
 /* ---- accent glow in the top-right corner of the record dialog ----
    The same recipe as the Users and CCTV dialogs, which was measured against the reference template:
    it is NOT a CSS gradient, it is a plain circle of `bg-primary` with a large blur, so the

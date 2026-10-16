@@ -60,7 +60,9 @@ const props = withDefaults(defineProps<{
   type?: 'text' | 'email'
   /** Opt in when suggestions arrive asynchronously after the user has started typing. */
   showOnSuggestionsUpdate?: boolean
-}>(), { placeholder: '', header: '', context: () => [], invalid: false, type: 'text', showOnSuggestionsUpdate: false })
+  /** Explicit opt-in: accept the highlighted suggestion on plain forward Tab. */
+  selectOnTab?: boolean
+}>(), { placeholder: '', header: '', context: () => [], invalid: false, type: 'text', showOnSuggestionsUpdate: false, selectOnTab: false })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
@@ -260,7 +262,13 @@ function onKeydown(e: KeyboardEvent) {
     open.value = false
     return
   }
-  if (e.key === 'Tab') open.value = false
+  if (e.key === 'Tab') {
+    if (props.selectOnTab && !e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey && !e.isComposing && open.value && matches.value[active.value]) {
+      pick(matches.value[active.value]!)
+    }
+    // Native Tab remains available; an opting-in parent may redirect it after its fill handler.
+    open.value = false
+  }
 }
 
 function pick(s: Suggestion) {
