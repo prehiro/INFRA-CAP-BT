@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-16
 
+### Intermittent green contour approved for GitHub publication (2026-10-16)
+
+HIRO requested occasional animation rather than continuous playback, then explicitly approved pushing to GitHub. The thin icon-matched green contour now makes one 2.4s pass, fades out by 2.8s, then remains invisible/stationary for 7.2s in a 10s CSS cycle. White base glyphs remain fully opaque and painted last throughout. No drawing slowdown, underline, gray border or changes to other animations. Before-change component backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-intermittent-20261016-234616.
+
+Actual full-cycle browser sampling verified moving visible active frames AND invisible stationary idle frames on login, authenticated sidebar dark/light, and cold-cache static production login with HTTPS blocked. White fill and geometry stayed fixed; reduced motion/print and collapse/expand passed. Production had zero external resources. Build, diff-check and all 10 hostname tests passed; DEV restarted on localhost:3000, temporary static server stopped. Publish scope is AnimatedBrandText.vue, BrandMenu.vue, login.vue, web/THIRD-PARTY-NOTICES.md and this checkpoint only. The previously previewed wordmark source is now APPROVED for origin/main publication, superseding all pending-approval wording below. Unrelated local PageHeader chevron, CCTV/Handover wording and PC Ledger label edits remain uncommitted/excluded; no data or migration changes.
+
 ### Thin green letter contour matching each icon (2026-10-16)
 
 HIRO requested a thin GREEN line matching the icon. AnimatedBrandText.vue reduces the moving stroke to 0.06em and resolves its color from the same --ui-primary token as the sidebar badge; login passes --brand-trace-color:#00dc82 to match its fixed green network icon. Actual computed colors match exactly: dark/login rgb(0,220,130), light sidebar rgb(0,193,106). Removed the gray keyline path/styles and white glow instead of keeping a thick double border; no keyline/underline references remain in app source. Existing 2.4s contour motion retained; solid white base still paints last, geometry and surrounding icon/subtitle unchanged. Component backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-green-20261016-232408.

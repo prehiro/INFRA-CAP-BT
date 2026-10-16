@@ -178,7 +178,7 @@ onBeforeUnmount(() => cleanup?.())
                 <LoginNetworkIcon />
               </span>
             </div>
-            <h1 class="text-xl font-bold tracking-wide text-slate-100">INFRA-BTCAP</h1>
+            <h1 class="text-xl font-bold tracking-wide text-slate-100"><AnimatedBrandText :tracking="0.025" :line-height="1.4" style="--brand-trace-color: #00dc82" /></h1>
             <p class="text-sm text-[#7b8fb5] mt-1">Internal App ISD Capacitor</p>
           </div>
         </template>
