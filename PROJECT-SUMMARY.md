@@ -1,7 +1,15 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-15
+> Terakhir diupdate: 2026-10-16
+
+### New PC hardware order and next-hostname suggestion (2026-10-16)
+
+New PC record's first Hardware & System row is now Computer Chassis | Computer S/N | JAPAN Hostname (HIRO's `computer n/n` interpreted as the existing Computer S/N label, not a rename). Remaining rows/labels are unchanged. Edit retains its original order and legacy select. Native Tab after committing Chassis now goes to S/N, then Hostname, following the new New-form order; this supersedes the earlier Chassis-to-Manufacturer destination. The existing Identity-completion-to-Hostname behavior is intentionally retained.
+
+Choosing Desktop/Laptop/Tablet in New re-reads every unfiltered PC Ledger API page and proposes BAL{sequence}PC/NB/TB29384 respectively. Sequence is the numeric maximum for that code plus one, never a gap fill; empty starts 001, minimum three digits, no truncation/wrap past 999. Unrelated formats/suffixes do not count. Pure BigInt helper and strict paginated read adapter live in app/utils/pcHostnames.ts; tests/pcHostnames.test.mjs uses Node's built-in runner (no new dependencies). Read errors/incomplete/non-advancing pages show the existing reserved warning, never fabricate a candidate. Request generations ignore stale responses after a different selection, cancel/reopen, Edit or unmount; newer manual hostname typing wins over an in-flight response. Field spinner/temporarily disabled Add record preserve dimensions; hostname stays editable. Same-value selections use the native update event and can refresh. No backend/schema changes: actual DEV metadata reports japan_hostname.isUnique=false, so this is a suggestion with existing client Save duplicate checks, NOT an atomic reservation or concurrent uniqueness guarantee.
+
+Verification: ten Node tests passed, including NB123+NB125=>NB126, independent codes, empty/invalid/large sequences, a max on page two beyond 500, deduplication and failed/incomplete reads. Browser tested real API candidates for all three types via Tab/Enter/pointer, filtered-table independence, S/N navigation, pending-save lock, manual typing during latency, rapid switching, cancel/reopen, offline error, both themes, Edit preservation and 1280x720/640; modal remained 896x743.5 at 1080p. A separate live row BAL140NB29384 appeared during work (id 1835); it was preserved, the stale test oracle was refreshed, and Laptop then correctly suggested BAL141NB29384. Read-only before/after comparison of all 28 IDs/values passed unchanged during the final test run. No test records saved/deleted. Build/diff-check passed and dev restarted. Backup: C:/Users/HIRO/AppData/Local/hermes/cache/scratch/pcledger-before-hostname-auto.vue. Publish only this functional change/tests/documentation; PageHeader chevron preview and old CCTV/Handover wording remain uncommitted. Migration package untouched.
 
 ### New PC Identity Tab selection and Hardware focus (2026-10-15)
 

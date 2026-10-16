@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { loadNextPcHostname } from '~/utils/pcHostnames'
+
 /**
  * PC Ledger — the app's replacement for the manual Excel sheet (IT FORM SG031, sheet "Ledger").
  *
@@ -662,6 +664,14 @@ const editingId = ref<number | null>(null)
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 const identityHints = reactive<Record<string, string>>({ staff_name: '', email: '', gid: '' })
+const hostnamePending = ref(false)
+let hostnameRequest = 0
+let lastAutoHostname = ''
+const recordFormSections = computed(() => FORM_SECTIONS.map(section =>
+  !editingId.value && section.title === 'Hardware & System'
+    ? { ...section, fields: ['chassis', 'computer_sn', 'japan_hostname', 'manufacturer', 'computer_model', 'tanggal', 'os_name', 'os_arch'] as const }
+    : section
+))
 
 function blankForm() {
   for (const key of Object.keys(identityHints)) identityHints[key] = ''
@@ -680,8 +690,8 @@ function blankForm() {
  *  record is kept when it is something else, so opening an older row that reads "Notebook" shows its
  *  own value instead of going blank. */
 const CHASSIS_OPTIONS = ['Desktop', 'Laptop', 'Tablet']
-/** New only: commit the highlighted chassis on forward Tab, then let the browser's native
- *  tab order move to Computer Manufacturer. Search text is never stored as a chassis value. */
+/** New only: commit the highlighted chassis on forward Tab, then let native tab order
+ *  move to Computer S/N in the reordered hardware row. Search text is never stored. */
 function onNewChassisKeydown(event: KeyboardEvent) {
   if (event.key !== 'Tab' || event.shiftKey || event.isComposing) return
   const input = event.target as HTMLInputElement
@@ -694,13 +704,54 @@ function onNewChassisKeydown(event: KeyboardEvent) {
   const selected = options.find(option => option.id === activeId) ?? options[0]
   // Use the real item's selection path so the combobox also resets its displayed search text.
   selected?.click()
-  // Do not preventDefault: the native Tab moves focus to Computer Manufacturer.
+  // Do not preventDefault: native Tab follows the New form's Chassis -> S/N -> Hostname order.
 }
 const chassisOptions = computed(() => {
   const cur = String(form.chassis ?? '').trim()
   const list = cur && !CHASSIS_OPTIONS.includes(cur) ? [...CHASSIS_OPTIONS, cur] : [...CHASSIS_OPTIONS]
   return list.map((v) => ({ label: v, value: v }))
 })
+
+// New records only. Each committed chassis selection re-reads every server page; neither the
+// visible table's filters nor its 500-row cap may hide the highest used sequence.
+async function assignNewChassisHostname(value: unknown) {
+  const chassis = String(value ?? '')
+  const request = ++hostnameRequest
+  hostnamePending.value = false
+  if (!showForm.value || editingId.value) { lastAutoHostname = ''; return }
+  if (!CHASSIS_OPTIONS.includes(chassis)) {
+    if (lastAutoHostname && form.japan_hostname === lastAutoHostname) form.japan_hostname = ''
+    lastAutoHostname = ''
+    return
+  }
+  if (lastAutoHostname && form.japan_hostname === lastAutoHostname) form.japan_hostname = ''
+  lastAutoHostname = ''
+  const startingHostname = String(form.japan_hostname ?? '')
+  const targetEntity = entityId.value
+  if (!targetEntity) return
+  hostnamePending.value = true
+  try {
+    const hostname = await loadNextPcHostname(chassis, page => apiListRecords(targetEntity, { page, pageSize: 500 }))
+    if (request !== hostnameRequest || !showForm.value || editingId.value || form.chassis !== chassis) return
+    // A user may type a manual hostname while the lookup runs; never replace that newer input.
+    if (hostname && String(form.japan_hostname ?? '') === startingHostname) {
+      form.japan_hostname = hostname
+      lastAutoHostname = hostname
+    }
+  } catch {
+    if (request === hostnameRequest && showForm.value && !editingId.value) {
+      formError.value = 'Could not check the next hostname. Enter JAPAN Hostname manually, or select the chassis again to retry.'
+    }
+  } finally {
+    if (request === hostnameRequest) hostnamePending.value = false
+  }
+}
+watch([showForm, editingId], () => {
+  hostnameRequest++
+  hostnamePending.value = false
+  lastAutoHostname = ''
+}, { flush: 'sync' })
+onBeforeUnmount(() => { hostnameRequest++; hostnamePending.value = false })
 
 /** Distinct values ALREADY in the register, most used first - so the field offers what the factory
  *  really has instead of everyone inventing a spelling. Shared by model, manufacturer and location;
@@ -932,7 +983,7 @@ function payload(): Record<string, any> {
 }
 
 async function save() {
-  if (!entityId.value) return
+  if (!entityId.value || (!editingId.value && hostnamePending.value)) return
   formError.value = ''
   saving.value = true
   try {
@@ -1387,7 +1438,7 @@ async function exportExcel() {
             </div>
 
             <div class="flex-1 overflow-y-auto px-5 py-4">
-              <div v-for="section in FORM_SECTIONS" :key="section.title" class="mb-5 last:mb-0">
+              <div v-for="section in recordFormSections" :key="section.title" class="mb-5 last:mb-0">
                 <p class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   <UIcon :name="section.icon" class="size-3.5" />
                   {{ section.title }}
@@ -1412,6 +1463,7 @@ async function exportExcel() {
                       placeholder="Pick a chassis"
                       class="pc-new-chassis w-full"
                       :ui="{ base: 'h-9' }"
+                      @update:model-value="assignNewChassisHostname"
                       @keydown.capture="onNewChassisKeydown"
                     />
                     <USelect
@@ -1447,6 +1499,7 @@ async function exportExcel() {
                       v-model="form[key]"
                       :placeholder="FIELD_PLACEHOLDERS[key]"
                       :data-pc-input="key"
+                      :loading="key === 'japan_hostname' && !editingId && hostnamePending"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
@@ -1475,7 +1528,7 @@ async function exportExcel() {
 
             <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :class="{ 'record-save-hover': editingId }" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save" />
+              <UButton color="primary" :class="{ 'record-save-hover': editingId }" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save" />
             </div>
           </div>
         </template>
