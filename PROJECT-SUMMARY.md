@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Dashboard banner approved for GitHub publication (2026-10-17)
+
+HIRO explicitly approved pushing the current dashboard banner. Publication scope: WelcomeBanner.vue + this checkpoint only. Final state: base --ui-bg in both modes, light edge/end 16%/14%, dark edge/end 0%/20%, no date plaque/background, transparent primary-outline Today badge with readable theme shades, one accent material surface and retained seeded stars/avatar/identity/time behavior. This supersedes all banner pending-approval notes below. Source exactly matches the last successfully built/probed revision; build + 10 tests and compiled dark/light value readbacks passed, with earlier real UI/accent/mobile/contrast/reduced-motion/layout checks recorded below. Existing red wordmark/glow, PageHeader and CCTV/Handover/PC-label changes remain LOCAL and excluded. No data/migration changes.
+
 ### Dark banner edge set to zero (2026-10-17)
 
 HIRO specified --welcome-edge:0% for dark mode. Changed only dark:[--welcome-edge:10%] to dark:[--welcome-edge:0%] in WelcomeBanner.vue; exact backup comparison verifies the single-token change. Dark end stays 20%; light edge/end stay 16%/14%; border remains neutral via existing color-mix, not removed. Backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/banner-dark-edge-zero-20261017-222446. Build + 10 tests passed; browser CSS-only probe linking actual compiled entry stylesheet read dark 0%/20% and light 16%/14%. DEV restarted; no full authenticated rerun needed/claimed for the one-value edit. Source remains LOCAL pending approval; docs-only published, unrelated edits untouched.

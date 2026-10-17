@@ -88,41 +88,13 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl border border-default bg-elevated">
-    <!-- Decorative layer. Decorative only, so it is hidden from assistive tech. The wrapper
-         matches the reference: absolute inset-0, pointer-events-none, overflow-hidden, at z-0
-         behind the content which sits at z-10.
-
-         KEPT DELIBERATELY MINIMAL. An earlier pass added a 44px grid, two diagonal washes and a
-         second glow in the opposite corner; the result was rejected on sight and looking at it
-         again the reasons are obvious: the grid read as a rendering fault rather than as
-         texture, and stacking two translucent washes over two blurred orbs left the panel with
-         visible blotchy patches and an olive cast creeping in from the right - lit unevenly,
-         like a smudge, instead of lit cleanly. So: ONE smooth light source from the right, one
-         barely-there warm tint behind it, nothing else. The restraint IS the design. -->
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <!-- A single smooth horizontal falloff. It is deliberately one gradient and not two: a
-           lone gradient cannot produce the muddled overlap that the two-wash version did.
-           Stronger in dark mode, because the same alpha that reads as a soft tint on a light
-           surface all but disappears against a near-black one - that asymmetry is the whole
-           reason the banner used to look washed out in whichever mode it was not tuned for.
-           `from-primary` is a semantic token, so it follows the user's accent. -->
-      <div class="absolute inset-0 bg-gradient-to-l from-primary/10 via-primary/[0.03] to-transparent dark:from-primary/20 dark:via-primary/[0.06]" />
-
-      <!-- The soft accent glow from the reference template. It is NOT a CSS gradient: it is a
-           plain circle of the accent colour with a very large blur, so the "gradient" is just
-           the blur falloff. Same recipe as the source: `absolute right-[-120px] top-1/2
-           -translate-y-1/2 size-[420px] rounded-full bg-primary blur-[300px]`.
-           The reference uses `-right-1/2`, which is `right: -50%` of the CONTAINING BLOCK, so
-           it only works because its panel is much wider than the orb. The banner is far
-           narrower, so the offset is given in pixels instead - otherwise the orb would sit
-           entirely outside the banner and be clipped into nothing. The banner's own
-           overflow-hidden does the clipping, which is what makes the glow read as light
-           bleeding in from the right edge rather than as a floating blob.
-           Faded with opacity per mode rather than a second wash: dimmer in light mode, where a
-           full-strength accent blur turns the surface pale green instead of lighting it. -->
-      <div class="absolute right-[-140px] top-1/2 size-[420px] -translate-y-1/2 rounded-full bg-primary opacity-50 blur-[300px] dark:opacity-90" />
-
+  <div class="welcome-banner relative overflow-hidden rounded-xl border
+              [--welcome-surface:var(--ui-bg)] [--welcome-start:2%] [--welcome-end:14%]
+              [--welcome-edge:16%] dark:[--welcome-start:3%]
+              dark:[--welcome-end:20%] dark:[--welcome-edge:0%]">
+    <!-- One accent-tinted material, not stacked orbs/washes. Keep the existing seeded stars
+         quiet in light mode and a little brighter on graphite; no new animation or canvas. -->
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-50 dark:opacity-80">
       <span v-for="(s, i) in STARS" :key="i" class="infra-star"
             :style="{ left: s.left + '%', top: s.top + '%', '--star-size': s.size + 'px',
                       '--twinkle-delay': s.delay + 's', '--twinkle-duration': s.duration + 's' }" />
@@ -154,8 +126,9 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
         </div>
       </div>
 
-      <div class="hidden shrink-0 text-right sm:block">
-        <p class="text-xs uppercase tracking-wide text-dimmed">Today</p>
+      <div class="welcome-date hidden shrink-0 text-right sm:block">
+        <UBadge color="primary" variant="outline" size="sm"
+                class="welcome-today bg-transparent uppercase tracking-wide text-primary-800 dark:text-primary-300">Today</UBadge>
         <p class="text-sm font-medium">{{ today }}</p>
       </div>
     </div>
@@ -163,6 +136,15 @@ const today = computed(() => now.value.toLocaleDateString('en-GB', {
 </template>
 
 <style scoped>
+.welcome-banner {
+  background: linear-gradient(112deg,
+    color-mix(in oklab, var(--ui-primary) var(--welcome-start), var(--welcome-surface)) 0%,
+    color-mix(in oklab, var(--ui-primary) var(--welcome-end), var(--welcome-surface)) 100%);
+  border-color: color-mix(in oklab, var(--ui-primary) var(--welcome-edge), var(--ui-border));
+  box-shadow: 0 10px 28px -24px rgb(0 0 0 / .35);
+}
+
+
 /* Twinkling star field, mirroring the hero panel of https://changelog-template.nuxt.dev/.
    Deliberately opacity-only, like the reference: animating transform or size here would
    re-rasterise 46 elements every frame for no visual gain, and opacity is compositor-only.
