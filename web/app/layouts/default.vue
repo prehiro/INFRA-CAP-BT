@@ -54,6 +54,9 @@ const links = computed<NavigationMenuItem[][]>(() => [
     }
   ],
   [
+    { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/issuedform' }
+  ],
+  [
     // Same group as User Management, and placed BEFORE it deliberately.
     //
     // The sidebar puts `mt-auto` on the LAST nav group, which is what pins that group to the
@@ -87,6 +90,7 @@ const groups = computed(() => [
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
       { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },
+      { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/issuedform' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
       { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]
