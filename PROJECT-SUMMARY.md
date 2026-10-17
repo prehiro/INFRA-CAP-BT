@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Exact dark banner tint values revised (2026-10-17)
+
+HIRO specified --welcome-edge:10% and --welcome-end:20% for dark mode. Changed only those two Tailwind dark custom-property values in WelcomeBanner.vue; exact comparison against the before-change backup proves no other source change. Light stays edge 16% / end 14%; transparent Today badge, date background removal and base --ui-bg surface preserved. Backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/banner-dark-tint-20261017-221330. Build + 10 tests passed; actual offline compiled-CSS snapshots read back dark 10%/20% and light 16%/14%, transparent badge/no plaque. Temporary snapshots/server cleaned and DEV restarted. Source still LOCAL pending approval; docs-only published; other pending edits untouched.
+
 ### Banner base surface and transparent Today badge revision (2026-10-17)
 
 HIRO specified removing the exact dark --welcome-surface:var(--ui-bg-elevated) override, removing the Today/date background, and making Today a transparent accent-following badge. Removed only that dark utility; the base --welcome-surface:var(--ui-bg) remains and now supplies both themes. Deleted the date plaque pseudo-element/styles and unused --welcome-date properties. Today is a primary outline UBadge with bg-transparent and accessible primary-800 light / primary-300 dark text shades. Date text itself remains plain and background-free. Other banner gradients/stars/avatar/content/logic unchanged. Only WelcomeBanner.vue changed; backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/banner-surface-date-20261017-220324.
