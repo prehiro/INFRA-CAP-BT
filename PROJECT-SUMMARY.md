@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Glowing leading tip on the red contour preview (2026-10-17)
+
+HIRO requested glow at the front tip of the moving red line, not across the whole outline. Added a short bright-core tip (dash 6/354) with a localized red SVG halo, leading the existing 90/270 red contour. Body offset 360..0 and tip offset 276..-84 maintain an 84-unit difference so the highlight occupies the body's leading 84..90 end. SVG filter uses a unique Vue useId and font-scale userSpaceOnUse blur/bounds, so the halo renders at both login and sidebar font sizes instead of shrinking into invisibility. Opaque white glyphs still paint last; tip shares the body's 10s motion/fade/quiet envelope and is invisible throughout the existing 7.2s rest. Reduced motion/print hide both paths. Only AnimatedBrandText.vue changed this revision. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-tip-20261017-182956.
+
+Actual full-cycle login/sidebar dark/light/static-offline browser tests confirm synchronized leading-end offsets and alpha, visible active head, hidden idle tip/body, opaque white fill and fixed geometry. Collapse/expand passed; screenshots inspected. Same-phase halo-on/off pixel comparison verified 1308 localized red-light pixels (maximum red-channel increase 52), with temporary overrides/playback restored. Build and all 10 hostname tests passed; no external assets in production test; DEV restarted and temporary test server stopped. Red contour + tip source remains LOCAL pending visual approval; only state docs published, last published brand source still green at 4e36e8e. Other pending edits/data/migration untouched.
+
 ### Red contour preview (2026-10-17)
 
 HIRO requested RED instead of green for the wordmark's thin moving letter edges. Shared AnimatedBrandText.vue now uses #ef4444; removed the unused green --brand-trace-color override from login and confirmed zero app-source references. White filled letters, stroke width, 10s occasional cycle (2.4s pass/fade by 2.8s/7.2s quiet), icon colors and layout unchanged. Both source files backed up under C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-red-20261017-175038.
