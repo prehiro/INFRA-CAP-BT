@@ -209,8 +209,28 @@ onMounted(loadGid)
               />
             </div>
           </fieldset>
-          <div class="mt-2 px-1">
-            <UButton type="button" icon="i-lucide-plus" variant="outline" color="neutral" :disabled="form.assets.length >= 6 || generating" @click="form.assets.push(emptyIssuedAsset())">Add equipment</UButton>
+          <div class="mt-2 flex justify-center px-1">
+            <UButton
+              type="button"
+              variant="outline"
+              color="neutral"
+              :disabled="form.assets.length >= 6 || generating"
+              class="gap-2 transition-colors duration-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+              @click="form.assets.push(emptyIssuedAsset())"
+            >
+              <span class="relative inline-flex items-center gap-1.5">
+                <span class="relative inline-flex size-4 items-center justify-center">
+                  <!-- ix:table-add-row-below, drawn inline. The ix Iconify collection does not
+                       resolve at runtime in this offline build (provider 'none'), so the exact
+                       glyph is embedded instead of depending on the icon bundle. -->
+                  <svg viewBox="0 0 512 512" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" class="add-row-icon size-4" aria-hidden="true">
+                    <path d="M277.333 277.333h-42.666v-64h-64v-42.666h64v-64h42.666v64h64v42.666h-64zm-192-64H128v-42.666H42.667V384h426.666V170.667H384v42.666h42.667v128H85.333z" />
+                  </svg>
+                  <span class="add-row-pulse" aria-hidden="true" />
+                </span>
+                Add equipment
+              </span>
+            </UButton>
           </div>
         </UCard>
         <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
@@ -323,6 +343,46 @@ onMounted(loadGid)
 @media (prefers-reduced-motion: reduce) {
   .chain-link, .chain-half-left, .chain-half-right, .chain-bar { animation: none; }
   .chain-burst-ring, .chain-spark { display: none; }
+}
+/*
+ * Add-equipment icon: the row is picked up, dropped in and settled, with a short accent
+ * underline marking where it landed. The cycle is slow and off-beat so it reads as an
+ * occasional hint rather than a blinking badge.
+ */
+.add-row-icon {
+  transform-origin: center;
+  animation: add-row-drop 4.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+}
+@keyframes add-row-drop {
+  0%, 60%, 100% { transform: translateY(0) scale(1); }
+  66% { transform: translateY(-3px) scale(1.08); }
+  76% { transform: translateY(1px) scale(0.95); }
+  84% { transform: translateY(0) scale(1.03); }
+  90% { transform: translateY(0) scale(1); }
+}
+.add-row-pulse {
+  position: absolute;
+  left: 50%;
+  bottom: -3px;
+  width: 12px;
+  height: 2px;
+  margin-left: -6px;
+  border-radius: 9999px;
+  background: var(--ui-primary);
+  opacity: 0;
+  animation: add-row-pulse 4.2s ease-out infinite;
+}
+@keyframes add-row-pulse {
+  0%, 60%, 100% { opacity: 0; transform: scaleX(0.3); }
+  68% { opacity: 0.95; transform: scaleX(1); }
+  88% { opacity: 0; transform: scaleX(0.6); }
+}
+button:disabled .add-row-icon,
+button:disabled .add-row-pulse { animation: none; }
+button:disabled .add-row-pulse { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .add-row-icon, .add-row-pulse { animation: none; }
+  .add-row-pulse { display: none; }
 }
 </style>
 
