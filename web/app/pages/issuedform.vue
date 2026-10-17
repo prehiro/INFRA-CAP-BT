@@ -123,7 +123,7 @@ onMounted(loadGid)
             <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>
             <p class="mt-1 text-sm text-muted">IT FORM-BT015 · V2 · Fill the original PDF without removing its signature fields.</p>
           </div>
-          <UBadge color="primary" variant="subtle">Interactive PDF</UBadge>
+          <UBadge color="primary" variant="subtle">IT Issued form generator</UBadge>
         </div>
         <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
           <template #header>
