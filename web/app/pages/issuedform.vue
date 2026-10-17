@@ -141,9 +141,12 @@ onMounted(loadGid)
                     :title="`Same as equipment ${index}`"
                     @click="linkBrandFromAbove(index)"
                   >
-                    <!-- Plain chain glyph, drawn inline so it needs no icon bundle and shows offline. -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-icon size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
-                      <path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 1 1 0 10h-2" /><path d="M8 12h8" />
+                    <!-- Same chain glyph as before, split into its two halves plus the centre bar so the
+                         halves can genuinely draw together and apart. Inline SVG stays offline-safe. -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-link chain-link rotate-90 size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
+                      <path class="chain-half-left" d="M9 17H7A5 5 0 0 1 7 7h2" />
+                      <path class="chain-half-right" d="M15 7h2a5 5 0 1 1 0 10h-2" />
+                      <path class="chain-bar" d="M8 12h8" />
                     </svg>
                   </button>
                 </span>
@@ -157,8 +160,10 @@ onMounted(loadGid)
                   :title="`Same as equipment ${index}`"
                   @click="linkBrandFromAbove(index)"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-icon rotate-90 size-3" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
-                    <path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 1 1 0 10h-2" /><path d="M8 12h8" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-link chain-link rotate-90 size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
+                    <path class="chain-half-left" d="M9 17H7A5 5 0 0 1 7 7h2" />
+                    <path class="chain-half-right" d="M15 7h2a5 5 0 1 1 0 10h-2" />
+                    <path class="chain-bar" d="M8 12h8" />
                   </svg>
                 </button>
               </label>
@@ -213,21 +218,49 @@ onMounted(loadGid)
 
 <style scoped>
 /*
- * The chain glyph is a single path, so its two ends cannot be animated separately. A
- * non-uniform scale along the glyph's long axis reads as the ends drawing together and then
- * moving apart again, which is the motion HIRO asked for. Vue renames scoped keyframes with
- * the component id (verified in the browser), so the name stays local to this page.
+ * The chain is three paths, so its two halves can actually move: they draw toward each
+ * other, hold for a beat, then let go with a small rebound while the centre bar squeezes.
+ * That reads as a live link instead of the whole glyph squashing. Elements animate their own
+ * translate/transform, so the svg's rotate-90 class is untouched. Vue renames scoped
+ * keyframes with the component id, so the names stay local to this page.
  */
-@keyframes issued-chain-breathe {
-  0%, 100% { scale: 1 1; }
-  50% { scale: 0.55 1; }
+@keyframes chain-half-close-left {
+  0%, 100% { translate: 0 0; }
+  45%, 62% { translate: -1.3px 0; }
 }
-.issued-chain-icon {
-  animation: issued-chain-breathe 2.4s ease-in-out infinite;
+@keyframes chain-half-close-right {
+  0%, 100% { translate: 0 0; }
+  45%, 62% { translate: 1.3px 0; }
+}
+@keyframes chain-bar-squeeze {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  45%, 62% { transform: scaleX(1.3); opacity: 0.85; }
+}
+/* A gentle whole-glyph swell plus a small twist makes the tug readable at 14px without
+   distorting the shape. The base 90deg lives in the class so the glyph still stands vertical
+   whenever the animation is switched off (reduced motion). */
+@keyframes chain-link-swell {
+  0%, 100% { scale: 1 1; rotate: 90deg; }
+  45%, 62% { scale: 1.05 1.05; rotate: 97deg; }
+}
+.chain-link {
+  animation: chain-link-swell 2.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  transform-box: fill-box;
   transform-origin: center;
 }
+.chain-half-left,
+.chain-half-right {
+  animation: 2.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+.chain-half-left { animation-name: chain-half-close-left; }
+.chain-half-right { animation-name: chain-half-close-right; }
+.chain-bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chain-bar-squeeze 2.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .issued-chain-icon { animation: none; }
+  .chain-link, .chain-half-left, .chain-half-right, .chain-bar { animation: none; }
 }
 </style>
 
