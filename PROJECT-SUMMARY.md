@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Dashboard banner theme-material preview (2026-10-17)
+
+HIRO requested a creative but modern/professional dashboard banner that matches dark/light themes. Only WelcomeBanner.vue changed: one smooth semantic-token surface (light pearl/accent tint 2→14%, dark graphite/accent tint 3→24%), accent-aware edge and restrained neutral depth, plus an out-of-flow translucent date plaque. Removed the previous stacked wash/420px blurred orb; kept the existing 46 seeded twinkling stars (quieter per mode), avatar/breathing halo, identity/role/greeting/date logic and exact content layout. No grid, second glow blob, extra canvas or timer. The entire script block is byte-equivalent after newline normalization. Before-change backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/dashboard-banner-theme-20261017-212804.
+
+Actual authenticated Dashboard tests passed real UserMenu Appearance Light/Dark and Accent Color violet→green changes, restored original dark mode AND originally absent theme cookie, mobile 390px/no overflow/date hidden, reduced motion with html opacity 1/no html animation. At 1440px, banner remains exactly x232/y88/1184x134 and all three neighboring metrics-canvas rectangles match the baseline. Current name and stars preserved. Rendered-background contrast probes passed for greeting/name/date label/value: small text minimum 4.66:1 (existing role-badge contrast not asserted). Both screenshots inspected. Build + 10 hostname tests passed. Offline compiled production CSS-only snapshots from captured real live markup/palette verified both themes/local assets/visible banner/reduced motion; this is NOT a production auth-flow test. Production scope ID replaced for the probe, JS-triggered entrance marker removed only from static snapshots, minifier height rounding tolerated below 0.1px. Temporary captured-data public HTML and server removed. DEV restarted at localhost:3000. No account/record CRUD/import; normal login audit events only.
+
+Banner source remains LOCAL for aesthetic approval; only checkpoint documentation published. Existing wordmark/glow, PageHeader and wording/PC-label pending edits preserved and not staged. No migration/production changes.
+
 ### Larger visible red halo preview (2026-10-17)
 
 HIRO requested another radius increase. Halo blur is now 0.2em (previously 0.13em). Added 0.04em dilation on ONLY the halo emitter before blur so the broader light remains visible rather than becoming too faint; the softened core is still taken from undilated SourceGraphic. Enlarged filter region to -0.7em / 2.4em size. Red color, halo alpha 0.55, thin core/contour widths, white fill and 10s occasional cadence unchanged. Only AnimatedBrandText.vue changed; backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-larger-halo-20261017-204322.
