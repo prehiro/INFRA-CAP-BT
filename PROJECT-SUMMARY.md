@@ -1,7 +1,13 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-16
+> Terakhir diupdate: 2026-10-17
+
+### Red contour preview (2026-10-17)
+
+HIRO requested RED instead of green for the wordmark's thin moving letter edges. Shared AnimatedBrandText.vue now uses #ef4444; removed the unused green --brand-trace-color override from login and confirmed zero app-source references. White filled letters, stroke width, 10s occasional cycle (2.4s pass/fade by 2.8s/7.2s quiet), icon colors and layout unchanged. Both source files backed up under C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-red-20261017-175038.
+
+Production browser verified eleven red strokes, opaque white fill, moving active frames, invisible stationary quiet frames, fixed geometry, reduced motion/print; screenshot inspected. Build and all 10 hostname tests passed; DEV restarted on localhost:3000, temporary production-check server stopped. Red visual source remains LOCAL pending approval (the last published brand version is green, commit 4e36e8e); only state documentation published for this preview. Other pending edits/data/migration untouched.
 
 ### Intermittent green contour approved for GitHub publication (2026-10-16)
 
