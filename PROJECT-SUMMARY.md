@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Larger visible red halo preview (2026-10-17)
+
+HIRO requested another radius increase. Halo blur is now 0.2em (previously 0.13em). Added 0.04em dilation on ONLY the halo emitter before blur so the broader light remains visible rather than becoming too faint; the softened core is still taken from undilated SourceGraphic. Enlarged filter region to -0.7em / 2.4em size. Red color, halo alpha 0.55, thin core/contour widths, white fill and 10s occasional cadence unchanged. Only AnimatedBrandText.vue changed; backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-larger-halo-20261017-204322.
+
+Actual static-production full-cycle test passed leading sync, active/quiet visibility, opaque fill, stable geometry, reduced motion/print. Same-DOM/frozen-phase new/previous/halo-off capture comparison measured more visible red halo area (9803 vs 3066 qualifying pixels in the same 4x crop); screenshot inspected and all overrides/playback restored. Build + 10 tests passed; DEV confirmed the new halo, frontend restarted, temporary server stopped. Source remains LOCAL pending visual approval; docs-only published, last published brand source still green at 4e36e8e. Other edits/data/migration untouched.
+
 ### Slightly larger soft halo radius preview (2026-10-17)
 
 HIRO requested a slightly larger, smoothly diffused glow radius. Increased only the tip halo blur from 0.1em to 0.13em and enlarged SVG filter bounds from (-0.3em, 1.6em size) to (-0.45em, 1.9em size) so the wider diffusion is not cut off by the filter region. Red color, halo alpha 0.55, softened core, tip/body widths, white fill, leading position and 10s occasional cadence are unchanged. Only AnimatedBrandText.vue changed; backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-wide-soft-halo-20261017-203035.
