@@ -55,17 +55,36 @@ function pickUser(s: Suggestion) {
   form.employeeNo = String(s.fill.employee_no ?? '').trim()
   hints.user = hints.employeeNo = 'Auto-filled from the GID List'
 }
-// Chain between stacked Brand & Model boxes: a one-shot copy from the row above,
-// not a permanent binding, so later edits to either row stay independent.
-const justLinked = ref<number | null>(null)
+// Chain between stacked boxes: a one-shot copy from the row above, not a permanent binding,
+// so later edits to either row stay independent. HIRO asked for the same chain on PO and
+// Remark as well, so the linkable columns are a list rather than one hard-coded key.
+const LINKED_KEYS = ['brandModel', 'poNo', 'remark'] as const
+type LinkedKey = (typeof LINKED_KEYS)[number]
+const isLinkable = (key: string): key is LinkedKey => (LINKED_KEYS as readonly string[]).includes(key)
+
+const justLinked = ref<string | null>(null)
 let linkTimer: ReturnType<typeof setTimeout> | undefined
-function linkBrandFromAbove(index: number) {
+// Firework burst state: keyed per column+row, retriggered by a token so a second click replays.
+const burstKey = ref<string | null>(null)
+const burstId = ref(0)
+const SPARKS = Array.from({ length: 14 }, (_, i) => ({
+  i,
+  angle: i * (360 / 14) + (i % 2 ? 7 : 0),
+  distance: 16 + (i % 3) * 7,
+  delay: i * 12,
+  size: i % 3 === 0 ? 3 : 2
+}))
+function linkFromAbove(index: number, key: LinkedKey) {
   const above = form.assets[index - 1]
   if (!above || !form.assets[index]) return
-  form.assets[index].brandModel = above.brandModel
-  justLinked.value = index
+  form.assets[index][key] = above[key]
+  justLinked.value = `${key}-${index}`
   clearTimeout(linkTimer)
   linkTimer = setTimeout(() => { justLinked.value = null }, 700)
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  burstKey.value = `${key}-${index}`
+  burstId.value += 1
+  window.setTimeout(() => { if (burstKey.value === `${key}-${index}`) burstKey.value = null }, 800)
 }
 onBeforeUnmount(() => clearTimeout(linkTimer))
 async function generate() {
@@ -119,7 +138,7 @@ onMounted(loadGid)
             <div class="hidden gap-2 px-1 pb-0.5 sm:grid sm:grid-cols-[1.75rem_repeat(4,minmax(0,1fr))_1.75rem]">
               <span class="text-xs font-medium text-muted">No.</span>
               <span v-for="col in cols" :key="col.key" class="text-xs font-medium text-muted">
-                {{ col.label }}<span v-if="col.key === 'brandModel'" class="text-error" aria-hidden="true">*</span>
+                {{ col.label }}<span v-if="col.key === 'serialNo'" class="text-error" aria-hidden="true">*</span>
               </span>
               <span class="sr-only">Remove</span>
             </div>
@@ -131,19 +150,17 @@ onMounted(loadGid)
               <span class="grid size-5 shrink-0 place-items-center rounded-md bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">{{ index + 1 }}</span>
               <label v-for="col in cols" :key="col.key" class="relative block min-w-0">
                 <span class="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted sm:hidden">
-                  {{ col.label }}<span v-if="col.key === 'brandModel'" class="text-error" aria-hidden="true">*</span>
+                  {{ col.label }}<span v-if="col.key === 'serialNo'" class="text-error" aria-hidden="true">*</span>
                   <!-- Mobile has no room for a chip in the gap, so the same action sits on the label line. -->
                   <button
-                    v-if="col.key === 'brandModel' && index > 0"
+                    v-if="isLinkable(col.key) && index > 0"
                     type="button"
                     class="-my-1 inline-flex size-5 items-center justify-center rounded-md text-muted transition hover:bg-elevated hover:text-primary"
-                    :aria-label="`Copy Brand & Model from equipment ${index}`"
+                    :aria-label="`Copy ${col.label} from equipment ${index}`"
                     :title="`Same as equipment ${index}`"
-                    @click="linkBrandFromAbove(index)"
+                    @click="linkFromAbove(index, col.key)"
                   >
-                    <!-- Same chain glyph as before, split into its two halves plus the centre bar so the
-                         halves can genuinely draw together and apart. Inline SVG stays offline-safe. -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-link chain-link rotate-90 size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="chain-link rotate-90 size-3.5" :class="justLinked === `${col.key}-${index}` ? 'text-primary' : ''" aria-hidden="true">
                       <path class="chain-half-left" d="M9 17H7A5 5 0 0 1 7 7h2" />
                       <path class="chain-half-right" d="M15 7h2a5 5 0 1 1 0 10h-2" />
                       <path class="chain-bar" d="M8 12h8" />
@@ -151,20 +168,30 @@ onMounted(loadGid)
                   </button>
                 </span>
                 <UInput v-model="asset[col.key]" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
-                <!-- Chain chip centred in the gap between this Brand & Model box and the one above it. -->
+                <!-- Chain chip centred in the gap between this box and the same column one row above. -->
                 <button
-                  v-if="col.key === 'brandModel' && index > 0"
+                  v-if="isLinkable(col.key) && index > 0"
                   type="button"
                   class="absolute -top-[19px] left-1/2 z-10 hidden size-[18px] -translate-x-1/2 items-center justify-center rounded-full border border-default bg-default text-muted shadow-sm transition hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex"
-                  :aria-label="`Copy Brand & Model from equipment ${index}`"
+                  :aria-label="`Copy ${col.label} from equipment ${index}`"
                   :title="`Same as equipment ${index}`"
-                  @click="linkBrandFromAbove(index)"
+                  @click="linkFromAbove(index, col.key)"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-link chain-link rotate-90 size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="chain-link rotate-90 size-3.5" :class="justLinked === `${col.key}-${index}` ? 'text-primary' : ''" aria-hidden="true">
                     <path class="chain-half-left" d="M9 17H7A5 5 0 0 1 7 7h2" />
                     <path class="chain-half-right" d="M15 7h2a5 5 0 1 1 0 10h-2" />
                     <path class="chain-bar" d="M8 12h8" />
                   </svg>
+                  <!-- Firework splash, keyed so repeat clicks replay it from scratch. -->
+                  <span v-if="burstKey === `${col.key}-${index}`" :key="burstId" class="pointer-events-none absolute inset-0" aria-hidden="true">
+                    <span class="chain-burst-ring" />
+                    <span
+                      v-for="spark in SPARKS"
+                      :key="spark.i"
+                      class="chain-spark"
+                      :style="{ '--angle': `${spark.angle}deg`, '--distance': `${spark.distance}px`, '--delay': `${spark.delay}ms`, '--size': `${spark.size}px` }"
+                    />
+                  </span>
                 </button>
               </label>
               <UButton
@@ -259,8 +286,43 @@ onMounted(loadGid)
   transform-origin: center;
   animation: chain-bar-squeeze 2.8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
 }
+/*
+ * Click splash: ten sparks fly out of the chip while one ring expands, all in the current
+ * accent. Rendered only for 800ms by the burst state, so nothing is left in the DOM.
+ */
+.chain-burst-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--ui-primary);
+  animation: chain-burst-ring 520ms cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+@keyframes chain-burst-ring {
+  0% { transform: scale(0.55); opacity: 0.95; }
+  100% { transform: scale(3.1); opacity: 0; }
+}
+.chain-spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--size);
+  height: var(--size);
+  margin-left: calc(var(--size) / -2);
+  margin-top: calc(var(--size) / -2);
+  border-radius: 9999px;
+  background: var(--ui-primary);
+  opacity: 0;
+  animation: chain-spark-fly 620ms cubic-bezier(0.15, 0.72, 0.3, 1) forwards;
+  animation-delay: var(--delay);
+}
+@keyframes chain-spark-fly {
+  0% { transform: rotate(var(--angle)) translateX(0) scale(1); opacity: 1; }
+  70% { opacity: 0.9; }
+  100% { transform: rotate(var(--angle)) translateX(var(--distance)) scale(0.2); opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   .chain-link, .chain-half-left, .chain-half-right, .chain-bar { animation: none; }
+  .chain-burst-ring, .chain-spark { display: none; }
 }
 </style>
 
