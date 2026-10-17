@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Softer red-only tip glow preview (2026-10-17)
+
+HIRO requested a softer glow and RED color. Replaced the white/pink tip core with #ef4444, reduced its stroke from 0.09em to 0.075em, lightly blurred the core (0.015em) instead of directly merging the sharp SourceGraphic, widened halo blur from 0.075em to 0.1em and reduced halo flood opacity from 0.95 to 0.55. Body contour, leading-end alignment, white glyph fill and the existing 10s active/fade/quiet schedule remain unchanged. Only AnimatedBrandText.vue changed. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-soft-red-tip-20261017-193423.
+
+Actual login + offline static production full-cycle probes passed: red core, synchronized head, invisible idle interval, fully opaque computed white fill and fixed geometry; reduced motion/print passed. Screenshot inspected; compact 14px DOM-only render probe was restored afterward (not a claim of a fresh authenticated sidebar run). Initial independent before/after PNGs had unequal crop widths, so were NOT compared/resized; instead a same-DOM, same-phase reconstruction of the prior filter produced a controlled A/B with 119 previously bright/pink hotspot pixels now red. All temporary SVG overrides/playback restored. Build + 10 hostname tests passed, DEV restarted, temporary test server stopped. Source still LOCAL pending visual approval; only state docs published; last published brand source remains green at 4e36e8e. Other edits/data/migration untouched.
+
 ### Glowing leading tip on the red contour preview (2026-10-17)
 
 HIRO requested glow at the front tip of the moving red line, not across the whole outline. Added a short bright-core tip (dash 6/354) with a localized red SVG halo, leading the existing 90/270 red contour. Body offset 360..0 and tip offset 276..-84 maintain an 84-unit difference so the highlight occupies the body's leading 84..90 end. SVG filter uses a unique Vue useId and font-scale userSpaceOnUse blur/bounds, so the halo renders at both login and sidebar font sizes instead of shrinking into invisibility. Opaque white glyphs still paint last; tip shares the body's 10s motion/fade/quiet envelope and is invisible throughout the existing 7.2s rest. Reduced motion/print hide both paths. Only AnimatedBrandText.vue changed this revision. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-tip-20261017-182956.
