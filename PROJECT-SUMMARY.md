@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Dark banner edge set to zero (2026-10-17)
+
+HIRO specified --welcome-edge:0% for dark mode. Changed only dark:[--welcome-edge:10%] to dark:[--welcome-edge:0%] in WelcomeBanner.vue; exact backup comparison verifies the single-token change. Dark end stays 20%; light edge/end stay 16%/14%; border remains neutral via existing color-mix, not removed. Backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/banner-dark-edge-zero-20261017-222446. Build + 10 tests passed; browser CSS-only probe linking actual compiled entry stylesheet read dark 0%/20% and light 16%/14%. DEV restarted; no full authenticated rerun needed/claimed for the one-value edit. Source remains LOCAL pending approval; docs-only published, unrelated edits untouched.
+
 ### Exact dark banner tint values revised (2026-10-17)
 
 HIRO specified --welcome-edge:10% and --welcome-end:20% for dark mode. Changed only those two Tailwind dark custom-property values in WelcomeBanner.vue; exact comparison against the before-change backup proves no other source change. Light stays edge 16% / end 14%; transparent Today badge, date background removal and base --ui-bg surface preserved. Backup C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/banner-dark-tint-20261017-221330. Build + 10 tests passed; actual offline compiled-CSS snapshots read back dark 10%/20% and light 16%/14%, transparent badge/no plaque. Temporary snapshots/server cleaned and DEV restarted. Source still LOCAL pending approval; docs-only published; other pending edits untouched.
