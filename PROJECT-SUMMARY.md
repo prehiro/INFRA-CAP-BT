@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Slightly larger soft halo radius preview (2026-10-17)
+
+HIRO requested a slightly larger, smoothly diffused glow radius. Increased only the tip halo blur from 0.1em to 0.13em and enlarged SVG filter bounds from (-0.3em, 1.6em size) to (-0.45em, 1.9em size) so the wider diffusion is not cut off by the filter region. Red color, halo alpha 0.55, softened core, tip/body widths, white fill, leading position and 10s occasional cadence are unchanged. Only AnimatedBrandText.vue changed; backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-wide-soft-halo-20261017-203035.
+
+Actual offline static-production full-cycle probe passed head synchronization, active/idle states, opaque white fill, fixed geometry, reduced motion/print and no external resources; screenshot inspected. Restored compact 14px DOM-only render probe also passed; DEV confirmed using the new blur. Build + 10 tests passed; frontend restarted and temporary server stopped. Source remains LOCAL for visual approval, only docs published; last published brand source green at 4e36e8e. Other edits/data/migration untouched.
+
 ### Softer red-only tip glow preview (2026-10-17)
 
 HIRO requested a softer glow and RED color. Replaced the white/pink tip core with #ef4444, reduced its stroke from 0.09em to 0.075em, lightly blurred the core (0.015em) instead of directly merging the sharp SourceGraphic, widened halo blur from 0.075em to 0.1em and reduced halo flood opacity from 0.95 to 0.55. Body contour, leading-end alignment, white glyph fill and the existing 10s active/fade/quiet schedule remain unchanged. Only AnimatedBrandText.vue changed. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/brand-soft-red-tip-20261017-193423.
