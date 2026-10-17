@@ -141,23 +141,23 @@ onMounted(loadGid)
                     :title="`Same as equipment ${index}`"
                     @click="linkBrandFromAbove(index)"
                   >
-                    <!-- Inline chain glyph: the bundled icon set has no link-2, and this must work offline. -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="size-3.5" :class="justLinked === index ? 'scale-110 text-primary' : ''" aria-hidden="true">
+                    <!-- Plain chain glyph, drawn inline so it needs no icon bundle and shows offline. -->
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-icon size-3.5" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
                       <path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 1 1 0 10h-2" /><path d="M8 12h8" />
                     </svg>
                   </button>
                 </span>
                 <UInput v-model="asset[col.key]" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
-                <!-- Vertical chain centred in the gap between this Brand & Model box and the one above it. -->
+                <!-- Chain chip centred in the gap between this Brand & Model box and the one above it. -->
                 <button
                   v-if="col.key === 'brandModel' && index > 0"
                   type="button"
-                  class="absolute -top-[19px] left-0 z-10 hidden size-[18px] items-center justify-center rounded-full border border-default bg-default text-muted shadow-sm transition hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex"
+                  class="absolute -top-[19px] left-1/2 z-10 hidden size-[18px] -translate-x-1/2 items-center justify-center rounded-full border border-default bg-default text-muted shadow-sm transition hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex"
                   :aria-label="`Copy Brand & Model from equipment ${index}`"
                   :title="`Same as equipment ${index}`"
                   @click="linkBrandFromAbove(index)"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="size-3 rotate-90" :class="justLinked === index ? 'scale-110 text-primary' : ''" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="issued-chain-icon rotate-90 size-3" :class="justLinked === index ? 'text-primary' : ''" aria-hidden="true">
                     <path d="M9 17H7A5 5 0 0 1 7 7h2" /><path d="M15 7h2a5 5 0 1 1 0 10h-2" /><path d="M8 12h8" />
                   </svg>
                 </button>
@@ -210,3 +210,24 @@ onMounted(loadGid)
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/*
+ * The chain glyph is a single path, so its two ends cannot be animated separately. A
+ * non-uniform scale along the glyph's long axis reads as the ends drawing together and then
+ * moving apart again, which is the motion HIRO asked for. Vue renames scoped keyframes with
+ * the component id (verified in the browser), so the name stays local to this page.
+ */
+@keyframes issued-chain-breathe {
+  0%, 100% { scale: 1 1; }
+  50% { scale: 0.55 1; }
+}
+.issued-chain-icon {
+  animation: issued-chain-breathe 2.4s ease-in-out infinite;
+  transform-origin: center;
+}
+@media (prefers-reduced-motion: reduce) {
+  .issued-chain-icon { animation: none; }
+}
+</style>
+
