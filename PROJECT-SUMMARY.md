@@ -100,6 +100,12 @@ PITFALL FOUND WHILE BUILDING IT: the overlay was first placed directly inside <U
 
 Verified in the browser: hovering a cell yields no tooltip text and no [role=tooltip]; a real click puts the pill centred exactly on the pointer (568,335), animation samples opacity 0.97 -> 1 -> 0.79 with scale 1.05 -> 1 -> 0.99 and a -10px drift, gone by 1.4s; light-mode contrast 8.82:1.
 
+PC Ledger copy pill applied to Factory PC (2026-10-18, HIRO: "apply juga di page factory pc"): /factorypc had no copy feature at all - its cells were plain <span>s with a native title tooltip - so the register now carries the same treatment as PC Ledger: the cell content is a copy button, the native title is gone (no hover tooltip anywhere), and a real click copies the full displayed value and spawns the pointer-anchored "Copied!" pill with the pop-drift-fade life plus expanding ring, max four at once, self-removing after 1.2s, sr-only announcement, reduced-motion static, and the error toast kept for clipboard refusals.
+
+Gotcha while editing: replacing the cell content line-by-line also swallowed the `>` that closes the <td ...>, so the button landed inside the attribute list and the whole route 500ed with "Failed to fetch dynamically imported module"; the dev-server log pointed straight at the closing </button>. Re-added the `>` and the route compiled.
+
+Verified in the browser: 10 rows x 9 columns = 90 copy cells, hovering produces no tooltip text and no [role=tooltip], a real click puts the pill centred on the pointer (521,335) with opacity 0.97 -> 1 and scale 1.05 -> 1, gone by 1.4s, aria-live reads "Copied!".
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
