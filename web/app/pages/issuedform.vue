@@ -117,11 +117,16 @@ onMounted(loadGid)
   <UDashboardPanel id="issued-form" :ui="{ body: 'p-4 sm:p-6' }">
     <template #header><PageHeader title="Issued Form" /></template>
     <template #body>
-      <form class="mx-auto w-full max-w-6xl space-y-6" @submit.prevent="generate">
+      <form class="issued-page-motion mx-auto w-full max-w-6xl space-y-6" @submit.prevent="generate">
         <div class="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>
-            <p class="mt-1 text-sm text-muted">IT FORM-BT015 · V2 · Fill the original PDF without removing its signature fields.</p>
+          <div class="flex min-w-0 items-center gap-3">
+            <span class="issued-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+              <RecordAddIcon name="i-lucide-file-pen-line" />
+            </span>
+            <div class="min-w-0">
+              <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>
+              <p class="mt-1 text-sm text-muted">IT FORM-BT015 · V2 · Fill the original PDF without removing its signature fields.</p>
+            </div>
           </div>
           <UBadge color="primary" variant="subtle">IT Issued form generator</UBadge>
         </div>
@@ -383,6 +388,27 @@ button:disabled .add-row-pulse { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .add-row-icon, .add-row-pulse { animation: none; }
   .add-row-pulse { display: none; }
+}
+/* Page-local entrance: native mount only, never keyed to inputs or reference-data loading.
+   Backwards fill leaves no transformed containing block after the entrance finishes. */
+.issued-page-motion > * {
+  animation: issued-page-enter 540ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.issued-page-motion > :nth-child(2) { animation-delay: 60ms; }
+.issued-page-motion > :nth-child(3) { animation-delay: 120ms; }
+.issued-page-motion > :nth-child(4) { animation-delay: 180ms; }
+.issued-page-motion > :nth-child(5) { animation-delay: 220ms; }
+.issued-page-motion > :nth-child(6) { animation-delay: 250ms; }
+@keyframes issued-page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .issued-page-motion > * {
+    animation: none !important;
+    transform: none !important;
+    opacity: 1;
+  }
 }
 </style>
 
