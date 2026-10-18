@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Issued Form title icon preview
+
+Added a decorative file-pen-line icon in a 48px accent-tinted plate to the LEFT of the combined page title/subtitle in issuedform.vue. Original text, form logic and recent equipment-row edits preserved. Browser verified rendered icon, left placement and vertical centering in dark/light CSS branches at 1440px and 390px without horizontal overflow. Source remains local pending approval. Issued Form navigation is now a standalone item outside Log Book; master template remains web/app/assets/forms/it-equipment-issue-return-v2.pdf (bundled asset: rebuild/redeploy after replacing; preserve AcroForm field names/types).
+
 ### Issued Form interactive PDF generator preview (2026-10-17)
 
 HIRO requested /issuedform under Log Book. LOCAL preview: web/app/pages/issuedform.vue, utils/issuedForm.ts, tests/issuedForm.test.mjs, original template assets/forms/it-equipment-issue-return-v2.pdf, navigation/command palette entries in layouts/default.vue, pinned pdf-lib 1.17.1 in package/lock. Backup before changes: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/issued-form-20261017-234031. Original D:/WORK/PANASONIC/Web/INFRA-CAP/reff/IT Form BT015 IT Equipment Issue-Return Form - V2.pdf remains unchanged; bundled copy SHA256 67b8e87977dee1bde3f3989616e1e5f84566d39b89cc9a997901d3b3354f9d6f matches it.
