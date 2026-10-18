@@ -110,6 +110,24 @@ const groups = computed(() => [
  * than to the sidebar element: an earlier version watched the element itself and silently stopped
  * working after a re-mount, because it was watching a detached node.
  */
+// Compact is presentation-only: Nuxt UI's collapsed=true disables its inline accordion.
+// Keep the native accordion mounted in both widths, preserving links and open states.
+const compactNavigationUi = {
+  link: 'min-w-0 h-8 justify-center p-0',
+  linkLabel: 'sr-only',
+  linkTrailing: 'absolute end-0 bottom-0 m-0',
+  linkTrailingIcon: 'size-2',
+  childList: 'sidebar-compact-children ms-0 border-0',
+  childItem: 'relative ps-0 ms-0'
+}
+
+// Forward keyboard focus to the tooltip without moving focus from the actual control.
+function forwardCompactFocus(event: FocusEvent, type: 'focus' | 'blur') {
+  if (!(event.target instanceof Element)) return
+  event.target.closest('[data-slot="link"]')?.querySelector('[data-compact-tooltip]')
+    ?.dispatchEvent(new FocusEvent(type))
+}
+
 const SPRING_ARM_MS = 700
 let springArmed = false
 let springObserver: MutationObserver | undefined
@@ -192,13 +210,24 @@ onBeforeUnmount(() => springObserver?.disconnect())
         <UNavigationMenu
           v-for="(group, i) in links"
           :key="`nav-${i}`"
-          :collapsed="collapsed"
+          :collapsed="false"
           :items="group"
           orientation="vertical"
           tooltip
-          :class="i === links.length - 1 ? 'mt-auto' : ''"
-          :ui="{ link: 'min-w-0' }"
+          :class="[i === links.length - 1 ? 'mt-auto' : '', { 'sidebar-compact-nav': collapsed }]"
+          :ui="collapsed ? compactNavigationUi : { link: 'min-w-0' }"
+          @focusin="collapsed && forwardCompactFocus($event, 'focus')"
+          @focusout="collapsed && forwardCompactFocus($event, 'blur')"
         >
+          <template v-if="collapsed" #item-leading="{ item, active, ui }">
+            <UTooltip :text="item.label" :delay-duration="0" :ignore-non-keyboard-focus="false"
+                      :content="{ side: 'right', sideOffset: 10 }">
+              <span data-compact-tooltip class="grid h-8 w-full place-items-center">
+                <UIcon v-if="item.icon" :name="item.icon" data-slot="linkLeadingIcon"
+                       :class="ui.linkLeadingIcon({ active, disabled: !!item.disabled })" />
+              </span>
+            </UTooltip>
+          </template>
           <template #item-label="{ item }">
             <span :title="item.label" class="truncate">{{ item.label }}</span>
           </template>
@@ -217,6 +246,33 @@ onBeforeUnmount(() => springObserver?.disconnect())
 </template>
 
 <style>
+/* Compact rail only: tree guides stay outside child hit areas; expanded is untouched. */
+.sidebar-compact-nav .sidebar-compact-children { position: relative; }
+.sidebar-compact-nav .sidebar-compact-children::before {
+  content: '';
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-start: -6px;
+  width: 1px;
+  border-radius: 1px;
+  background: color-mix(in oklab, var(--ui-primary) 45%, transparent);
+  pointer-events: none;
+}
+.sidebar-compact-nav .sidebar-compact-children > [data-slot='childItem']::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -6px;
+  top: 16px;
+  width: 7px;
+  height: 1px;
+  background: color-mix(in oklab, var(--ui-primary) 45%, transparent);
+  pointer-events: none;
+}
+.sidebar-compact-nav .sidebar-compact-children [data-slot='linkLeadingIcon'] {
+  width: 1rem;
+  height: 1rem;
+}
+
 /* UDashboardPanel already sets a main gutter; these two overrides stop the double
    padding that appears once a page renders its own panel. */
 main[data-dashboard] {

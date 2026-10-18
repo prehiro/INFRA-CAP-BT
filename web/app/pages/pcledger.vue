@@ -366,7 +366,7 @@ const FORM_SECTIONS = [
 
 /** Placeholders for the two fields whose meaning is not obvious from the label alone. */
 const FIELD_PLACEHOLDERS: Record<string, string> = {
-  japan_hostname: 'PC hostname',
+  japan_hostname: 'PC Hostname',
   computer_sn: 'PC Serial number'
 }
 
@@ -375,7 +375,7 @@ const LABELS: Record<string, string> = {
   staff_name: 'Staff Name',
   email: 'Email Address',
   gid: 'GID',
-  japan_hostname: 'JAPAN Hostname',
+  japan_hostname: 'PC Hostname',
   computer_model: 'Computer Model',
   computer_sn: 'Computer S/N',
   tanggal: 'Date Inserted',
@@ -1566,7 +1566,7 @@ async function exportExcel() {
                 <dd class="truncate font-medium">{{ cell(deleteTarget, 'nomor') }}</dd>
                 <dt class="text-muted">Staff Name</dt>
                 <dd class="truncate">{{ cell(deleteTarget, 'staff_name') || '-' }}</dd>
-                <dt class="text-muted">JAPAN Hostname</dt>
+                <dt class="text-muted">PC Hostname</dt>
                 <dd class="truncate tabular-nums">{{ cell(deleteTarget, 'japan_hostname') || '-' }}</dd>
                 <dt class="text-muted">Location</dt>
                 <dd class="truncate">{{ cell(deleteTarget, 'lokasi') || '-' }}</dd>

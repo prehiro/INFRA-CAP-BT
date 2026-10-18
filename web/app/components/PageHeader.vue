@@ -124,6 +124,48 @@ const bounceKey = computed(() => (collapsed.value ? 'expanded' : 'collapsed'))
 .sidebar-collapse-btn.anim-collapse-closed { animation: infra-collapse-closed 260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
 .sidebar-collapse-btn.anim-collapse-open  { animation: infra-collapse-open  260ms cubic-bezier(0.34, 1.56, 0.64, 1); }
 
+/* Split the existing local Lucide panel glyph into a static frame and moving chevron.
+   Keep the vendor button, labels, dimensions and toggle handler unchanged. */
+.sidebar-collapse-btn [data-slot='leadingIcon'] {
+  position: relative;
+  mask: none;
+  background: none;
+  overflow: visible;
+}
+.sidebar-collapse-btn [data-slot='leadingIcon']::before,
+.sidebar-collapse-btn [data-slot='leadingIcon']::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  pointer-events: none;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+.sidebar-collapse-btn [data-slot='leadingIcon']::before {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cpath d='M9 3v18'/%3E%3C/svg%3E");
+}
+.sidebar-collapse-btn[aria-label='Collapse sidebar'] [data-slot='leadingIcon']::after {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m16 15-3-3 3-3'/%3E%3C/svg%3E");
+  animation: sidebar-chevron-left 1.6s ease-in-out infinite;
+}
+.sidebar-collapse-btn[aria-label='Expand sidebar'] [data-slot='leadingIcon']::after {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m14 9 3 3-3 3'/%3E%3C/svg%3E");
+  animation: sidebar-chevron-right 1.6s ease-in-out infinite;
+}
+@keyframes sidebar-chevron-left {
+  0%, 12%, 70%, 100% { transform: translateX(0); }
+  38% { transform: translateX(-2px); }
+}
+@keyframes sidebar-chevron-right {
+  0%, 12%, 70%, 100% { transform: translateX(0); }
+  38% { transform: translateX(2px); }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .sidebar-collapse-btn [data-slot='leadingIcon']::after { animation: none !important; transform: none !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   /* Cancel outright, consistent with the page-load animations in main.css. */
   .sidebar-collapse-btn.anim-collapse-closed,

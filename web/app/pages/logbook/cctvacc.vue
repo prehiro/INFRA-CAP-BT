@@ -67,12 +67,12 @@ async function loadPcLocations() {
       .map(([value, count]) => ({
         value, label: value,
         meta: count === 1 ? 'used once' : `used ${count} times`,
-        hint: 'Selected from PC Ledger locations'
+        hint: 'Auto-filled from PC Ledger'
       }))
   } catch (e) {
     // An unavailable ledger never blocks manual Section entry.
     sectionSuggestions.value = []
-    console.error('[cctv-access] pc ledger locations', e)
+    console.error('[cctv-access] pc ledger', e)
   }
 }
 
@@ -1019,7 +1019,7 @@ await init()
                                 :context="[String(form.nama_pemohon ?? '')]"
                                 :invalid="fieldInvalid('no_pegawai')"
                                 placeholder="Type to search the GID list"
-                                header="GID List - Click or Enter" @fill="applyRequestorSuggestion" />
+                                header="Smart Suggestion - Click or Enter↵" @fill="applyRequestorSuggestion" />
                 </UFormField>
                 <UFormField label="PIC Name" name="nama_pemohon" required>
                   <SuggestInput v-model="form.nama_pemohon" v-model:source-hint="requestorHints.nama_pemohon"
@@ -1027,7 +1027,7 @@ await init()
                                 :context="[String(form.no_pegawai ?? '')]"
                                 :invalid="fieldInvalid('nama_pemohon')"
                                 placeholder="Type to search the GID list"
-                                header="GID List - Click or Enter" @fill="applyRequestorSuggestion" />
+                                header="Smart Suggestion - Click or Enter↵" @fill="applyRequestorSuggestion" />
                 </UFormField>
                 <UFormField label="Section" name="departemen" required>
                   <SuggestInput v-model="form.departemen" :suggestions="sectionSuggestions"

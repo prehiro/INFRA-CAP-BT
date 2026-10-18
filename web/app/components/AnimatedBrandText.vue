@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
-// Thin icon-colored contour motion; the solid white glyph paints last.
+// Thin red contour motion; the solid white glyph paints last.
 // Local Public Sans 700 glyph outlines retain the app's existing typeface.
 // Attribution/licenses: web/THIRD-PARTY-NOTICES.md. No runtime font conversion or network.
 const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number }>(), {
@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number 
   lineHeight: 1.25
 })
 const units = 2000
+const tipGlowId = `brand-tip-${useId()}`
 const glyphs = [
   {
     "d": "M162 0V1446H453V0Z",
@@ -78,11 +79,30 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
     <span class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
     <svg class="brand-wordmark-svg" :viewBox="viewBox" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <!-- Blur uses font coordinates, not subpixel lengths scaled by the glyph viewBox. -->
+        <filter :id="tipGlowId" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse"
+                :x="-units * 0.7" :y="-units * 0.7" :width="units * 2.4" :height="units * 2.4"
+                color-interpolation-filters="sRGB">
+          <!-- Broaden only the halo emitter, so a wider blur stays visible without a fatter core. -->
+          <feMorphology in="SourceGraphic" operator="dilate" :radius="units * 0.04" result="halo-source" />
+          <feGaussianBlur in="halo-source" :stdDeviation="units * 0.2" result="soft-tip" />
+          <feGaussianBlur in="SourceGraphic" :stdDeviation="units * 0.015" result="tip-core" />
+          <feFlood flood-color="#ef4444" flood-opacity="0.55" result="red-light" />
+          <feComposite in="red-light" in2="soft-tip" operator="in" result="tip-halo" />
+          <feMerge>
+            <feMergeNode in="tip-halo" />
+            <feMergeNode in="tip-core" />
+          </feMerge>
+        </filter>
+      </defs>
       <g :transform="`translate(0 ${baseline}) scale(1 -1)`">
         <g v-for="(glyph, index) in glyphs" :key="index"
            :transform="`translate(${glyph.x + index * tracking * units} ${glyph.y})`">
           <path class="brand-wordmark-trace" :d="glyph.d" pathLength="360"
                 :stroke-width="units * 0.06" />
+          <path class="brand-wordmark-tip" :d="glyph.d" pathLength="360"
+                :stroke-width="units * 0.075" :filter="`url(#${tipGlowId})`" />
           <path class="brand-wordmark-base" :d="glyph.d" />
         </g>
       </g>
@@ -111,14 +131,22 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 }
 /* Paint the opaque glyph above the moving strokes: its white interior is never covered. */
 .brand-wordmark-base { fill: currentColor; opacity: 1; }
-.brand-wordmark-trace {
+.brand-wordmark-trace,
+.brand-wordmark-tip {
   fill: none;
-  stroke: var(--brand-trace-color, var(--ui-primary, #00dc82));
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-dasharray: 90 270;
   opacity: 0;
   animation: brand-text-contour 10s linear infinite;
+}
+.brand-wordmark-trace {
+  stroke: #ef4444;
+  stroke-dasharray: 90 270;
+}
+.brand-wordmark-tip {
+  stroke: #ef4444;
+  stroke-dasharray: 6 354;
+  animation-name: brand-text-tip;
 }
 
 @keyframes brand-text-contour {
@@ -127,7 +155,15 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   24% { stroke-dashoffset: 0; opacity: 1; }
   28%, 100% { stroke-dashoffset: 0; opacity: 0; }
 }
+/* Same phase as the body; the short bright segment occupies its leading end (84..90). */
+@keyframes brand-text-tip {
+  0% { stroke-dashoffset: 276; opacity: 0; }
+  3% { opacity: 1; }
+  24% { stroke-dashoffset: -84; opacity: 1; }
+  28%, 100% { stroke-dashoffset: -84; opacity: 0; }
+}
 @media (prefers-reduced-motion: reduce), print {
-  .brand-wordmark-trace { animation: none !important; display: none; }
+  .brand-wordmark-trace,
+  .brand-wordmark-tip { animation: none !important; display: none; }
 }
 </style>

@@ -121,11 +121,11 @@ async function loadPcLocations() {
       .map(([value, count]) => ({
         value, label: value,
         meta: count === 1 ? 'used once' : `used ${count} times`,
-        hint: 'Auto-filled from PC Ledger locations'
+        hint: 'Auto-filled from PC Ledger'
       }))
   } catch (e) {
     sectionSuggestions.value = []
-    console.error('[handover] pc ledger locations', e)
+    console.error('[handover] pc ledger', e)
   }
 }
 
@@ -905,7 +905,7 @@ await init()
                               :suggestions="recipientSuggestions('no_pegawai')"
                               :context="[String(form.nama ?? '')]"
                               placeholder="939432"
-                              header="GID List - Click or Enter" @fill="applyRecipientSuggestion" />
+                              header="Smart Suggestion - Click or Enter↵" @fill="applyRecipientSuggestion" />
               </UFormField>
               <UFormField label="Name" name="nama" required>
                 <SuggestInput v-model="form.nama" v-model:source-hint="recipientHints.nama"
@@ -913,7 +913,7 @@ await init()
                               :context="[String(form.no_pegawai ?? '')]"
                               :invalid="fieldInvalid('nama')"
                               placeholder="Recipient"
-                              header="GID List - Click or Enter" @fill="applyRecipientSuggestion" />
+                              header="Smart Suggestion - Click or Enter↵" @fill="applyRecipientSuggestion" />
               </UFormField>
               <UFormField label="Section" name="departemen">
                 <SuggestInput v-model="form.departemen" :suggestions="sectionSuggestions"
