@@ -62,6 +62,19 @@ function pickUser(s: Suggestion) {
   form.employeeNo = String(s.fill.employee_no ?? '').trim().toUpperCase()
   hints.user = hints.employeeNo = 'Auto-filled from the GID List'
 }
+// Serial No. drives the PO box: the first character starts the department's PTCAP__ PO code,
+// and emptying Serial No. puts the box back to its placeholder - unless the user has replaced
+// it with a PO of their own, which must never be overwritten.
+const AUTO_PO = 'PTCAP__'
+function onCellInput(row: EquipmentRow, key: 'brandModel' | 'serialNo' | 'poNo' | 'remark', value: string) {
+  const next = value.toUpperCase()
+  const hadSerial = Boolean(row.serialNo.trim())
+  row[key] = next
+  if (key !== 'serialNo') return
+  const hasSerial = Boolean(next.trim())
+  if (!hadSerial && hasSerial && !row.poNo.trim()) row.poNo = AUTO_PO
+  else if (hadSerial && !hasSerial && row.poNo === AUTO_PO) row.poNo = ''
+}
 // Chain between stacked boxes: a one-shot copy from the row above, not a permanent binding,
 // so later edits to either row stay independent. HIRO asked for the same chain on PO and
 // Remark as well, so the linkable columns are a list rather than one hard-coded key.
@@ -216,7 +229,7 @@ onMounted(loadGid)
                     </svg>
                   </button>
                 </span>
-                <UInput :model-value="asset[col.key]" @update:model-value="(value: string) => { asset[col.key] = value.toUpperCase() }" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
+                <UInput :model-value="asset[col.key]" @update:model-value="(value: string) => onCellInput(asset, col.key, value)" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
                 <!-- Chain chip centred in the gap between this box and the same column one row above. -->
                 <button
                   v-if="isLinkable(col.key) && index > 0"

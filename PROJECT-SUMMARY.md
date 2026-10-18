@@ -82,6 +82,10 @@ Caps everywhere on Issued Form, every PDF date = generation date (2026-10-18, HI
 
 Verified at runtime: typing "panasonic toughbook fz-55" / "budi santoso" displayed and generated in caps, and the downloaded PDF reported Text1 "PANASONIC TOUGHBOOK FZ-55", Text25/29 "BUDI SANTOSO", Date1-Date8 all "18-Oct-26" on 18 Oct 2026. 15/15 tests pass.
 
+Serial No. seeds the PO box (2026-10-18, HIRO: "ketika user mulai mengetik serial number, kolom PO otomatis terisi PTCAP__. dan jika kolom sn dihapus kembalikan value kolom po ke placeholder defaul. kolom ini tetap editable"): the first character typed into Serial No. fills that row's PO No. with PTCAP__ via onCellInput, and emptying Serial No. clears it back to the Optional placeholder. Two guards: the fill only happens on the empty-to-filled transition (so later keystrokes never re-seed a cleared box) and a PO the user has replaced with their own value is never overwritten or wiped - only the untouched PTCAP__ value is removed. PO stays fully editable.
+
+Verified in the browser: first char -> PO "PTCAP__", further typing keeps it, clearing SN -> PO empty with the Optional placeholder, retyping -> PTCAP__ again, and a custom "PO-9001" survived clearing the SN.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
