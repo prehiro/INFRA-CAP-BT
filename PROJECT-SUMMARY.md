@@ -94,6 +94,12 @@ Serial No. seeds the PO box (2026-10-18, HIRO: "ketika user mulai mengetik seria
 
 Verified in the browser: first char -> PO "PTCAP__", further typing keeps it, clearing SN -> PO empty with the Optional placeholder, retyping -> PTCAP__ again, and a custom "PO-9001" survived clearing the SN.
 
+PC Ledger: tooltip gone, pointer-anchored "Copied!" pill (2026-10-18, HIRO: "hilangkan tooltip nya, dan ketika user click muncul toast Copied! di area pointer. design sebagus mungkin animasi toastnya"): the UTooltip around every click-to-copy cell is removed (so nothing appears on hover) and copyCellText now receives the click event and spawns a fixed pill at the pointer coordinates instead of a toast in the page corner. The pill is an accent-outlined capsule with a check glyph: 1.15s cubic-bezier(0.22,1,0.36,1) life - pops in from scale 0.78, settles at 1.06, then drifts 18px up while fading - plus a separate expanding ring (::after, 700ms). Up to four pills coexist so rapid clicks each get their own, each removes itself after 1.2s, and reduced-motion keeps a static pill. Centring uses the standalone `translate` property so the transform animation composes with it, and an sr-only aria-live region still announces "Copied!". The error path keeps the toast.
+
+PITFALL FOUND WHILE BUILDING IT: the overlay was first placed directly inside <UDashboardPanel> but outside its #header/#body <template> blocks, and the whole page rendered BLANK - no error, no console message, the panel simply produced nothing (body text was just the sidebar). Moving the markup inside the #body template fixed it. Never put children of UDashboardPanel outside its named slot templates.
+
+Verified in the browser: hovering a cell yields no tooltip text and no [role=tooltip]; a real click puts the pill centred exactly on the pointer (568,335), animation samples opacity 0.97 -> 1 -> 0.79 with scale 1.05 -> 1 -> 0.99 and a -10px drift, gone by 1.4s; light-mode contrast 8.82:1.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.

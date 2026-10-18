@@ -28,6 +28,60 @@ const SHEET_NAME = 'Ledger'
 
 const toast = useToast()
 
+/**
+ * "Copied!" used to arrive twice: a tooltip on hover and a toast in the page corner. HIRO:
+ * "hilangkan tooltip nya, dan ketika user click muncul toast Copied! di area pointer" - so the
+ * confirmation now appears exactly where the click happened and removes itself.
+ * An array rather than one value because rapid clicks on different cells must each get their own
+ * pill; the oldest is dropped once four are alive, so a stray double-click cannot pile up.
+ */
+type CopyPill = { id: number; x: number; y: number }
+const copyPills = ref<CopyPill[]>([])
+const copyAnnounce = ref('')
+let copyPillSeq = 0
+function showCopyPill(event?: MouseEvent) {
+  // Keyboard activation reports 0/0 for the pointer, so centre the pill on the button instead.
+  const rect = (event?.currentTarget as HTMLElement | null)?.getBoundingClientRect()
+  const hasPointer = Boolean(event && (event.clientX || event.clientY))
+  const x = hasPointer ? event!.clientX : rect ? rect.left + rect.width / 2 : window.innerWidth / 2
+  const y = hasPointer ? event!.clientY : rect ? rect.top + rect.height / 2 : window.innerHeight / 2
+  const id = ++copyPillSeq
+  copyPills.value = [...copyPills.value, { id, x, y }].slice(-4)
+  copyAnnounce.value = ''
+  requestAnimationFrame(() => { copyAnnounce.value = 'Copied!' })
+  window.setTimeout(() => { copyPills.value = copyPills.value.filter(p => p.id !== id) }, 1200)
+}
+
+async function copyCellText(value: string, event?: MouseEvent) {
+  if (!value) return
+  try {
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+    } else {
+      // Office deployment uses HTTP: retain a user-gesture fallback there.
+      const previous = document.activeElement as HTMLElement | null
+      const selection = window.getSelection()
+      const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i).cloneRange()) : []
+      const input = document.createElement('textarea')
+      input.value = value
+      input.readOnly = true
+      input.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
+      document.body.appendChild(input)
+      try {
+        input.select()
+        if (!document.execCommand('copy')) throw new Error('Clipboard unavailable')
+      } finally {
+        input.remove()
+        previous?.focus({ preventScroll: true })
+        if (selection) { selection.removeAllRanges(); ranges.forEach(range => selection.addRange(range)) }
+      }
+    }
+    showCopyPill(event)
+  } catch {
+    toast.add({ id: 'pc-cell-copy', title: 'Unable to copy', description: 'Allow clipboard access in your browser or copy the text manually.', color: 'error' })
+  }
+}
+
 /* ---------------- columns (mirror of the reference sheet) ---------------- */
 /**
  * `w` IS A PERCENTAGE SHARE of the table's width, not a fixed width. Every column used to carry an
@@ -1382,9 +1436,13 @@ async function exportExcel() {
                       isVisible(c.key) ? '' : 'pl-col-hidden',
                       pinClass(visibleIndex(c.key))
                     ]"
-                    :title="cell(row, c.key)"
                   >
-                    <span class="pl-ellipsis">{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</span>
+                      <button
+                        type="button"
+                        class="pl-ellipsis pc-copy-cell w-full cursor-copy focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2"
+                        :aria-label="`Copy ${c.label}: ${c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key)}`"
+                        @click.stop="copyCellText(c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key), $event)"
+                      >{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</button>
                   </td>
                   <!-- Matched to the CCTV register's Actions cell: centred, and the two buttons
                        sit directly in the cell with no flex wrapper. The `gap-1` wrapper is gone
@@ -1580,11 +1638,25 @@ async function exportExcel() {
           </div>
         </template>
       </UModal>
+    <!-- Pointer-anchored confirmation: fixed, so it floats above the table without moving a row. -->
+    <div class="copy-pill-layer" aria-hidden="true">
+      <span
+        v-for="p in copyPills"
+        :key="p.id"
+        class="copy-pill"
+        :style="{ left: `${p.x}px`, top: `${p.y}px` }"
+      >
+        <UIcon name="i-lucide-check" class="size-3" />
+        <span>Copied!</span>
+      </span>
+    </div>
+    <span class="sr-only" role="status" aria-live="polite">{{ copyAnnounce }}</span>
     </template>
   </UDashboardPanel>
 </template>
 
 <style scoped>
+.pc-copy-cell { text-align: inherit; font: inherit; }
 /* A 15-column register cannot fit any laptop, so the table scrolls horizontally and the
    scrollbar is reserved from the first paint (`scrollbar-gutter: stable`) - otherwise it
    appears when the rows load, steals ~15px of width, and every column jumps sideways in one
@@ -1929,6 +2001,55 @@ async function exportExcel() {
     transform: none !important;
   }
 }
+
+/* ---- "Copied!" pill: pointer-anchored confirmation for the click-to-copy cells ----
+   `translate` does the centring and `transform` runs the animation, so the two never fight: Tailwind
+   v4 emits centring as the standalone translate property, and animating transform composes with it
+   instead of overwriting it. The pill is fixed to the viewport at the click coordinates, so it
+   cannot shift a table row or be clipped by the table's scroll container. */
+.copy-pill-layer { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.copy-pill {
+  position: fixed;
+  translate: -50% -50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--ui-primary) 45%, transparent);
+  background: color-mix(in oklab, var(--ui-primary) 14%, var(--ui-bg));
+  color: var(--ui-primary);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--ui-primary) 70%, transparent), 0 2px 6px rgba(0, 0, 0, 0.25);
+  animation: copy-pill-life 1.15s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.copy-pill::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid var(--ui-primary);
+  animation: copy-pill-ring 700ms ease-out forwards;
+}
+@keyframes copy-pill-life {
+  0% { opacity: 0; transform: translateY(6px) scale(0.78); }
+  16% { opacity: 1; transform: translateY(0) scale(1.06); }
+  30% { opacity: 1; transform: translateY(0) scale(1); }
+  68% { opacity: 1; transform: translateY(-8px) scale(1); }
+  100% { opacity: 0; transform: translateY(-18px) scale(0.94); }
+}
+@keyframes copy-pill-ring {
+  from { opacity: 0.55; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.55); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .copy-pill { animation: none; }
+  .copy-pill::after { animation: none; opacity: 0; }
+}
+
 </style>
 
 <!-- NON-SCOPED, and it has to be. UModal teleports its content to <body>, so a scoped rule - which
