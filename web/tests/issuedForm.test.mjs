@@ -21,7 +21,7 @@ test('fills all 24 asset cells plus B and Received By; preserves every other fie
  const a=original.getForm();const b=out.getForm()
  assert.equal(out.getPageCount(),1)
  assert.equal(a.getFields().length,b.getFields().length)
- const changed=new Set([...Array.from({length:26},(_,i)=>`Text${i+1}`),'Text29','Date2'])
+ const changed=new Set([...Array.from({length:26},(_,i)=>`Text${i+1}`),'Text29',...Array.from({length:8},(_,i)=>`Date${i+1}`)])
  for(const field of a.getFields()) {
    const name=field.getName(), other=b.getField(name)
    assert.equal(other.constructor.name,field.constructor.name)
@@ -37,6 +37,8 @@ test('fills all 24 asset cells plus B and Received By; preserves every other fie
  assert.equal(b.getTextField('Text26').getText(),'009876')
  assert.equal(b.getTextField('Text29').getText(),input.user)
  assert.equal(b.getTextField('Date2').getText(),'17-Oct-26')
+ // Every dated box carries the generation date, not the template's sample date.
+ for(let i=1;i<=8;i++) assert.equal(b.getTextField(`Date${i}`).getText(),'17-Oct-26',`Date${i}`)
  assert.equal(b.getTextField('Date2').isReadOnly(),false)
  const sigs=b.getFields().filter(f=>f instanceof PDFSignature)
  assert.equal(sigs.length,8)

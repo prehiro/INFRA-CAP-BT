@@ -1,4 +1,4 @@
-import { PDFDocument, PDFName, PDFSignature, StandardFonts } from 'pdf-lib'
+import { PDFDocument, PDFName, PDFSignature, PDFTextField, StandardFonts } from 'pdf-lib'
 
 export type IssuedAsset = { brandModel: string; serialNo: string; poNo: string; remark: string }
 export type IssuedFormInput = { user: string; employeeNo: string; assets: IssuedAsset[] }
@@ -37,6 +37,13 @@ export async function generateIssuedPdf(template: Uint8Array, input: IssuedFormI
     for (const [col, key] of ASSET_KEYS.entries()) values[`Text${row * 4 + col + 1}`] = (input.assets[row]?.[key] ?? '').trim()
   }
   Object.assign(values, { Text25: input.user.trim(), Text26: input.employeeNo.trim(), Text29: input.user.trim(), Date2: issuedPdfDate(generatedAt) })
+  // Every dated box on the form belongs to the issue event, so each Date* field is stamped with
+  // the generation date instead of the template's sample date (HIRO: "pastikan semua date
+  // sesuai dengan date file generate"). Fields are set only when they exist in the template.
+  const dateValue = issuedPdfDate(generatedAt)
+  for (const field of form.getFields()) {
+    if (field instanceof PDFTextField && /^Date\d+$/.test(field.getName())) values[field.getName()] = dateValue
+  }
   for (const [name, value] of Object.entries(values)) {
     const field = form.getTextField(name)
     // Reject unsupported/overlong text instead of silently clipping it in this fixed-size form.

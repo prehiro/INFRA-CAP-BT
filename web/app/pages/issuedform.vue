@@ -58,8 +58,8 @@ const suggestions = computed(() => {
 function pickUser(s: Suggestion) {
   if (!s.fill) return
   // Replace BOTH values, including empty ones: never retain another employee's identifier.
-  form.user = String(s.fill.name ?? '').trim()
-  form.employeeNo = String(s.fill.employee_no ?? '').trim()
+  form.user = String(s.fill.name ?? '').trim().toUpperCase()
+  form.employeeNo = String(s.fill.employee_no ?? '').trim().toUpperCase()
   hints.user = hints.employeeNo = 'Auto-filled from the GID List'
 }
 // Chain between stacked boxes: a one-shot copy from the row above, not a permanent binding,
@@ -118,7 +118,17 @@ async function generate() {
   const error = validateIssuedInput(form)
   if (error) { message.value = error; return }
   const clickedAt = new Date()
+  // Upper-case again at the edge: the PDF must be caps even if a value arrived from a
+  // suggestion, a paste or a restored state that bypassed the input handler.
   const snapshot = JSON.parse(JSON.stringify(form))
+  snapshot.user = String(snapshot.user).toUpperCase()
+  snapshot.employeeNo = String(snapshot.employeeNo).toUpperCase()
+  for (const row of snapshot.assets) {
+    row.brandModel = String(row.brandModel).toUpperCase()
+    row.serialNo = String(row.serialNo).toUpperCase()
+    row.poNo = String(row.poNo).toUpperCase()
+    row.remark = String(row.remark).toUpperCase()
+  }
   generating.value = true
   try {
     const [{ generateIssuedPdf }, response] = await Promise.all([import('~/utils/issuedForm'), fetch(templateUrl)])
@@ -206,7 +216,7 @@ onMounted(loadGid)
                     </svg>
                   </button>
                 </span>
-                <UInput v-model="asset[col.key]" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
+                <UInput :model-value="asset[col.key]" @update:model-value="(value: string) => { asset[col.key] = value.toUpperCase() }" :aria-label="`Equipment ${index + 1} ${col.label}`" :placeholder="col.placeholder" class="w-full" :maxlength="160" />
                 <!-- Chain chip centred in the gap between this box and the same column one row above. -->
                 <button
                   v-if="isLinkable(col.key) && index > 0"
@@ -277,10 +287,10 @@ onMounted(loadGid)
           <template #header><h3 class="font-semibold text-highlighted">Section B — User Details</h3></template>
           <fieldset :disabled="generating" class="grid grid-cols-1 gap-4">
             <UFormField label="User" required>
-              <SuggestInput v-model="form.user" v-model:source-hint="hints.user" :suggestions="suggestions.user" :context="[form.employeeNo]" header="GID List" placeholder="Search name or type manually" show-on-suggestions-update select-on-tab @fill="pickUser" />
+              <SuggestInput :model-value="form.user" @update:model-value="(value: string) => { form.user = value.toUpperCase() }" v-model:source-hint="hints.user" :suggestions="suggestions.user" :context="[form.employeeNo]" header="GID List" placeholder="Search name or type manually" show-on-suggestions-update select-on-tab @fill="pickUser" />
             </UFormField>
             <UFormField label="Employee No" required>
-              <SuggestInput v-model="form.employeeNo" v-model:source-hint="hints.employeeNo" :suggestions="suggestions.employeeNo" :context="[form.user]" header="GID List" placeholder="Search employee number" show-on-suggestions-update select-on-tab @fill="pickUser" />
+              <SuggestInput :model-value="form.employeeNo" @update:model-value="(value: string) => { form.employeeNo = value.toUpperCase() }" v-model:source-hint="hints.employeeNo" :suggestions="suggestions.employeeNo" :context="[form.user]" header="GID List" placeholder="Search employee number" show-on-suggestions-update select-on-tab @fill="pickUser" />
             </UFormField>
           </fieldset>
           <div class="mt-2 min-h-6 text-xs text-muted" aria-live="polite">

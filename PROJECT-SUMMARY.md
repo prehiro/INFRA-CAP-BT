@@ -78,6 +78,10 @@ Generate: toast instead of inline text, then a full reset (2026-10-18, HIRO: "se
 
 Verified: with four rows filled and a user selected, generating showed the toast (text matched) and left three empty rows with empty user/employee and an empty inline status.
 
+Caps everywhere on Issued Form, every PDF date = generation date (2026-10-18, HIRO: "saya mau semua filed di page issuedform auto capital. untuk pdf yang di generate pastikan semua date sesuai dengan date file generate"): every text box on the page upper-cases as you type - equipment cells via :model-value/@update:model-value, User and Employee No through the same pattern on SuggestInput, and GID picks are upper-cased in pickUser - with a second upper-case pass on the snapshot so the PDF is caps even for values that bypassed the handler. SuggestInput search is unaffected because it lower-cases both sides before comparing. In utils/issuedForm.ts every Date* field now receives issuedPdfDate(generatedAt) instead of only Date2, so all eight dated boxes match the file generation date; the test set was widened to Date1-Date8.
+
+Verified at runtime: typing "panasonic toughbook fz-55" / "budi santoso" displayed and generated in caps, and the downloaded PDF reported Text1 "PANASONIC TOUGHBOOK FZ-55", Text25/29 "BUDI SANTOSO", Date1-Date8 all "18-Oct-26" on 18 Oct 2026. 15/15 tests pass.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
