@@ -70,6 +70,8 @@ Verified live: adding produced equip-enter-from + equip-enter-active with opacit
 
 Section A subtitle removed (2026-10-18, HIRO: "hapus subtitle ini bro"): the "Up to six equipment rows, matching the original form." line under the Section A title is gone; the card header is now just the title plus the 3 / 6 counter and measures 57px instead of ~75px. Nothing else in the section changed.
 
+Chain chip loses its circle (2026-10-18, HIRO: "circle pada icon link tolong hilangkan"): the desktop chain button between stacked rows is now a bare glyph - rounded-full, border, background and shadow are gone (measured border 0px, background rgba(0,0,0,0), box-shadow none, radius 0px) and only the accent hover/focus colours remain; the 18px hit area is unchanged. The Brand & Model placeholder also reads "Brand & Model" in the working tree.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.

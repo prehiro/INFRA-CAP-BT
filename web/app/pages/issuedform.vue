@@ -21,7 +21,7 @@ const generating = ref(false)
 const message = ref('')
 const success = ref(false)
 const cols = [
-  { key: 'brandModel', label: 'Brand & Model', placeholder: 'e.g. Toughbook FZ-55' },
+  { key: 'brandModel', label: 'Brand & Model', placeholder: 'Brand & Model' },
   { key: 'serialNo', label: 'Serial No.', placeholder: 'Serial number' },
   { key: 'poNo', label: 'PO No. (If Any)', placeholder: 'Optional' },
   { key: 'remark', label: 'FA No. / Remark (If Any)', placeholder: 'Optional' }
@@ -189,7 +189,7 @@ onMounted(loadGid)
                 <button
                   v-if="isLinkable(col.key) && index > 0"
                   type="button"
-                  class="absolute -top-[19px] left-1/2 z-10 hidden size-[18px] -translate-x-1/2 items-center justify-center rounded-full border border-default bg-default text-muted shadow-sm transition hover:border-primary/50 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex"
+                  class="absolute -top-[19px] left-1/2 z-10 hidden size-[18px] -translate-x-1/2 items-center justify-center text-muted transition hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:flex"
                   :aria-label="`Copy ${col.label} from equipment ${index}`"
                   :title="`Same as equipment ${index}`"
                   @click="linkFromAbove(index, col.key)"
