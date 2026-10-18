@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Issued Form header and page entrance motion preview
+
+Added page-local 540ms staggered fade-up (12px, delays 0..250ms) on the six form sections and a 4.8s intermittent gentle tilt/lift on the existing header file-pen glyph only. Plate/title layout and form/PDF logic unchanged; no data-loading gate or new timer. Backwards fill releases transforms after entrance; reduced-motion/print disables both additions. Actual authenticated reload measured 779 frames, 34 opacity states, 236 glyph transform states and six entrance starts; plate stable after entrance. Reduced-motion visibility verified. Build and existing PDF/hostname test command passed. Changes remain local pending visual approval; docs-only publication.
+
 ### Issued Form title icon preview
 
 Added a decorative file-pen-line icon in a 48px accent-tinted plate to the LEFT of the combined page title/subtitle in issuedform.vue. Original text, form logic and recent equipment-row edits preserved. Browser verified rendered icon, left placement and vertical centering in dark/light CSS branches at 1440px and 390px without horizontal overflow. Source remains local pending approval. Issued Form navigation is now a standalone item outside Log Book; master template remains web/app/assets/forms/it-equipment-issue-return-v2.pdf (bundled asset: rebuild/redeploy after replacing; preserve AcroForm field names/types).
