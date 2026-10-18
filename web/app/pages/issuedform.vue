@@ -19,7 +19,6 @@ const gidError = ref('')
 const hints = reactive({ user: '', employeeNo: '' })
 const generating = ref(false)
 const message = ref('')
-const success = ref(false)
 const cols = [
   { key: 'brandModel', label: 'Brand & Model', placeholder: 'Brand & Model' },
   { key: 'serialNo', label: 'Serial No.', placeholder: 'Serial number' },
@@ -95,9 +94,27 @@ function linkFromAbove(index: number, key: LinkedKey) {
   window.setTimeout(() => { if (burstKey.value === `${key}-${index}`) burstKey.value = null }, 800)
 }
 onBeforeUnmount(() => clearTimeout(linkTimer))
+const toast = useToast()
+// After a successful download the form goes back to its opening state - the same three empty
+// rows the page starts with - so the next issue can be keyed in without clearing boxes by hand.
+function resetForm() {
+  form.user = ''
+  form.employeeNo = ''
+  hints.user = ''
+  hints.employeeNo = ''
+  form.assets.slice(0, 3).forEach(row => {
+    row.brandModel = ''
+    row.serialNo = ''
+    row.poNo = ''
+    row.remark = ''
+  })
+  if (form.assets.length > 3) form.assets.splice(3, form.assets.length - 3)
+  while (form.assets.length < 3) form.assets.push(makeRow())
+  message.value = ''
+}
 async function generate() {
   if (generating.value) return
-  message.value = ''; success.value = false
+  message.value = ''
   const error = validateIssuedInput(form)
   if (error) { message.value = error; return }
   const clickedAt = new Date()
@@ -113,8 +130,13 @@ async function generate() {
     a.href = url; a.download = `IT-Equipment-Issued-${safeNo}.pdf`
     document.body.appendChild(a); a.click(); a.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 60000)
-    success.value = true
-    message.value = 'PDF generated. Open it in Adobe Acrobat Reader to review and digitally sign.'
+    toast.add({
+      title: 'PDF generated',
+      description: 'Open it in Adobe Acrobat Reader to review and digitally sign.',
+      color: 'primary',
+      icon: 'i-lucide-circle-check'
+    })
+    resetForm()
   } catch (e: any) { message.value = e.message || 'Unable to generate the PDF. Please try again.' }
   finally { generating.value = false }
 }
@@ -276,7 +298,7 @@ onMounted(loadGid)
           <p class="text-xs text-muted">Download only · No record is saved to the database.</p>
           <UButton type="submit" icon="i-lucide-file-down" class="record-save-hover" :loading="generating" :disabled="generating">Generate PDF</UButton>
         </div>
-        <p class="min-h-10 text-sm" :class="success ? 'text-success' : 'text-error'" role="status">{{ message }}</p>
+        <p class="min-h-10 text-sm text-error" role="status">{{ message }}</p>
       </form>
     </template>
   </UDashboardPanel>

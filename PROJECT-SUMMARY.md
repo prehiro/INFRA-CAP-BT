@@ -74,6 +74,10 @@ Chain chip loses its circle (2026-10-18, HIRO: "circle pada icon link tolong hil
 
 Brand wordmark follows the theme (2026-10-18, HIRO: "brand text pada mode light jadikan warna hitam"): AnimatedBrandText no longer hard-codes color #fff - it inherits - and the sidebar wordmark span carries text-black dark:text-white. Measured: fill rgb(255,255,255) in dark and rgb(0,0,0) in light. The login mark keeps its own text-slate-100 on the dark login background.
 
+Generate: toast instead of inline text, then a full reset (2026-10-18, HIRO: "setelah generate pdf, saya mau teks PDF generated... dijadikan toast notif setelah itu semua field di reset"): the success line is now a Nuxt UI toast (title "PDF generated", description "Open it in Adobe Acrobat Reader to review and digitally sign.", color primary, icon circle-check) and the form resets itself - user and employee number cleared, the first three rows emptied, extra rows trimmed back to three and the inline status cleared. The inline paragraph now only carries validation/error text. The dropped `success` ref was removed rather than left as dead state.
+
+Verified: with four rows filled and a user selected, generating showed the toast (text matched) and left three empty rows with empty user/employee and an empty inline status.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
