@@ -13,7 +13,7 @@ const generating = ref(false)
 const message = ref('')
 const success = ref(false)
 const cols = [
-  { key: 'brandModel', label: 'Brand & Model', placeholder: 'e.g. Panasonic Toughbook' },
+  { key: 'brandModel', label: 'Brand & Model', placeholder: 'e.g. Toughbook FZ-55' },
   { key: 'serialNo', label: 'Serial No.', placeholder: 'Serial number' },
   { key: 'poNo', label: 'PO No. (If Any)', placeholder: 'Optional' },
   { key: 'remark', label: 'FA No. / Remark (If Any)', placeholder: 'Optional' }
@@ -130,6 +130,9 @@ onMounted(loadGid)
           </div>
           <UBadge color="primary" variant="subtle">IT Issued form generator</UBadge>
         </div>
+        <!-- Sections sit side by side on wide screens: the asset list needs the room while the
+             user details are only two fields. Below xl they stack in the original order. -->
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] xl:items-start">
         <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
           <template #header>
             <div class="flex items-center justify-between gap-3">
@@ -240,7 +243,7 @@ onMounted(loadGid)
         </UCard>
         <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
           <template #header><h3 class="font-semibold text-highlighted">Section B — User Details</h3></template>
-          <fieldset :disabled="generating" class="grid grid-cols-1 gap-5 md:grid-cols-2">
+          <fieldset :disabled="generating" class="grid grid-cols-1 gap-4">
             <UFormField label="User" required>
               <SuggestInput v-model="form.user" v-model:source-hint="hints.user" :suggestions="suggestions.user" :context="[form.employeeNo]" header="GID List" placeholder="Search name or type manually" show-on-suggestions-update select-on-tab @fill="pickUser" />
             </UFormField>
@@ -254,6 +257,7 @@ onMounted(loadGid)
             <span v-else>Select a suggestion to fill both fields. Manual entries are also supported.</span>
           </div>
         </UCard>
+        </div>
         <div class="rounded-lg border border-default bg-elevated/40 p-4 text-sm text-muted">
           <p><span class="font-medium text-highlighted">Section C · Received By:</span> the name follows User; its date is set when you generate the PDF and remains editable.</p>
           <p class="mt-2">All other Section C fields and Section D retain the original template values. The eight digital signature fields remain available in the downloaded PDF.</p>
