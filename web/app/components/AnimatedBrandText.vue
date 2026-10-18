@@ -117,7 +117,8 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   display: inline-block;
   vertical-align: top;
   white-space: nowrap;
-  color: #fff;
+  /* Colour is inherited: the sidebar brand is black on light and white on dark, while the
+     login mark keeps its own light text on the dark login background. */
 }
 .brand-wordmark-size { visibility: hidden; }
 .brand-wordmark-svg {
