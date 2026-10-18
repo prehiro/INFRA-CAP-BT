@@ -4,7 +4,9 @@ import type { Suggestion } from '~/components/SuggestInput.vue'
 import { emptyIssuedAsset, validateIssuedInput } from '~/utils/issuedForm'
 import templateUrl from '~/assets/forms/it-equipment-issue-return-v2.pdf?url'
 
-const form = reactive({ user: '', employeeNo: '', assets: [emptyIssuedAsset()] })
+// Three equipment rows are shown up front: a single row looked empty and every real issue
+// usually covers more than one device. The cap stays at six.
+const form = reactive({ user: '', employeeNo: '', assets: Array.from({ length: 3 }, () => emptyIssuedAsset()) })
 const candidates = ref<Record<string, any>[]>([])
 const gidLoading = ref(false)
 const gidError = ref('')
@@ -144,8 +146,8 @@ onMounted(loadGid)
                so a six-row form shows four headers once instead of four headers six times. -->
           <fieldset :disabled="generating" aria-label="IT asset list" class="space-y-2">
             <div class="hidden gap-2 px-1 pb-0.5 sm:grid sm:grid-cols-[1.75rem_repeat(4,minmax(0,1fr))_1.75rem]">
-              <span class="text-xs font-medium text-muted">No.</span>
-              <span v-for="col in cols" :key="col.key" class="text-xs font-medium text-muted">
+              <span class="text-xs font-medium text-highlighted dark:text-white">No.</span>
+              <span v-for="col in cols" :key="col.key" class="text-xs font-medium text-highlighted dark:text-white">
                 {{ col.label }}<span v-if="col.key === 'serialNo'" class="text-error" aria-hidden="true">*</span>
               </span>
               <span class="sr-only">Remove</span>
@@ -264,7 +266,7 @@ onMounted(loadGid)
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-default pt-5">
           <p class="text-xs text-muted">Download only · No record is saved to the database.</p>
-          <UButton type="submit" icon="i-lucide-file-down" :loading="generating" :disabled="generating">Generate PDF</UButton>
+          <UButton type="submit" icon="i-lucide-file-down" class="record-save-hover" :loading="generating" :disabled="generating">Generate PDF</UButton>
         </div>
         <p class="min-h-10 text-sm" :class="success ? 'text-success' : 'text-error'" role="status">{{ message }}</p>
       </form>
