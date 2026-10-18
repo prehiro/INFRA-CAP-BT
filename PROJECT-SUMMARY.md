@@ -55,6 +55,11 @@ Pending previews published, plus the Issued Form title plate and entrance (2026-
 
 Harness caveat from this session: the automated browser rendered every iconify span WITHOUT its svg (sidebar links, title plates, RecordAddIcon) while HIRO confirmed all icons display in his own browser. The failure was in the harness browser after repeated dev restarts, not in the app - do not report missing icons from the harness alone; confirm in the user's browser or after a clean dev restart.
 
+Section A + Section B side by side (2026-10-18, HIRO: "modify layout section issued form jadi bersebelahan"): the two sections now share a row at xl and up - grid 1.9fr / 1fr with top-aligned cards, Section C full width beneath them and the footer below that. Below xl they stack in the original order. Section B dropped its inner md:grid-cols-2 so User and Employee No stay readable in the narrower column, and the Brand & Model placeholder was shortened to "e.g. Toughbook FZ-55" for the tighter fields.
+
+Verified: 1440 A 742px / B 390px with identical top edge; 1280 A 658 / B 346, still side by side; 1100 and 390 stack; zero horizontal overflow at every width; Section C spans the full 1152px under both cards; a filled form still generated a PDF from the new layout.
+
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
