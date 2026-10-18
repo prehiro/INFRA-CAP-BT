@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger click-to-copy preview
+
+All PC Ledger table data text now uses native keyboard-accessible buttons with primary accent text and an accent-tinted 'Click to copy' tooltip. Copies the full displayed value (formatted date, not truncated DOM text); original ellipsis, column alignment, hide/pin behavior and Edit/Delete controls retained. Page-local copy handler uses Clipboard API on secure contexts and real textarea/execCommand user-gesture fallback for HTTP deployment, restores focus/selection, reports success only after copy succeeds and reports failure otherwise. Source: pcledger.vue only, backed up before editing; remains LOCAL pending approval. Build passed. Authenticated browser verified exact tooltip, 10 visible columns by actual clipboard readback, Enter activation and actual fallback with navigator.clipboard temporarily absent; 420 data buttons/28 Edit controls rendered. Original clipboard restored, no record changes. HTTP fallback branch exercised on localhost, not a deployed IIS test. Docs-only publication.
+
 ### Issued Form icon matched to Data Import
 
 Replaced the custom 4.8s header glyph animation with the exact RecordAddIcon component used by Data Import's header: 3.6s ease-in-out sway and breathing accent halo. Kept the file-pen glyph, existing outer plate/title/subtitle and page-load entrance unchanged. Deleted obsolete issued-title-write keyframes/class. Runtime sampling confirmed moving glyph/halo and stationary plate; actual Data Import and Issued Form animation names/durations/easing match, reduced-motion passed. Source remains LOCAL pending approval.
