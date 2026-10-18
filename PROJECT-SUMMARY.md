@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger copy tooltip color correction
+
+HIRO clarified accent belongs ONLY on the tooltip, not table data; no hover underline. Removed exactly text-primary and hover:underline from pc-copy-cell; tooltip accent, clipboard handler and keyboard focus indicator unchanged. Browser hover verified cell color equals parent td, textDecorationLine none, tooltip 'Click to copy'. Local preview pending approval; docs-only publication. Supersedes the data-text-accent description below.
+
 ### PC Ledger click-to-copy preview
 
 All PC Ledger table data text now uses native keyboard-accessible buttons with primary accent text and an accent-tinted 'Click to copy' tooltip. Copies the full displayed value (formatted date, not truncated DOM text); original ellipsis, column alignment, hide/pin behavior and Edit/Delete controls retained. Page-local copy handler uses Clipboard API on secure contexts and real textarea/execCommand user-gesture fallback for HTTP deployment, restores focus/selection, reports success only after copy succeeds and reports failure otherwise. Source: pcledger.vue only, backed up before editing; remains LOCAL pending approval. Build passed. Authenticated browser verified exact tooltip, 10 visible columns by actual clipboard readback, Enter activation and actual fallback with navigator.clipboard temporarily absent; 420 data buttons/28 Edit controls rendered. Original clipboard restored, no record changes. HTTP fallback branch exercised on localhost, not a deployed IIS test. Docs-only publication.
