@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Issued Form icon matched to Data Import
+
+Replaced the custom 4.8s header glyph animation with the exact RecordAddIcon component used by Data Import's header: 3.6s ease-in-out sway and breathing accent halo. Kept the file-pen glyph, existing outer plate/title/subtitle and page-load entrance unchanged. Deleted obsolete issued-title-write keyframes/class. Runtime sampling confirmed moving glyph/halo and stationary plate; actual Data Import and Issued Form animation names/durations/easing match, reduced-motion passed. Source remains LOCAL pending approval.
+
 ### Issued Form header and page entrance motion preview
 
 Added page-local 540ms staggered fade-up (12px, delays 0..250ms) on the six form sections and a 4.8s intermittent gentle tilt/lift on the existing header file-pen glyph only. Plate/title layout and form/PDF logic unchanged; no data-loading gate or new timer. Backwards fill releases transforms after entrance; reduced-motion/print disables both additions. Actual authenticated reload measured 779 frames, 34 opacity states, 236 glyph transform states and six entrance starts; plate stable after entrance. Reduced-motion visibility verified. Build and existing PDF/hostname test command passed. Changes remain local pending visual approval; docs-only publication.
