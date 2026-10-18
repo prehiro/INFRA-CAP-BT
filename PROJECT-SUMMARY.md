@@ -68,6 +68,8 @@ Smooth equipment row add/remove (2026-10-18, HIRO: "buat smooth transition ketik
 
 Verified live: adding produced equip-enter-from + equip-enter-active with opacity 0 and scale 0.98, then opacity 0.237 at 150ms and 1 with classes cleared; deleting row 2 left it absolute with equip-leave-active fading from 1 to 0.844 at 80ms while three siblings animated transform 52px -> 13px and settled, leaving 4 clean rows. Tests still 15/15.
 
+Section A subtitle removed (2026-10-18, HIRO: "hapus subtitle ini bro"): the "Up to six equipment rows, matching the original form." line under the Section A title is gone; the card header is now just the title plus the 3 / 6 counter and measures 57px instead of ~75px. Nothing else in the section changed.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.

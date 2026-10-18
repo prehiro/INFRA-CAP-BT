@@ -144,7 +144,7 @@ onMounted(loadGid)
         <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
           <template #header>
             <div class="flex items-center justify-between gap-3">
-              <div><h3 class="font-semibold text-highlighted">Section A — IT Asset List</h3><p class="mt-1 text-xs text-muted">Up to six equipment rows, matching the original form.</p></div>
+              <div><h3 class="font-semibold text-highlighted">Section A — IT Asset List</h3></div>
               <UBadge color="neutral" variant="outline" class="whitespace-nowrap">{{ form.assets.length }} / 6</UBadge>
             </div>
           </template>
