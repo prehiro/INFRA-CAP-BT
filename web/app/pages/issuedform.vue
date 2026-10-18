@@ -6,7 +6,13 @@ import templateUrl from '~/assets/forms/it-equipment-issue-return-v2.pdf?url'
 
 // Three equipment rows are shown up front: a single row looked empty and every real issue
 // usually covers more than one device. The cap stays at six.
-const form = reactive({ user: '', employeeNo: '', assets: Array.from({ length: 3 }, () => emptyIssuedAsset()) })
+//
+// Each row carries a stable key so <TransitionGroup> can animate an insert or a removal
+// instead of snapping. The key is ignored by the PDF mapper, which only reads ASSET_KEYS.
+type EquipmentRow = ReturnType<typeof emptyIssuedAsset> & { key: string }
+let rowSeq = 0
+const makeRow = (): EquipmentRow => ({ ...emptyIssuedAsset(), key: `asset-${++rowSeq}` })
+const form = reactive({ user: '', employeeNo: '', assets: [makeRow(), makeRow(), makeRow()] })
 const candidates = ref<Record<string, any>[]>([])
 const gidLoading = ref(false)
 const gidError = ref('')
@@ -127,7 +133,7 @@ onMounted(loadGid)
             </span>
             <div class="min-w-0">
               <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>
-              <p class="mt-1 text-sm text-muted">IT FORM-BT015 · V2 · Fill the original PDF without removing its signature fields.</p>
+              <p class="mt-1 text-sm text-muted">IT FORM-BT015 · V2</p>
             </div>
           </div>
           <UBadge color="primary" variant="subtle">IT Issued form generator</UBadge>
@@ -144,7 +150,7 @@ onMounted(loadGid)
           </template>
           <!-- One shared column title for the whole list: the labels belong to the list, not to each row,
                so a six-row form shows four headers once instead of four headers six times. -->
-          <fieldset :disabled="generating" aria-label="IT asset list" class="space-y-2">
+          <fieldset :disabled="generating" aria-label="IT asset list">
             <div class="hidden gap-2 px-1 pb-0.5 sm:grid sm:grid-cols-[1.75rem_repeat(4,minmax(0,1fr))_1.75rem]">
               <span class="text-xs font-medium text-highlighted dark:text-white">No.</span>
               <span v-for="col in cols" :key="col.key" class="text-xs font-medium text-highlighted dark:text-white">
@@ -152,9 +158,10 @@ onMounted(loadGid)
               </span>
               <span class="sr-only">Remove</span>
             </div>
+            <TransitionGroup name="equip" tag="div" class="relative mt-2 space-y-2">
             <div
               v-for="(asset, index) in form.assets"
-              :key="index"
+              :key="asset.key"
               class="relative grid grid-cols-1 gap-x-2 gap-y-1.5 rounded-md px-1 py-1.5 pr-9 transition-colors duration-150 hover:bg-elevated/40 focus-within:bg-elevated/40 sm:grid-cols-[1.75rem_repeat(4,minmax(0,1fr))_1.75rem] sm:items-center sm:pr-1"
             >
               <span class="grid size-5 shrink-0 place-items-center rounded-md bg-primary/10 text-[11px] font-semibold text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">{{ index + 1 }}</span>
@@ -218,6 +225,7 @@ onMounted(loadGid)
                 @click="form.assets.splice(index, 1)"
               />
             </div>
+            </TransitionGroup>
           </fieldset>
           <div class="mt-2 flex justify-center px-1">
             <UButton
@@ -226,7 +234,7 @@ onMounted(loadGid)
               color="neutral"
               :disabled="form.assets.length >= 6 || generating"
               class="gap-2 transition-colors duration-200 hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
-              @click="form.assets.push(emptyIssuedAsset())"
+              @click="form.assets.push(makeRow())"
             >
               <span class="relative inline-flex items-center gap-1.5">
                 <span class="relative inline-flex size-4 items-center justify-center">
@@ -415,6 +423,36 @@ button:disabled .add-row-pulse { opacity: 0; }
     transform: none !important;
     opacity: 1;
   }
+}
+/*
+ * Equipment rows: an added row unfolds from above while the rows below glide down, and a
+ * removed row fades out while it is lifted out of the flow so the rest slide up instead of
+ * the list snapping shut. Vue supplies the move class for the reflow.
+ */
+.equip-enter-active {
+  transition: opacity 220ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.equip-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition: opacity 150ms ease-in, transform 150ms ease-in;
+}
+.equip-move {
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.equip-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
+}
+.equip-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce), print {
+  .equip-enter-active,
+  .equip-leave-active,
+  .equip-move { transition: none; }
 }
 </style>
 
