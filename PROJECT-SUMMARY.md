@@ -60,6 +60,10 @@ Section A + Section B side by side (2026-10-18, HIRO: "modify layout section iss
 Verified: 1440 A 742px / B 390px with identical top edge; 1280 A 658 / B 346, still side by side; 1100 and 390 stack; zero horizontal overflow at every width; Section C spans the full 1152px under both cards; a filled form still generated a PDF from the new layout.
 
 
+Section A header colour, default rows and the Generate button (2026-10-18, HIRO: "title table section A jadikan warna putih. default 3 row equipment tampil. animasikan tombol generate pdf seperti tombol add record"): the shared column header is now text-highlighted dark:text-white (pure white in dark mode, still readable in light), the form opens with THREE empty equipment rows (Array.from length 3) while the six-row cap and the delete/link behaviour stay unchanged, and the Generate PDF button carries the app's shared record-save-hover class so it lifts, glows and sweeps exactly like the Add record buttons on PC Ledger and Factory PC.
+
+Verified: header cells compute rgb(255,255,255) in dark mode; three numbered rows with their trash buttons and chain chips render on load with the badge at 3/6; the button reports position relative, overflow hidden, isolation isolate and a ::after sheen element, so the shared animation is wired; PDF generation still works.
+
 ### Clickable collapsed navigation with inline groups (2026-10-17)
 
 HIRO requested clickable page icons while collapsed, Device Ledger / Log Book click-to-open/close, and a downward accent guide for child page icons. Only web/app/layouts/default.vue changed; source remains LOCAL pending visual approval. Backup: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/sidebar-compact-nav-20261017-225337/default.vue.
