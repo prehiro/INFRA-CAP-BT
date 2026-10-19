@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger header line animation preview
+
+Header now uses PcLedgerIcon.vue, preserving the requested andrsrxn:device-pc-cpu geometry as local inline SVG so individual strokes can animate. A 5.8s CSS-only cycle traces monitor/tower outlines, scans the display, sequentially lights vent lines and emits a small power-button echo, then rests. No tilt, no polling; decorative only. Existing 48px plate/24px glyph and title layout unchanged; sidebar remains the original static Iconify icon. Backed up caller first. Build passed; foreground browser sampled 391 frames, all six animated parts had multiple distinct states, plate rectangle stayed identical. Reduced motion: full-opacity static base, hidden decorations, zero animations. Source remains LOCAL pending visual approval; docs-only checkpoint.
+
 ### PC Ledger header and navigation icon preview
 
 Requested Iconify andrsrxn:device-pc-cpu installed as an exact local dependency and explicitly included in Nuxt offline client bundle/server collection list. Header icon sits in a 48px accent plate with a 24px glyph LEFT of the combined title/subtitle, vertically centered. PC Ledger sidebar and its command-palette entry use the same icon; other page icons unchanged. Backups made first. Build passed; actual browser embedded SVG masks verified (24px header, 20px expanded sidebar, 16px collapsed sidebar), center delta 0, zero remote icon requests. Requested glyph body confirmed in production JS bundle. No data writes or migration/production changes. Source remains local pending approval; only documentation checkpoint pushed.
