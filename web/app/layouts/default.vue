@@ -36,7 +36,7 @@ const links = computed<NavigationMenuItem[][]>(() => [
       type: 'trigger',
       defaultOpen: true,
       children: [
-        { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/pcledger' },
+        { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
         { label: 'Factory PC', icon: 'i-lucide-factory', to: '/factorypc' }
       ]
     }
@@ -85,7 +85,7 @@ const groups = computed(() => [
     label: 'Navigation',
     items: [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
-      { label: 'PC Ledger', icon: 'i-lucide-monitor', to: '/pcledger' },
+      { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
       { label: 'Factory PC', icon: 'i-lucide-factory', to: '/factorypc' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },

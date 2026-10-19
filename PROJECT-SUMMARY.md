@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Approved PC Ledger and Factory PC header icon publication
+
+HIRO requested applying the PC Ledger header icon style/motion to Factory PC and pushing GitHub. Factory PC now reuses the SAME PcLedgerIcon plus RecordAddIcon md halo: 48px accent plate, 24px original PC glyph, 6.4s stroke/scan motion, 3.6s breathing box, no tilt. Title/subtitle, controls/data logic unchanged; Factory PC sidebar retains factory icon. Publishes prior PC Ledger header/navigation icon and shared animation scope together, including offline andrsrxn package/config. Build and hostname/PDF test commands passed. Factory runtime: 422 frames, all nine halo/stroke parts animated, stable plate; reduced motion zero animations. Backup first; no data or deployment changes. Supersedes LOCAL/pending statements below for these icon features.
+
 ### PC Ledger shared breathing box preview
 
 Added the exact RecordAddIcon pc-add-halo around the existing animated PC header glyph via a default slot and optional md wrapper size. Existing callers retain size-5 and their original UIcon/sway by default; PC caller retains size-6, no sway, its independent 6.4s line animation and 48px plate. Reuses the SAME 3.6s ease-in-out accent border/scale-opacity keyframes as Data Import; no duplicated halo CSS. Backup made first, build passed. Browser compared exact halo animation name/duration/easing/border against Data Import; 242 frames confirmed breathing with fixed plate; reduced-motion halo animation none. Source local pending approval; docs-only checkpoint.

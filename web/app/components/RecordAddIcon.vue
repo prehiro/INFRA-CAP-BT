@@ -1,12 +1,14 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ name?: string }>(), { name: 'i-carbon-data-add' })
+withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-carbon-data-add', size: 'sm' })
 </script>
 
 <template>
   <!-- Explicit opt-in for header icons; preserve the existing plate and crisp glyph size. -->
-  <span class="pc-add-mark relative inline-grid size-5 shrink-0 place-items-center" aria-hidden="true">
+  <span class="pc-add-mark relative inline-grid shrink-0 place-items-center" :class="size === 'md' ? 'size-6' : 'size-5'" aria-hidden="true">
     <span class="pc-add-halo pointer-events-none absolute -inset-1 rounded-md" />
-    <UIcon :name="name" class="pc-add-glyph size-5" />
+    <slot>
+      <UIcon :name="name" class="pc-add-glyph size-5" />
+    </slot>
   </span>
 </template>
 

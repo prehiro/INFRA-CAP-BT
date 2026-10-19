@@ -1237,12 +1237,19 @@ async function exportExcel() {
         <!-- Sheet header: identity of the form + the actions, same shape as the CCTV register. -->
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+                <RecordAddIcon size="md">
+                  <PcLedgerIcon class="size-6" />
+                </RecordAddIcon>
+              </span>
+              <div class="min-w-0">
               <h1 class="text-lg font-bold tracking-wide">Domain Joined PC Ledger</h1>
               <p class="text-xs text-muted">
                 List of PC, Notebook, Tablet &middot; CAPACITOR Only
                 <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
               </p>
+              </div>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
