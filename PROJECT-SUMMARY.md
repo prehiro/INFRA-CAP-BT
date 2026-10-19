@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger shared breathing box preview
+
+Added the exact RecordAddIcon pc-add-halo around the existing animated PC header glyph via a default slot and optional md wrapper size. Existing callers retain size-5 and their original UIcon/sway by default; PC caller retains size-6, no sway, its independent 6.4s line animation and 48px plate. Reuses the SAME 3.6s ease-in-out accent border/scale-opacity keyframes as Data Import; no duplicated halo CSS. Backup made first, build passed. Browser compared exact halo animation name/duration/easing/border against Data Import; 242 frames confirmed breathing with fixed plate; reduced-motion halo animation none. Source local pending approval; docs-only checkpoint.
+
 ### PC Ledger refined line animation preview
 
 Refined PcLedgerIcon.vue only: 6.4s eased outline travel, short brighter leading tips with localized soft glow, gradient scan trail, gentler power echo, and clearer static outline (opacity .72). Exact icon geometry, header size, sidebar and data behavior unchanged. Unique useId gradient; CSS-only offline. Build passed; 428 browser frames proved all eight animated parts change while plate stays fixed; reduced-motion check passed. Backup made first. Source still local pending approval; docs-only checkpoint. Supersedes initial 5.8s motion below.
