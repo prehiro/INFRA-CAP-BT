@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger header and navigation icon preview
+
+Requested Iconify andrsrxn:device-pc-cpu installed as an exact local dependency and explicitly included in Nuxt offline client bundle/server collection list. Header icon sits in a 48px accent plate with a 24px glyph LEFT of the combined title/subtitle, vertically centered. PC Ledger sidebar and its command-palette entry use the same icon; other page icons unchanged. Backups made first. Build passed; actual browser embedded SVG masks verified (24px header, 20px expanded sidebar, 16px collapsed sidebar), center delta 0, zero remote icon requests. Requested glyph body confirmed in production JS bundle. No data writes or migration/production changes. Source remains local pending approval; only documentation checkpoint pushed.
+
 ### PC Ledger copy tooltip color correction
 
 HIRO clarified accent belongs ONLY on the tooltip, not table data; no hover underline. Removed exactly text-primary and hover:underline from pc-copy-cell; tooltip accent, clipboard handler and keyboard focus indicator unchanged. Browser hover verified cell color equals parent td, textDecorationLine none, tooltip 'Click to copy'. Local preview pending approval; docs-only publication. Supersedes the data-text-accent description below.
