@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### PC Ledger refined line animation preview
+
+Refined PcLedgerIcon.vue only: 6.4s eased outline travel, short brighter leading tips with localized soft glow, gradient scan trail, gentler power echo, and clearer static outline (opacity .72). Exact icon geometry, header size, sidebar and data behavior unchanged. Unique useId gradient; CSS-only offline. Build passed; 428 browser frames proved all eight animated parts change while plate stays fixed; reduced-motion check passed. Backup made first. Source still local pending approval; docs-only checkpoint. Supersedes initial 5.8s motion below.
+
 ### PC Ledger header line animation preview
 
 Header now uses PcLedgerIcon.vue, preserving the requested andrsrxn:device-pc-cpu geometry as local inline SVG so individual strokes can animate. A 5.8s CSS-only cycle traces monitor/tower outlines, scans the display, sequentially lights vent lines and emits a small power-button echo, then rests. No tilt, no polling; decorative only. Existing 48px plate/24px glyph and title layout unchanged; sidebar remains the original static Iconify icon. Backed up caller first. Build passed; foreground browser sampled 391 frames, all six animated parts had multiple distinct states, plate rectangle stayed identical. Reduced motion: full-opacity static base, hidden decorations, zero animations. Source remains LOCAL pending visual approval; docs-only checkpoint.
