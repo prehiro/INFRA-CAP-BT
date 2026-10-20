@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Factory PC icon identity correction preview
+
+HIRO clarified Factory PC header must match its sidebar factory glyph, not the PC Ledger computer glyph. FactoryPcIcon.vue now uses exact installed lucide:factory outline/window geometry with 6.4s line tracing and sequential window accents; existing shared 3.6s breathing box/48px plate/24px size retained. Only Factory caller changed; PC Ledger untouched. Backup first, build passed; browser 422 frames proved halo plus five animated factory parts with fixed plate, reduced motion zero animations. Correction source local pending approval; docs-only checkpoint.
+
 ### Approved PC Ledger and Factory PC header icon publication
 
 HIRO requested applying the PC Ledger header icon style/motion to Factory PC and pushing GitHub. Factory PC now reuses the SAME PcLedgerIcon plus RecordAddIcon md halo: 48px accent plate, 24px original PC glyph, 6.4s stroke/scan motion, 3.6s breathing box, no tilt. Title/subtitle, controls/data logic unchanged; Factory PC sidebar retains factory icon. Publishes prior PC Ledger header/navigation icon and shared animation scope together, including offline andrsrxn package/config. Build and hostname/PDF test commands passed. Factory runtime: 422 frames, all nine halo/stroke parts animated, stable plate; reduced motion zero animations. Backup first; no data or deployment changes. Supersedes LOCAL/pending statements below for these icon features.
