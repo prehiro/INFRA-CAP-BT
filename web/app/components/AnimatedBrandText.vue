@@ -1,12 +1,115 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, useId, ref, onMounted, onBeforeUnmount } from 'vue'
 
 // Thin red contour motion; the solid white glyph paints last.
 // Local Public Sans 700 glyph outlines retain the app's existing typeface.
 // Attribution/licenses: web/THIRD-PARTY-NOTICES.md. No runtime font conversion or network.
-const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number }>(), {
+const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number, intro?: boolean }>(), {
   tracking: 0,
-  lineHeight: 1.25
+  lineHeight: 1.25,
+  intro: false
+})
+// Adapted from the user-supplied faxriddin20 quick-panda-13 chitchat sequence.
+// Mount-only, not hover/focus; one accessible static label and a fixed native text footprint.
+const label = 'INFRA-BTCAP'
+const chatter = ['#', '.', '^{', '-!', '#$_', '№:0', '#{+.', '@}-?', '?{4@%', '=.,^!', '?2@%', ';1}]', '?{%:%', '|{f[4', '{4%0%', "'1_0<", '{0%', "]>'", '4', '2']
+const entering = ref(props.intro)
+const introText = ref('#' + label.slice(1))
+// Fixed character slots: every scramble character is drawn inside the advance width of its
+// final letter, so the wordmark never slides left/right while the glyphs change.
+const sizeEl = ref<HTMLElement | null>(null)
+const slotWidths = ref<number[]>([])
+const introChars = computed(() => Array.from(introText.value))
+let introTimer: ReturnType<typeof setTimeout> | undefined
+let motionQuery: MediaQueryList | undefined
+let unmounted = false
+// Narrow characters used when a scrambled glyph is wider than its slot, so a glyph
+// can never spill over the neighbouring letter.
+const narrowFallbacks = ['#', '.', '-', '+', '=', '4', '2']
+let charWidths = new Map<string, number>()
+function measureSlots() {
+  const el = sizeEl.value
+  const node = el?.firstChild
+  if (!el || !node || node.nodeType !== Node.TEXT_NODE) return
+  const previous = el.style.letterSpacing
+  el.style.letterSpacing = '0'
+  const range = document.createRange()
+  const widths: number[] = []
+  const content = node.textContent ?? ''
+  for (let i = 0; i < content.length; i++) {
+    range.setStart(node, i)
+    range.setEnd(node, i + 1)
+    widths.push(range.getBoundingClientRect().width)
+  }
+  el.style.letterSpacing = previous
+  const spacing = parseFloat(getComputedStyle(el).letterSpacing) || 0
+  slotWidths.value = widths.map(width => width + spacing)
+  // Glyph widths for the scramble characters, measured in the same typeface.
+  const style = getComputedStyle(el)
+  const canvas = document.createElement('canvas')
+  const context = canvas.getContext('2d')
+  if (context) {
+    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
+    const candidates = new Set<string>(chatter.join('').split(''))
+    narrowFallbacks.forEach(character => candidates.add(character))
+    charWidths = new Map(Array.from(candidates, character => [character, context.measureText(character).width]))
+  }
+}
+function slotStyle(index: number) {
+  const width = slotWidths.value[index]
+  return width ? { width: `${width}px` } : undefined
+}
+// Keep a scrambled glyph inside its slot: swap it for the widest narrow fallback that fits.
+function fitCharacter(character: string, index: number) {
+  const limit = slotWidths.value[index]
+  if (!limit) return character
+  if ((charWidths.get(character) ?? 0) <= limit) return character
+  const fitting = narrowFallbacks.find(fallback => (charWidths.get(fallback) ?? 0) <= limit)
+  return fitting ?? '.'
+}
+function fitText(text: string, offset: number) {
+  return Array.from(text, (character, index) => fitCharacter(character, offset + index)).join('')
+}
+function stopIntro() {
+  clearTimeout(introTimer)
+  entering.value = false
+}
+function beginCycle() {
+  clearTimeout(introTimer)
+  if (motionQuery?.matches) { stopIntro(); return }
+  entering.value = true
+  const start = performance.now()
+  function tick() {
+    const index = Math.floor((performance.now() - start) / 60)
+    if (index >= chatter.length) {
+      entering.value = false
+      // Run the original contour cycle (including its quiet interval) before scrambling again.
+      introTimer = setTimeout(beginCycle, 10000)
+      return
+    }
+    const text = chatter[index]!
+    const chars = Array.from(text)
+    introText.value = index < 12
+      ? fitText(text, 0) + label.slice(chars.length)
+      : label.slice(0, -chars.length) + fitText(text, label.length - chars.length)
+    introTimer = setTimeout(tick, 60)
+  }
+  tick()
+}
+function onMotionChange() { if (motionQuery?.matches) stopIntro(); else beginCycle() }
+onMounted(() => {
+  if (!props.intro) return
+  measureSlots()
+  // The bundled font may still be swapping in; re-measure so the slots match the real advance.
+  document.fonts?.ready.then(() => { if (!unmounted) measureSlots() })
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  motionQuery.addEventListener('change', onMotionChange)
+  beginCycle()
+})
+onBeforeUnmount(() => {
+  unmounted = true
+  clearTimeout(introTimer)
+  motionQuery?.removeEventListener('change', onMotionChange)
 })
 const units = 2000
 const tipGlowId = `brand-tip-${useId()}`
@@ -74,10 +177,13 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 </script>
 
 <template>
-  <span class="animated-brand-text">
+  <span class="animated-brand-text" :class="{ 'brand-entering': entering, 'brand-login-intro': intro }">
     <span class="sr-only">INFRA-BTCAP</span>
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
-    <span class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
+    <span ref="sizeEl" class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
+    <span v-if="entering" class="brand-chitchat" aria-hidden="true"><span
+        v-for="(character, index) in introChars" :key="index" class="brand-chitchat-slot"
+        :style="slotStyle(index)">{{ character }}</span></span>
     <svg class="brand-wordmark-svg" :viewBox="viewBox" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <!-- Blur uses font coordinates, not subpixel lengths scaled by the glyph viewBox. -->
@@ -121,6 +227,25 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
      login mark keeps its own light text on the dark login background. */
 }
 .brand-wordmark-size { visibility: hidden; }
+.brand-login-intro { color: #fff; }
+.brand-chitchat {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: baseline;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* Each character is pinned to its final letter slot, so the wordmark only changes glyphs. */
+.brand-chitchat-slot {
+  display: inline-block;
+  flex: 0 0 auto;
+  text-align: left;
+  letter-spacing: 0;
+}
+.brand-entering .brand-wordmark-svg { visibility: hidden; }
+.brand-entering .brand-wordmark-trace,
+.brand-entering .brand-wordmark-tip { animation: none; }
 .brand-wordmark-svg {
   position: absolute;
   inset: 0;
@@ -164,6 +289,8 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   28%, 100% { stroke-dashoffset: -84; opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce), print {
+  .brand-chitchat { display: none; }
+  .brand-entering .brand-wordmark-svg { visibility: visible; }
   .brand-wordmark-trace,
   .brand-wordmark-tip { animation: none !important; display: none; }
 }
