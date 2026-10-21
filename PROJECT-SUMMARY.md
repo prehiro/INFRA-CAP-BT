@@ -1,7 +1,27 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-17
+> Terakhir diupdate: 2026-10-21
+
+### Login brand: anti-geser + siklus berulang
+
+HIRO: "teks nya jadi bergeser-geser ya? bisa optimalkan biar tidak bergeser kiri-kanan. lalu buat looping kedua animasi tsb".
+AKARNYA: `.brand-chitchat` menampilkan teks acak sebagai satu string di dalam `text-align:center`, sehingga panjang
+string yang berubah-ubah membuat tiap karakter bergeser kiri-kanan.
+PERBAIKAN: teks acak sekarang dirender sebagai satu slot per karakter. Lebar tiap slot diukur dari
+advance width huruf final yang sebenarnya (Range di atas text node asli, letter-spacing ditambahkan
+kembali), lalu setiap karakter scramble dipatok ke slotnya. Karakter yang lebih lebar dari slotnya
+diganti fallback sempit ('#','.','-','+','=','4','2') yang diukur lewat canvas measureText, jadi
+tidak ada glyph yang menabrak huruf sebelah. `.brand-chitchat` berubah dari text-align center ke
+flex row dengan slot inline-block.
+LOOPING: `beginCycle()` memasang ulang intro 10 detik setelah scramble selesai, jadi intro -> garis
+merah -> jeda -> intro -> garis merah terus berjalan. `document.fonts.ready` memicu pengukuran ulang
+bila font bundel belum siap, dan flag `unmounted` mencegah measure ulang setelah komponen dilepas.
+UKURAN (browser, /login): deviasi kiri maksimum 0.18 px, overflow glyph maksimum 0.36 px (sebelumnya
+overflow '@' 10.03 px), timeline 26 detik: intro 0.67s -> merah 1.90s -> jeda -> intro 11.89s ->
+merah 13.12s -> jeda -> intro 23.11s -> merah 24.34s, 10 teks intro berbeda, 38 frame merah terlihat.
+Reduced motion: tidak ada slot chitchat, 0 animasi, SVG terlihat. Build lulus, 13 route terprerender.
+Sidebar (BrandMenu, tanpa prop intro) tidak berubah. Backup dulu; source lokal, menunggu approval.
 
 ### Login brand chitchat entrance preview
 
