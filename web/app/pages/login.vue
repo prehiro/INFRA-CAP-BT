@@ -338,17 +338,21 @@ onBeforeUnmount(() => cleanup?.())
    The wrapper is only as big as the badge itself: the halo is a fixed-size box centred on
    it, so it no longer RESERVES vertical space. A 132px wrapper used to hold a 44px badge,
    which left 44px of empty air above and below the icon and pushed the wordmark down.
-   The halo is 112px: the artwork's visible band then measures 30.6..53.0px from the centre,
+   The halo is 112px: the artwork's visible band then measures 30.6..57.1px from the centre,
    so the circuit reads as a ring AROUND the badge instead of a thin sliver. */
-/* The card clips its content, so the header has to leave room for the halo. An 88px halo
-   around a 44px badge overhangs by 22px, and that overhang was EXACTLY the header's padding,
-   so the space the halo needed and the space the header had were the same number - which
-   left the icon sitting flush against the wordmark with nothing breathing around it.
-   The halo is now 112px (34px overhang) and the header carries a little MORE than that:
-   36px above and 18px below, so the circuit has room and the badge is not glued to the
-   wordmark. The extra 2px above the overhang is what keeps the halo from being cropped. */
+/* The SPACING is measured from the ARTWORK, not from the badge.
+   The circuit artwork reaches 36px beyond the 44px badge on every side, so padding sized
+   to the badge left the halo sitting 2px from the card edge and running 18px INTO the
+   wordmark - the artwork, not the badge, is what the eye reads as the icon.
+   The visible gap is therefore 16px on each side of the ARTWORK. The numbers work out
+   like this: the artwork overhangs the badge by 36px, so the header needs 36+16 = 52px of
+   padding above the badge and 36+16 = 52px of margin below it.
+   NOTE: the card is vertically centred, so one extra pixel of top padding moves the card
+   edge up by one pixel AND the artwork down by one pixel - the top gap grows by 2px per
+   pixel of padding. That is why the top and bottom numbers are not symmetric even though
+   the two gaps are. */
 .login-header {
-  padding: 36px 0 18px;
+  padding: 51px 0 18px;
 }
 /* The card header carried the vendor's own 16px vertical padding, which stacked on top of
    the space the halo needs and left the icon floating. It is now zero here, and the
@@ -357,7 +361,8 @@ onBeforeUnmount(() => cleanup?.())
   position: relative;
   width: 44px; height: 44px;
   display: grid; place-items: center;
-  margin-bottom: 18px;
+  /* 36px of artwork overhang below the badge + a 16px visible gap before the wordmark. */
+  margin-bottom: 49px;
 }
 .logo-circuit {
   position: absolute;

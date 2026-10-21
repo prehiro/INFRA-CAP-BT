@@ -3,6 +3,34 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Jarak visual artwork vs teks (v6) - ini yang sebenarnya dimaksud HIRO
+
+HIRO: "bro maksud saya mau ada jarak antar bawah container brand icon dengan teks infra-btcap,
+juga ada jarak di atas". Jadi yang dimaksud JARAK VISUAL antara artwork circuit dan teks, dan
+antara artwork dan tepi card - BUKAN jarak box badge ke wordmark.
+KESALAHAN SAYA DI EMPAT PUTARAN SEBELUMNYA: semua padding dihitung dari BADGE (44px), padahal
+yang terlihat dan dibaca mata adalah ARTWORK circuit. Dan artwork itu menjulur 36px dari badge
+di semua sisi (halo 112px -> outer artwork 57.1px dari pusat, badge edge 22px). Akibatnya:
+halo cuma berjarak 2px dari tepi card dan 18px MENYERANG ke area wordmark - persis yang HIRO
+keluhkan, dan itu tidak terlihat dari pengukuran box badge.
+PERBAIKAN: padding dihitung dari ARTWORK. Overhang artwork 36px + gap visual 16px = 52px:
+- `.login-header` padding atas 36 -> 51px
+- `.logo-wrap` margin-bottom 18 -> 49px
+- halo tetap 112px (dipakai untuk mengukur overhang 36px)
+UKURAN (browser, /login, 10 frame animasi di-scan, piksel hijau dihitung dari artwork):
+jarak visual ATAS 17.0px, BAWAH 16.0px (selisih 1px), artwork tidak overlap teks.
+Jarak badge ke wordmark 49px.
+PELAJARAN PENTANG - CARD DI-CENTER VERTIKAL: satu pixel tambahan padding atas menggerakkan
+tepi card ke atas 1px DAN artwork ke bawah 1px, jadi gap atas tumbuh 2px per pixel padding.
+Akibatnya angka padding atas dan margin bawah TIDAK simetris meski jaraknya simetris
+(51px vs 49px untuk gap 17/16). Kalau cuma menaikkan padding atas, card ikut naik.
+Cek layar: card 459px, muat penuh di 1920x1080, 1366x768, 1280x720. Animasi hidup
+(stroke-width 0.516->2.399px), reduced motion 0 animasi garis solid 1.4px. Build lulus.
+CARA MENGUKUR JARAK VISUAL (penting untuk iterasi berikutnya): screenshot 1x area halo, lalu
+hitung baris pertama/terakhir yang punya piksel hijau (G > R+18 dan G > B+18 dan G > 40) -
+batas itu adalah artwork NYATA, bukan kotak SVG. Bandingkan dengan cardRoot.top dan
+brand-wordmark-svg.getBoundingClientRect().top.
+
 ### Jarak atas/bawah brand icon: tambah lagi (v5)
 
 HIRO: "tambah dikit lagi ruang atas bawah". Pola yang sama seperti v4: header padding
