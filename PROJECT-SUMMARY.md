@@ -3,6 +3,21 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Jarak atas/bawah brand icon: tambah lagi (v4, longgar)
+
+HIRO: "tambah dikit lagi jarak atas bawah". Satu putaran lagi dari yang sama - padding header
+(28px 0 10px) + halo 96px (overhang 26px) + logo-wrap margin-bottom 10px
+menjadi: header 32px 0 14px, halo 104px (overhang 30px), logo-wrap margin-bottom 14px.
+ANGKA: ruang atas (card-root ke badge) 28 -> 32px, jarak badge ke wordmark 10 -> 14px, tinggi card
+389 -> 401px, header 144 -> 156px, clippedTop tetap -2 (halo 2px di dalam card, aman).
+Artwork: band 31.4 -> 53.0px (lebar 21.5px, sebelumnya 17.6px), 0 terclip di batas card,
+0 piksel di dalam badge, 783 piksel pada frame animasi tertentu (berbeda-beda karena garis
+berjalan). Animasi hidup: stroke-width 0.06->2.33px, dot opacity 0.10->0.721. Reduced motion:
+0 animasi, garis solid 1.4px. Build lulus.
+POLA YANG KONSISTEN: setiap putaran += 4px ruang atas dan bawah, halo naik 8px (overhang +4px),
+dan header selalu 2px LEBIH dari overhang - 2px itulah yang mencegah halo ter-crop oleh card
+(overflow-hidden). Kalau padding header kurang dari overhang, artwork atas terpotong.
+
 ### Jarak atas/bawah brand icon: tambah lagi (longgar)
 
 HIRO: "jarak atas dan bawahnya tambah sedikit, terlalu rapat".
