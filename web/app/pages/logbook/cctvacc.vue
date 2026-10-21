@@ -881,8 +881,12 @@ await init()
                 </template>
               </td>
               <td class="border-b border-default/60 px-1 py-2 text-center whitespace-nowrap print:hidden">
-                <UButton icon="i-lucide-pencil" size="xs" variant="ghost" color="neutral"
-                         @click="openEdit(r)" />
+                <UButton size="xs" variant="ghost" color="neutral" class="pencil-hover"
+                         @click="openEdit(r)">
+                    <template #leading>
+                      <PencilIcon class="size-4" data-slot="leadingIcon" />
+                    </template>
+                  </UButton>
                 <UButton size="xs" variant="ghost" class="trash-bin-hover" color="error"
                          @click="askDelete(r)" >
                       <template #leading>

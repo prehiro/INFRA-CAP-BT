@@ -3,6 +3,34 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Animasi tombol Edit (pensil "menulis" saat hover)
+
+HIRO: "animasikan tombol edit". KHUSUS: ini bukan soal tombolnya bergerak (UDA/Nuxt UI sudah
+memberi efek hover), tapi ICONS-nya yang harus beranimasi - paralel dengan trash bin.
+KOMPONEN BARU `web/app/components/PencilIcon.vue`: geometry lucide:pencil dipecah jadi 2 grup
+- body: path vendor M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321
+  4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z, plus M15 5l4 4 (ferrule)
+- stroke: garis pendek "M2.3 22H10.2" - satu-satunya stroke yang BUKAN bagian icon vendor,
+  dan justru itu yang membuat gerakan terbaca sebagai "menulis" bukan "icon miring".
+CARA KERJA: body berotasi pada UJUNG pensilnya (transform-origin 2.3px 21.4px = sudut ujung
+path vendor), jadi ujungnya tetap planted di kertas sementara badannya berayun ke posisi menulis
+- persis seperti tangan memutar pensil. Garis tergambar dengan stroke-dashoffset 8 -> 0.
+CSS (main.css, kelas opt-in .pencil-hover): body rotate(-32deg) 260ms
+cubic-bezier(.34,1.4,.5,1); stroke dashoffset 8->0 320ms cubic-bezier(.4,0,.3,1) delay 90ms.
+Hover hanya di @media (hover: hover) and (pointer: fine). Focus-visible hanya rotate(-20deg)
+TANPA menggambar garis - focus ring tidak boleh terlihat seperti ada tulisan baru.
+PASANG DI 5 HALAMAN: pcledger, factorypc, logbook/cctvacc, logbook/handover, users.
+Semua pakai slot #leading (UButton tidak bisa menerima icon custom dari luar), class
+pencil-hover. issuedform tidak punya tombol edit jadi tidak diubah.
+UKURAN (browser, hover CDP asli): rest dash 8px -> hover dash 0px, rot 0 -> -32deg.
+Sampling: t0 rot -33.5 dash 6.57, t50 rot -32.4 dash 3.85, t100 dash 1.71, t150 dash 0.385,
+t200 dash 0.040, t250 dash 0 (selesai). Jumlah tombol: PC Ledger 28, Factory PC 10, CCTV 13,
+Handover 5, Users 3. Semua identik (rest dash 8px, hover rot -32 dash 0).
+Cek clipping: svg overflow visible, tombol overflow visible; saat hover body box
+1186.5..1204.9 x 294.3..312.7 (keluar dari kotak svg 1192..1208 - tidak terpotong),
+stroke tergambar 1193.5..1198.8. Screenshot pencil-rest.png & pencil-hover.png.
+Build lulus.
+
 ### Perbaikan v4: jatuhnya 2x lebih lambat (HIRO: "perlambat jatuhnya sedikit")
 
 main.css: animation trash-content-in 460ms -> 700ms, shorthand jadi `linear` dan SETIAP SEGMENT

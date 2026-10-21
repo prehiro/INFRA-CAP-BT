@@ -141,6 +141,42 @@
      strokes read as dropping INTO the bin instead of being pushed down. */
   100% { transform: translate3d(0, 5px, 0); opacity: .45; }
 }
+/* ---------- Pencil: it tips over into a writing angle and draws a line ----------
+   The pencil is drawn by PencilIcon.vue, which splits the lucide:pencil path into the body
+   and a writing stroke, so the two can move independently.
+
+   The body pivots ON ITS TIP (transform-origin 2.3px 21.4px, the tip corner of the vendor
+   path) and swings up into a writing angle, the way a hand pivots a pencil - the tip stays
+   planted while the body rotates around it. A separate short stroke under the tip is drawn
+   with stroke-dashoffset, so it appears to be written as the pencil touches down; that line
+   is the only stroke that is not part of the vendor icon, and it is what makes the motion
+   read as "writing" instead of "the icon tilted".
+
+   Like the trash bin, the rule is opt-in per button (.pencil-hover) and only fires on a real
+   pointer, so a touch device never replays it. */
+.pencil-hover {
+  position: relative;
+}
+.pencil-hover .pencil-body {
+  transition: transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+.pencil-hover .pencil-stroke {
+  transition: stroke-dashoffset 320ms cubic-bezier(0.4, 0, 0.3, 1) 90ms;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pencil-hover:not(:disabled):not([aria-disabled='true']):hover .pencil-body {
+    transform: rotate(-32deg);
+  }
+  .pencil-hover:not(:disabled):not([aria-disabled='true']):hover .pencil-stroke {
+    stroke-dashoffset: 0;
+  }
+}
+/* Keyboard focus gets a smaller version of the same affordance: the pencil still tips over,
+   but the line is not drawn - a focus ring should not look like something was just written. */
+.pencil-hover:not(:disabled):not([aria-disabled='true']):focus-visible .pencil-body {
+  transform: rotate(-20deg);
+}
+
 /* Keyboard focus gets the same affordance, but the lid only lifts: the contents are the
    part that would be lost, and a focus ring should not look like the item is being taken. */
 .trash-bin-hover:not(:disabled):not([aria-disabled='true']):focus-visible .trash-bin-lid {
@@ -171,6 +207,12 @@
     transition: none !important;
     transform: none !important;
     animation: none !important;
+  }
+  .pencil-hover .pencil-body,
+  .pencil-hover .pencil-stroke {
+    transition: none !important;
+    transform: none !important;
+    stroke-dashoffset: 8 !important;
   }
   :is(.record-save-hover, .record-delete-hover) { transition: none; transform: none !important; box-shadow: none !important; }
   :is(.record-save-hover, .record-delete-hover)::after { display: none; animation: none !important; }

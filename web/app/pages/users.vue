@@ -420,13 +420,17 @@ onMounted(() => {
                   <td class="px-4 py-3">
                     <div class="flex items-center justify-end gap-1">
                       <UButton
-                        icon="i-lucide-pencil"
                         size="xs"
                         color="neutral"
                         variant="ghost"
+                        class="pencil-hover"
                         :aria-label="`Edit ${u.username}`"
                         @click="openEdit(u)"
-                      />
+                      >
+                        <template #leading>
+                          <PencilIcon class="size-4" data-slot="leadingIcon" />
+                        </template>
+                      </UButton>
                       <UButton
                         v-if="u.username !== 'admin'"
                         size="xs"

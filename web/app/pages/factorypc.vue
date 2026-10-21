@@ -1075,7 +1075,11 @@ async function confirmDelete() {
                        `px-1 py-2` padding with it, which the shared `.pl-table td` rule cannot
                        express as a utility (it would lose on specificity). -->
                   <td class="pl-actions text-center">
-                    <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" size="xs" aria-label="Edit" @click="openEdit(row)" />
+                    <UButton color="neutral" variant="ghost" size="xs" class="pencil-hover" aria-label="Edit" @click="openEdit(row)">
+                      <template #leading>
+                        <PencilIcon class="size-4" data-slot="leadingIcon" />
+                      </template>
+                    </UButton>
                     <UButton color="error" variant="ghost" size="xs" class="trash-bin-hover" aria-label="Delete" @click="askDelete(row)">
                       <template #leading>
                         <TrashBinIcon class="size-4" data-slot="leadingIcon" />
