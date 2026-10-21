@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Login brand chitchat entrance preview
+
+User supplied faxriddin20 quick-panda-13 Vue/CSS reference. Adapted its 1.2s symbol sequence into a mount-only login opt-in on AnimatedBrandText; existing Public Sans/size reserved, white #fff, static accessible label. Prefix scramble switches to suffix then resolves INFRA-BTCAP; red contour/tip animations are disabled until intro completion and then start their original 10s loops. Sidebar default intro=false unchanged. Timer and media listener cleanup; reduced motion skips scramble and red motion. Build passed; pre-navigation browser recorder measured ~1196ms intro with 11 sampled text states, no red animation during intro, red opacity afterward, white throughout. Existing login ancestor scale entrance explains early bounding-box changes (not reported as static geometry). No authentication logic changes. Backup first, source local pending approval; docs-only checkpoint.
+
 ### Factory PC rotating gear preview
 
 Added actual gear-only clockwise rotation, 12s linear, to the ix header. Split original compound path at gear subpath with relative move resolved to M474.618 339.533; tower remains static. Gear clip rotates with painted gear so existing light sweep/wave stays within silhouette; breathing halo retained. Build passed; 752 browser frames proved rotation, fixed tower/plate, clip/base matrix difference below .0001; reduced-motion zero animations. Sidebar unchanged. Backup first; source local pending approval, docs-only checkpoint.
