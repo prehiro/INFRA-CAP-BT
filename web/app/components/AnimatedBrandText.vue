@@ -12,13 +12,19 @@ const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number,
 // Adapted from the user-supplied faxriddin20 quick-panda-13 chitchat sequence.
 // Mount-only, not hover/focus; one accessible static label and a fixed native text footprint.
 const label = 'INFRA-BTCAP'
-const chatter = ['#', '.', '^{', '-!', '#$_', '№:0', '#{+.', '@}-?', '?{4@%', '=.,^!', '?2@%', ';1}]', '?{%:%', '|{f[4', '{4%0%', "'1_0<", '{0%', "]>'", '4', '2']
+// Every letter scrambles at the SAME time now: each position shows a random symbol from this
+// pool and only settles into its real letter at its own resolve step.
+const scramblePool = ['#', '.', '^', '-', '!', '$', '{', '+', '}', '?', '%', '=', ';', ']', '4', '2', ':', '@']
+const steps = 20
+const stepMs = 60
 const entering = ref(props.intro)
 const introText = ref('#' + label.slice(1))
 // Fixed character slots: every scramble character is drawn inside the advance width of its
 // final letter, so the wordmark never slides left/right while the glyphs change.
 const sizeEl = ref<HTMLElement | null>(null)
+const rootEl = ref<HTMLElement | null>(null)
 const slotWidths = ref<number[]>([])
+const rootWidth = ref<string>('')
 const introChars = computed(() => Array.from(introText.value))
 let introTimer: ReturnType<typeof setTimeout> | undefined
 let motionQuery: MediaQueryList | undefined
@@ -44,13 +50,19 @@ function measureSlots() {
   el.style.letterSpacing = previous
   const spacing = parseFloat(getComputedStyle(el).letterSpacing) || 0
   slotWidths.value = widths.map(width => width + spacing)
+  // Pin the brand to its settled width. The bundled font swaps in after the first paint,
+  // so the reserved label grows by a few pixels; without this the whole wordmark - and
+  // every scramble slot - drifts sideways while the intro runs.
+  const total = slotWidths.value.reduce((sum, width) => sum + width, 0)
+  if (total > 0) rootWidth.value = `${total}px`
   // Glyph widths for the scramble characters, measured in the same typeface.
   const style = getComputedStyle(el)
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')
   if (context) {
-    context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`
-    const candidates = new Set<string>(chatter.join('').split(''))
+    // Measure in the weight the slots actually render at (600), not the reserved 700 label.
+    context.font = `${style.fontStyle} 600 ${style.fontSize} ${style.fontFamily}`
+    const candidates = new Set<string>(scramblePool.join('').split(''))
     narrowFallbacks.forEach(character => candidates.add(character))
     charWidths = new Map(Array.from(candidates, character => [character, context.measureText(character).width]))
   }
@@ -78,33 +90,43 @@ function beginCycle() {
   clearTimeout(introTimer)
   if (motionQuery?.matches) { stopIntro(); return }
   entering.value = true
+  const letters = Array.from(label)
+  // Each letter resolves on its own step, so the whole word scrambles at once and settles
+  // progressively instead of one position at a time.
+  const resolveAt = letters.map((_letter, index) =>
+    Math.round((index / Math.max(letters.length - 1, 1)) * (steps - 1)))
   const start = performance.now()
   function tick() {
-    const index = Math.floor((performance.now() - start) / 60)
-    if (index >= chatter.length) {
+    const index = Math.floor((performance.now() - start) / stepMs)
+    if (index >= steps) {
       entering.value = false
       // Run the original contour cycle (including its quiet interval) before scrambling again.
       introTimer = setTimeout(beginCycle, 10000)
       return
     }
-    const text = chatter[index]!
-    const chars = Array.from(text)
-    introText.value = index < 12
-      ? fitText(text, 0) + label.slice(chars.length)
-      : label.slice(0, -chars.length) + fitText(text, label.length - chars.length)
-    introTimer = setTimeout(tick, 60)
+    const text = letters.map((letter, position) => {
+      if (index >= resolveAt[position]) return letter
+      const symbol = scramblePool[Math.floor(Math.random() * scramblePool.length)]!
+      return fitCharacter(symbol, position)
+    }).join('')
+    introText.value = text
+    introTimer = setTimeout(tick, stepMs)
   }
   tick()
 }
 function onMotionChange() { if (motionQuery?.matches) stopIntro(); else beginCycle() }
 onMounted(() => {
   if (!props.intro) return
-  measureSlots()
-  // The bundled font may still be swapping in; re-measure so the slots match the real advance.
-  document.fonts?.ready.then(() => { if (!unmounted) measureSlots() })
   motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
   motionQuery.addEventListener('change', onMotionChange)
-  beginCycle()
+  // Start only once the bundled font is in place, so the slots and the pinned width are
+  // measured against the final typeface and never shift afterwards.
+  const fontsReady = document.fonts?.ready ?? Promise.resolve()
+  Promise.race([fontsReady, new Promise(resolve => setTimeout(resolve, 1500))]).then(() => {
+    if (unmounted) return
+    measureSlots()
+    beginCycle()
+  })
 })
 onBeforeUnmount(() => {
   unmounted = true
@@ -177,7 +199,8 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 </script>
 
 <template>
-  <span class="animated-brand-text" :class="{ 'brand-entering': entering, 'brand-login-intro': intro }">
+  <span ref="rootEl" class="animated-brand-text" :class="{ 'brand-entering': entering, 'brand-login-intro': intro }"
+        :style="rootWidth ? { width: rootWidth } : undefined">
     <span class="sr-only">INFRA-BTCAP</span>
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
     <span ref="sizeEl" class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
@@ -235,6 +258,9 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   align-items: baseline;
   white-space: nowrap;
   pointer-events: none;
+  /* 600 measures closest to the original wordmark strokes: 700 rendered 6% more ink
+     (0.191 vs 0.180) and 1px heavier stems, which read as "bold". */
+  font-weight: 600;
 }
 /* Each character is pinned to its final letter slot, so the wordmark only changes glyphs. */
 .brand-chitchat-slot {

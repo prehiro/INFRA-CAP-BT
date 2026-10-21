@@ -3,6 +3,31 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Login brand: bobot sesuai wordmark asli + scramble serentak
+
+HIRO: "saat animasi pertama berjalan teks nya seperti menebal/bold, saya mau tetap sama dengan teks original nya.
+lalu untuk scramble nya buat serentak semua teks".
+AKARNYA "TEBAL": teks scramble adalah TEKS NATIVE Public Sans weight 700, sedangkan wordmark yang
+aslinya adalah PATH SVG. Diukur lewat screenshot pixel: teks native 700 punya rasio tinta 0.1911,
+wordmark SVG 0.1798 - 6% lebih tebal, dan stem p25 4 px vs 3 px, jadi memang terbaca lebih tebal.
+PERBAIKAN: slot scramble dirender dengan `font-weight: 600` dan `measureText` memakai weight 600
+(bukan 700 yang diwarisi dari label). Hasil ukur: rasio tinta scramble 0.1672 vs wordmark SVG
+0.1677, dan profil stem identik (p10/p25/p75/max 3/3/5/12 untuk keduanya). Tidak ada lagi
+font-weight 700 di teks acak.
+SCRAMBLE SERENTAK: `chatter` (yang mengubah satu posisi setiap frame) diganti `scramblePool` + 20
+langkah. Tiap posisi sekarang menunjukkan simbol acak dari pool secara BERSAMAAN, dan tiap huruf
+punya langkah settle sendiri (`resolveAt` dihitung merata dari 0 sampai langkah-1), sehingga kata
+sotpong lebih dulu dan huruf terakhir paling akhir. Teks final persis INFRA-BTCAP.
+PERGESERAN SISA: width brand di-pin ke lebar slot yang sudah terukur, dan intro baru mulai setelah
+`document.fonts.ready` (dengan batas waktu 1500 ms) supaya font bundel tidak menukar di tengah
+animasi. Deviasi posisi slot terhadap host setelah entrance halaman selesai: 0.002 px. Sisa
+pergeseran yang terlihat berasal dari animasi `rise` milik kartu login (scale 0.98 -> 1), bukan
+dari komponen ini.
+UKURAN: 37 frame scramble, overflow glyph maksimum 0.22 px, 10 teks berbeda, timeline 25 detik
+intro 0.56s -> merah 1.79s -> jeda -> intro 11.81s -> merah 13.03s -> jeda -> intro 23.04s -> merah
+24.48s, 18 frame intro, 34 frame merah. Reduced motion: tanpa chitchat, 0 animasi, SVG terlihat.
+Build lulus. Backup dulu; source lokal, menunggu approval.
+
 ### Login brand: anti-geser + siklus berulang
 
 HIRO: "teks nya jadi bergeser-geser ya? bisa optimalkan biar tidak bergeser kiri-kanan. lalu buat looping kedua animasi tsb".
