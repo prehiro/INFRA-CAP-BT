@@ -1076,7 +1076,11 @@ async function confirmDelete() {
                        express as a utility (it would lose on specificity). -->
                   <td class="pl-actions text-center">
                     <UButton color="neutral" variant="ghost" icon="i-lucide-pencil" size="xs" aria-label="Edit" @click="openEdit(row)" />
-                    <UButton color="error" variant="ghost" icon="i-lucide-trash-2" size="xs" aria-label="Delete" @click="askDelete(row)" />
+                    <UButton color="error" variant="ghost" size="xs" class="trash-bin-hover" aria-label="Delete" @click="askDelete(row)">
+                      <template #leading>
+                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                      </template>
+                    </UButton>
                   </td>
                 </tr>
               </TransitionGroup>
@@ -1252,7 +1256,11 @@ async function confirmDelete() {
 
             <div class="flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="deleting" @click="showDelete = false" />
-              <UButton color="error" class="record-delete-hover" label="Delete record" :loading="deleting" @click="confirmDelete" />
+              <UButton color="error" class="record-delete-hover trash-bin-hover" label="Delete record" :loading="deleting" @click="confirmDelete">
+                <template #leading>
+                  <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+                </template>
+              </UButton>
             </div>
           </div>
         </template>

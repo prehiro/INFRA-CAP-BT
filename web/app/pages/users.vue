@@ -429,13 +429,17 @@ onMounted(() => {
                       />
                       <UButton
                         v-if="u.username !== 'admin'"
-                        icon="i-lucide-trash-2"
                         size="xs"
                         color="error"
                         variant="ghost"
+                        class="trash-bin-hover"
                         :aria-label="`Delete ${u.username}`"
                         @click="askDelete(u)"
-                      />
+                      >
+                        <template #leading>
+                          <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                        </template>
+                      </UButton>
                     </div>
                   </td>
                 </tr>
@@ -669,7 +673,11 @@ onMounted(() => {
 
             <div class="flex items-center justify-end gap-2 bg-elevated/40 px-6 py-4">
               <UButton label="Cancel" color="neutral" variant="ghost" :disabled="deleting" @click="showDelete = false" />
-              <UButton label="Delete user" class="record-delete-hover" icon="i-lucide-trash-2" color="error" :loading="deleting" @click="confirmDelete" />
+              <UButton label="Delete user" class="record-delete-hover trash-bin-hover" color="error" :loading="deleting" @click="confirmDelete">
+                <template #leading>
+                  <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+                </template>
+              </UButton>
             </div>
           </div>
         </template>

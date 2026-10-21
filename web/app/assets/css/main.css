@@ -82,6 +82,38 @@
   55% { transform: rotate(9deg); }
   80% { transform: rotate(-4deg); }
 }
+
+/* ---------- Trash bin: the lid opens and the contents drop in on hover ----------
+   The bin is drawn by TrashBinIcon.vue, which splits the lucide:trash-2 path into a body,
+   a contents group and a lid group so the parts can move independently. The lid hinges on
+   its back edge (transform-origin 3px 6px in the icon's own viewBox) and swings up and back;
+   the two content strokes fall into the bin and fade out.
+
+   The rule is opt-in per button (.trash-bin-hover) and only fires on a real pointer, so a
+   touch device never replays it and the icon keeps its vendor shape at rest. */
+.trash-bin-hover {
+  position: relative;
+}
+.trash-bin-hover .trash-bin-lid {
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.trash-bin-hover .trash-bin-content {
+  transition: transform 260ms cubic-bezier(0.5, 0, 0.75, 0), opacity 260ms ease-out;
+}
+@media (hover: hover) and (pointer: fine) {
+  .trash-bin-hover:not(:disabled):not([aria-disabled='true']):hover .trash-bin-lid {
+    transform: rotate(-19deg) translate(-0.4px, -0.9px);
+  }
+  .trash-bin-hover:not(:disabled):not([aria-disabled='true']):hover .trash-bin-content {
+    transform: translateY(2.6px);
+    opacity: .18;
+  }
+}
+/* Keyboard focus gets the same affordance, but the lid only lifts: the contents are the
+   part that would be lost, and a focus ring should not look like the item is being taken. */
+.trash-bin-hover:not(:disabled):not([aria-disabled='true']):focus-visible .trash-bin-lid {
+  transform: rotate(-14deg) translate(-0.3px, -0.6px);
+}
 @media (hover: hover) and (pointer: fine) {
   :is(.record-save-hover, .record-delete-hover):not(:disabled):not([aria-disabled='true']):hover {
     transform: translateY(-2px);
@@ -102,6 +134,8 @@
 .record-delete-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-delete-nudge 480ms ease-out; }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):active { transform: translateY(0); box-shadow: none; }
 @media (prefers-reduced-motion: reduce), print {
+  .trash-bin-hover .trash-bin-lid,
+  .trash-bin-hover .trash-bin-content { transition: none !important; transform: none !important; }
   :is(.record-save-hover, .record-delete-hover) { transition: none; transform: none !important; box-shadow: none !important; }
   :is(.record-save-hover, .record-delete-hover)::after { display: none; animation: none !important; }
   :is(.record-save-hover, .record-delete-hover) [data-slot='leadingIcon'] { animation: none !important; }

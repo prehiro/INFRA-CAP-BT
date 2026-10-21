@@ -3,6 +3,35 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Icon tong sampah: tutup membuka + isi masuk saat hover
+
+HIRO: "pada icon tong sampah jika user hover ke icon, ada animasi seperti tutup tong sampah terbuka
+dan sampah dimasukkan kedalam".
+KOMPONEN BARU `web/app/components/TrashBinIcon.vue` - geometry lucide:trash-2 (alias dari
+lucide:trash) dipecah jadi 3 grup supaya tiap bagian bisa bergerak sendiri, dan TIDAK ada stroke
+tambahan (pelajaran dari garis vertikal di CctvIcon):
+- body: M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6
+- content: M10 11v6 dan M14 11v6
+- lid: M3 6h18 dan handle M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2
+CSS (main.css, kelas opt-in `.trash-bin-hover`): lid hinge di transform-origin 3px 6px (viewBox
+ikon) -> rotate(-19deg) translate(-.4px,-.9px) dengan transition 220ms cubic-bezier(.34,1.56,.64,1);
+content -> translateY(2.6px) + opacity .18 dengan transition 260ms cubic-bezier(.5,0,.75,0).
+Hover HANYA di `@media (hover: hover) and (pointer: fine)` supaya perangkat sentuh tidak
+memainkannya. Focus-visible hanya lifting tutup (rotate -14deg), TANPA menjatuhkan isi - isi
+adalah bagian yang hilang, dan focus ring tidak boleh terlihat seperti barang sedang diambil.
+PASANG DI 6 HALAMAN (2 tempat masing-masing: tombol delete di baris tabel + tombol delete di
+footer modal): pcledger, factorypc, logbook/cctvacc, logbook/handover, users, issuedform.
+UButton tidak bisa menerima slot leading Icon dari luar, jadi `icon="i-lucide-trash-2"` diganti
+dengan `<template #leading><TrashBinIcon class="size-4" data-slot="leadingIcon" /></template>`.
+Icon `i-lucide-trash-2` yang tersisa hanya di toast dan badge dekoratif header modal (bukan hover).
+UKURAN (browser, hover sungguhan via CDP Input.dispatchMouseEvent): semua 6 halaman identik -
+rest lid=none opacity=1, hover lid=matrix(0.945519,-0.325568,...) op=0.18 content
+translateY 2.6px. PC Ledger 1 tombol, Factory PC 1, CCTV 13, Handover 5, Users 2, Issued Form 3.
+Transisi di-sample: t0 op .68 content 0.017px, t60 op .43 content 0.19px, t120 op .25
+content 0.90px, t200 op .18 content 2.6px, t300 sama (selesai). Reduced motion: transition 0s,
+transform none. Tombol "Delete record" di footer modal juga terverifikasi hover: true.
+Build lulus.
+
 ### Ikon title Handover Log Book (clipboard) dengan style PC Ledger
 
 HIRO: "page handover juga buat icon nya" - mengikuti permintaan yang sama untuk CCTV Access.

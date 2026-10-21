@@ -263,12 +263,15 @@ onMounted(loadGid)
                 variant="ghost"
                 size="xs"
                 square
-                icon="i-lucide-trash-2"
-                class="absolute right-0 top-1 text-muted hover:text-error sm:static sm:justify-self-center"
+                class="trash-bin-hover absolute right-0 top-1 text-muted hover:text-error sm:static sm:justify-self-center"
                 :aria-label="`Remove equipment ${index + 1}`"
                 :title="`Remove equipment ${index + 1}`"
                 @click="form.assets.splice(index, 1)"
-              />
+              >
+                <template #leading>
+                  <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                </template>
+              </UButton>
             </div>
             </TransitionGroup>
           </fieldset>

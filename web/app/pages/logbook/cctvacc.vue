@@ -883,8 +883,12 @@ await init()
               <td class="border-b border-default/60 px-1 py-2 text-center whitespace-nowrap print:hidden">
                 <UButton icon="i-lucide-pencil" size="xs" variant="ghost" color="neutral"
                          @click="openEdit(r)" />
-                <UButton icon="i-lucide-trash-2" size="xs" variant="ghost" color="error"
-                         @click="askDelete(r)" />
+                <UButton size="xs" variant="ghost" class="trash-bin-hover" color="error"
+                         @click="askDelete(r)" >
+                      <template #leading>
+                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                      </template>
+                    </UButton>
                          </td>
                          </tr>
                          </TransitionGroup>
@@ -1229,12 +1233,15 @@ await init()
               @click="showDelete = false"
             />
             <UButton
-              label="Delete record" class="record-delete-hover"
-              icon="i-lucide-trash-2"
+              label="Delete record" class="record-delete-hover trash-bin-hover"
               color="error"
               :loading="deleting"
               @click="confirmDelete"
-            />
+            >
+              <template #leading>
+                <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+              </template>
+            </UButton>
           </div>
         </div>
       </template>
