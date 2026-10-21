@@ -107,6 +107,21 @@
   width: 100%;
   height: 100%;
   overflow: visible;
+  /* The source artwork radiates from the middle, so its lines run straight through the
+     centre - exactly where the badge and its icon sit. This mask keeps the circuit out of
+     that area: fully hidden inside the badge, then fading in, so the lines read as a halo
+     BEHIND the icon instead of crossing it. The stop offsets are in the wrapper's own
+     pixels (the badge is 44px wide inside a 132px wrapper), so the cut-out tracks the
+     badge exactly instead of the SVG's internal viewBox units. */
+  /* The cut-out is an absolute radius, not a percentage: a percentage in radial-gradient
+     is measured against the distance to the farthest CORNER, so it does not track the
+     badge. 26.5px is the badge's half-diagonal including its 12px corner radius, so the
+     hole clears the badge completely even in the corners. */
+  --ai-cut: 26.5px;
+  -webkit-mask-image: radial-gradient(circle var(--ai-cut) at 50% 50%,
+      transparent 0 var(--ai-cut), #000 calc(var(--ai-cut) + 7px));
+  mask-image: radial-gradient(circle var(--ai-cut) at 50% 50%,
+      transparent 0 var(--ai-cut), #000 calc(var(--ai-cut) + 7px));
 }
 /* The source renders at 300px for a 160-unit viewBox, so its 0.5 stroke lands near 1px.
    The halo is drawn much smaller here, so the strokes are scaled up to stay visible. */

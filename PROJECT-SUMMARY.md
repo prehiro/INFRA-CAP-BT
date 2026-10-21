@@ -3,6 +3,30 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Perbaikan tabrakan AI circuit dengan brand icon (mask)
+
+HIRO: "tabrakan bdengan icon bro, ada solusi?".
+AKARNYA: artwork asli mer radiate DARI TENGAH, jadi semua garisnya menembus tepat di pusat -
+persis tempat badge dan ikon login berada. Garis itu terlihat di dalam badge karena background
+badge cuma rgba(0,220,130,0.1) (transparan).
+SOLUSI: CSS mask pada `.ai-circuit` - radial-gradient yang transparan di tengah lalu opaque
+setelah radius tertentu, jadi garis berhenti sebelum badge dan menjadi halo di belakangnya.
+JEJAK PERCOBAAN YANG GAGAL (jangan diulang): (1) `<mask>` SVG dengan radialGradient -
+berfungsi, tapi offset-nya dalam SATUAN viewBox (160 unit), sedangkan badge diukur dalam px
+layar, jadi lubangnya tidak pas dan tidak bisa dikalibrasi ke ukuran badge. (2) CSS mask dengan
+PERSENTASE (`transparent 0, transparent 16.6%, #000 24%`) - SALAH: pada radial-gradient,
+persentase diukur terhadap jarak ke SUDUT TERJAUH, bukan ke lebar elemen, sehingga 16.6% =
+~18px (bukan 16.6% dari 44px) dan lubangnya meleset. Yang benar adalah radius ABSOLUT:
+`radial-gradient(circle 26.5px at 50% 50%, transparent 0 26.5px, #000 33.5px)`.
+ANGKA: 26.5px = setengah diagonal badge (44px + radius sudut 12px), jadi lubangnya membersihkan
+badge sampai ke sudut; transisi 7px supaya garis memudar masuk, bukan terpotong tajam.
+UKURAN (browser, /login, radial 72 arah): titik hijau pertama di radius 30.7px SEBELUMNYA
+18.3px (masih di dalam badge) - sekarang 30.7px, badge radius 22px, icon radius 16px, dan
+0/19 titik masih di dalam badge. Animasi tetap hidup: stroke-width 0.0005->2.398px, dashoffset
+32.8->166, dot opacity 0.18->0.73, semua animasi alive. Hijau di luar badge 0.46%.
+Reduced motion: 0 animasi, garis solid 1.4px, dot .35, mask tetap aktif. Build lulus.
+TUNGGU DI BROWSER: dev server perlu restart (restart-dev.ps1) agar perubahan .vue ter-pick-up.
+
 ### AI circuit di belakang brand icon login (Uiverse giant-newt-48)
 
 HIRO meminta cek animasi background dari https://uiverse.io/dexter-st/giant-newt-48. Temuan: link itu
