@@ -3,6 +3,32 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### AI circuit di belakang brand icon login (Uiverse giant-newt-48)
+
+HIRO meminta cek animasi background dari https://uiverse.io/dexter-st/giant-newt-48. Temuan: link itu
+komponen BUTTON ("Ask AI Button" oleh dexter-st, MIT), bukan background. Animasi yang wanted ada di
+dalam SVG-nya: 32 garis radial (line + path), 32 garis dengan dash bergerak, dan 20 dot berdenyut.
+KESALAHAN PERTAMA (sudah dikoreksi): sempat dipasang sebagai background halaman, padahal HIRO
+hanya minta bagian garis + dots. Background particle network dipulihkan dari backup
+(login-ai-bg-20261021-191129) dan canvas/partikel/orb tetap utuh.
+PERBAIKAN: `web/app/components/AiCircuit.vue` - komponen baru berisi SVG circuit (viewBox asli
+"70 70 160 160", 32 garis statis + 32 garis beranimasi + 20 dot). Tombol, state hover/focus, dan
+text swap dari sumber TIDAK dipakai. `login.vue` membungkus badge `.logo` dengan `.logo-wrap`
+132x132 dan menaruh `<AiCircuit />` di `.logo-circuit` (position absolute, inset 0) SEBAGAI LAPISAN
+BELAKANG - badge, ring, dan pulse tidak tersentuh.
+WARNA dipetakan ke accent aplikasi: garis statis rgb(0 220 130 / .22) stroke 1.1, garis bergerak
+#00dc82 dengan drop-shadow, dash 3s ease-out (dasharray 16 56, dashoffset 10->88->166,
+stroke-width 0->2.4->0), dot opacity .08->.8 dalam 1.5s linear dengan delay odd .15s / 3n .3s.
+Circuit sendiri punya fade 6s (.5 -> .95). Stroke width dinaikkan dari 0.5 (asli) ke 1.1-2.4 karena
+artwork asli dirender 300px untuk viewBox 160 unit, sedangkan halo ini kecil.
+UKURAN (browser, /login): 32 garis animasi + 32 statis + 20 dot aktif, stroke-width bergerak
+0.01->2.4px, dashoffset 100->160px, dot opacity 0.16->0.80, currentTime Maju (4750ms). Hijau
+terukur 1.41% area luar badge saat animasi mati vs 2.89% saat hidup. Badge di tengah
+elementFromPoint = rect.rack (ikon login), jadi circuit benar-benar di belakang. Reduced motion:
+0 animasi, stroke-width 1.4px solid, dot opacity .35. Build lulus, 13 route terprerender. Dev server
+harus RESTART (restart-dev.ps1) supaya auto-import komponen baru ter-akui.
+PARTIKEL BACKGROUND: canvas .bg-canvas 1264px, 3 orb, .bg-grid - semua tetap seperti semula.
+
 ### Login brand: bobot sesuai wordmark asli + scramble serentak
 
 HIRO: "saat animasi pertama berjalan teks nya seperti menebal/bold, saya mau tetap sama dengan teks original nya.

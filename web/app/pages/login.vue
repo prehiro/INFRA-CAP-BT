@@ -171,12 +171,17 @@ onBeforeUnmount(() => cleanup?.())
       >
         <template #header>
           <div class="text-center py-2">
-            <div class="logo mx-auto mb-3" aria-hidden="true">
-              <span class="logo-ring" />
-              <span class="logo-ring logo-ring--2" />
-              <span class="logo-icon">
-                <LoginNetworkIcon />
+            <div class="logo-wrap mx-auto mb-3" aria-hidden="true">
+              <span class="logo-circuit">
+                <AiCircuit />
               </span>
+              <div class="logo mx-auto">
+                <span class="logo-ring" />
+                <span class="logo-ring logo-ring--2" />
+                <span class="logo-icon">
+                  <LoginNetworkIcon />
+                </span>
+              </div>
             </div>
             <h1 class="text-xl font-bold tracking-wide text-slate-100"><AnimatedBrandText intro :tracking="0.025" :line-height="1.4" /></h1>
             <p class="text-sm text-[#7b8fb5] mt-1">Internal App ISD Capacitor</p>
@@ -302,6 +307,28 @@ onBeforeUnmount(() => cleanup?.())
 @keyframes rise {
   from { opacity: 0; transform: translateY(24px) scale(0.98); }
   to   { opacity: 1; transform: none; }
+}
+
+/* The badge sits inside a wrapper so the AI circuit artwork can live BEHIND it without
+   touching the badge's own box, pulse or rings. */
+.logo-wrap {
+  position: relative;
+  width: 132px; height: 132px;
+  display: grid; place-items: center;
+}
+.logo-circuit {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: logo-circuit-fade 6s ease-in-out infinite;
+}
+.logo-circuit :deep(.ai-circuit) {
+  width: 100%;
+  height: 100%;
+}
+@keyframes logo-circuit-fade {
+  0%, 100% { opacity: .5; }
+  50% { opacity: .95; }
 }
 
 .logo {
