@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Factory PC rotating gear preview
+
+Added actual gear-only clockwise rotation, 12s linear, to the ix header. Split original compound path at gear subpath with relative move resolved to M474.618 339.533; tower remains static. Gear clip rotates with painted gear so existing light sweep/wave stays within silhouette; breathing halo retained. Build passed; 752 browser frames proved rotation, fixed tower/plate, clip/base matrix difference below .0001; reduced-motion zero animations. Sidebar unchanged. Backup first; source local pending approval, docs-only checkpoint.
+
 ### Factory PC ix tower-settings preview
 
 Replaced factory glyph with exact Iconify ix:pc-tower-settings in sidebar/command palette and FactoryPcIcon header (512 viewBox). Installed pinned local ix package and explicitly bundled navigation glyph. Header retains breathing halo, with a clipped light sweep over tower and radial light wave on gear; no tilt, original filled silhouette unchanged. Removed superseded factory-outline/window animation code. Build passed; browser 420 frames proved sweep/wave/halo motion and fixed plate, reduced motion zero animations, sidebar embedded SVG mask verified. Source local pending approval; docs-only checkpoint. Supersedes factory-glyph preview below.
