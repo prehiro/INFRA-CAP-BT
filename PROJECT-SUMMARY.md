@@ -3,6 +3,20 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Jarak atas/bawah brand icon: tambah lagi (v5)
+
+HIRO: "tambah dikit lagi ruang atas bawah". Pola yang sama seperti v4: header padding
+(32px 0 14px) + halo 104px (overhang 30px) + logo-wrap margin-bottom 14px menjadi header
+36px 0 18px, halo 112px (overhang 34px), logo-wrap margin-bottom 18px.
+ANGKA: ruang atas (card-root ke badge) 32 -> 36px, jarak badge ke wordmark 14 -> 18px, tinggi
+card 401 -> 413px, header 156 -> 168px, clippedTop tetap -2 (halo 2px di dalam card).
+Artwork: band 31.3 -> 57.1px (lebar 25.7px, sebelumnya 21.5px), 0 terclip di batas card,
+0 piksel di dalam badge. Animasi hidup: stroke-width 0.009->2.387px, dashoffset 30.3->165.7,
+dot opacity 0.21->0.76. Reduced motion: 0 animasi, garis solid 1.4px. Build lulus.
+CEK LAYAR: card muat penuh di 1920x1080, 1600x900, 1366x768, 1280x720 (cardH 413px, top>0,
+bottom<viewport di semua). Polanya sudah dipakai 3x berturut-turut, jadi kalau HIRO minta lagi
+pola yang sama (+4px atas/bawah, halo +8px, header 2px di atas overhang) langsung dipakai lagi.
+
 ### Jarak atas/bawah brand icon: tambah lagi (v4, longgar)
 
 HIRO: "tambah dikit lagi jarak atas bawah". Satu putaran lagi dari yang sama - padding header
