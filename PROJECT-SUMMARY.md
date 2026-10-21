@@ -3,6 +3,40 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Perbaikan v3: 2 garis masuk LEWAT CELAH tutup yang terbuka
+
+HIRO (koreksi): "bukan bro garisnya masuk dari celah terbuka ke dalam tong sampahnya". Jadi
+HIRO mau GARISNYA TERLIHAT MELEWATI CELAHTUTUP, bukan cuma meluncur di dalam tong. Versi v2
+cuma menggeser garis yang sudah melayang di tengah tong ke bawah, jadi yang terbaca "memudar",
+bukan "masuk lewat celah".
+SOLUSI: badan tong adalah path TERBUKA (tidak ada tepi atas), jadi rim di y=6 ITU ADALAH celahnya.
+Perjalanan garis (main.css, keyframes trash-content-in, 460ms + delay 90ms):
+0% ty 0 op 1 -> 14% ty -5 op 0 (garis naik ke rim y=6 dan menghilang agar lompatan tidak
+terlihat) -> 30% ty -5 op 1 (muncul DI CELAH) -> 100% ty +5 op .45 (jatuh 10 unit ke dasar
+tong, y=16..22).
+TRAP PENTING (ini yang bikin versi pertama tidak bergerak sama sekali): Tailwind v4 / Lightning
+CSS MEMBUANG `transform` dari dalam keyframe kalau isinya cuma `translate`. Keyframe hasil build
+hanya berisi `opacity`, transform hilang. tested: `translate(0,-5)` DAN `translate3d(0,-5px,0)`
+keduanya dibuang. Yang LOLOS hanya `transform: translate(0px, 0px)` di keyframe 0% (nilai
+default yang gaired). Karena itu transform harus ditulis sebagai `transform: translate3d(0, -5px, 0)`
+DALAM keyframe, tapi pada keyframe 14%/30%/100% Tailwind tetap membuangnya kalau nilainya cuma
+translate. SOLUSI FINAL: tulis keyframe manual (bukan @theme) - TIDAK, hasil test terakhir
+menunjukkan `translate3d` dengan px LANGSUNG di keyframe manual UTUH di stylesheet browser
+(`@keyframes trash-content-in { 0% { transform: translate3d(0px, 0px, 0px); opacity: 1; } 14%
+{ transform: translate3d(0px, -5px, 0px); opacity: 0; } 30% { transform: translate3d(0px, -5px,
+0px); opacity: 1; } 100% { transform: translate3d(0px, 5px, 0px); opacity: 0.45; } }`).
+Jadi aturan main.css: di dalam keyframe WAJIB pakai `translate3d()` (bukan `translate()` /
+`translateY()`), dan nilai HARUS dalam px.
+UKURAN (browser, timeline dari trigger hover, getBoundingClientRect):
++217ms ty 0.00 isi 305.33-309.33 op 1.000 | +285ms ty -4.44 isi 302.38-306.38 op 0.113
+(DI CELAH, celah = lidBot 302.00) | +353ms ty -5.00 isi 302.00-306.00 op 0.838 (muncul di
+celah) | +420ms mulai turun | +556ms ty +2.31 isi 306.88-310.88 | +725ms ty +5.00 isi
+308.67-312.67 op 0.450 (DASAR TONG, bodyBot 312.67) dan seterusnya diam.
+Tutup terangkat: lidTop 294.92 -> 294.75 (sudah terangkat sebelum garis mulai jatuh).
+Animasi tercatat: getAnimations() -> trash-content-in, playState running, delay 90ms.
+Juga: @media prefers-reduced-motion sekarang mematikan animation juga (bukan cuma transition).
+Build lulus.
+
 ### Perbaikan: 2 garis benar-benar MASUK ke dalam tong saat tutup terbuka
 
 HIRO: "ketika tingginya terbuka 2 garis masuk kedalam". Jadi HIRO melihat 2 garis itu CUMA memudar
