@@ -189,13 +189,13 @@ onBeforeUnmount(() => cleanup?.())
         variant="outline"
         :ui="{
           root: 'rounded-xl bg-[#0f172a]/80 backdrop-blur-xl ring-1 ring-white/10 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] text-slate-100',
-          header: 'border-b border-[#1e2a44]',
+          header: 'border-b border-[#1e2a44] px-6 py-0',
           body: 'p-6'
         }"
       >
         <template #header>
-          <div class="text-center py-2">
-            <div class="logo-wrap mx-auto mb-3" aria-hidden="true">
+          <div class="login-header text-center">
+            <div class="logo-wrap mx-auto" aria-hidden="true">
               <span class="logo-circuit">
                 <AiCircuit />
               </span>
@@ -334,15 +334,29 @@ onBeforeUnmount(() => cleanup?.())
 }
 
 /* The badge sits inside a wrapper so the AI circuit artwork can live BEHIND it without
-   touching the badge's own box, pulse or rings. */
+   touching the badge's own box, pulse or rings.
+   The wrapper is only as big as the badge itself: the halo is a fixed-size box centred on
+   it, so it no longer RESERVES vertical space. A 132px wrapper used to hold a 44px badge,
+   which left 44px of empty air above and below the icon and pushed the wordmark down. */
+/* The card clips its content, so the header has to leave room for the halo. The padding is
+   EXACTLY the halo's overhang (a 72px circuit around a 44px badge overhangs by 14px), so
+   the space the halo needs is not extra space: the halo fills it. */
+.login-header {
+  padding: 14px 0 4px;
+}
+/* The card header carried the vendor's own 16px vertical padding, which stacked on top of
+   the space the halo needs and left the icon floating. It is now zero here, and the
+   header's own padding is the halo's overhang and nothing more. */
 .logo-wrap {
   position: relative;
-  width: 132px; height: 132px;
+  width: 44px; height: 44px;
   display: grid; place-items: center;
 }
 .logo-circuit {
   position: absolute;
-  inset: 0;
+  left: 50%; top: 50%;
+  width: 72px; height: 72px;
+  translate: -50% -50%;
   pointer-events: none;
   animation: logo-circuit-fade 6s ease-in-out infinite;
 }

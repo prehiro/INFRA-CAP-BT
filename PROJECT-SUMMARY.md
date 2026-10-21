@@ -3,6 +3,30 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Jarak atas/bawah brand icon di login (ramping)
+
+HIRO: "kurangi jarak atas dan bawah <selector .logo-wrap di header card>".
+ELEMEN YANG DI-SELECT itu `.logo-wrap` - wrapper 132px yang memegang badge 44px + halo AI circuit.
+Penyebab ruang kosong: wrapper 132px mewarisi ukuran halo, jadi 44px udara kosong di atas dan
+bawah badge. Padding `text-center py-2` (8px) dan `mb-3` (12px) menambah lagi.
+PERBAIKAN: (1) `.logo-wrap` jadi 44x44 (seukuran badge), halo `.logo-circuit` jadi kotak 72px
+yang diposisikan `left/top 50%` + `translate: -50% -50%` sehingga TIDAK lagi memesan ruang
+vertikal - ia meluap keluar badge. (2) `mb-3` dihapus dari logo-wrap. (3) header div jadi
+`.login-header` dengan `padding: 14px 0 4px` - 14px adalah overhang halo (72-44)/2, jadi ruang
+yang dipakai header ini PERSIS ruang yang dibutuhkan halo, bukan tambahan. (4) padding vertikal
+bawaan UCard header dihapus: `header: 'border-b border-[#1e2a44] px-6 py-0'` (sebelumnya
+`border-b border-[#1e2a44]` + py-2 = 8px). Padding vendor itu menumpuk dengan padding header
+sendiri dan membuat icon tampak melayang - itu penyebab utama ruang kosong yang tersisa.
+UKURAN (browser, /login, A/B dalam satu sesi): header 200px -> 114px, tinggi card 477 -> 359px
+(-118px), ruang card-root ke badge 68 -> 14px, jarak badge ke wordmark 44 -> 0px.
+CLIPPING: card root punya overflow-hidden. Circuit atas tepat di batas card (clippedTop 0, bukan
+negatif) setelah padding disetel, dan 0 piksel artwork yang terpotong (dicek lewat screenshot
+pixel: 0 piksel hijau di area ter-clip). Artwork halo tetap ada: 3495 piksel hijau pada 3x.
+JEJAK PERCOBAAN YANG GAGAL: memberi `padding-top: 28px` ke `.login-root` - tidak berguna,
+yang memotong adalah CARD, bukan root. Dan halo 96px + padding header 26px justru menambah
+ruang kosong (42px di atas badge) - overshoot, bukan perbaikan.
+Build lulus. Semua elemen utuh: wordmark, badge, icon, 32 garis circuit, 20 dot, 2 ring, subtitle.
+
 ### Login page mengikuti accent user (token semantik)
 
 HIRO: "sekarang sesuaikan dengan default color theme user". Semua warna accent hardcoded di halaman
