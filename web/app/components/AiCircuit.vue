@@ -3,11 +3,16 @@
 // (Ask AI Button, MIT License, https://uiverse.io/dexter-st/giant-newt-48).
 // Only the radial circuit lines, the travelling dash and the pulsing dots are reused; the
 // button, its hover/focus states and the text swap are NOT part of this component.
-// Original viewBox "70 70 160 160" is kept so the geometry matches the source exactly.
+// The source viewBox is "70 70 160 160", but the artwork inside it only occupies
+// x/y 80.34..219.66 (getBBox) - the outer 10 units on each side are empty. Keeping the
+// full 160-unit viewBox meant the artwork shrank to 78% of the box and, once the box was
+// reduced to make room around the badge, the visible band of circuit was only a few
+// pixels wide. The viewBox is cropped to the artwork's own extent so the drawing fills
+// the box, which is what keeps the halo readable at a smaller size.
 </script>
 
 <template>
-  <svg class="ai-circuit" viewBox="70 70 160 160" xmlns="http://www.w3.org/2000/svg"
+  <svg class="ai-circuit" viewBox="96 96 108 108" xmlns="http://www.w3.org/2000/svg"
        aria-hidden="true" focusable="false">
     <g class="ai-static">
       <line class="ai-line-bg" x1="150" y1="143.58" x2="150" y2="97.31" />

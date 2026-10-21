@@ -337,12 +337,14 @@ onBeforeUnmount(() => cleanup?.())
    touching the badge's own box, pulse or rings.
    The wrapper is only as big as the badge itself: the halo is a fixed-size box centred on
    it, so it no longer RESERVES vertical space. A 132px wrapper used to hold a 44px badge,
-   which left 44px of empty air above and below the icon and pushed the wordmark down. */
+   which left 44px of empty air above and below the icon and pushed the wordmark down.
+   The halo is 88px: the artwork's visible band then measures 30.6..44.8px from the centre,
+   so the circuit reads as a ring AROUND the badge instead of a thin sliver. */
 /* The card clips its content, so the header has to leave room for the halo. The padding is
-   EXACTLY the halo's overhang (a 72px circuit around a 44px badge overhangs by 14px), so
+   EXACTLY the halo's overhang (an 88px circuit around a 44px badge overhangs by 22px), so
    the space the halo needs is not extra space: the halo fills it. */
 .login-header {
-  padding: 14px 0 4px;
+  padding: 22px 0 6px;
 }
 /* The card header carried the vendor's own 16px vertical padding, which stacked on top of
    the space the halo needs and left the icon floating. It is now zero here, and the
@@ -355,7 +357,7 @@ onBeforeUnmount(() => cleanup?.())
 .logo-circuit {
   position: absolute;
   left: 50%; top: 50%;
-  width: 72px; height: 72px;
+  width: 88px; height: 88px;
   translate: -50% -50%;
   pointer-events: none;
   animation: logo-circuit-fade 6s ease-in-out infinite;

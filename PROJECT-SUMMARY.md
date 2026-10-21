@@ -3,6 +3,30 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Perbaikan AI circuit "hilang" setelah jaraknya dirampingkan
+
+HIRO: "terlalu mepet bro, ai circuit jadi hilang. tolong perbaiki jaraknya biar proporsional".
+AKARNYA: sebelumnya viewBox SVG tetap "70 70 160 160" padahal artwork aslinya hanya menempati
+x/y 80.34..219.66 (getBBox) - ada ~10 unit kosong di tiap sisi. Jadi artwork cuma memakai 78%
+kotak. Ketika kotaknya diperkecil ke 72px untuk memangkas ruang kosong, artwork ikut mengecil
+(SVG selalu meet viewBox), sementara mask 26,5px tetap absolut - hasilnya pita artwork yang
+terlihat hanya 3px, praktis hilang.
+PERBAIKAN: (1) viewBox dipotong ke "96 96 108 108" sesuai extent artwork, jadi gambar mengisi
+kotak. (2) kotak halo dikembalikan ke 88px (overhang 22px per sisi ke badge 44px) dan header
+`.login-header` padding jadi 22px 0 6px. Angka 22px = overhang halo, jadi ruang header tetap
+PERSIS ruang yang dipakai halo.
+UKURAN (browser, /login, 2x screenshot pixel): pita artwork yang terlihat 29.8 -> 44.7px dari
+pusat, LEBAR PITA 14.9px (sebelumnya 3px) -这就是 yang hilang itu. 0 piksel artwork di dalam
+badge (mask 26.5px tetap bekerja). Spasi card-root ke badge 22px, badge ke wordmark 0px,
+tinggi card 369px, header 124px, clippedTop 0 (halo pas di batas card, tidak terpotong).
+Animasi tetap hidup: stroke-width 0.005->2.387px, dashoffset 30.3->165.8, dot opacity
+0.21->0.75. Reduced motion: 0 animasi, garis solid 1.4px. Build lulus.
+JEJAK: Dont-yl-1920x1080.png tidak dipakai. Brightness stroke tetap (px per unit hampir sama:
+108 unit di 88px = 0.815 vs 160 unit di 132px = 0.825).
+
+### Catatan versi: entri "Jarak atas/bawah brand icon" di bawah berlaku untuk kondisi SEBELUM
+perbaikan ini (halo 72px) dan sudah usang - liat entri di atas untuk angka finalnya.
+
 ### Jarak atas/bawah brand icon di login (ramping)
 
 HIRO: "kurangi jarak atas dan bawah <selector .logo-wrap di header card>".
