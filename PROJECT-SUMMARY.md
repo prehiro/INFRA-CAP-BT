@@ -3,6 +3,17 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Garis vertikal di body icon CCTV dihapus
+
+HIRO: "ada garis vertikal di body icon cctv nya, tolong hilangkan garis tsb".
+PENYEBABNYA SAYA: waktu membuat CctvIcon.vue saya menambahkan `<path d="M5 6v12" />` sebagai
+"garis bodi" - itu TAMBAHAN SENDIRI, bukan bagian dari lucide:video aslinya. Icon sidebar
+lucide:video hanya punya 2 outline: rect body (x2 y6 w14 h12 rx2) + wedge lens
+(m16 13 5.223 3.482...). Jadi garis itu memang tidak ada di sumber.
+PERBAIKAN: path `M5 6v12` dihapus dari `.cctv-outline`. Verified in browser: outlineCount 2
+(rect + wedge path), hasVerticalBodyLine false, total elemen SVG 9 -> 8. Layer motion tidak
+berubah, jadi semua animasi tetap jalan. Build lulus.
+
 ### Ikon title CCTV Access (kamera) dengan style PC Ledger
 
 HIRO: "sekarang pada page cctv access buat icon (seperti icon sidebar cctvacc) di samping kiri judul

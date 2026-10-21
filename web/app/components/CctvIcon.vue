@@ -8,7 +8,6 @@
     <g class="cctv-outline" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <rect x="2" y="6" width="14" height="12" rx="2" />
       <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5" />
-      <path d="M5 6v12" />
     </g>
     <g class="cctv-motion" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
       <!-- The recording lens dot, echoing the PC Ledger power light. -->
