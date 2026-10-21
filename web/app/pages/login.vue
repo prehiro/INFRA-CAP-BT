@@ -38,7 +38,7 @@ async function submit() {
 /* ---------- Styling for Nuxt UI components ---------- */
 const inputUi = {
   base: 'h-10 bg-[#080e1c]/60 text-slate-100 placeholder:text-[#4d628a] ring-1 ring-inset ring-[#2a3a5e] ' +
-    'focus-visible:ring-2 focus-visible:ring-[#00dc82] transition-shadow',
+    'focus-visible:ring-2 focus-visible:ring-primary transition-shadow',
   leadingIcon: 'text-[#7b8fb5]'
 }
 
@@ -79,6 +79,28 @@ onMounted(() => {
   }
 
   const LINK = 140
+  // The canvas cannot resolve `var(--ui-primary)` or `color-mix()` in a fillStyle, so the
+  // accent is read from the CSS custom property and used as a literal. The token is
+  // re-read on every draw, so a theme change is picked up on the next frame without a
+  // reload.
+  const accentProbe = document.createElement('span')
+  accentProbe.style.color = 'var(--ui-primary)'
+  accentProbe.style.position = 'absolute'
+  accentProbe.style.pointerEvents = 'none'
+  accentProbe.style.visibility = 'hidden'
+  document.body.appendChild(accentProbe)
+  const readAccent = () => getComputedStyle(accentProbe).color
+  const withAlpha = (alpha: number) => {
+    const base = readAccent()
+    const match = base.match(/[\d.]+/g)
+    if (!match) return base
+    if (base.startsWith('oklch')) {
+      const [l, c, h] = match.map(Number)
+      return `oklch(${l} ${c} ${h} / ${alpha})`
+    }
+    const [r, g, b] = match.map(Number)
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`
+  }
   const draw = () => {
     ctx.clearRect(0, 0, w, h)
 
@@ -98,7 +120,8 @@ onMounted(() => {
       }
       ctx.beginPath()
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2)
-      ctx.fillStyle = 'rgba(0, 220, 130, 0.75)'
+      // The accent is a semantic token, so the particle network follows the user's colour.
+      ctx.fillStyle = withAlpha(0.75)
       ctx.fill()
     }
 
@@ -108,7 +131,7 @@ onMounted(() => {
         const b = particles[j]
         const d = Math.hypot(a.x - b.x, a.y - b.y)
         if (d < LINK) {
-          ctx.strokeStyle = `rgba(0, 220, 130, ${(1 - d / LINK) * 0.22})`
+          ctx.strokeStyle = withAlpha((1 - d / LINK) * 0.22)
           ctx.lineWidth = 1
           ctx.beginPath()
           ctx.moveTo(a.x, a.y)
@@ -139,6 +162,7 @@ onMounted(() => {
   window.addEventListener('mouseleave', onLeave)
 
   cleanup = () => {
+    accentProbe.remove()
     cancelAnimationFrame(raf)
     window.removeEventListener('resize', resize)
     window.removeEventListener('mousemove', onMove)
@@ -244,7 +268,7 @@ onBeforeUnmount(() => cleanup?.())
             :loading="loading"
             label="Sign In"
             :disabled="loading"
-            class="sign-btn bg-[#00dc82] hover:bg-[#1af09a] text-[#04130c] font-semibold"
+            class="sign-btn bg-primary hover:bg-primary/90 text-[#04130c] font-semibold"
           >
             <template #trailing>
               <svg class="sign-arrow size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -286,7 +310,7 @@ onBeforeUnmount(() => cleanup?.())
   opacity: 0.35;
   will-change: transform;
 }
-.orb-1 { width: 420px; height: 420px; background: #00dc82; top: -120px; left: -100px; animation: float1 18s ease-in-out infinite; }
+.orb-1 { width: 420px; height: 420px; background: var(--ui-primary); top: -120px; left: -100px; animation: float1 18s ease-in-out infinite; }
 .orb-2 { width: 480px; height: 480px; background: #3b5bdb; bottom: -160px; right: -120px; animation: float2 22s ease-in-out infinite; }
 .orb-3 { width: 260px; height: 260px; background: #0ea5a4; top: 55%; left: 55%; opacity: 0.2; animation: float3 26s ease-in-out infinite; }
 
@@ -337,14 +361,15 @@ onBeforeUnmount(() => cleanup?.())
   width: 44px; height: 44px;
   display: grid; place-items: center;
   border-radius: 12px;
-  color: #00dc82;
-  background: rgba(0, 220, 130, 0.1);
-  border: 1px solid rgba(0, 220, 130, 0.3);
+  /* The accent is a semantic token, so the badge follows the colour the user picked. */
+  color: var(--ui-primary);
+  background: color-mix(in oklab, var(--ui-primary) 10%, transparent);
+  border: 1px solid color-mix(in oklab, var(--ui-primary) 30%, transparent);
   animation: pulse 3s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%,100% { box-shadow: 0 0 18px rgba(0, 220, 130, 0.2); }
-  50%     { box-shadow: 0 0 32px rgba(0, 220, 130, 0.45); }
+  0%,100% { box-shadow: 0 0 18px color-mix(in oklab, var(--ui-primary) 20%, transparent); }
+  50%     { box-shadow: 0 0 32px color-mix(in oklab, var(--ui-primary) 45%, transparent); }
 }
 
 /* Two rings travel out from the badge and back in again. HIRO asked for exactly that motion and
@@ -361,7 +386,7 @@ onBeforeUnmount(() => cleanup?.())
   position: absolute;
   inset: 0;
   border-radius: 12px;
-  border: 1px solid rgba(0, 220, 130, 0.6);
+  border: 1px solid color-mix(in oklab, var(--ui-primary) 60%, transparent);
   pointer-events: none;
   will-change: transform, opacity;
   animation: logo-ring 2.8s ease-in-out infinite;
@@ -382,7 +407,7 @@ onBeforeUnmount(() => cleanup?.())
 /* Login-only interaction: lift, traveling highlight, and a forward arrow. */
 .sign-btn {
   position: relative; overflow: hidden; isolation: isolate;
-  box-shadow: 0 8px 24px -8px rgba(0, 220, 130, .6);
+  box-shadow: 0 8px 24px -8px color-mix(in oklab, var(--ui-primary) 60%, transparent);
   transition: transform 180ms ease, box-shadow 220ms ease, background-color 180ms ease;
 }
 .sign-btn::after {
@@ -401,7 +426,7 @@ onBeforeUnmount(() => cleanup?.())
 @media (hover: hover) and (pointer: fine) {
   .sign-btn:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px -6px rgba(0,220,130,.65), inset 0 1px 0 rgba(255,255,255,.25);
+    box-shadow: 0 10px 28px -6px color-mix(in oklab, var(--ui-primary) 65%, transparent), inset 0 1px 0 rgba(255,255,255,.25);
   }
   .sign-btn:not(:disabled):hover::after { animation: sign-highlight 700ms ease-out both; }
   .sign-btn:not(:disabled):hover .sign-arrow { animation: sign-forward 650ms ease-in-out; }

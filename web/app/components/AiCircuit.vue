@@ -127,19 +127,21 @@
    The halo is drawn much smaller here, so the strokes are scaled up to stay visible. */
 .ai-line-bg {
   fill: none;
-  stroke: rgb(0 220 130 / .22);
+  /* The accent is a semantic token, so the circuit follows whichever colour the user picked
+     instead of staying green. */
+  stroke: color-mix(in oklab, var(--ui-primary) 22%, transparent);
   stroke-width: 1.1;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 .ai-line {
   fill: none;
-  stroke: #00dc82;
+  stroke: var(--ui-primary);
   stroke-width: 0;
   stroke-dasharray: 16 56;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 2px rgb(0 220 130 / .85));
+  filter: drop-shadow(0 0 2px color-mix(in oklab, var(--ui-primary) 85%, transparent));
   animation: ai-dash 3s ease-out infinite;
 }
 .ai-line:nth-child(odd) {
@@ -147,7 +149,7 @@
   animation-delay: .3s;
 }
 .ai-dot {
-  fill: #00dc82;
+  fill: var(--ui-primary);
   opacity: .25;
   animation: ai-dot-opac 1.5s linear infinite;
 }
@@ -155,9 +157,9 @@
 .ai-dot:nth-child(3n) { animation-delay: .3s; }
 
 @keyframes ai-dash {
-  0% { stroke-width: 0; stroke-dashoffset: 10; stroke: #00dc82; }
-  50% { stroke-width: 2.4; stroke-dashoffset: 88; stroke: #5cffb0; }
-  100% { stroke-width: 0; stroke-dashoffset: 166; stroke: #00dc82; }
+  0% { stroke-width: 0; stroke-dashoffset: 10; stroke: var(--ui-primary); }
+  50% { stroke-width: 2.4; stroke-dashoffset: 88; stroke: var(--ui-color-primary-300); }
+  100% { stroke-width: 0; stroke-dashoffset: 166; stroke: var(--ui-primary); }
 }
 @keyframes ai-dot-opac {
   0%, 100% { opacity: .08; }

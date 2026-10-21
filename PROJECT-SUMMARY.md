@@ -3,6 +3,34 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Login page mengikuti accent user (token semantik)
+
+HIRO: "sekarang sesuaikan dengan default color theme user". Semua warna accent hardcoded di halaman
+login diganti token semantik, jadi ikut apa pun yang user pilih di UserMenu (cookie
+`infra-cap.theme` -> appConfig -> `--ui-primary`).
+AI CIRCUIT (AiCircuit.vue): `.ai-line-bg` stroke = color-mix(in oklab, var(--ui-primary) 22%,
+transparent); `.ai-line` stroke = var(--ui-primary), drop-shadow = color-mix 85%;
+`.ai-dot` fill = var(--ui-primary); keyframe ai-dash memakai var(--ui-primary) dan
+var(--ui-color-primary-300) untuk puncak.
+LOGIN (login.vue): `.logo` color/bg/border/pulse, `.logo-ring` border, `.orb-1`, `.sign-btn` glow,
+focus ring input, dan tombol Sign In (`bg-primary hover:bg-primary/90`) - semua token. Sisa hex
+accent di login.vue = 0.
+JEJAK PENTING - CANVAS TIDAK BISA PAKAI var(): ctx.fillStyle MENERIMA literal warna saja.
+`ctx.fillStyle = 'var(--ui-primary)'` diam-diam ditolak dan tetap '#000000';
+`color-mix(in oklab, var(--ui-primary) 75%, transparent)` juga ditolak. Yang bekerja: literal
+oklch/rgb. Solusinya probe `<span>` dengan `color: var(--ui-primary)`, dibaca lewat
+getComputedStyle, lalu token itu dipakai sebagai literal; untuk alpha, format oklch diparse lalu
+dikembalikan sebagai `oklch(L C H / alpha)`. Probe dihapus di cleanup. Token dibaca ULANG tiap
+frame, jadi ganti tema langsung ter-follow tanpa reload.
+UKURAN (browser, /login): cookie violet -> --ui-primary oklch(70.2% .183 293.541), line stroke
+oklab(...), dot fill oklch(.702 .183 293.541), logo color sama, sign-btn bg sama. Ganti
+--ui-primary manual ke merah -> line, dot, logo, ring semua ikut (bukti token-driven, bukan
+hardcoded). Partikel: area kiri-atas 16 piksel ungu vs 0 hijau saat accent violet. Default green:
+primary #00DC82, semua kembali hijau. Light mode: primary primary-400 #16C977, logo
+rgb(0,193,106). Reduced motion: 0 animasi, garis solid 1.4px, token tetap dipakai.
+KONTRAST: teks Sign In gelap (rgb(4,19,12)) di atas bg primary, rasio terukur 10.47 (green),
+13.63 (violet), 16.35 (yellow) - selalu terbaca di semua accent. Build lulus.
+
 ### Perbaikan tabrakan AI circuit dengan brand icon (mask)
 
 HIRO: "tabrakan bdengan icon bro, ada solusi?".
