@@ -3,6 +3,21 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Perbaikan v4: jatuhnya 2x lebih lambat (HIRO: "perlambat jatuhnya sedikit")
+
+main.css: animation trash-content-in 460ms -> 700ms, shorthand jadi `linear` dan SETIAP SEGMENT
+keyframe punya timing function sendiri (0% ease-out untuk lift, 22% cubic-bezier(.55,0,.8,.55)
+untuk fall). Keyframe naik 14%->30% jadi 10%->22%, jadi lift cuma ~150ms sementara fall
+memakai sisa ~546ms dengan easing yang makin cepat ke bawah (efek gravitasi).
+Kenapa per-segment: easing tunggal di shorthand ikutHt Alaskan lift, dan HIRO minta jatuhnya
+yang pelan - lift harus tetap cepat.
+UKURAN (browser, timeline dari trigger hover): muncul di celah +383ms op .477, +460ms op .999
+(penuh di celah), jatuh mulai +502ms (ty -4.89) -> +820ms ty -0.57 -> +980ms ty +4.73 ->
++1020ms ty +5.00 op .450 (dasar tong) dan diam. Total jatuh ~520ms (sebelumnya ~270ms).
+Keyframe utuh di CSS browser: 0% translate3d(0px,0px,0px) op 1 ease-out, 10% translate3d(0px,-5px,0px)
+op 0, 22% translate3d(0px,-5px,0px) op 1 cubic-bezier(.55,0,.8,.55), 100% translate3d(0px,5px,0px) op .45.
+Build lulus.
+
 ### Perbaikan v3: 2 garis masuk LEWAT CELAH tutup yang terbuka
 
 HIRO (koreksi): "bukan bro garisnya masuk dari celah terbuka ke dalam tong sampahnya". Jadi
