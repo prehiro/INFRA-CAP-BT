@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-17
 
+### Factory PC ix tower-settings preview
+
+Replaced factory glyph with exact Iconify ix:pc-tower-settings in sidebar/command palette and FactoryPcIcon header (512 viewBox). Installed pinned local ix package and explicitly bundled navigation glyph. Header retains breathing halo, with a clipped light sweep over tower and radial light wave on gear; no tilt, original filled silhouette unchanged. Removed superseded factory-outline/window animation code. Build passed; browser 420 frames proved sweep/wave/halo motion and fixed plate, reduced motion zero animations, sidebar embedded SVG mask verified. Source local pending approval; docs-only checkpoint. Supersedes factory-glyph preview below.
+
 ### Factory PC icon identity correction preview
 
 HIRO clarified Factory PC header must match its sidebar factory glyph, not the PC Ledger computer glyph. FactoryPcIcon.vue now uses exact installed lucide:factory outline/window geometry with 6.4s line tracing and sequential window accents; existing shared 3.6s breathing box/48px plate/24px size retained. Only Factory caller changed; PC Ledger untouched. Backup first, build passed; browser 422 frames proved halo plus five animated factory parts with fixed plate, reduced motion zero animations. Correction source local pending approval; docs-only checkpoint.
