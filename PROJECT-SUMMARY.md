@@ -3,6 +3,22 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Perbaikan: 2 garis benar-benar MASUK ke dalam tong saat tutup terbuka
+
+HIRO: "ketika tingginya terbuka 2 garis masuk kedalam". Jadi HIRO melihat 2 garis itu CUMA memudar
+(tidak terlihat masuk), padahal maksudnya garis itu turun ke dalam tong.
+MASALAHNYA: versi pertama hanya translateY 2.6px + opacity .18 -translation sekecil itu tidak
+cukup untuk terbaca sebagai "masuk", dan opacity .18 bikin garis nyaris hilang.
+PERBAIKAN (main.css): translateY 2.6px -> 4.6px, opacity .18 -> .45 (garis tetap terlihat
+diatas dasar tong), tutup rotate -19deg -> -21deg, transisi tutup 200ms, transisi isi 300ms
+dengan DELAY 110ms supaya jatuhnya menyusul tutup yang terangkat (bukan jalan bersamaan).
+UKURAN (browser, getBoundingClientRect, rest vs hover): garis isi turun 3.07px di layar
+(4.6 unit viewBox), jarak isi bawah ke dasar tong -3.34px -> -0.27px (berada pas di lantai
+tong), tutup terangkat lidTop 307.33 -> 302.75 dan lidBottom 310 -> 309.54, isi tetap di bawah
+tutup dan di dalam badan tong. Opacity isi 1 -> .45.
+Transisi di-sample: t~80ms y 1.16px op .755, t~160 y 3.71 op .580, t~250 y 4.53 op .469,
+t~400 y 4.60 op .45 (selesai). Build lulus.
+
 ### Icon tong sampah: tutup membuka + isi masuk saat hover
 
 HIRO: "pada icon tong sampah jika user hover ke icon, ada animasi seperti tutup tong sampah terbuka
