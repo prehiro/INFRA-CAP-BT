@@ -3,6 +3,36 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Ikon title Handover Log Book (clipboard) dengan style PC Ledger
+
+HIRO: "page handover juga buat icon nya" - mengikuti permintaan yang sama untuk CCTV Access.
+YANG DIPAKAI: icon sidebar Handover = lucide:clipboard-list. Geometry diambil PERSIS dari
+@iconify-json/lucide dan dipecah jadi bagian-bagian supaya tiap bagian bisa punya geraknya
+sendiri: rect clip (x8 y2 w8 h4 rx1), path board (M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0
+1-2-2V6a2 2 0 0 1 2-2h2), dua baris list (M12 11h4, M12 16h4), dua titik bullet (M8 11h.01,
+M8 16h.01). TIDAK ada stroke tambahan - pelajaran dari bug garis vertikal di CctvIcon.
+KOMPONEN BARU `web/app/components/HandoverIcon.vue`, 4 animasi (6.4s, timing sama PC Ledger):
+trace board travels, trace head + drop-shadow (delay .35s), clip echo (padanan lens echo CCTV),
+scan line turun di board (translateY 0->8.4px, opacity .85), dua baris list terisi satu per satu
+(padanan vent load PC, delay .22s untuk baris kedua).
+CATATAN PENTING - CLIP ECHO HARUS DI-SCALE: rect clip echo identik dengan rect clip outline, jadi
+fade opacity saja tidak terlihat - hanya menebalkan garis yang sudah ada. Diperbaiki dengan
+scale 1 -> 1.06 -> 1.12 sambil translateY 0 -> -2.6px. Terukur: t=3100 opacity .79 scale 1.059,
+t=3300 opacity .48 scale 1.088, t=3500 opacity .14 scale 1.110. Tanpa scale, opacity-nya 0.79
+terbaca sebagai 0.
+CHROME + SUBTITLE: plate 48x48 rounded-xl bg-primary/10 text-primary ring-primary/20 dibungkus
+RecordAddIcon size md, plus subtitle "IT parts handover to users" (subtitle inilah yang
+menengahkan judul terhadap plate, seperti PC Ledger dan CCTV).
+UKURAN (browser, 3 halaman dibandingkan langsung): plate 48x48, bg oklab(...)/0.1, color
+rgb(0,220,130), radius 12px, titleFont 18px 700, titleTopVsPlateTop 2px, gapIconToTitle 12px,
+haloAnim aktif - SEMUA SAMA di PC Ledger, CCTV Access dan Handover. Animasi: trace opacity
+0.026->1, dashoffset -18->98.5, scan 8 transform berbeda opacity 0->0.85, row opacity 0->1, halo
+0.082->0.393. Reduced motion: 0 animasi, motion display none, outline opacity 1. Light mode:
+bg oklab(...)/0.1, color rgb(0,193,106). Build lulus.
+CATATAN OPERASIONAL: dev server perlu RESTART (restart-dev.ps1) untuk auto-import komponen baru;
+token login untuk harness diambil dari POST /api/auth/login (admin + Seed.AdminPassword) lalu
+disimpan ke localStorage 'infra-cap.token'.
+
 ### Garis vertikal di body icon CCTV dihapus
 
 HIRO: "ada garis vertikal di body icon cctv nya, tolong hilangkan garis tsb".

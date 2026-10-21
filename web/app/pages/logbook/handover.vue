@@ -562,8 +562,24 @@ await init()
              toolbar (Search | Filter | Excel | Add Record) so the muscle memory carries over. -->
         <div class="rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 class="text-lg font-bold tracking-wide">Handover Log Book</h1>
+            <!-- Title plate with the register icon, same chrome as the PC Ledger and CCTV
+                 Access sheet headers: the accent-tinted rounded square, the RecordAddIcon
+                 halo and the travelling glyph inside it. The glyph is the clipboard, matching
+                 the sidebar entry. -->
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="handover-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+                <RecordAddIcon size="md">
+                  <HandoverIcon class="size-6" />
+                </RecordAddIcon>
+              </span>
+              <div class="min-w-0">
+                <h1 class="text-lg font-bold tracking-wide">Handover Log Book</h1>
+                <!-- The subtitle is what centres the title on the plate, exactly as the
+                     PC Ledger and CCTV Access sheet headers do. -->
+                <p class="text-xs text-muted">
+                  IT parts handover to users
+                </p>
+              </div>
             </div>
             <div class="flex gap-2">
               <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
