@@ -3,6 +3,25 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Jarak atas/bawah brand icon: tambah lagi (longgar)
+
+HIRO: "jarak atas dan bawahnya tambah sedikit, terlalu rapat".
+MASALAH SEBELUMNYA: overhang halo (22px) = PERSIS padding header, jadi ruang yang dibutuhkan
+circuit dan ruang yang dimiliki header sama persis - hasilnya badge menempel ke wordmark
+(gap 0px) dan tidak ada "napas" di sekitar ikon. Padding bawah juga cuma 6px.
+PERBAIKAN: halo 88 -> 96px (overhang 26px), header `.login-header` padding 22px 0 6px ->
+28px 0 10px, dan `.logo-wrap` dapat margin-bottom 10px. Jadi: ruang atas 28px (2px lebih dari
+overhang - sisa 2px itulah yang mencegah halo ter-crop), ruang bawah 10px (sebelumnya 0).
+UKURAN (browser, /login): card-root ke badge 22 -> 28px, badge ke wordmark 0 -> 10px, tinggi
+card 369 -> 389px, header 124 -> 144px, clippedTop -2 (halo 2px di DALAM card, aman).
+Artwork: 2353 piksel (2x, sebelumnya 325 dengan halo 88px - naik 7x), 0 terclip di batas card,
+0 piksel di dalam badge, band artwork 31.3 -> 48.9px (lebar 17.6px, sebelumnya 14.9px).
+Animasi tetap hidup: stroke-width 0.082->2.34px, dot opacity 0.10->0.68. Reduced motion:
+0 animasi, garis solid 1.4px. Build lulus.
+CATATAN: card punya overflow-hidden, jadi jarak atas tidak bisa ditambah tanpa memperbesar
+halo - dua-duanya harus naik bersamaan. Semua kombinasi diuji dulu di browser (5 variasi)
+semuanya 0 artwork terclip.
+
 ### Perbaikan AI circuit "hilang" setelah jaraknya dirampingkan
 
 HIRO: "terlalu mepet bro, ai circuit jadi hilang. tolong perbaiki jaraknya biar proporsional".

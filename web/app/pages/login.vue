@@ -338,13 +338,17 @@ onBeforeUnmount(() => cleanup?.())
    The wrapper is only as big as the badge itself: the halo is a fixed-size box centred on
    it, so it no longer RESERVES vertical space. A 132px wrapper used to hold a 44px badge,
    which left 44px of empty air above and below the icon and pushed the wordmark down.
-   The halo is 88px: the artwork's visible band then measures 30.6..44.8px from the centre,
+   The halo is 96px: the artwork's visible band then measures 30.6..46.9px from the centre,
    so the circuit reads as a ring AROUND the badge instead of a thin sliver. */
-/* The card clips its content, so the header has to leave room for the halo. The padding is
-   EXACTLY the halo's overhang (an 88px circuit around a 44px badge overhangs by 22px), so
-   the space the halo needs is not extra space: the halo fills it. */
+/* The card clips its content, so the header has to leave room for the halo. An 88px halo
+   around a 44px badge overhangs by 22px, and that overhang was EXACTLY the header's padding,
+   so the space the halo needed and the space the header had were the same number - which
+   left the icon sitting flush against the wordmark with nothing breathing around it.
+   The halo is now 96px (26px overhang) and the header carries a little MORE than that:
+   28px above and 10px below, so the circuit has room and the badge is not glued to the
+   wordmark. The extra 2px above the overhang is what keeps the halo from being cropped. */
 .login-header {
-  padding: 22px 0 6px;
+  padding: 28px 0 10px;
 }
 /* The card header carried the vendor's own 16px vertical padding, which stacked on top of
    the space the halo needs and left the icon floating. It is now zero here, and the
@@ -353,11 +357,12 @@ onBeforeUnmount(() => cleanup?.())
   position: relative;
   width: 44px; height: 44px;
   display: grid; place-items: center;
+  margin-bottom: 10px;
 }
 .logo-circuit {
   position: absolute;
   left: 50%; top: 50%;
-  width: 88px; height: 88px;
+  width: 96px; height: 96px;
   translate: -50% -50%;
   pointer-events: none;
   animation: logo-circuit-fade 6s ease-in-out infinite;
