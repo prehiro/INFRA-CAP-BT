@@ -651,8 +651,23 @@ await init()
              HIRO's request; the title and the actions are all that remain. -->
         <div class="rounded-lg border border-default bg-elevated p-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 class="text-lg font-bold tracking-wide">CCTV Access Request Log</h1>
+        <!-- Title plate with the register icon, same chrome as the PC Ledger sheet header:
+             the accent-tinted rounded square, the RecordAddIcon halo and the travelling
+             glyph inside it. The glyph is the CCTV camera, matching the sidebar entry. -->
+        <div class="flex min-w-0 items-center gap-3">
+          <span class="cctv-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+            <RecordAddIcon size="md">
+              <CctvIcon class="size-6" />
+            </RecordAddIcon>
+          </span>
+          <div class="min-w-0">
+            <h1 class="text-lg font-bold tracking-wide">CCTV Access Request Log</h1>
+            <!-- The subtitle is what centres the title on the plate, exactly as the PC
+                 Ledger sheet header does. -->
+            <p class="text-xs text-muted">
+              CCTV footage access request &amp; approval
+            </p>
+          </div>
         </div>
         <div class="flex gap-2">
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />

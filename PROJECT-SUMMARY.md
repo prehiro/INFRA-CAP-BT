@@ -3,6 +3,35 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Ikon title CCTV Access (kamera) dengan style PC Ledger
+
+HIRO: "sekarang pada page cctv access buat icon (seperti icon sidebar cctvacc) di samping kiri judul
+cctv access request log. style dan animasi samakan seperti halaman pc ledger".
+YANG DIPAKAI: icon sidebar CCTV Access = lucide:video (bukan lucide:cctv) - geometry-nya diambil
+persis dari @iconify-json/lucide, jadi siluetnya identik dengan yang di sidebar.
+KOMPONEN BARU `web/app/components/CctvIcon.vue` - viewBox 0 0 24 24, follow currentColor, 3
+elemen outline (body rect + lens wedge + garis bodi) opacity .72, lalu layer motion dengan 4
+animasi yang meniru PcLedgerIcon: garis outline travels (6.4s cubic-bezier .4,0,.2,1, dasharray
+18 82, stroke-width 1.5), trace head (dasharray 3 97, width 1.9, drop-shadow, delay .35s), scan
+line turun di badan (6.4s cubic-bezier .45,0,.25,1, translateY 0->7.4px, opacity .85), lens dot
+echo (scale .6->1.65, opacity .7), plus beam wedge (dasharray 100).
+CHROME: plate 48x48 rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20,
+dibungkus RecordAddIcon size="md" (halo pc-add-halo + sway) - komponen yang sama dengan PC Ledger.
+SUBTITLE: PC Ledger punya `<p class="text-xs text-muted">` di bawah judul, dan itu yang
+menengahkan judul terhadap plate. CCTV Access tidak punya subtitle, jadi judulnya duduk 10px dari
+atas plate (PC Ledger 2px). Subtitle "CCTV footage access request & approval" ditambahkan agar
+selaras - judul rata 2px di kedua halaman.
+UKURAN (browser, kedua halaman dibandingkan langsung): plate 48x48, bg oklab(...)/0.1, color
+rgb(0,220,130), radius 12px, haloBorder oklab(...)/0.45, haloAnim pc-add-halo, titleFont 18px 700,
+gapIconToTitle 12px, titleTopVsPlateTop 2px - SEMUA SAMA. Animasi CCTV: trace opacity 0->1,
+dashoffset -18->54.7, scan 8 transform berbeda, scan opacity 0->0.85, lens opacity 0->0.679, halo
+opacity 0.08->0.4. Reduced motion: 0 animasi, motion display none, outline opacity 1. Light mode:
+bg oklab(...)/0.1, color rgb(0,193,106), glyph tetap ada. Glyph benar-benar SVG (9 elemen, 6
+dengan geometry, 3 outline path) - bukan span kosong. Build lulus, 13 route terprerender.
+CATATAN: dev server perlu RESTART (restart-dev.ps1) supaya auto-import CctvIcon terdaftar.
+Untuk login ulang di browser harness: token dari POST http://localhost:5099/api/auth/login
+(admin + Seed.AdminPassword dari api/appsettings.json) disimpan ke localStorage 'infra-cap.token'.
+
 ### Jarak visual artwork vs teks (v6) - ini yang sebenarnya dimaksud HIRO
 
 HIRO: "bro maksud saya mau ada jarak antar bawah container brand icon dengan teks infra-btcap,
