@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Data Import dropzone icon motion and border refinement
+
+WorkbookDropzone only: new upload glyph split into stationary tray plus 3px rising arrow, 3.6s loop with quiet interval and synchronized tray opacity. Busy, reduced-motion and print stop animation. Dashed border now 2px with 50% primary/accented mix at rest, full primary while dragging; footprint min height retained. Backup first, build passed; both PC/GID tabs each sampled 242 frames with moving arrow/tray and fixed zone, actual 2px dashed paint checked, reduced-motion zero animations. Import logic unchanged; source local pending approval, docs-only checkpoint.
+
 ### Data Import drag-and-drop preview
 
 Both PC Ledger and GID List import tabs now use shared WorkbookDropzone: dashed accent-on-drag surface below the existing card header, upload glyph/instructions/selected filename and existing Choose Excel file action, horizontal desktop/stacked mobile. Single .xlsx/.xlsm validation, reject empty files/multiple files/folders, reserved error line, nested drag depth, disabled during parsing/import. Picker and drop feed the SAME existing parsers through File arguments; preview then explicit Import still required; no backend or mapping changes. Backup first, build passed. Browser-created ExcelJS QA fixture workbooks verified for BOTH tabs via DataTransfer drop and actual CDP file-input selection, preview contents, multi-file rejection preserving prior preview and Clear file. Invalid extension rejected; 390px dropzone within viewport. QA only parsed files, did not click Import or write records. Source remains local pending approval; docs-only checkpoint. User switched focus away from unfinished fixed-position/looping login wordmark: partial local loop edit remains unverified and is NOT part of this feature publication.
