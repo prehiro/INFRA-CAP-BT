@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Sidebar brand matches login text animation preview
+
+BrandMenu opts into the existing AnimatedBrandText intro loop; no duplicate animation or login source edits. Inline color inheritance preserves original black/light and white/dark sidebar semantics rather than login-specific white. Existing fixed-slot scramble -> red contour -> quiet interval repeats; brand icon/subtitle unchanged. Backup first. Foreground browser 830 frames: 21 scramble states, no red during scramble, visible red afterward, fixed wordmark geometry. Collapse/expand and reduced-motion static fallback passed. Source local pending approval; docs-only checkpoint.
+
 ### Data Import upload motion speed adjustment
 
 Upload arrow/tray loop shortened from 3.6s to 2.8s only; easing, geometry, border and import behavior unchanged. Backup first; live browser confirms both parts computed 2.8s on PC/GID tabs. Source local pending approval; docs-only checkpoint. Supersedes duration below.
