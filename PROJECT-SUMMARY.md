@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Data Import upload motion speed adjustment
+
+Upload arrow/tray loop shortened from 3.6s to 2.8s only; easing, geometry, border and import behavior unchanged. Backup first; live browser confirms both parts computed 2.8s on PC/GID tabs. Source local pending approval; docs-only checkpoint. Supersedes duration below.
+
 ### Data Import dropzone icon motion and border refinement
 
 WorkbookDropzone only: new upload glyph split into stationary tray plus 3px rising arrow, 3.6s loop with quiet interval and synchronized tray opacity. Busy, reduced-motion and print stop animation. Dashed border now 2px with 50% primary/accented mix at rest, full primary while dragging; footprint min height retained. Backup first, build passed; both PC/GID tabs each sampled 242 frames with moving arrow/tray and fixed zone, actual 2px dashed paint checked, reduced-motion zero animations. Import logic unchanged; source local pending approval, docs-only checkpoint.
