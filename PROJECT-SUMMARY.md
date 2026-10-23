@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### DEV PC Ledger 400 dummy records seeded
+
+User explicitly requested 400 dummy PC Ledger records. Added via localhost:5099 API to pc_ledger entity10, configured InternalApp_Dev at192.168.4.3; no production/migration changes. Baseline54 ->454; created IDs1863..2262, batch535720. Clearly synthetic DUMMY Staff0001..0400, DMY hostnames/GIDs/serials and infra.test emails; Desktop160/Notebook160/Tablet80. Read every API page back and verified all54 original records byte-equivalent as JSON objects, all400 inserted values (date-only requests canonically returned as midnight timestamps). Backup/metadata/planned values/exact-ID manifest/verification: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/pc-dummy-400-20261023-201615. First verifier flagged only date serialization, independent readback verified calendar dates; no duplicate write retry. No app source modifications for seeding. Existing UI previews remain outside docs-only commit.
+
 ### Sidebar brand matches login text animation preview
 
 BrandMenu opts into the existing AnimatedBrandText intro loop; no duplicate animation or login source edits. Inline color inheritance preserves original black/light and white/dark sidebar semantics rather than login-specific white. Existing fixed-slot scramble -> red contour -> quiet interval repeats; brand icon/subtitle unchanged. Backup first. Foreground browser 830 frames: 21 scramble states, no red during scramble, visible red afterward, fixed wordmark geometry. Collapse/expand and reduced-motion static fallback passed. Source local pending approval; docs-only checkpoint.
