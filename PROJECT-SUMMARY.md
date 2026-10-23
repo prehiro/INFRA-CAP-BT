@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### PC Ledger loader rounded caps and leading glow preview
+
+Rounded both track/bar caps with999px radius and animated rounded inset clip (instead of scale-distorted cap), preserving original1s ease travel/shrink. Added separate3px front tip with two accent shadows; synchronized leading-edge positions from body translation+visible width (-20%->140%). Outer horizontal clip allows10px vertical glow bleed; no entire-bar glow/layout size changes. Reduced-motion/print hide tip and retain static rounded bar. Backup/build passed. Actual throttled loading state: frozen300ms tip/body front753.13043/753.13035px, rounded clip verified, glow-on/off crop1869changed pixels, screenshot visually checked. Network/media/probes restored and actual data removed loader. Only PC Ledger loader styling/markup changed; source local pending approval, docs-only checkpoint.
+
 ### PC Ledger accent line loader preview
 
 Replaced only PC Ledger's spinner beside Loading the register... with a3px line ABOVE the unchanged caption. Adapted actual asgardOP/ancient-cow-78 source from Uiverse GitHub loaders archive:1s ease shrinking travelling segment; transform translate/scale instead of per-frame margin/width, no runtime network. Intrinsic inline-grid track matches caption width; currentColor/text-primary and15%primary track follow accent. Status accessible; static segment under reduced-motion/print. Source attribution added THIRD-PARTY-NOTICES. Backup first/build passed. Actual loading state tested with temporary2500ms browser latency: line/caption both141.21875px, above caption,3px height, segment matches green accent;92frames/82distinct transforms; reduced-motion none; throttling restored and loader removed when real records arrived. No API delay added to app or data/other-page changes. Source local pending approval; docs-only checkpoint.
