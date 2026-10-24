@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Stronger shared loading-tip glow preview
+
+HIRO requested a more visible glow, not merely wider diffusion. RegisterLoading only: brighter accent80%/white20% core, dense currentColor5px/2px and12px/4px shadows plus22px/5px75%accent outer halo, vertical paint allowance30px. Preserved3px emitter/bar,141px caption-width track,1s cadence/path and all4 callers. Backup/build/restart passed. Same actual Factory loading DOM/frame300ms: visible glow pixels628->2722 and summed color difference54331->223593 against shadow-off at2x; actual-size screenshot reads as a clear leading-point light. Reduced motion hides glow; real data removed loader and browser fetch/style/media probes restored. No data changes. Supersedes softer16px preview below; source still LOCAL pending visual approval, docs-only checkpoint.
+
 ### Larger shared loading-tip glow preview
 
 HIRO requested a larger glow radius on the loading line's leading tip. RegisterLoading.vue only: inner blur4->6px, outer blur9->16px/spread2->3px; vertical clip bleed10->20px avoids cutting off the enlarged halo. Shared by PC Ledger, Factory PC, CCTV Access and Handover. Accent, 3px line/core, caption-relative width, 1s timing, motion path and layout unchanged. Backup first/build passed. Real Factory API-loading browser state frozen at300ms: previous vs enlarged glow footprint842->1764 pixels and36->50px high at2x capture; caption track141.21875px unchanged, computed6px/16px shadows and20px clip confirmed. Actual screenshot checked; reduced motion hides glow, real data removes loader; browser-only fetch delay/style/media probes restored. No data changes. Source remains LOCAL pending visual approval; docs-only checkpoint.
