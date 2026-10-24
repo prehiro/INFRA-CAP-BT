@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Rounded entry/exit loading-line caps preview
+
+HIRO reported insufficiently rounded ends. Cause: the body already had999px round clipping, but the outer horizontal glow paint clip cut the segment square as it entered/exited the track. Added only a full-size overflow:hidden/inherited-radius register-loading-body capsule around the segment; the glow remains a sibling outside this capsule. Track/emitter3px,141.21875px width,1s motion and stronger5/12/22px glow unchanged. Backup/build/restart passed. Actual Factory loading browser freeze200ms(left entry)/600ms(right exit), glow temporarily isolated: rounded vs previous clipping differed30 pixels at EACH cap at8x capture. Geometry/radius/overflow checked; actual screenshot and reduced-motion passed; real data removed loader and fetch/style/media probes restored. Applies to all4 shared callers. No data changes; source LOCAL pending visual approval, docs-only checkpoint.
+
 ### Stronger shared loading-tip glow preview
 
 HIRO requested a more visible glow, not merely wider diffusion. RegisterLoading only: brighter accent80%/white20% core, dense currentColor5px/2px and12px/4px shadows plus22px/5px75%accent outer halo, vertical paint allowance30px. Preserved3px emitter/bar,141px caption-width track,1s cadence/path and all4 callers. Backup/build/restart passed. Same actual Factory loading DOM/frame300ms: visible glow pixels628->2722 and summed color difference54331->223593 against shadow-off at2x; actual-size screenshot reads as a clear leading-point light. Reduced motion hides glow; real data removed loader and browser fetch/style/media probes restored. No data changes. Supersedes softer16px preview below; source still LOCAL pending visual approval, docs-only checkpoint.
