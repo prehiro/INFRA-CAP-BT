@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Unclipped loading-tip halo at both ends preview
+
+HIRO requested the full glow radius at start/end. Removed outer register-loading-line clip-path entirely and made overflow:visible; retained the body-only capsule overflow:hidden/999px radius so bar ends stay round. Stronger glow,3px track, caption width,1s motion/path and all4 callers unchanged. Backup/build/restart passed. Actual Factory loading same-frame A-B with old inset(-30px 0) restored temporarily:120ms left-entry halo2642 pixels and440ms right-exit halo1680 pixels restored OUTSIDE track bounds at2x capture. Computed outer clip none/overflow visible; body999px/hidden,141.21875x3px geometry unchanged. Screenshot/reduced-motion/actual-data loader removal passed; all fetch/media/style probes restored, no record writes. Source LOCAL pending visual approval; docs-only checkpoint. Supersedes horizontal halo clipping in prior previews.
+
 ### Rounded entry/exit loading-line caps preview
 
 HIRO reported insufficiently rounded ends. Cause: the body already had999px round clipping, but the outer horizontal glow paint clip cut the segment square as it entered/exited the track. Added only a full-size overflow:hidden/inherited-radius register-loading-body capsule around the segment; the glow remains a sibling outside this capsule. Track/emitter3px,141.21875px width,1s motion and stronger5/12/22px glow unchanged. Backup/build/restart passed. Actual Factory loading browser freeze200ms(left entry)/600ms(right exit), glow temporarily isolated: rounded vs previous clipping differed30 pixels at EACH cap at8x capture. Geometry/radius/overflow checked; actual screenshot and reduced-motion passed; real data removed loader and fetch/style/media probes restored. Applies to all4 shared callers. No data changes; source LOCAL pending visual approval, docs-only checkpoint.
