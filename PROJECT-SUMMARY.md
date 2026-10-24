@@ -1,7 +1,18 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-21
+> Terakhir diupdate: 2026-10-24
+
+### Theme Studio right-side trial with original-settings rollback — LOCAL preview
+
+HIRO requested the full Nuxt theme-selector categories as a collapsible panel on the right, explicitly requiring rollback to existing settings. Implemented ThemeStudioPanel.vue, useThemeStudio.ts, themeStudio.ts and themeStudio.test.mjs. Layout adds only the panel; nuxt.config.ts explicitly bundles the existing Carbon collection's generic control icons. No dependency, backend, data, deployment or migration changes. Existing BrandMenu/RegisterLoading/Data Import previews remain untouched. Source NOT published; this checkpoint is docs-only pending visual approval.
+
+Panel is a nonmodal right slideover (340px, mobile viewport constrained) with an edge trigger, native keyboard/Escape/focus return, independent scrolling, reduced-motion/print handling, no table-width displacement. Includes four local presets, 17 accents/9 neutrals, Light/Dark/System, offline font choices (Public Sans/system sans/serif/mono), Original/Lucide versus Carbon generic control icons, radius, default sizes, button/badge variants, live sample, Undo/Redo/Randomize and Restore Original. Intentionally preserves custom device/header icons and explicitly specified component size/variant props; it is an adaptation, not Nuxt's entire online font/icon catalog. Uses existing useThemeChoice setters and colorMode so profile controls remain connected.
+
+Before FIRST change, saves actual current color/mode/extra settings plus original raw theme-cookie presence/value in localStorage infra-cap.theme-studio.v1.original. Snapshot is not replaced by subsequent changes/undo or reload; preview stored separately at infra-cap.theme-studio.v1. Storage refusal prevents first mutation. Restore Original reinstates that snapshot, original per-component overrides/unset fields and CSS variables, restores/removes the original theme cookie, and clears preview/history. Merely opening the panel does not change preferences. Browser backup is per browser and needs its site storage retained. Source backup BEFORE edits: C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/theme-panel-20261024-225958 (default.vue and nuxt.config.ts). To REMOVE this feature later: first Restore Original, restore only those two backed-up files (merge if changed subsequently), remove only the four new theme-specific files, rebuild/restart; never reset unrelated previews.
+
+Verification: final production build passed, 51 frontend tests passed (11 new actual composable/schema regressions covering exact custom-theme rollback, absent-cookie restoration, persistence/reload, immutable baseline, undo/redo, blocked/corrupt storage and installed offline icons). Browser on PC Ledger exercised all four presets, all 26 color controls, five sizes (sample24/28/32/36/40px), six radii (sample0/3/6/9/12/18px), all four variants, System mode, rendered Carbon SVG mask, keyboard open/Escape/focus, stable table geometry on collapse, mobile390px without horizontal overflow, reduced motion0s and print hidden. A full refresh retained Graphite preview and original backup; Restore Original afterward matched original cookie/font/accent/neutral/radius/button/icon/mode exactly. Browser preferences and probes restored; no record writes and no recorded interaction errors. Evidence scratch theme-qa/, theme-panel-build.log and theme-panel-tests.log. Original green/zinc/Dark is active after QA.
+
 
 ### Approved publication: device Edit validation and fast Save
 
