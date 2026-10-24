@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Larger shared loading-tip glow preview
+
+HIRO requested a larger glow radius on the loading line's leading tip. RegisterLoading.vue only: inner blur4->6px, outer blur9->16px/spread2->3px; vertical clip bleed10->20px avoids cutting off the enlarged halo. Shared by PC Ledger, Factory PC, CCTV Access and Handover. Accent, 3px line/core, caption-relative width, 1s timing, motion path and layout unchanged. Backup first/build passed. Real Factory API-loading browser state frozen at300ms: previous vs enlarged glow footprint842->1764 pixels and36->50px high at2x capture; caption track141.21875px unchanged, computed6px/16px shadows and20px clip confirmed. Actual screenshot checked; reduced motion hides glow, real data removes loader; browser-only fetch delay/style/media probes restored. No data changes. Source remains LOCAL pending visual approval; docs-only checkpoint.
+
 ### Approved register performance and loading-bar rollout
 
 HIRO approved GitHub publication of the PC Ledger performance/loading work and its rollout to Factory PC, CCTV Access and Handover. This supersedes the LOCAL/pending status of the register performance and loader previews below. Shared RegisterLoading preserves the approved 3px accent line, rounded caps, leading-tip glow, 1s motion, accessible status and reduced-motion/print fallback. Factory PC reuses PC Ledger's shallow snapshots, cached search/sort, native row actions, batched column/row FLIP, memoization and viewport windowing (>80 results, 6-row overscan). CCTV/Handover cache text/date indexes and use useRegisterTable with measured variable-height rows, explicit 220ms WAAPI transitions and complete print rendering; wrapped text/signatures are not forced into fixed-height rows. Initial logbook loading starts onMounted so the loading state can render during real API requests. Full source models still drive filters/counts/exports/actions; no pagination or record truncation.
