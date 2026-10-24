@@ -753,6 +753,7 @@ onMounted(() => {
 /* ---------------- add / edit ---------------- */
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
+const originalSn = ref<unknown>('')
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 
@@ -855,6 +856,7 @@ function blankForm() {
 
 function openCreate() {
   editingId.value = null
+  originalSn.value = ''
   formError.value = ''
   blankForm()
   showForm.value = true
@@ -868,6 +870,7 @@ function openEdit(row: RecordRow) {
   for (const k of Object.keys(LABELS)) {
     form[k] = k === 'tanggal' ? toDateInput(row.values?.[k]) : (row.values?.[k] ?? '')
   }
+  originalSn.value = form.sn
   showForm.value = true
 }
 
@@ -897,20 +900,42 @@ async function save() {
   }
   saving.value = true
   try {
+    const checkedId = editingId.value
+    const checkedSn = normalizeDeviceIdentity(form.sn)
+    if (shouldValidateDeviceIdentity(form.sn, originalSn.value, checkedId !== null)) {
+      let duplicate
+      try {
+        duplicate = await findDuplicateDeviceIdentity('sn', form.sn, checkedId, rows.value,
+          page => apiListRecords(entityId.value!, { page, pageSize: 500 }))
+      } catch {
+        // A network lookup failure defers to the authoritative server-side rule.
+      }
+      if (!showForm.value || editingId.value !== checkedId) return
+      if (checkedSn !== normalizeDeviceIdentity(form.sn)) {
+        formError.value = 'Device details changed during validation. Please save again.'
+        return
+      }
+      if (duplicate) {
+        formError.value = `S/N "${String(form.sn).trim()}" is already used by No ${cell(duplicate, 'nomor')} - ${cell(duplicate, 'pic')}.`
+        return
+      }
+    }
     if (editingId.value) {
-      await apiUpdateRecord(entityId.value, editingId.value, payload())
+      const saved = await apiUpdateRecord(entityId.value, editingId.value, payload())
+      rows.value = replaceSavedRecord(rows.value, saved)
+      showForm.value = false
     } else {
       await apiCreateRecord(entityId.value, payload())
+      showForm.value = false
+      await load()
     }
-    showForm.value = false
-    await load()
     toast.add({
       title: editingId.value ? 'Record updated' : 'Record created',
       icon: 'i-lucide-circle-check',
       color: 'primary'
     })
   } catch (e: any) {
-    formError.value = e?.data?.message || e?.message || 'Could not save the record.'
+    formError.value = Object.values(e?.data?.errors ?? {}).flat().join(' ') || e?.data?.message || e?.message || 'Could not save the record.'
   } finally {
     saving.value = false
   }

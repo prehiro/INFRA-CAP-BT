@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-21
 
+### Approved publication: device Edit validation and fast Save
+
+HIRO approved GitHub publication of BOTH device Edit fixes: unchanged normalized hostname/SN may be retained during user/PIC changes, with server-enforced uniqueness for New/changed identities; successful Edit applies the canonical returned row without reloading the register. Includes PC Ledger/Factory pages, DynamicRecordService, deviceIdentity/recordSnapshot helpers, frontend tests and isolated backend test project/README. This supersedes the LOCAL status of those two functional changes below. Verified production web/API builds,40 frontend tests,21 isolated relational CRUD regressions and the documented browser validation/DOM fixture checks. Existing API dependency audit warnings remain as previously documented. No production migration or real record writes in QA. Loader-glow, sidebar brand and Data Import/WorkbookDropzone previews are explicitly excluded and remain LOCAL.
+
 ### Fast Edit save without register reload — implemented locally
 
 HIRO reported the table loading after Edit+Save. Source cause on both PC Ledger and Factory PC: after PUT succeeded, save() called load(), fetching all entity metadata plus the entire register and unmounting the table behind loading. Changed ONLY Edit success: use the complete DTO returned by apiUpdateRecord and replace its matching row via immutable replaceSavedRecord; preserve other row object references/order/count, close modal after acknowledgment, let existing search/sort/FLIP react. No optimistic pre-success changes, forced remount, loader delay or global styles. Pending/failed updates keep the form/cache; Add/Delete retain prior reload behavior. Initial loading indicator remains intact. Backend unchanged in this task. Source LOCAL; no source publication requested.

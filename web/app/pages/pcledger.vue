@@ -452,7 +452,7 @@ const deleting = ref(false)
 const exporting = ref(false)
 const loadError = ref('')
 const entities = ref<EntityMeta[]>([])
-// API snapshots are replaced by load() after every write; no in-place row mutations.
+// Replace snapshots after load or a confirmed Edit response; never mutate rows in place.
 // Avoid thousands of deep reactive getter/proxy calls during the initial table render.
 const rows = shallowRef<RecordRow[]>([])
 const searching = ref('')
@@ -807,6 +807,7 @@ onMounted(() => {
 /* ---------------- add / edit ---------------- */
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
+const originalIdentity = ref<Record<string, unknown>>({})
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
 const identityHints = reactive<Record<string, string>>({ staff_name: '', email: '', gid: '' })
@@ -934,11 +935,10 @@ function registerSuggestionsFor(key: string) {
  *  HIRO: "textboxt japan hostname dan SN harus unik tidak boleh ada record yang sama, berikan warning
  *  jika ada duplikat dengan record di db".
  *
- *  Checked in two steps on purpose. The local scan over `rows` is instant and covers the page, but the
- *  page holds AT MOST 500 rows (the API clamps pageSize), so a duplicate further down the table would
- *  slip through. The second step therefore asks the API, whose `search` finds matching rows anywhere,
- *  and compares the values exactly. A failed check never blocks saving - it clears the warning and lets
- *  the server decide, because a network hiccup must not make the form unusable.
+ *  New records check both fields; Edit checks only changes against its open-time snapshot,
+ *  comparing case-insensitively after trim. Local matches are immediate; the fallback reads
+ *  all API pages for exact values instead of relying on a limited substring search. A failed
+ *  lookup defers to the API, which independently enforces the same device identity policy.
  */
 const UNIQUE_FIELDS = ['japan_hostname', 'computer_sn']
 const uniqueErrors = ref<Record<string, string>>({})
@@ -951,26 +951,17 @@ function recordLabel(r: any) {
   return [no ? 'No ' + no : '', who].filter(Boolean).join(' - ') || 'record ' + r.id
 }
 
-function findDuplicate(list: any[], key: string, value: string) {
-  return list.find((r) => String(r.id) !== String(editingId.value) &&
-    String(cell(r, key) ?? '').trim().toLowerCase() === value.toLowerCase())
-}
-
 async function checkUnique(key: string) {
   if (!UNIQUE_FIELDS.includes(key)) return
   const value = String(form[key] ?? '').trim()
-  if (!value) { uniqueErrors.value[key] = ''; refreshUniqueWarning(); return }
-  const local = findDuplicate(rows.value, key, value)
-  if (local) {
-    uniqueErrors.value[key] = `${LABELS[key]} "${value}" is already used by ${recordLabel(local)}.`
-    refreshUniqueWarning()
-    return
+  if (!shouldValidateDeviceIdentity(value, originalIdentity.value[key], editingId.value !== null)) {
+    uniqueErrors.value[key] = ''; refreshUniqueWarning(); return
   }
   try {
     const id = entityId.value
     if (!id) return
-    const page = await apiListRecords(id, { page: 1, pageSize: 5, search: value })
-    const hit = findDuplicate(page.items ?? [], key, value)
+    const hit = await findDuplicateDeviceIdentity(key, value, editingId.value, rows.value,
+      page => apiListRecords(id, { page, pageSize: 500 }))
     uniqueErrors.value[key] = hit ? `${LABELS[key]} "${value}" is already used by ${recordLabel(hit)}.` : ''
   } catch {
     uniqueErrors.value[key] = ''
@@ -1097,6 +1088,7 @@ function applyGidSuggestion(s: any) {
 
 function openCreate() {
   editingId.value = null
+  originalIdentity.value = {}
   formError.value = ''
   blankForm()
   showForm.value = true
@@ -1109,6 +1101,7 @@ function openEdit(row: RecordRow) {
   for (const k of Object.keys(LABELS)) {
     form[k] = k === 'tanggal' ? toDateInput(row.values?.[k]) : (row.values?.[k] ?? '')
   }
+  originalIdentity.value = Object.fromEntries(UNIQUE_FIELDS.map(key => [key, form[key]]))
   showForm.value = true
 }
 
@@ -1132,27 +1125,35 @@ async function save() {
   formError.value = ''
   saving.value = true
   try {
-    // Re-checked here rather than trusting the debounced watcher: pressing Save right after typing must
-    // not slip a duplicate past a timer that has not fired yet.
+    // New checks both identities; Edit checks only normalized changes against its open-time snapshot.
+    const checkedId = editingId.value
+    const checkedIdentity = UNIQUE_FIELDS.map(key => normalizeDeviceIdentity(form[key])).join('\u0000')
     await Promise.all(UNIQUE_FIELDS.map((k) => checkUnique(k)))
+    if (!showForm.value || editingId.value !== checkedId) return
+    if (checkedIdentity !== UNIQUE_FIELDS.map(key => normalizeDeviceIdentity(form[key])).join('\u0000')) {
+      formError.value = 'Device details changed during validation. Please save again.'
+      return
+    }
     if (uniqueWarned.value) {
       formError.value = `${uniqueWarned.value} Hostname and Serial number must be unique.`
       return
     }
     if (editingId.value) {
-      await apiUpdateRecord(entityId.value, editingId.value, payload())
+      const saved = await apiUpdateRecord(entityId.value, editingId.value, payload())
+      rows.value = replaceSavedRecord(rows.value, saved)
+      showForm.value = false
     } else {
       await apiCreateRecord(entityId.value, payload())
+      showForm.value = false
+      await load()
     }
-    showForm.value = false
-    await load()
     toast.add({
       title: editingId.value ? 'Record updated' : 'Record created',
       icon: 'i-lucide-circle-check',
       color: 'primary'
     })
   } catch (e: any) {
-    formError.value = e?.data?.message || e?.message || 'Could not save the record.'
+    formError.value = Object.values(e?.data?.errors ?? {}).flat().join(' ') || e?.data?.message || e?.message || 'Could not save the record.'
   } finally {
     saving.value = false
   }

@@ -280,7 +280,7 @@ public class DynamicRecordService
         }
 
         var values = await MaterializeAsync(entity, input);
-        await ValidateAsync(entity, values, recordId);
+        await ValidateAsync(entity, values, recordId, rec.Values);
 
         foreach (var incoming in values)
         {
@@ -428,14 +428,38 @@ public class DynamicRecordService
         string.IsNullOrEmpty(v.TextValue) && v.NumberValue is null && v.DateValue is null
         && v.BoolValue is null && v.LookupValue is null;
 
-    private async Task ValidateAsync(DynamicEntity entity, List<RecordValue> values, long? excludeRecordId)
+    // Only device identity fields may retain a legacy collision on unrelated edits.
+    // Other metadata-driven unique fields/entities keep their existing validation policy.
+    private static bool IsDeviceIdentityField(string slug, string name) =>
+        (slug == "pc_ledger" && name is "japan_hostname" or "computer_sn") ||
+        (slug == "factory_pc" && name == "sn");
+
+    private async Task ValidateAsync(DynamicEntity entity, List<RecordValue> values, long? excludeRecordId,
+        ICollection<RecordValue>? storedValues = null)
     {
         var errors = new Dictionary<string, string>();
 
-        foreach (var f in entity.Fields.Where(x => x.IsUnique))
+        foreach (var f in entity.Fields.Where(x => x.IsUnique || IsDeviceIdentityField(entity.Slug, x.Name)))
         {
             var v = values.FirstOrDefault(x => x.FieldId == f.Id);
             if (v is null) continue;
+
+            if (IsDeviceIdentityField(entity.Slug, f.Name))
+            {
+                var normalized = (v.TextValue ?? "").Trim().ToUpperInvariant();
+                if (normalized.Length == 0) continue; // Requiredness is enforced by MaterializeAsync.
+                var stored = storedValues?.FirstOrDefault(x => x.FieldId == f.Id);
+                if (excludeRecordId.HasValue && stored is not null &&
+                    string.Equals(normalized, (stored.TextValue ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var duplicate = await _db.RecordValues.AnyAsync(rv =>
+                    rv.FieldId == f.Id && rv.TextValue != null && rv.TextValue.Trim().ToUpper() == normalized &&
+                    (excludeRecordId == null || rv.RecordId != excludeRecordId) &&
+                    _db.Records.Any(r => r.Id == rv.RecordId && r.EntityId == entity.Id && !r.IsDeleted));
+                if (duplicate) errors[f.Name] = $"{f.Label} sudah dipakai";
+                continue;
+            }
 
             bool clash = f.Type switch
             {
