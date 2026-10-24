@@ -245,17 +245,19 @@ const COL_ANIM_MS = 340
  * would leave the header sitting at the new layout while the body is still travelling - a visible
  * misalignment for the whole 340ms.
  */
-type Lefts = { head: number[] | null; rows: number[][] }
+type Lefts = { head: number[] | null; body: number[] }
 
 function snapshotLefts(): Lefts | null {
   const table = tableEl.value
   if (!table) return null
-  const rows = [...table.querySelectorAll('tbody tr')]
-  if (!rows.length) return null
+  const firstRow = table.querySelector('tbody tr[data-id]')
+  if (!firstRow) return null
   const headRow = table.querySelector('thead tr')
   return {
     head: headRow ? [...headRow.querySelectorAll('th')].map((th) => th.getBoundingClientRect().left) : null,
-    rows: rows.map((r) => [...r.querySelectorAll('td')].map((td) => td.getBoundingClientRect().left))
+    // table-layout:fixed shares column geometry across every body row. Measure it once,
+    // still apply the resulting displacement to ALL rows (not just the first one).
+    body: [...firstRow.querySelectorAll('td')].map(td => td.getBoundingClientRect().left)
   }
 }
 
@@ -304,9 +306,9 @@ watch(visibleKeys, async () => {
   if (headRow) {
     collect([...headRow.querySelectorAll('th')] as HTMLElement[], before.head ?? [], after.head ?? [])
   }
-  const rows = [...table.querySelectorAll('tbody tr')] as HTMLElement[]
-  rows.forEach((tr, ri) => {
-    collect([...tr.querySelectorAll('td')] as HTMLElement[], before.rows[ri] ?? [], after.rows[ri] ?? [])
+  const rows = [...table.querySelectorAll('tbody tr[data-id]')] as HTMLElement[]
+  rows.forEach((tr) => {
+    collect([...tr.querySelectorAll('td')] as HTMLElement[], before.body, after.body)
   })
 
   if (!movers.length) return
@@ -367,6 +369,7 @@ watch(visibleKeys, async () => {
 const pinOffset = ref(0)
 
 function measurePinOffset() {
+  measureRowViewport()
   const ths = [...(tableEl.value?.querySelectorAll('thead tr th') ?? [])] as HTMLElement[]
   const firstVisible = ths.find((th) => th.getBoundingClientRect().width > 0)
   const w = firstVisible?.getBoundingClientRect().width ?? 0
@@ -390,7 +393,7 @@ function pinClass(i: number) {
 
 function pinStyle(i: number) {
   if (i !== 1) return undefined
-  return { left: `${pinOffset.value}px` }
+  return { left: 'var(--pc-pin-offset, 0px)' }
 }
 
 /** Kept in sync with COLUMNS by key. HIRO's layout: Identity, then one Hardware & System block, then
@@ -449,7 +452,9 @@ const deleting = ref(false)
 const exporting = ref(false)
 const loadError = ref('')
 const entities = ref<EntityMeta[]>([])
-const rows = ref<RecordRow[]>([])
+// API snapshots are replaced by load() after every write; no in-place row mutations.
+// Avoid thousands of deep reactive getter/proxy calls during the initial table render.
+const rows = shallowRef<RecordRow[]>([])
 const searching = ref('')
 /**
  * Sentinel for "no filter". Reka UI refuses an empty string as a SelectItem value — the option
@@ -482,28 +487,27 @@ function haystack(r: RecordRow): string {
   return COLUMNS.map((c) => cell(r, c.key)).join(' ').toLowerCase()
 }
 
-const visibleRows = computed(() => {
-  const q = searching.value.trim().toLowerCase()
-  let out = rows.value
-  if (q) out = out.filter((r) => haystack(r).includes(q))
-  if (filterChassis.value !== ALL) out = out.filter((r) => cell(r, 'chassis') === filterChassis.value)
-  if (filterLocation.value !== ALL) out = out.filter((r) => cell(r, 'lokasi') === filterLocation.value)
-
+// Index and sort only when the API snapshot/sort choice changes, not on each keystroke.
+const searchIndex = computed(() => new Map(rows.value.map(row => [row.id, haystack(row)])))
+const sortedRows = computed(() => {
   const key = sortKey.value
   const dir = sortDir.value === 'asc' ? 1 : -1
-  return [...out].sort((a, b) => {
-    // The No column is padded text ("1", "10", "2"), so compare it numerically or 10 sorts
-    // before 2 - the same class of bug as ordering CCTV's nomor as a string.
-    if (key === 'nomor') {
-      return ((Number(cell(a, key)) || 0) - (Number(cell(b, key)) || 0)) * dir
-    }
-    if (key === 'tanggal') {
-      const ta = Date.parse(cell(a, key)) || 0
-      const tb = Date.parse(cell(b, key)) || 0
-      return (ta - tb) * dir
-    }
+  return [...rows.value].sort((a, b) => {
+    if (key === 'nomor') return ((Number(cell(a, key)) || 0) - (Number(cell(b, key)) || 0)) * dir
+    if (key === 'tanggal') return ((Date.parse(cell(a, key)) || 0) - (Date.parse(cell(b, key)) || 0)) * dir
     return cell(a, key).localeCompare(cell(b, key), undefined, { sensitivity: 'base' }) * dir
   })
+})
+const visibleRows = computed(() => {
+  const q = searching.value.trim().toLowerCase()
+  const chassis = filterChassis.value
+  const location = filterLocation.value
+  if (!q && chassis === ALL && location === ALL) return sortedRows.value
+  return sortedRows.value.filter(row =>
+    (!q || searchIndex.value.get(row.id)?.includes(q)) &&
+    (chassis === ALL || cell(row, 'chassis') === chassis) &&
+    (location === ALL || cell(row, 'lokasi') === location)
+  )
 })
 
 /**
@@ -531,8 +535,86 @@ const visibleRows = computed(() => {
  * A `translateY` on a `<tr>` does not break the pinned columns: the sticky pair was sampled during a
  * row move and its left stayed at the scroller's left edge in every frame.
  */
+// Keep all records in search/export; mount just the scroll viewport plus overscan.
+const viewportTop = ref(0)
+const viewportHeight = ref(600)
+const ledgerRowHeight = ref(43)
+const ledgerHeaderHeight = ref(35)
+const WINDOW_OVERSCAN = 6
+const printView = ref(false)
+const windowed = computed(() => !printView.value && visibleRows.value.length > 80)
+const windowSize = computed(() => Math.ceil(viewportHeight.value / ledgerRowHeight.value) + WINDOW_OVERSCAN * 2)
+const windowStart = computed(() => !windowed.value ? 0 : Math.min(
+  Math.max(0, visibleRows.value.length - windowSize.value),
+  Math.max(0, Math.floor((viewportTop.value - ledgerHeaderHeight.value) / ledgerRowHeight.value) - WINDOW_OVERSCAN)
+))
+const renderedRows = computed(() => windowed.value
+  ? visibleRows.value.slice(windowStart.value, windowStart.value + windowSize.value)
+  : visibleRows.value)
+const spacerTop = computed(() => windowStart.value * ledgerRowHeight.value)
+const spacerBottom = computed(() => Math.max(0, visibleRows.value.length - windowStart.value - renderedRows.value.length) * ledgerRowHeight.value)
+let scrollingWindow = false
+let scrollFrame = 0
+function measureRowViewport() {
+  const scroller = tableEl.value?.closest('.pl-scroll') as HTMLElement | null
+  if (!scroller) return
+  viewportHeight.value = scroller.clientHeight
+  viewportTop.value = scroller.scrollTop
+  const first = tableEl.value?.querySelector('tbody tr[data-id]') as HTMLElement | null
+  if (first?.offsetHeight) ledgerRowHeight.value = first.offsetHeight
+  const head = tableEl.value?.querySelector('thead') as HTMLElement | null
+  if (head?.offsetHeight) ledgerHeaderHeight.value = head.offsetHeight
+}
+function onLedgerScroll(event: Event) {
+  const scroller = event.currentTarget as HTMLElement
+  if (viewportTop.value === scroller.scrollTop) return
+  scrollingWindow = true
+  viewportTop.value = scroller.scrollTop
+  viewportHeight.value = scroller.clientHeight
+  cancelAnimationFrame(scrollFrame)
+  scrollFrame = requestAnimationFrame(() => { scrollingWindow = false })
+}
+watch(tableEl, () => measureRowViewport(), { flush: 'post' })
+onBeforeUnmount(() => cancelAnimationFrame(scrollFrame))
+let printMedia: MediaQueryList | undefined
+function beforeLedgerPrint() { printView.value = true }
+function afterLedgerPrint() { printView.value = false }
+function ledgerPrintMediaChange(event: MediaQueryListEvent) { printView.value = event.matches }
+onMounted(() => {
+  printMedia = window.matchMedia('print')
+  printView.value = printMedia.matches
+  printMedia.addEventListener('change', ledgerPrintMediaChange)
+  window.addEventListener('beforeprint', beforeLedgerPrint)
+  window.addEventListener('afterprint', afterLedgerPrint)
+})
+onBeforeUnmount(() => {
+  printMedia?.removeEventListener('change', ledgerPrintMediaChange)
+  window.removeEventListener('beforeprint', beforeLedgerPrint)
+  window.removeEventListener('afterprint', afterLedgerPrint)
+})
+
 const ROW_ANIM_MS = 340
 const ROW_ANIM_MAX_MS = 560
+
+// CSS TransitionGroup auto-detection reads computed style while each removed row changes
+// table layout. With hundreds of records this serializes full-table reflows. Keep the same
+// entrance visually, but use explicit animations and synchronous removal (:css=false).
+const rowEntrances = new WeakMap<Element, Animation[]>()
+function enterLedgerRow(element: Element, done: () => void) {
+  if (!element.hasAttribute('data-id') || scrollingWindow || window.matchMedia('(prefers-reduced-motion: reduce), print').matches) { done(); return }
+  const fade = element.animate([{ opacity: 0 }, { opacity: 1 }], {
+    duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+  })
+  const rise = element.animate([{ transform: 'translateY(-8px)' }, { transform: 'translateY(0)' }], {
+    duration: 340, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+  })
+  rowEntrances.set(element, [fade, rise])
+  rise.onfinish = () => { rowEntrances.delete(element); done() }
+}
+function cancelLedgerRowEntrance(element: Element) {
+  rowEntrances.get(element)?.forEach(animation => animation.cancel())
+  rowEntrances.delete(element)
+}
 
 /**
  * LONGER TRAVELS GET MORE TIME, so every row moves at roughly the same speed instead of the distant
@@ -564,7 +646,14 @@ let rowOffsetsBefore: Record<string, number> | null = null
 let rowScrollBefore = 0
 
 watch(visibleRows, () => {
-  const rows = tableEl.value?.querySelectorAll('tbody tr')
+  scrollingWindow = false
+  const scrollerEl = tableEl.value?.closest('.pl-scroll') as HTMLElement | null
+  if (scrollerEl) {
+    const maxTop = Math.max(0, visibleRows.value.length * ledgerRowHeight.value + ledgerHeaderHeight.value - scrollerEl.clientHeight)
+    if (scrollerEl.scrollTop > maxTop) scrollerEl.scrollTop = maxTop
+    viewportTop.value = scrollerEl.scrollTop
+  }
+  const rows = tableEl.value?.querySelectorAll('tbody tr[data-id]')
   if (!rows?.length) { rowOffsetsBefore = null; return }
   const out: Record<string, number> = {}
   rows.forEach((tr) => {
@@ -583,7 +672,7 @@ watch(visibleRows, (v) => {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
   const ids = new Set(v.map((r) => String(r.id)))
-  const all = tableEl.value?.querySelectorAll('tbody tr')
+  const all = tableEl.value?.querySelectorAll('tbody tr[data-id]')
   if (!all?.length) return
 
   // Rows present in BOTH lists. New rows are the enter animation's business; removed rows need
@@ -614,9 +703,11 @@ watch(visibleRows, (v) => {
 
   const lastDy = new Map<HTMLElement, number>()
   const pin = () => {
-    movers.forEach((el) => {
-      const id = el.dataset.id as string
-      const dy = before[id] - el.offsetTop
+    // Read ALL layout offsets before writing transforms. Interleaving reads/writes forces
+    // a full table layout per surviving row once the register grows to hundreds of rows.
+    const offsets = movers.map(el => before[el.dataset.id as string] - el.offsetTop)
+    movers.forEach((el, index) => {
+      const dy = offsets[index] ?? 0
       lastDy.set(el, dy)
       el.style.transition = 'none'
       el.style.transform = Math.abs(dy) < 1 ? '' : `translateY(${dy}px)`
@@ -642,7 +733,7 @@ watch(visibleRows, (v) => {
   let frames = 0
   const step = () => {
     pin()
-    const movedNow = movers.some((el) => Math.abs(before[el.dataset.id as string] - el.offsetTop) >= 1)
+    const movedNow = movers.some((el) => Math.abs(lastDy.get(el) ?? 0) >= 1)
     if (movedNow || ++frames > 8) { release(); return }
     requestAnimationFrame(step)
   }
@@ -673,11 +764,12 @@ function toggleSort(key: string) {
 }
 
 /* ---------------- formatting ---------------- */
+const ledgerDateFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 function fmtDate(v: unknown): string {
   if (!v) return ''
   const d = new Date(String(v))
   if (Number.isNaN(d.getTime())) return String(v)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  return ledgerDateFormatter.format(d)
 }
 
 /** `yyyy-mm-dd` for <input type="date">, from whatever the API stored. */
@@ -1360,9 +1452,8 @@ async function exportExcel() {
              up, and the sheet header above still animates at mount - the same two-step rhythm the
              logbook has. -->
         <div :class="{ 'anim-fade-up': !loading }" class="overflow-hidden rounded-xl border border-default bg-elevated">
-          <div v-if="loading" class="flex items-center justify-center gap-2 p-12 text-sm text-muted">
-            <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
-            Loading the register...
+          <div v-if="loading" class="flex items-center justify-center p-12 text-sm text-muted">
+            <RegisterLoading />
           </div>
 
           <div v-else-if="!rows.length" class="p-12 text-center">
@@ -1373,12 +1464,12 @@ async function exportExcel() {
             </p>
           </div>
 
-          <div v-else class="pl-scroll">
+          <div v-else class="pl-scroll" @scroll.passive="onLedgerScroll">
             <!-- The frozen scroll extent lives on THIS wrapper, never on the table itself: a
                  min-height on a <table> is shared out among its rows, which stretched every row for
                  the length of the animation. See tableWrapEl in the script. -->
             <div ref="tableWrapEl">
-            <table ref="tableEl" class="pl-table">
+            <table ref="tableEl" class="pl-table" :style="{ '--pc-pin-offset': `${pinOffset}px` }" :aria-rowcount="visibleRows.length + 1">
               <colgroup>
                 <col
                   v-for="c in COLUMNS"
@@ -1428,10 +1519,12 @@ async function exportExcel() {
                    sampled during a row FLIP and reported the same left in every frame. -->
               <TransitionGroup
                 tag="tbody"
-                enter-active-class="row-enter-active"
-                enter-from-class="row-enter-from"
+                :css="false"
+                @enter="enterLedgerRow"
+                @enter-cancelled="cancelLedgerRowEntrance"
               >
-                <tr v-for="row in visibleRows" :key="row.id" :data-id="row.id">
+                <tr v-if="spacerTop" key="window-top" class="pl-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerTop}px` }" /></tr>
+                <tr v-for="(row, rowIndex) in renderedRows" :key="row.id" v-memo="[row, visibleKeys, windowStart + rowIndex]" :data-id="row.id" :aria-rowindex="windowStart + rowIndex + 2" :class="{ 'pl-row-even': (windowStart + rowIndex + 1) % 2 === 0 }">
                   <td
                     v-for="c in COLUMNS"
                     :key="c.key"
@@ -1458,18 +1551,18 @@ async function exportExcel() {
                        `px-1 py-2` padding with it, which the shared `.pl-table td` rule cannot
                        express as a utility (it would lose on specificity). -->
                   <td class="pl-actions text-center">
-                    <UButton color="neutral" variant="ghost" size="xs" class="pencil-hover" aria-label="Edit" @click="openEdit(row)">
-                      <template #leading>
-                        <PencilIcon class="size-4" data-slot="leadingIcon" />
-                      </template>
-                    </UButton>
-                    <UButton color="error" variant="ghost" size="xs" class="trash-bin-hover" aria-label="Delete" @click="askDelete(row)">
-                      <template #leading>
-                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
-                      </template>
-                    </UButton>
+                    <!-- Native equivalents of the measured xs ghost UButtons (24x24).
+                         Keep theme tokens, accessible labels, icon animation hooks and handlers;
+                         avoid mounting two reactive vendor component trees for EVERY record. -->
+                    <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-default hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 hover:disabled:bg-transparent dark:hover:disabled:bg-transparent hover:aria-disabled:bg-transparent dark:hover:aria-disabled:bg-transparent p-1 pencil-hover" aria-label="Edit" @click="openEdit(row)">
+                      <PencilIcon class="size-4" data-slot="leadingIcon" />
+                    </button>
+                    <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-error hover:bg-error/10 active:bg-error/10 outline-error/25 focus-visible:outline-3 disabled:bg-transparent aria-disabled:bg-transparent dark:disabled:bg-transparent dark:aria-disabled:bg-transparent p-1 trash-bin-hover" aria-label="Delete" @click="askDelete(row)">
+                      <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                    </button>
                   </td>
                 </tr>
+                <tr v-if="spacerBottom" key="window-bottom" class="pl-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerBottom}px` }" /></tr>
               </TransitionGroup>
             </table>
             </div>
@@ -1676,6 +1769,7 @@ async function exportExcel() {
 
 <style scoped>
 .pc-copy-cell { text-align: inherit; font: inherit; }
+.pl-table .pl-window-spacer td { padding: 0; border: 0; background: transparent; line-height: 0; font-size: 0; }
 /* A 15-column register cannot fit any laptop, so the table scrolls horizontally and the
    scrollbar is reserved from the first paint (`scrollbar-gutter: stable`) - otherwise it
    appears when the rows load, steals ~15px of width, and every column jumps sideways in one
@@ -1834,7 +1928,7 @@ async function exportExcel() {
      unbroken across the pinned pair instead of stopping at the first two columns - the same
      failure that made No and Staff Name look like a different table. The pinned HOVER rule is
      (0,3,0), so it still takes precedence over the band. */
-.pl-table tbody tr:nth-child(even) td {
+.pl-table tbody tr.pl-row-even td {
   background: color-mix(in oklab, var(--ui-bg) 20%, var(--ui-bg-elevated));
 }
 
@@ -1926,14 +2020,6 @@ async function exportExcel() {
    after a filter lands with the same little bounce as the rows that travelled. The OPACITY stays
    on the monotonic curve on purpose: a non-monotonic curve would push opacity past 1 mid-flight
    (clamped, so harmless, but it shortens the visible fade for no gain). */
-.row-enter-active {
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.row-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
 
 /* THE CURVE OVERSHOOTS ON PURPOSE - a small bounce as the rows land against each other after a
    filter, which is what HIRO asked for. cubic-bezier(0.34, 1.56, 0.64, 1) is the classic
@@ -2011,15 +2097,6 @@ async function exportExcel() {
   white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  /* Cancel outright rather than shorten - a partial fade is still motion, which is exactly what
-     the OS setting asks us to avoid. Same rule as main.css and as the CCTV register. */
-  .row-enter-active {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
 
 /* ---- "Copied!" pill: pointer-anchored confirmation for the click-to-copy cells ----
    `translate` does the centring and `transform` runs the animation, so the two never fight: Tailwind

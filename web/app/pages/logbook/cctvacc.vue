@@ -29,7 +29,7 @@ interface Row { id: number; values: Record<string, any>; createdBy: string; crea
 
 const entity = ref<{ id: number; name: string } | null>(null)
 const fields = ref<FieldMetaLite[]>([])
-const rows = ref<Row[]>([])
+const rows = shallowRef<Row[]>([])
 const total = ref(0)
 const loading = ref(true)
 const saving = ref(false)
@@ -280,12 +280,14 @@ function searchHaystack(values: Record<string, any>): string {
  * land out of order and leave stale rows on screen. One mechanism, one source of truth, no
  * round trip, no race.
  */
+const rowSearchIndex = computed(() => new Map(rows.value.map(row => [row.id, searchHaystack(row.values)])))
+const rowDateIndex = computed(() => new Map(rows.value.map(row => [row.id, rowDate(row.values.tanggal)])))
 const visibleRows = computed(() => {
   const f = filters.value
   const q = search.value.trim().toLowerCase()
   return rows.value.filter((r) => {
-    if (q && !searchHaystack(r.values).includes(q)) return false
-    const d = rowDate(r.values.tanggal)
+    if (q && !rowSearchIndex.value.get(r.id)?.includes(q)) return false
+    const d = rowDateIndex.value.get(r.id) ?? ''
     if (f.from && (!d || d < f.from)) return false
     if (f.to && (!d || d > f.to)) return false
     if (f.section && String(r.values.departemen ?? '') !== f.section) return false
@@ -293,6 +295,9 @@ const visibleRows = computed(() => {
     return true
   })
 })
+
+const { tableEl, renderedRows, windowStart, spacerTop, spacerBottom, onScroll, enterRow, cancelRow } = useRegisterTable(visibleRows)
+
 
 /** One removable chip per active filter, so the current view is never ambiguous. */
 const activeChips = computed(() => {
@@ -561,11 +566,12 @@ async function confirmDelete() {
   }
 }
 
+const registerDateFormatter = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 function fmtDate(v: any): string {
   if (!v) return ''
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return String(v)
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  return registerDateFormatter.format(d)
 }
 
 function signSrc(v: any): string | null {
@@ -615,12 +621,16 @@ async function init() {
     loading.value = false
   }
 }
-await init()
+onMounted(init)
 
 // No watcher on `search`: the search is a client-side computed over the loaded rows, so it
 // reacts instantly. Re-fetching here was both slow (the whole register plus ~4KB of base64
 // per row, on every keystroke) and racy (out-of-order responses could leave stale rows).
 </script>
+
+<style scoped>
+.register-window-spacer > td { padding: 0 !important; border: 0 !important; background: transparent !important; line-height: 0; font-size: 0; }
+</style>
 
 <template>
   <!-- The panel body is this page's own `flex-1 overflow-y-auto` scroll container, and it is
@@ -742,12 +752,12 @@ await init()
          slightly larger than the old text-xs, and numeric-ish columns are tabular-nums
          so digits line up down the column. -->
     <div class="overflow-hidden rounded-xl border border-default bg-elevated">
-      <div class="logbook-scroll max-h-[70vh] overflow-y-scroll overflow-x-auto print:scroll-area">
+      <div class="logbook-scroll max-h-[70vh] overflow-y-scroll overflow-x-auto print:scroll-area" @scroll.passive="onScroll">
         <!-- min-w is sized so the whole logbook fits without horizontal scrolling on a
              typical 1280px screen (measured: 11 columns + Actions needed ~1180px).
              Horizontal scroll remains the graceful fallback on narrower screens rather
              than squashing the signature columns until they are unreadable. -->
-        <table class="w-full min-w-[1180px] table-fixed border-collapse text-sm">
+        <table ref="tableEl" :aria-rowcount="visibleRows.length + 1" class="w-full min-w-[1180px] table-fixed border-collapse text-sm">
           <!-- Deterministic column widths. With the default (auto) layout the w-[n%] on each
                <th> is only a HINT and the browser hands out leftover space unevenly, which is
                why the two signature columns matched at a cramped 1280px viewport but drifted
@@ -794,8 +804,7 @@ await init()
           <tbody v-if="loading">
             <tr>
               <td :colspan="COLUMNS.length + 1" class="px-4 py-10 text-center text-muted">
-                <UIcon name="i-lucide-loader-circle" class="mx-auto mb-2 size-5 animate-spin" />
-                <p class="text-sm">Loading...</p>
+                <RegisterLoading label="Loading..." class="text-sm" />
               </td>
             </tr>
           </tbody>
@@ -822,15 +831,14 @@ await init()
           <TransitionGroup
             v-else
             tag="tbody"
-            name="row"
-            enter-active-class="row-enter-active"
-            enter-from-class="row-enter-from"
-            move-class="row-move"
-            move-active-class="row-move-active"
+            :css="false"
+            @enter="enterRow"
+            @enter-cancelled="cancelRow"
           >
-            <tr v-for="(r, i) in visibleRows" :key="r.id"
+            <tr v-if="spacerTop" key="window-top" class="register-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerTop}px` }" /></tr>
+            <tr v-for="(r, i) in renderedRows" :key="r.id" v-memo="[r, windowStart + i]" :data-id="r.id" :aria-rowindex="windowStart + i + 2"
                 class="align-middle transition-colors hover:bg-primary/5"
-                :class="i % 2 ? 'bg-default/20' : ''">
+                :class="(windowStart + i) % 2 ? 'bg-default/20' : ''">
               <td v-for="c in COLUMNS" :key="c.key"
                   class="border-b border-default/60 px-3 py-2.5 align-middle">
                 <!-- The stored PNG is black ink on a TRANSPARENT background (the canvas CSS
@@ -881,21 +889,16 @@ await init()
                 </template>
               </td>
               <td class="border-b border-default/60 px-1 py-2 text-center whitespace-nowrap print:hidden">
-                <UButton size="xs" variant="ghost" color="neutral" class="pencil-hover"
-                         @click="openEdit(r)">
-                    <template #leading>
+                <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-default hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 hover:disabled:bg-transparent dark:hover:disabled:bg-transparent hover:aria-disabled:bg-transparent dark:hover:aria-disabled:bg-transparent p-1 pencil-hover" aria-label="Edit" @click="openEdit(r)">
                       <PencilIcon class="size-4" data-slot="leadingIcon" />
-                    </template>
-                  </UButton>
-                <UButton size="xs" variant="ghost" class="trash-bin-hover" color="error"
-                         @click="askDelete(r)" >
-                      <template #leading>
-                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
-                      </template>
-                    </UButton>
+                    </button>
+                    <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-error hover:bg-error/10 active:bg-error/10 outline-error/25 focus-visible:outline-3 disabled:bg-transparent aria-disabled:bg-transparent dark:disabled:bg-transparent dark:aria-disabled:bg-transparent p-1 trash-bin-hover" aria-label="Delete" @click="askDelete(r)">
+                      <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                    </button>
                          </td>
                          </tr>
-                         </TransitionGroup>
+                         <tr v-if="spacerBottom" key="window-bottom" class="register-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerBottom}px` }" /></tr>
+              </TransitionGroup>
                          </table>
       </div>
 
@@ -1296,31 +1299,14 @@ await init()
    - 220ms with an ease-out curve: long enough to see the motion, short enough that the table
      never feels like it is lagging behind the click.
    --------------------------------------------------------------------------------------- */
-.row-enter-active {
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.row-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
+
+
 /* FLIP: Vue measures the row before and after, so only the transform needs animating. */
-.row-move-active {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.row-move {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
+
+
 
 /* Printing must never capture a half-finished animation. */
-@media print {
-  .row-enter-active,
-  .row-move,
-  .row-move-active {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
+
 
 /* The dark-mode signature preview works by flipping the black ink to white with
    `filter: invert(1)`. On paper the background is white, so white ink would be INVISIBLE -
@@ -1334,15 +1320,7 @@ await init()
 
 /* Respect the OS "reduce motion" setting outright, matching the rule already used by the
    .anim-* utilities in main.css. */
-@media (prefers-reduced-motion: reduce) {
-  .row-enter-active,
-  .row-move,
-  .row-move-active {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
+
 
 /* A4 landscape sheet: the form is 11 columns wide, portrait would be unreadable. */
 @media print {

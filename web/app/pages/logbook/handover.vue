@@ -30,7 +30,7 @@ interface Row { id: number; values: Record<string, any>; createdBy: string; crea
 
 const entity = ref<{ id: number; name: string } | null>(null)
 const fields = ref<FieldMetaLite[]>([])
-const rows = ref<Row[]>([])
+const rows = shallowRef<Row[]>([])
 const total = ref(0)
 const loading = ref(true)
 const saving = ref(false)
@@ -271,12 +271,14 @@ function searchHaystack(values: Record<string, any>): string {
 }
 
 /** Rows actually shown: the text search, then the filters. */
+const rowSearchIndex = computed(() => new Map(rows.value.map(row => [row.id, searchHaystack(row.values)])))
+const rowDateIndex = computed(() => new Map(rows.value.map(row => [row.id, rowDate(row.values.tanggal_ambil)])))
 const visibleRows = computed(() => {
   const f = filters.value
   const q = search.value.trim().toLowerCase()
   return rows.value.filter((r) => {
-    if (q && !searchHaystack(r.values).includes(q)) return false
-    const d = rowDate(r.values.tanggal_ambil)
+    if (q && !rowSearchIndex.value.get(r.id)?.includes(q)) return false
+    const d = rowDateIndex.value.get(r.id) ?? ''
     if (f.from && (!d || d < f.from)) return false
     if (f.to && (!d || d > f.to)) return false
     if (f.section && String(r.values.departemen ?? '') !== f.section) return false
@@ -284,6 +286,9 @@ const visibleRows = computed(() => {
     return true
   })
 })
+
+const { tableEl, renderedRows, windowStart, spacerTop, spacerBottom, onScroll, enterRow, cancelRow } = useRegisterTable(visibleRows)
+
 
 /** One removable chip per active filter, so the current view is never ambiguous. */
 const activeChips = computed(() => {
@@ -487,11 +492,12 @@ async function confirmDelete() {
   }
 }
 
+const registerDateFormatter = new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
 function fmtDate(v: any): string {
   if (!v) return ''
   const d = new Date(v)
   if (Number.isNaN(d.getTime())) return String(v)
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+  return registerDateFormatter.format(d)
 }
 
 function signSrc(v: any): string | null {
@@ -540,8 +546,12 @@ async function init() {
     loading.value = false
   }
 }
-await init()
+onMounted(init)
 </script>
+
+<style scoped>
+.register-window-spacer > td { padding: 0 !important; border: 0 !important; background: transparent !important; line-height: 0; font-size: 0; }
+</style>
 
 <template>
   <!-- Per-instance :ui on the panel body, exactly as on the CCTV page: `scrollbar-gutter-stable`
@@ -630,8 +640,8 @@ await init()
              apart on the office 1920px screen. The signature column's FIXED chip width gives
              it a deterministic content box too. -->
         <div class="overflow-hidden rounded-xl border border-default bg-elevated">
-          <div class="logbook-scroll max-h-[70vh] overflow-y-scroll overflow-x-auto print:scroll-area">
-            <table class="w-full min-w-[1240px] table-fixed border-collapse text-sm">
+          <div class="logbook-scroll max-h-[70vh] overflow-y-scroll overflow-x-auto print:scroll-area" @scroll.passive="onScroll">
+            <table ref="tableEl" :aria-rowcount="visibleRows.length + 1" class="w-full min-w-[1240px] table-fixed border-collapse text-sm">
               <!-- Exactly 10 <col> for 10 columns: the 9 in COLUMNS plus Actions. They sum to
                    more than 100% on purpose, so the browser scales them all by one factor -
                    which is what keeps the relationship between equal entries intact. -->
@@ -668,8 +678,7 @@ await init()
               <tbody v-if="loading">
                 <tr>
                   <td :colspan="COLUMNS.length + 1" class="px-4 py-10 text-center text-muted">
-                    <UIcon name="i-lucide-loader-circle" class="mx-auto mb-2 size-5 animate-spin" />
-                    <p class="text-sm">Loading...</p>
+                    <RegisterLoading label="Loading..." class="text-sm" />
                   </td>
                 </tr>
               </tbody>
@@ -696,15 +705,14 @@ await init()
               <TransitionGroup
                 v-else
                 tag="tbody"
-                name="row"
-                enter-active-class="row-enter-active"
-                enter-from-class="row-enter-from"
-                move-class="row-move"
-                move-active-class="row-move-active"
+                :css="false"
+            @enter="enterRow"
+            @enter-cancelled="cancelRow"
               >
-                <tr v-for="(r, i) in visibleRows" :key="r.id"
+                <tr v-if="spacerTop" key="window-top" class="register-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerTop}px` }" /></tr>
+            <tr v-for="(r, i) in renderedRows" :key="r.id" v-memo="[r, windowStart + i]" :data-id="r.id" :aria-rowindex="windowStart + i + 2"
                     class="align-middle transition-colors hover:bg-primary/5"
-                    :class="i % 2 ? 'bg-default/20' : ''">
+                    :class="(windowStart + i) % 2 ? 'bg-default/20' : ''">
                   <td v-for="c in COLUMNS" :key="c.key"
                       class="border-b border-default/60 px-3 py-2.5 align-middle">
                     <!-- The stored PNG is black ink on a TRANSPARENT background, which vanishes
@@ -746,20 +754,15 @@ await init()
                     </template>
                   </td>
                   <td class="border-b border-default/60 px-1 py-2 text-center whitespace-nowrap print:hidden">
-                    <UButton size="xs" variant="ghost" color="neutral" class="pencil-hover"
-                             @click="openEdit(r)">
-                      <template #leading>
-                        <PencilIcon class="size-4" data-slot="leadingIcon" />
-                      </template>
-                    </UButton>
-                    <UButton size="xs" variant="ghost" color="error" class="trash-bin-hover"
-                             @click="askDelete(r)">
-                      <template #leading>
-                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
-                      </template>
-                    </UButton>
+                    <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-default hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 hover:disabled:bg-transparent dark:hover:disabled:bg-transparent hover:aria-disabled:bg-transparent dark:hover:aria-disabled:bg-transparent p-1 pencil-hover" aria-label="Edit" @click="openEdit(r)">
+                      <PencilIcon class="size-4" data-slot="leadingIcon" />
+                    </button>
+                    <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-error hover:bg-error/10 active:bg-error/10 outline-error/25 focus-visible:outline-3 disabled:bg-transparent aria-disabled:bg-transparent dark:disabled:bg-transparent dark:aria-disabled:bg-transparent p-1 trash-bin-hover" aria-label="Delete" @click="askDelete(r)">
+                      <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                    </button>
                   </td>
                 </tr>
+              <tr v-if="spacerBottom" key="window-bottom" class="register-window-spacer" aria-hidden="true"><td :colspan="COLUMNS.length + 1" :style="{ height: `${spacerBottom}px` }" /></tr>
               </TransitionGroup>
             </table>
           </div>
@@ -1153,30 +1156,13 @@ await init()
        and column alignment for the whole table. Removing it instantly while the survivors
        slide to their new positions reads cleanly and is far cheaper.
    --------------------------------------------------------------------------------------- */
-.row-enter-active {
-  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1), transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.row-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-/* FLIP: Vue measures the row before and after, so only the transform needs animating. */
-.row-move-active {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-.row-move {
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-}
 
-@media print {
-  .row-enter-active,
-  .row-move,
-  .row-move-active {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
+
+/* FLIP: Vue measures the row before and after, so only the transform needs animating. */
+
+
+
+
 
 /* The dark-mode signature preview works by flipping the black ink to white with
    `filter: invert(1)`. On paper the background is white, so white ink would be INVISIBLE -
@@ -1188,15 +1174,7 @@ await init()
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .row-enter-active,
-  .row-move,
-  .row-move-active {
-    transition: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
+
 
 /* A4 landscape: nine data columns plus Actions will not read in portrait. */
 @media print {

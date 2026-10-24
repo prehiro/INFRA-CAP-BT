@@ -28,6 +28,13 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
+## Register loading line
+
+PC Ledger loading-line motion adapted from asgardOP/ancient-cow-78 on Uiverse.
+Source: https://uiverse.io/asgardOP/ancient-cow-78
+Archive: https://github.com/uiverse-io/galaxy/blob/main/loaders/asgardOP_ancient-cow-78.html
+The Uiverse MIT license reproduced above also applies to this adaptation.
+
 ## Public Sans glyph artwork
 
 AnimatedBrandText.vue contains outlines generated from the Public Sans 700 font already bundled with the application. The original font notice follows.
