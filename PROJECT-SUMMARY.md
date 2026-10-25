@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Sidebar wordmark no longer shrinks at the handoff
+
+HIRO: "di fase 2 kenapa teks seperti mengecil pada sidebar". Measured: the sidebar mark's box and ink bbox were identical in both phases (98x10, same left/right), but the painted mark carried 60 fewer ink pixels (412 -> 352) and rasterised one row lower (top 18 -> 19, bottom 27 -> 28), which at 14px reads as the wordmark shrinking and dropping.
+
+Cause: the scramble text renders at font-weight 600 while the paths were traced from a lighter outline, and at 14px that weight gap costs proportionally more than at 20px. Fixed from the transient side, not the mark: .brand-chitchat is now font-weight 500 (and the canvas glyph measurement that fits scramble characters into their slots measures at 500 too). At 500 the sidebar pair agrees exactly - 357 vs 352 ink, same rows, zero columns or rows whose ink presence changes - and the login pair closes to 675 vs 668 with an identical bbox and one changed column.
+
+No stroke, no drop-shadow and no fade were reintroduced; the settled mark itself is untouched. 69/69 tests and the production build (13 routes) pass.
+
 ### Sidebar wordmark now runs the login treatment
 
 HIRO: "samakan seluruh style teks dan animasi brand teks infra-btcap pada sidebar sama seperti yang ada di login page". BrandMenu now mounts AnimatedBrandText exactly like the login heading - intro (the 1.2s scramble), tracking 0.025, line-height 1.4 - and its span carries tracking-wide plus leading-[1.4] so the native text metrics match the props instead of fighting them. Colour is deliberately left as color: inherit with text-black dark:text-white: the login mark sits on a permanently dark card and forces #fff, which would erase the sidebar mark in light mode (that was an earlier bug), so the sidebar keeps following the theme.

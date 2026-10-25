@@ -60,8 +60,8 @@ function measureSlots() {
   const canvas = document.createElement('canvas')
   const context = canvas.getContext('2d')
   if (context) {
-    // Measure in the weight the slots actually render at (600), not the reserved 700 label.
-    context.font = `${style.fontStyle} 600 ${style.fontSize} ${style.fontFamily}`
+    // Measure in the weight the slots actually render at (500), not the reserved 700 label.
+    context.font = `${style.fontStyle} 500 ${style.fontSize} ${style.fontFamily}`
     const candidates = new Set<string>(scramblePool.join('').split(''))
     narrowFallbacks.forEach(character => candidates.add(character))
     charWidths = new Map(Array.from(candidates, character => [character, context.measureText(character).width]))
@@ -258,9 +258,12 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   align-items: baseline;
   white-space: nowrap;
   pointer-events: none;
-  /* 600 measures closest to the original wordmark strokes: 700 rendered 6% more ink
-     (0.191 vs 0.180) and 1px heavier stems, which read as "bold". */
-  font-weight: 600;
+  /* Measured against the painted paths that replace it: at 600 the scramble carried ~15% more ink
+     than the glyphs at 14px (412 vs 352) and rasterised one row taller, so the sidebar wordmark
+     visibly shrank and dropped a pixel when phase 2 took over. At 500 the two agree (357 vs 352,
+     same rows) and the login mark closes to ~2% as well. Do not raise this back to 600 or 700 -
+     the weight difference is what the handoff shows, not position. */
+  font-weight: 500;
 }
 /* Each character is pinned to its final letter slot, so the wordmark only changes glyphs. */
 .brand-chitchat-slot {
