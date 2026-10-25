@@ -287,9 +287,6 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
    mark thinning. A hairline stroke of the same colour evens the weight out - the swap is then a
    plain cut, with no fade and nothing to see at the boundary. */
 .brand-wordmark-base { fill: currentColor; opacity: 1; }
-/* Only where the scramble runs: match the painted glyph's weight to the 600-weight text it
-   replaces, so the instant swap has nothing to show. The plain mark is left exactly as it was. */
-.brand-login-intro .brand-wordmark-base { stroke: currentColor; stroke-width: 34; }
 .brand-wordmark-trace,
 .brand-wordmark-tip {
   fill: none;

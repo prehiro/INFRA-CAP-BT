@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Login wordmark: plain mark restored, cut left instant
+
+HIRO: "hilangkan saja strokenya bro bisa?" - the hairline stroke from the previous entry is gone, so .brand-wordmark-base is back to a pure fill with no stroke of any kind (computed stroke: none). The handoff is still a single-frame cut: no crossfade, no opacity animation, transition-duration 0s, the scramble layer unmounted with v-if and the painted layer switched by visibility.
+
+What that leaves, measured over two runs against the last scramble frame at 600 weight: the painted mark holds ~10% less ink (678-680 vs 759) and its cap top can sit 1px lower (206 vs 205), with 8 of 137 columns changing ink presence. The bounding box left/right/bottom still matches exactly. If the weight drop becomes visible to HIRO, the next lever is the SCRAMBLE text weight (font-weight 500 in .brand-chitchat, which only affects the 1.2s intro), not the resting mark - the mark is a design surface and must not be re-weighted to satisfy a transition.
+
+69/69 tests and the production build (13 routes) pass.
+
 ### Login wordmark: instant handoff, no fade
 
 HIRO rejected the crossfade that closed the previous entry: "antar fase animasi 1 & 2 saya tidak mau ada efek memudar. efek ini membuat teks seperti berkedip". A crossfade necessarily dims, because both layers sit at partial opacity, so the fade was removed entirely - the scramble layer unmounts on one frame again (v-if) and the SVG is switched with visibility, no transition and no opacity animation anywhere.
