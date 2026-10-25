@@ -7,7 +7,8 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
   <span class="pc-add-mark relative inline-grid shrink-0 place-items-center" :class="size === 'md' ? 'size-6' : 'size-5'" aria-hidden="true">
     <span class="pc-add-halo pointer-events-none absolute -inset-1 rounded-md" />
     <slot>
-      <UIcon :name="name" class="pc-add-glyph size-5" />
+      <ChannelAddIcon v-if="name === 'channel-add'" class="pc-add-glyph size-5" />
+      <UIcon v-else :name="name" class="pc-add-glyph size-5" />
     </slot>
   </span>
 </template>
@@ -32,6 +33,9 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
   0%, 100% { transform: scale(1); opacity: 0.4; }
   50% { transform: scale(1.25); opacity: 0.08; }
 }
+
+/* Hovering the plate plays the Sign In arrow motion on the fluent glyph. */
+.pc-add-mark:hover :deep(.channel-add-icon) { animation: record-add-forward 650ms ease-in-out; }
 
 @media (prefers-reduced-motion: reduce) {
   .pc-add-glyph,

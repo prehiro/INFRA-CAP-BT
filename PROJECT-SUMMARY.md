@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Add Record: Sign In motion, fluent glyph in the record modals
+
+HIRO: "kasi animasi icon seperti sign in button. terapkan icon ini pada form modal add record pc ledger, factory pc". The toolbar button's leading icon used to pop in place (record-add-pop, 500ms scale/translate). That keyframe is deleted and replaced with record-add-forward, the Sign In arrow's motion - out to the right, jump back 5px, fade in, 650ms ease-in-out - on hover and focus-visible. Because the fluent glyph is inlined in the #leading slot there is no [data-slot='leadingIcon'] wrapper any more, so the CSS now also targets .channel-add-icon directly; the old selector is kept for buttons that still pass an icon prop.
+
+RecordAddIcon learned name="channel-add", rendering ChannelAddIcon instead of a UIcon, and both record modals (PC Ledger and Factory PC) now ask for it in the create state while keeping the pencil for Edit. Hovering the modal plate plays the same forward motion; the plate's own sway and halo are unchanged.
+
+Verified: toolbar hover reports animation record-add-forward 0.65s with translateX mid-flight (2.6px); PC Ledger and Factory PC modals both show the 24x24 fluent path with no iconify span, and hovering the plate reports the same forward animation (4.5px). 69/69 tests and the production build (13 routes) pass.
+
 ### Add Record glyph: Fluent channel-add
 
 HIRO: "tombol add record pakai icon fluent:channel-add-24-regular". Verified first: the fluent icon overrides the collection's 20px default with its own 24x24 grid, and its plus badge reaches x=23, so the inline component uses viewBox 0 0 24 24 (rendering it in a 20 box would have clipped the badge). New ChannelAddIcon.vue carries the MIT path, paints with currentColor and sizes at 1em, matching the icon prop it replaces on all four registers that share the control - PC Ledger, Factory PC, CCTV Access and Handover - switched from icon="i-lucide-plus" to a #leading slot. The record-add-hover sheen is button-level (::after), so it is unaffected.

@@ -1594,7 +1594,7 @@ async function exportExcel() {
           <div class="relative z-10 flex max-h-[85vh] flex-col" :class="{ 'pc-new-record-content': !editingId }">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
-                <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'i-carbon-data-add'" />
+                <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'channel-add'" />
               </span>
               <div class="min-w-0">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New PC record' }}</h2>
