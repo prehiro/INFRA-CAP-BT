@@ -271,8 +271,9 @@ onBeforeUnmount(() => cleanup?.())
             class="sign-btn bg-primary hover:bg-primary/90 text-[#04130c] font-semibold"
           >
             <template #trailing>
-              <svg class="sign-arrow size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 12h15m-6-6 6 6-6 6" />
+              <!-- Sargam Icons "sign-in-line" (MIT); inlined so it is available offline. -->
+              <svg class="sign-arrow size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m14 15l3-3m0 0l-3-3m3 3H3m7-4V5.4A2.4 2.4 0 0 1 12.4 3h6.2A2.4 2.4 0 0 1 21 5.4v13.2a2.4 2.4 0 0 1-2.4 2.4h-6.2a2.4 2.4 0 0 1-2.4-2.4V16" />
               </svg>
             </template>
           </UButton>

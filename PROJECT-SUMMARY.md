@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Sign In button glyph: Sargam "sign-in-line"
+
+HIRO: "icon tombol sign in ganti dengan iconify si:sign-in-line". si is the Sargam Icons collection (MIT, Abhimanyu Rana) - verified against the Iconify API before use: 24x24, stroke 1.5, one path (door frame plus arrow). Inlined that path into the existing #trailing slot instead of adding @iconify-json/si: the build is offline-first, the slot already carried a hand-written SVG, and inlined geometry cannot fall through to an empty span the way an unbundled collection can. The svg keeps class sign-arrow so the hover/focus sign-forward 650ms animation still drives it, and stroke-width follows the icon (2 -> 1.5).
+
+Verified: viewBox 0 0 24 24, one path, computed stroke 1.5px, rendered 16x16 at the button's size-4, and a real pointer hover starts sign-forward (0.65s, transform mid-flight). 69/69 tests and the production build (13 routes) pass. Attribution added to THIRD-PARTY-NOTICES.md.
+
 ### Theme Studio published
 
 HIRO: "push github". Published as 663594e, 431 files: ThemeStudioPanel.vue with useThemeStudio.ts and utils/themeStudio.ts; the vendored Nuxt UI reference catalog (app/assets/theme/reference.json plus utils/themeReference.ts); the offline font catalog (public/fonts/studio: 386 WOFF2 faces, fonts.css, manifest with SHA-256, 26 licence texts); the version-2 theme cookie migration; palette CSS injected in the document head; the pinned @iconify-json collections; scripts/vendor-theme-fonts.py; WorkbookDropzone.vue with its data-import refactor; the contained-tip RegisterLoading refinement; and both new test files. THIRD-PARTY-NOTICES.md carries the Nuxt UI MIT adaptation and the per-family OFL notices.

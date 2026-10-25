@@ -139,3 +139,7 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+
+## Sign In glyph
+
+The Sign In button glyph is Sargam Icons "sign-in-line" (MIT, Abhimanyu Rana, github.com/planetabhi/sargam-icons), inlined as SVG so the offline build carries it without an icon dependency.
