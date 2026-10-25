@@ -239,6 +239,9 @@
     border-radius: inherit;
     animation: cancel-ring 600ms ease-out both;
   }
+  .cancel-hover:not(:disabled):hover {
+    color: var(--ui-error);
+  }
 }
 .cancel-hover:not(:disabled):focus-visible [data-slot='leadingIcon'] {
   animation: cancel-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
