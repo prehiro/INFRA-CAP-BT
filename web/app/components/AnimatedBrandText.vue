@@ -8,8 +8,9 @@ const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number,
   tracking: 0,
   lineHeight: 1.25,
   intro: false,
-  /* The weight that matches the painted glyphs depends on the rendered size: at 14px (sidebar)
-     500 sits within 1% of the paths, at 20px (login) 600 does. Pass the one that fits. */
+  /* Weight of the wordmark itself: the visible text is the mark now, so this is a design value,
+     not a per-phase tuning knob. 500 matches the weight the painted paths used to carry. */
+
   scrambleWeight: 500
 })
 // Adapted from the user-supplied faxriddin20 quick-panda-13 chitchat sequence.
@@ -21,7 +22,7 @@ const scramblePool = ['#', '.', '^', '-', '!', '$', '{', '+', '}', '?', '%', '='
 const steps = 20
 const stepMs = 60
 const entering = ref(props.intro)
-const introText = ref('#' + label.slice(1))
+const introText = ref(props.intro ? '#' + label.slice(1) : label)
 // Fixed character slots: every scramble character is drawn inside the advance width of its
 // final letter, so the wordmark never slides left/right while the glyphs change.
 const sizeEl = ref<HTMLElement | null>(null)
@@ -87,6 +88,7 @@ function fitText(text: string, offset: number) {
 }
 function stopIntro() {
   clearTimeout(introTimer)
+  introText.value = label
   entering.value = false
 }
 function beginCycle() {
@@ -102,6 +104,7 @@ function beginCycle() {
   function tick() {
     const index = Math.floor((performance.now() - start) / stepMs)
     if (index >= steps) {
+      introText.value = label
       entering.value = false
       // Run the original contour cycle (including its quiet interval) before scrambling again.
       introTimer = setTimeout(beginCycle, 10000)
@@ -211,7 +214,7 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
     <span class="sr-only">INFRA-BTCAP</span>
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
     <span ref="sizeEl" class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
-    <span v-if="entering" class="brand-chitchat" aria-hidden="true"><span
+    <span class="brand-chitchat" aria-hidden="true"><span
         v-for="(character, index) in introChars" :key="index" class="brand-chitchat-slot"
         :style="slotStyle(index)">{{ character }}</span></span>
     <svg class="brand-wordmark-svg" :viewBox="viewBox" preserveAspectRatio="none" aria-hidden="true">
@@ -239,7 +242,6 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
                 :stroke-width="units * 0.06" />
           <path class="brand-wordmark-tip" :d="glyph.d" pathLength="360"
                 :stroke-width="units * 0.075" :filter="`url(#${tipGlowId})`" />
-          <path class="brand-wordmark-base" :d="glyph.d" />
         </g>
       </g>
     </svg>
@@ -261,10 +263,16 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 .brand-chitchat {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: baseline;
+  /* Normal flow, not a flex line: a flex baseline is computed from the items, while the reserve
+     text and the painted paths sit on the container's own line box. Sharing that line box is what
+     keeps the scramble and the settled mark on the same baseline at every zoom level - the flex
+     version landed a pixel higher on some display scalings. letter-spacing is 0 because each slot
+     width already includes the tracking it was measured with. */
+  display: block;
   white-space: nowrap;
+  letter-spacing: 0;
   pointer-events: none;
+
   /* Measured against the painted paths that replace it: at 600 the scramble carried ~15% more ink
      than the glyphs at 14px (412 vs 352) and rasterised one row taller, so the sidebar wordmark
      visibly shrank and dropped a pixel when phase 2 took over. At 500 the two agree (357 vs 352,
@@ -301,7 +309,6 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
    The paths alone carried ~12% less ink than the 600-weight text, so the handoff read as the
    mark thinning. A hairline stroke of the same colour evens the weight out - the swap is then a
    plain cut, with no fade and nothing to see at the boundary. */
-.brand-wordmark-base { fill: currentColor; opacity: 1; }
 .brand-wordmark-trace,
 .brand-wordmark-tip {
   fill: none;
@@ -338,7 +345,7 @@ feFlood { flood-color: var(--ui-primary); }
   28%, 100% { stroke-dashoffset: -84; opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce), print {
-  .brand-chitchat { display: none; }
+  
   .brand-entering .brand-wordmark-svg { visibility: visible; }
   .brand-wordmark-trace,
   .brand-wordmark-tip { animation: none !important; display: none; }

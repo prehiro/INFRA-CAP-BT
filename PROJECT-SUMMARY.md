@@ -3,6 +3,16 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Wordmark rebuilt as ONE text layer - the handoff no longer exists
+
+HIRO reported the sidebar mark still dropping a pixel after the first animation, twice, and it would not reproduce here: measured identical at 100%, 125% and 150% device scale (same bbox, same rows, zero changed columns) on the two-layer version. That pointed at rasterisation rather than geometry, and forcing greyscale antialiasing DID reproduce it here (text 18-27 vs paths 19-28), which means the offset depends on the display's font smoothing - Windows ClearType can put text stems a pixel off the vector geometry even though both layers measure the same in a greyscale-AA browser.
+
+So the difference was designed out instead of tuned: the wordmark is now a single text layer. The scramble element is never unmounted (v-if removed), it holds the real label whenever the intro is idle, the painted fill path and its CSS were deleted, and the SVG now carries only the accent contour. Phase 1 and phase 2 are the same element, so nothing can shift between them at any zoom or smoothing mode. introText resets to the label in stopIntro and at the end of the tick loop; reduced motion no longer hides the layer (it is the mark now) and still suppresses the sweep.
+
+Cost, measured: the resting mark is the 500-weight text instead of the paths - ink 376 vs 352 at 14px and 1px higher (rows 18-27 vs 19-28), left/right/width unchanged; the accent contour still traces the letters, its bottom edge now sitting 1px below the final row. Login keeps the same weight (666 vs 668 ink at 20px, i.e. unchanged), and the scramble-weight prop survives as the wordmark's own weight rather than a per-phase knob.
+
+Verified: reduced motion shows the mark with no sweep, login and sidebar both render 'INFRA-BTCAP' as one layer with the accent contour running after it settles, 69/69 tests and the production build (13 routes) pass.
+
 ### Scramble weight set per size so both phases carry the same stroke
 
 HIRO confirmed the ambiguity himself - "stroke" meant letter thickness, phase 1 versus phase 2. The single weight 500 that fixed the sidebar was slightly light for the 20px login mark, so the weight is now a prop (scrambleWeight, default 500) exposed as a --scramble-weight custom property on the root; BrandMenu keeps 500 for its 14px mark and login.vue asks for 600 at 20px, which is also the weight HIRO had approved for that mark earlier. The canvas measurement that fits scramble characters into their slots reads the same prop.
