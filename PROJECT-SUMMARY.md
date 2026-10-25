@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Theme Studio published
+
+HIRO: "push github". Published as 663594e, 431 files: ThemeStudioPanel.vue with useThemeStudio.ts and utils/themeStudio.ts; the vendored Nuxt UI reference catalog (app/assets/theme/reference.json plus utils/themeReference.ts); the offline font catalog (public/fonts/studio: 386 WOFF2 faces, fonts.css, manifest with SHA-256, 26 licence texts); the version-2 theme cookie migration; palette CSS injected in the document head; the pinned @iconify-json collections; scripts/vendor-theme-fonts.py; WorkbookDropzone.vue with its data-import refactor; the contained-tip RegisterLoading refinement; and both new test files. THIRD-PARTY-NOTICES.md carries the Nuxt UI MIT adaptation and the per-family OFL notices.
+
+Verified before pushing and unchanged since: 69/69 frontend tests, production build with all 13 routes prerendered, and the browser pass already recorded (17 preset options, 28 font options all loading offline, 20 accents, 13 neutrals, Cobalt surviving a reload, Restore Original returning #00DC82 + Public Sans + dark and removing the cookie when none existed). Nothing outside this set was included - the only other pending work at the time was the wordmark fix, already committed as f6f212c.
+
 ### Wordmark rebuilt as ONE text layer - the handoff no longer exists
 
 HIRO reported the sidebar mark still dropping a pixel after the first animation, twice, and it would not reproduce here: measured identical at 100%, 125% and 150% device scale (same bbox, same rows, zero changed columns) on the two-layer version. That pointed at rasterisation rather than geometry, and forcing greyscale antialiasing DID reproduce it here (text 18-27 vs paths 19-28), which means the offset depends on the display's font smoothing - Windows ClearType can put text stems a pixel off the vector geometry even though both layers measure the same in a greyscale-AA browser.
@@ -85,7 +91,7 @@ Same working tree also carries two smaller previews: WorkbookDropzone.vue extrac
 
 Verification: production build passed and prerendered all 13 routes; 69/69 frontend tests passed, including 11 new reference-preset round-trips (apply, reload, exact original rollback) and the offline Carbon icon check. Browser: the panel lists 17 preset options (12 Nuxt UI + 4 local + placeholder), 28 font options (24 vendored + 3 system + placeholder), 20 accents and 13 neutrals; every font option applies and loads with document.fonts.check true and no external font request (only the local fonts.css); Cobalt changed --ui-primary to oklch(57.8% 0.228 260.025), the palette var and the body font to Studio Roboto, survived a full reload with the cookie holding primary cobalt / neutral cobalt-gray / version 2, then Restore Original returned #00DC82 + Public Sans + dark and REMOVED the cookie because none existed before the first change, leaving the preview and original-snapshot storage empty. Mono and Parchment spot-checked (mono palette + Geist, warm clay accent + DM Sans). /data-import still renders its dropzone after the extraction.
 
-Source remains LOCAL and unpublished pending HIRO visual approval; this checkpoint is docs-only. No dependency changes beyond the pinned dev-only icon collections, no backend, data, migration or deployment changes.
+PUBLISHED on HIRO's "push github" as 663594e (431 files: presets, fonts, panel, dropzone, tests, licenses). No dependency changes beyond the pinned dev-only icon collections, no backend, data, migration or deployment changes.
 
 
 
