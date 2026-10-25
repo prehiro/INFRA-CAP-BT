@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Save changes: codicon:save di semua form edit (2026-10-25)
+
+HIRO meminta seluruh tombol Save changes memakai iconify `codicon:save` dengan animasi yang selaras. Lima target: edit PC Ledger, Factory PC, CCTV Access, Handover, dan Users. `SaveIcon.vue` menyematkan path Codicon 16×16 langsung agar tetap tampil offline; atribusi CC BY 4.0 tercatat di THIRD-PARTY-NOTICES.md. Semua tombol edit memakai kelas `record-save-hover`; CSS mencakup SVG baru agar motion `record-save-confirm` 480ms dan sheen `record-add-sheen` 650ms bekerja sama pada hover/focus. Mode create tetap memakai ikon Add Record dan check sebelumnya; check logbook disematkan untuk menghindari UIcon kosong pada build offline. Reduced-motion menonaktifkan animasi. QA browser read-only membuktikan ikon dan kedua animasi pada kelima form edit serta check pada kedua logbook create; tidak ada record yang disimpan. 69/69 tes frontend dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/save-icon-20261025`.
+
 ### Cancel tombol PC Ledger form add: merah + basil:cancel-outline (2026-10-25)
 
 HIRO: "pada form add pc ledger record, saya mau tombol cancel bewarna merah dengan iconify basil:cancel-outline". Tombol Cancel di footer form add (baris 1697) sebelumnya `color="neutral" variant="ghost"` tanpa icon. Diubah jadi `color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel"` — merah dengan outline-cross icon.

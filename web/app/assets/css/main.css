@@ -206,7 +206,7 @@
   :is(.record-save-hover, .record-delete-hover):not(:disabled):not([aria-disabled='true']):hover::after {
     animation: record-add-sheen 650ms ease-out both;
   }
-  .record-save-hover:not(:disabled):not([aria-disabled='true']):hover [data-slot='leadingIcon'] { animation: record-save-confirm 480ms ease-out; }
+  .record-save-hover:not(:disabled):not([aria-disabled='true']):hover :is([data-slot='leadingIcon'], .save-icon) { animation: record-save-confirm 480ms ease-out; }
   .record-delete-hover:not(:disabled):not([aria-disabled='true']):hover [data-slot='leadingIcon'] { animation: record-delete-nudge 480ms ease-out; }
 }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):not([aria-disabled='true']):focus-visible {
@@ -214,7 +214,7 @@
   box-shadow: 0 4px 12px color-mix(in srgb, var(--record-action-color) 25%, transparent);
 }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):not([aria-disabled='true']):focus-visible::after { animation: record-add-sheen 650ms ease-out both; }
-.record-save-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-save-confirm 480ms ease-out; }
+.record-save-hover:not(:disabled):not([aria-disabled='true']):focus-visible :is([data-slot='leadingIcon'], .save-icon) { animation: record-save-confirm 480ms ease-out; }
 .record-delete-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-delete-nudge 480ms ease-out; }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):active { transform: translateY(0); box-shadow: none; }
 
@@ -273,7 +273,7 @@
   }
   :is(.record-save-hover, .record-delete-hover) { transition: none; transform: none !important; box-shadow: none !important; }
   :is(.record-save-hover, .record-delete-hover)::after { display: none; animation: none !important; }
-  :is(.record-save-hover, .record-delete-hover) [data-slot='leadingIcon'] { animation: none !important; }
+  :is(.record-save-hover, .record-delete-hover) :is([data-slot='leadingIcon'], .save-icon) { animation: none !important; }
 }
 
 @theme static {

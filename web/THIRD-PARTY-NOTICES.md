@@ -147,3 +147,5 @@ The Sign In button glyph is Sargam Icons "sign-in-line" (MIT, Abhimanyu Rana, gi
 ## Add Record glyph
 
 ChannelAddIcon.vue inlines the Fluent UI System Icons glyph "channel-add-24-regular" (MIT, Microsoft, github.com/microsoft/fluentui-system-icons). It is embedded as SVG so the offline build carries it without an icon dependency.
+
+SaveIcon.vue embeds the Codicon "save" glyph (CC BY 4.0, Microsoft, github.com/microsoft/vscode-codicons), exposed by Iconify as codicon:save. It is embedded as SVG so the offline build carries it without an icon dependency.
