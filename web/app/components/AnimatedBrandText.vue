@@ -4,10 +4,13 @@ import { computed, useId, ref, onMounted, onBeforeUnmount } from 'vue'
 // Thin red contour motion; the solid white glyph paints last.
 // Local Public Sans 700 glyph outlines retain the app's existing typeface.
 // Attribution/licenses: web/THIRD-PARTY-NOTICES.md. No runtime font conversion or network.
-const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number, intro?: boolean }>(), {
+const props = withDefaults(defineProps<{ tracking?: number, lineHeight?: number, intro?: boolean, scrambleWeight?: number }>(), {
   tracking: 0,
   lineHeight: 1.25,
-  intro: false
+  intro: false,
+  /* The weight that matches the painted glyphs depends on the rendered size: at 14px (sidebar)
+     500 sits within 1% of the paths, at 20px (login) 600 does. Pass the one that fits. */
+  scrambleWeight: 500
 })
 // Adapted from the user-supplied faxriddin20 quick-panda-13 chitchat sequence.
 // Mount-only, not hover/focus; one accessible static label and a fixed native text footprint.
@@ -61,7 +64,7 @@ function measureSlots() {
   const context = canvas.getContext('2d')
   if (context) {
     // Measure in the weight the slots actually render at (500), not the reserved 700 label.
-    context.font = `${style.fontStyle} 500 ${style.fontSize} ${style.fontFamily}`
+    context.font = `${style.fontStyle} ${props.scrambleWeight} ${style.fontSize} ${style.fontFamily}`
     const candidates = new Set<string>(scramblePool.join('').split(''))
     narrowFallbacks.forEach(character => candidates.add(character))
     charWidths = new Map(Array.from(candidates, character => [character, context.measureText(character).width]))
@@ -194,13 +197,17 @@ const glyphs = [
 ]
 const viewHeight = computed(() => units * props.lineHeight)
 const viewWidth = computed(() => 13704 + glyphs.length * props.tracking * units)
+const rootStyle = computed(() => ({
+  '--scramble-weight': String(props.scrambleWeight),
+  ...(rootWidth.value ? { width: rootWidth.value } : {})
+}))
 const baseline = computed(() => (viewHeight.value + 1446) / 2)
 const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 </script>
 
 <template>
   <span ref="rootEl" class="animated-brand-text" :class="{ 'brand-entering': entering, 'brand-login-intro': intro }"
-        :style="rootWidth ? { width: rootWidth } : undefined">
+        :style="rootStyle">
     <span class="sr-only">INFRA-BTCAP</span>
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
     <span ref="sizeEl" class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
@@ -263,7 +270,7 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
      visibly shrank and dropped a pixel when phase 2 took over. At 500 the two agree (357 vs 352,
      same rows) and the login mark closes to ~2% as well. Do not raise this back to 600 or 700 -
      the weight difference is what the handoff shows, not position. */
-  font-weight: 500;
+  font-weight: var(--scramble-weight, 500);
 }
 /* Each character is pinned to its final letter slot, so the wordmark only changes glyphs. */
 .brand-chitchat-slot {

@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Scramble weight set per size so both phases carry the same stroke
+
+HIRO confirmed the ambiguity himself - "stroke" meant letter thickness, phase 1 versus phase 2. The single weight 500 that fixed the sidebar was slightly light for the 20px login mark, so the weight is now a prop (scrambleWeight, default 500) exposed as a --scramble-weight custom property on the root; BrandMenu keeps 500 for its 14px mark and login.vue asks for 600 at 20px, which is also the weight HIRO had approved for that mark earlier. The canvas measurement that fits scramble characters into their slots reads the same prop.
+
+Measured after the change, comparing the last scramble frame with the settled mark: sidebar (500) ink 357 vs 352 strict, 521 vs 560 soft, identical rows and zero changed columns; login (600) 759 vs 668 strict but 983 vs 993 soft - within 1% of total coverage - 9 changed columns and one row. The remaining strict-threshold gap is rasterisation: text lands crisp full-white pixels, the painted paths spread the same coverage over more antialiased edge pixels. A structural attempt to make the settled mark native text (so both phases would be one renderer) was measured and reverted: it moved the mark 2px and interacted with the accent sweep, so it was worse than the current pair.
+
+69/69 tests and the production build (13 routes) pass.
+
 ### Sidebar wordmark no longer shrinks at the handoff
 
 HIRO: "di fase 2 kenapa teks seperti mengecil pada sidebar". Measured: the sidebar mark's box and ink bbox were identical in both phases (98x10, same left/right), but the painted mark carried 60 fewer ink pixels (412 -> 352) and rasterised one row lower (top 18 -> 19, bottom 27 -> 28), which at 14px reads as the wordmark shrinking and dropping.
