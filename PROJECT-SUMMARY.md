@@ -3,6 +3,16 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Cancel tombol PC Ledger form add: merah + basil:cancel-outline (2026-10-25)
+
+HIRO: "pada form add pc ledger record, saya mau tombol cancel bewarna merah dengan iconify basil:cancel-outline". Tombol Cancel di footer form add (baris 1697) sebelumnya `color="neutral" variant="ghost"` tanpa icon. Diubah jadi `color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel"` — merah dengan outline-cross icon.
+
+Basil collection (1.2.4) diinstall ke devDependencies, `basil:cancel-outline` ditambahkan ke nuxt.config clientBundle icons array supaya di-build-time dibundled (app ini offline-first, tanpa API fallback). Icon terverifikasi ada di node_modules/@iconify-json/basil/icons.json (496 icons, path cancel-outline: X-mark 24x24 viewBox, stroke currentColor).
+
+Hanya tombol form-add yang diubah; tombol Cancel di delete confirm (baris 1747) dan halaman lain dibiarkan.
+
+Verified: build clean (13 routes prerendered, "Build complete"), icon muncul di .nuxt/nuxt-icon-client-bundle.mjs dan 3 file JS output, 69/69 tests pass.
+
 ### Glass sheen on the modal's Add record button
 
 HIRO: "efek shine glass nya mana" - the previous commit deliberately gave the modal submit button the glyph motion only, without the toolbar's sheen. That was the wrong call: .channel-add-hover now shares the same glass treatment as .record-add-hover through grouped selectors (position/overflow/isolation, the 110deg white-gradient ::after parked at translateX(-140%), the hover record-add-sheen 650ms sweep, and the reduced-motion/print hide). The toolbar's translateY(-2px) lift and glow stay exclusive to the toolbar buttons.
