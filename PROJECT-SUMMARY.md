@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Sidebar wordmark now runs the login treatment
+
+HIRO: "samakan seluruh style teks dan animasi brand teks infra-btcap pada sidebar sama seperti yang ada di login page". BrandMenu now mounts AnimatedBrandText exactly like the login heading - intro (the 1.2s scramble), tracking 0.025, line-height 1.4 - and its span carries tracking-wide plus leading-[1.4] so the native text metrics match the props instead of fighting them. Colour is deliberately left as color: inherit with text-black dark:text-white: the login mark sits on a permanently dark card and forces #fff, which would erase the sidebar mark in light mode (that was an earlier bug), so the sidebar keeps following the theme.
+
+Measured on the sidebar mark after the change: font 14px, line-height 19.6px (1.4), letter-spacing 0.35px (0.025em), weight 700, cap-height ratio 10.12/14 = 0.723 - the same ratio the login mark shows at 20px (14.46/20 = 0.723), box 99.9x19.6, sweep stroke rgb(0,220,130) matching the accent, svg filter none so it also lost the rim. The scramble was observed running on load (brand-entering + chitchat present, settling after ~1.2s), light mode renders the mark black (rgb(0,0,0)) with the accent sweep, dark renders white, and the collapsed 64px rail still hides the wordmark with no horizontal overflow.
+
+69/69 tests and the production build (13 routes) pass.
+
 ### Wordmark sweep follows the accent, on the login mark and the sidebar
 
 HIRO: "warna merahnya bisa buat mengikuti theme accent? aplikasikan juga ke teks infra-btcap sidebar". The contour stroke, the leading tip and that tip's glow were a fixed #ef4444. They now read the runtime accent: both strokes use stroke: var(--ui-primary), and the SVG filter's emitter lost its flood-color attribute and gets it from CSS instead (feFlood { flood-color: var(--ui-primary) } - flood-color is a presentation property). Because both marks mount the same component and the colour is not scoped to the login variant, the compact sidebar wordmark re-tints too.

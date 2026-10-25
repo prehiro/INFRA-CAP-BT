@@ -29,7 +29,7 @@ const shift = computed(() => (props.collapsed ? '-ms-1' : ''))
     </span>
 
     <span v-if="!collapsed" class="min-w-0 flex-1">
-      <span class="block truncate text-sm font-bold leading-tight text-black dark:text-white"><AnimatedBrandText /></span>
+      <span class="block truncate text-sm font-bold tracking-wide leading-[1.4] text-black dark:text-white"><AnimatedBrandText intro :tracking="0.025" :line-height="1.4" style="color: inherit" /></span>
       <span class="block truncate text-xs text-dimmed">Information System Dept</span>
     </span>
   </div>
