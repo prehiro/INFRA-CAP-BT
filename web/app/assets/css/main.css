@@ -9,14 +9,17 @@
 @import "tailwindcss" theme(static);
 @import "@nuxt/ui";
 
-/* Opt-in toolbar actions only: never animate Save, Excel, or other buttons. */
-.record-add-hover {
+/* Opt-in toolbar actions only: never animate Save, Excel, or other buttons.
+   The record modal's own submit button opts into the same glass sheen, without the lift. */
+.record-add-hover,
+.channel-add-hover {
   position: relative;
   overflow: hidden;
   isolation: isolate;
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
-.record-add-hover::after {
+.record-add-hover::after,
+.channel-add-hover::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -39,6 +42,7 @@
     box-shadow: 0 4px 12px color-mix(in srgb, var(--ui-primary) 25%, transparent);
   }
   .record-add-hover:not(:disabled):hover::after { animation: record-add-sheen 650ms ease-out both; }
+  .channel-add-hover:not(:disabled):hover::after { animation: record-add-sheen 650ms ease-out both; }
   .record-add-hover:not(:disabled):hover [data-slot='leadingIcon'],
   /* The inlined glyph lives directly in the button (no data-slot wrapper), so it needs its own hook. */
   .record-add-hover:not(:disabled):hover .channel-add-icon { animation: record-add-forward 650ms ease-in-out; }
@@ -53,12 +57,14 @@
 @media (prefers-reduced-motion: reduce) {
   .record-add-hover { transition: none; }
   .record-add-hover:not(:disabled):hover { transform: none; }
-  .record-add-hover::after { display: none; }
+  .record-add-hover::after,
+  .channel-add-hover::after { display: none; }
   .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
 }
 @media print {
   .record-add-hover { transform: none !important; box-shadow: none !important; }
-  .record-add-hover::after { display: none; }
+  .record-add-hover::after,
+  .channel-add-hover::after { display: none; }
   .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
 }
 

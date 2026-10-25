@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Glass sheen on the modal's Add record button
+
+HIRO: "efek shine glass nya mana" - the previous commit deliberately gave the modal submit button the glyph motion only, without the toolbar's sheen. That was the wrong call: .channel-add-hover now shares the same glass treatment as .record-add-hover through grouped selectors (position/overflow/isolation, the 110deg white-gradient ::after parked at translateX(-140%), the hover record-add-sheen 650ms sweep, and the reduced-motion/print hide). The toolbar's translateY(-2px) lift and glow stay exclusive to the toolbar buttons.
+
+Verified on the PC Ledger modal: the submit button carries channel-add-hover with overflow hidden and the gradient ::after; on hover the pseudo reports record-add-sheen 0.65s mid-sweep (translateX -24.8px) while the glyph runs record-add-forward and the button itself does not lift. 69/69 tests and the production build (13 routes) pass.
+
 ### Fluent glyph on the record modal's own Add record button
 
 HIRO repeated "terapkan icon ini pada form modal add record pc ledger, factory pc" after the header plate was already switched in acd2bb5, so the remaining target was the modal's submit button: the footer <UButton> that reads "Add record" now carries ChannelAddIcon in its leading slot, shown only while creating (v-if="!editingId") so Edit keeps a clean "Save changes". It gets the same record-add-forward motion through a new .channel-add-hover hook - the glyph alone, without the toolbar button's sheen and lift.
