@@ -3,6 +3,16 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Login wordmark: crossfaded handoff instead of a jump — published
+
+HIRO: "ke animasi infra-btcap pada login page kenapa teks seperti bergeser ketika animasi pertama selesai?". Cause, measured: the scramble phase is NATIVE TEXT and the settled phase is the PAINTED SVG - two renderings of the same wordmark. Compared pixel-for-pixel against the native text at 20px, the SVG's ink was 2px narrower (137 vs 139), its cap top 1px lower (y 206 vs 205) and about 12% lighter (682 vs 872 white pixels at 700 weight, 669 vs 759 at 600), so the single-frame swap read as the wordmark shrinking and sinking by a pixel.
+
+First attempt was wrong and was reverted: deriving the SVG viewBox from the measured slots, on the assumption that the authored advances were 1.65% too wide, made the mismatch WORSE - the last-frame-to-settled delta went from -1px to +2px and the number of columns whose ink changed went from 8 to 25. The original viewBox formula already lands within a pixel of the text it replaces.
+
+Final fix: the scrambled text layer never unmounts; both layers crossfade over 140ms (chitchat opacity 1 to 0, SVG 0 to 1) so the residual rendering difference dissolves instead of snapping. Reduced motion still renders the mark immediately with no fade, nothing moves in layout, and the pinned width is untouched.
+
+Verified: opacity ramp sampled every 20ms (chitchat 1, 0.88, 0.64, 0.52, 0.40, 0.29, 0.05, 0 / SVG 0, 0.12, 0.36, 0.48, 0.60, 0.71, 0.95, 1); reduced-motion emulation shows the chitchat display:none with SVG opacity 1; 69/69 frontend tests and the production build (13 routes) pass.
+
 ### Theme Studio: full Nuxt UI reference catalog, vendored offline — LOCAL preview
 
 HIRO asked for the complete Nuxt UI theme-selector categories, not just the four local presets. Implemented: 12 upstream preset documents vendored verbatim (app/assets/theme/reference.json, 34 KB: Mono, Cobalt, Sky, Mint, Iris, Crimson, Coral, Sunset, Carbon, Bubblegum, Parchment, Default) with their palettes, token shades, font weights, sizes and generic control-icon mappings (app/utils/themeReference.ts); 24 curated font families vendored as local Latin/Latin-ext WOFF2 (public/fonts/studio, 7.5 MB, 414 files) with fonts.css, a manifest recording exact package versions, source archives, faces and SHA-256 checksums, and 26 license texts; three extra accents (black, cobalt, clay) and four extra neutrals (cobalt-gray, carbon, saturated-mauve, parchment) added to the theme whitelist; custom palette ramps injected into the document head as CSS variables; the theme cookie now carries version 2 so the legacy-default rewrite no longer clobbers a deliberate choice.
