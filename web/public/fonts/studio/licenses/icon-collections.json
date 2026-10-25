@@ -1,0 +1,207 @@
+{
+  "bi": {
+    "prefix": "bi",
+    "name": "Bootstrap Icons",
+    "total": 2078,
+    "version": "1.13.1",
+    "author": {
+      "name": "The Bootstrap Authors",
+      "url": "https://github.com/twbs/icons"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/twbs/icons/blob/main/LICENSE.md"
+    },
+    "samples": [
+      "graph-up",
+      "card-image",
+      "code-slash",
+      "egg-fill",
+      "brilliance",
+      "toggle-on"
+    ],
+    "height": 16,
+    "category": "UI 16px / 32px",
+    "tags": [
+      "Precise Shapes"
+    ],
+    "palette": false
+  },
+  "heroicons": {
+    "prefix": "heroicons",
+    "name": "HeroIcons",
+    "total": 1288,
+    "version": "2.2.0",
+    "author": {
+      "name": "Refactoring UI Inc",
+      "url": "https://github.com/tailwindlabs/heroicons"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/tailwindlabs/heroicons/blob/master/LICENSE"
+    },
+    "samples": [
+      "camera",
+      "building-library",
+      "receipt-refund",
+      "bookmark",
+      "cloud",
+      "folder"
+    ],
+    "category": "UI Other / Mixed Grid",
+    "tags": [
+      "Has Padding"
+    ],
+    "palette": false
+  },
+  "iconoir": {
+    "prefix": "iconoir",
+    "name": "Iconoir",
+    "total": 1671,
+    "version": "7.12.1",
+    "author": {
+      "name": "Luca Burgio",
+      "url": "https://github.com/iconoir-icons/iconoir"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/iconoir-icons/iconoir/blob/main/LICENSE"
+    },
+    "samples": [
+      "chat-bubble-check",
+      "edit",
+      "activity",
+      "check",
+      "droplet",
+      "hashtag"
+    ],
+    "height": 24,
+    "category": "UI 24px",
+    "tags": [
+      "Has Padding",
+      "Uses Stroke"
+    ],
+    "palette": false
+  },
+  "material-symbols": {
+    "prefix": "material-symbols",
+    "name": "Material Symbols",
+    "total": 15744,
+    "author": {
+      "name": "Google",
+      "url": "https://github.com/google/material-design-icons"
+    },
+    "license": {
+      "title": "Apache 2.0",
+      "spdx": "Apache-2.0",
+      "url": "https://github.com/google/material-design-icons/blob/master/LICENSE"
+    },
+    "samples": [
+      "downloading",
+      "privacy-tip",
+      "filter-drama-outline",
+      "assignment-ind",
+      "monitoring",
+      "desktop-access-disabled-outline-sharp"
+    ],
+    "height": 24,
+    "category": "Material",
+    "tags": [
+      "Has Padding"
+    ],
+    "palette": false
+  },
+  "ph": {
+    "prefix": "ph",
+    "name": "Phosphor",
+    "total": 9072,
+    "version": "2.1.1",
+    "author": {
+      "name": "Phosphor Icons",
+      "url": "https://github.com/phosphor-icons/core"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/phosphor-icons/core/blob/main/LICENSE"
+    },
+    "samples": [
+      "folder-open-duotone",
+      "check-square-offset-thin",
+      "pencil-line-fill",
+      "check-thin",
+      "browser-duotone",
+      "thermometer-simple-fill"
+    ],
+    "height": 24,
+    "category": "UI Other / Mixed Grid",
+    "tags": [
+      "Has Padding"
+    ],
+    "palette": false
+  },
+  "ri": {
+    "prefix": "ri",
+    "name": "Remix Icon",
+    "total": 3188,
+    "version": "4.8.0",
+    "author": {
+      "name": "Remix Design",
+      "url": "https://github.com/cyberalien/RemixIcon"
+    },
+    "license": {
+      "title": "Apache 2.0",
+      "spdx": "Apache-2.0",
+      "url": "https://github.com/cyberalien/RemixIcon/blob/master/License"
+    },
+    "samples": [
+      "lock-2-line",
+      "mark-pen-fill",
+      "moon-line",
+      "filter-2-fill",
+      "text",
+      "add-line"
+    ],
+    "height": 24,
+    "category": "UI 24px",
+    "tags": [
+      "Precise Shapes",
+      "Has Padding"
+    ],
+    "palette": false
+  },
+  "tabler": {
+    "prefix": "tabler",
+    "name": "Tabler Icons",
+    "total": 6238,
+    "version": "3.49.0",
+    "author": {
+      "name": "Pawe\u0142 Kuna",
+      "url": "https://github.com/tabler/tabler-icons"
+    },
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/tabler/tabler-icons/blob/master/LICENSE"
+    },
+    "samples": [
+      "alien",
+      "device-desktop",
+      "photo",
+      "chevron-right",
+      "check",
+      "square-root"
+    ],
+    "height": 24,
+    "category": "UI 24px",
+    "tags": [
+      "Precise Shapes",
+      "Has Padding",
+      "Uses Stroke"
+    ],
+    "palette": false
+  }
+}

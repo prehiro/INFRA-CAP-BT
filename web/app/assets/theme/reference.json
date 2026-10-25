@@ -1,0 +1,1139 @@
+{
+  "source": "https://github.com/nuxt/ui/blob/v4/docs/app/utils/theme/engine/presets.ts",
+  "presets": [
+    {
+      "id": "default",
+      "name": "Default",
+      "description": "The stock theme, everything inherited.",
+      "doc": {
+        "version": 1
+      }
+    },
+    {
+      "id": "mono",
+      "name": "Mono",
+      "description": "Black on a pure gray neutral, generous radius, quiet surfaces.",
+      "doc": {
+        "version": 1,
+        "blackAsPrimary": true,
+        "colors": {
+          "neutral": "neutral"
+        },
+        "radius": 0.5,
+        "font": {
+          "sans": "Geist",
+          "mono": "Geist Mono"
+        },
+        "style": {
+          "defaults": {
+            "variants": {
+              "inputs": "subtle"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "dark": 950
+            },
+            "--ui-bg-muted": {
+              "light": 100,
+              "dark": 900
+            },
+            "--ui-bg-elevated": {
+              "light": 100,
+              "dark": 900
+            },
+            "--ui-bg-accented": {
+              "light": 200,
+              "dark": 800
+            },
+            "--ui-text": {
+              "light": 900,
+              "dark": 100
+            },
+            "--ui-text-highlighted": {
+              "light": 950,
+              "dark": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "cobalt",
+      "name": "Cobalt",
+      "description": "Utility blue on cool grays, tight corners, flat bordered surfaces.",
+      "doc": {
+        "version": 1,
+        "palettes": {
+          "cobalt": {
+            "shades": {
+              "50": "oklch(95.3% 0.022 260.723)",
+              "100": "oklch(90.8% 0.045 258.763)",
+              "200": "oklch(81.6% 0.091 257.776)",
+              "300": "oklch(72.9% 0.14 258.068)",
+              "400": "oklch(64.7% 0.186 258.256)",
+              "500": "oklch(57.8% 0.228 260.025)",
+              "600": "oklch(49.2% 0.19 259.799)",
+              "700": "oklch(40.2% 0.152 259.656)",
+              "800": "oklch(30.7% 0.109 258.934)",
+              "900": "oklch(20.4% 0.063 257.52)",
+              "950": "oklch(14.7% 0.037 249.929)"
+            }
+          },
+          "cobalt-gray": {
+            "shades": {
+              "50": "oklch(99.1% 0 0)",
+              "100": "oklch(98.2% 0.002 247.839)",
+              "200": "oklch(94.2% 0.005 247.879)",
+              "300": "oklch(91.1% 0.007 247.901)",
+              "400": "oklch(86.7% 0.011 247.949)",
+              "500": "oklch(76.9% 0.015 248.017)",
+              "600": "oklch(55.8% 0.016 244.893)",
+              "700": "oklch(42.8% 0.015 248.172)",
+              "800": "oklch(34.5% 0.013 248.212)",
+              "900": "oklch(26.2% 0.009 248.19)",
+              "950": "oklch(20.7% 0.008 248.192)"
+            }
+          }
+        },
+        "colors": {
+          "primary": "cobalt",
+          "secondary": "cobalt-gray",
+          "info": "cyan",
+          "warning": "amber",
+          "neutral": "cobalt-gray"
+        },
+        "radius": 0.125,
+        "fontSize": 15,
+        "font": {
+          "sans": "Roboto"
+        },
+        "icons": "bootstrap",
+        "tokens": {
+          "light": {
+            "--ui-secondary": "var(--ui-color-secondary-600)",
+            "--ui-bg-muted": "var(--ui-color-neutral-200)",
+            "--ui-text": "var(--ui-color-neutral-800)",
+            "--ui-border": "var(--ui-color-neutral-400)",
+            "--ui-border-muted": "var(--ui-color-neutral-300)",
+            "--ui-bg": "var(--ui-color-neutral-100)",
+            "--ui-text-toned": "var(--ui-color-neutral-700)",
+            "--ui-text-muted": "var(--ui-color-neutral-600)",
+            "--ui-text-dimmed": "var(--ui-color-neutral-600)",
+            "--ui-bg-elevated": "var(--ui-color-neutral-200)",
+            "--ui-bg-accented": "var(--ui-color-neutral-300)"
+          },
+          "dark": {
+            "--ui-primary": "var(--ui-color-primary-500)",
+            "--ui-secondary": "var(--ui-color-secondary-500)",
+            "--ui-success": "var(--ui-color-success-500)",
+            "--ui-info": "var(--ui-color-info-500)",
+            "--ui-warning": "var(--ui-color-warning-500)",
+            "--ui-error": "var(--ui-color-error-500)",
+            "--ui-bg-muted": "var(--ui-color-neutral-700)",
+            "--ui-text": "var(--ui-color-neutral-300)"
+          }
+        }
+      }
+    },
+    {
+      "id": "sky",
+      "name": "Sky",
+      "description": "Sky blue on a mist neutral, pastel fills everywhere, airy type.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "sky",
+          "neutral": "mist"
+        },
+        "radius": 0.75,
+        "font": {
+          "sans": "Figtree",
+          "lineHeight": 1.6
+        },
+        "style": {
+          "defaults": {
+            "variants": {
+              "buttons": "soft",
+              "inputs": "soft"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50
+            },
+            "--ui-bg-muted": {
+              "light": 100
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "mint",
+      "name": "Mint",
+      "description": "Teal on an olive neutral, pill buttons and fields, chunky rounded type, large controls.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "teal",
+          "neutral": "olive"
+        },
+        "radius": 0.75,
+        "font": {
+          "sans": "Nunito",
+          "weights": {
+            "normal": 500,
+            "medium": 600,
+            "semibold": 700,
+            "bold": 800
+          }
+        },
+        "icons": "iconoir",
+        "style": {
+          "defaults": {
+            "size": "lg",
+            "variants": {
+              "inputs": "soft"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50
+            },
+            "--ui-bg-muted": {
+              "light": 100
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            }
+          }
+        },
+        "components": {
+          "button": {
+            "slots": {
+              "base": "rounded-full"
+            }
+          },
+          "input": {
+            "slots": {
+              "base": "rounded-full"
+            }
+          },
+          "select": {
+            "slots": {
+              "base": "rounded-full"
+            }
+          },
+          "selectMenu": {
+            "slots": {
+              "base": "rounded-full"
+            }
+          },
+          "inputMenu": {
+            "slots": {
+              "base": "rounded-full"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "iris",
+      "name": "Iris",
+      "description": "Violet outlines on a mauve neutral, fuchsia secondary, tinted fields.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "violet",
+          "secondary": "fuchsia",
+          "neutral": "mauve"
+        },
+        "radius": 0.5,
+        "font": {
+          "sans": "Manrope",
+          "letterSpacing": -0.01
+        },
+        "icons": "remix",
+        "style": {
+          "defaults": {
+            "variants": {
+              "buttons": "outline",
+              "inputs": "subtle"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50
+            },
+            "--ui-bg-muted": {
+              "light": 100
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "crimson",
+      "name": "Crimson",
+      "description": "Cinema red on pure gray, square corners, filled fields, near-black in dark mode.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "red",
+          "neutral": "neutral"
+        },
+        "radius": 0,
+        "font": {
+          "sans": "Inter",
+          "weights": {
+            "semibold": 700,
+            "bold": 800
+          }
+        },
+        "icons": "material",
+        "style": {
+          "defaults": {
+            "variants": {
+              "inputs": "soft"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50,
+              "dark": 950
+            },
+            "--ui-bg-muted": {
+              "light": 100,
+              "dark": 900
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            },
+            "--ui-primary": {
+              "light": 600,
+              "dark": 500
+            },
+            "--ui-bg-elevated": {
+              "dark": 900
+            },
+            "--ui-bg-accented": {
+              "dark": 800
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "coral",
+      "name": "Coral",
+      "description": "Rose on warm stone, cards floating on shadows, teal for success, neutral focus rings.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "rose",
+          "success": "teal",
+          "neutral": "stone"
+        },
+        "radius": 0.5,
+        "font": {
+          "sans": "Plus Jakarta Sans"
+        },
+        "icons": "phosphor",
+        "style": {
+          "defaults": {
+            "colors": {
+              "inputs": "neutral"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50
+            },
+            "--ui-bg-muted": {
+              "light": 100
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            }
+          }
+        },
+        "components": {
+          "card": {
+            "compoundVariants": [
+              {
+                "variant": "outline",
+                "class": {
+                  "root": "ring-0 dark:ring shadow-xl shadow-black/5"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "sunset",
+      "name": "Sunset",
+      "description": "Orange on a warm taupe neutral, glowing actions, yellow secondary, subtle panels.",
+      "doc": {
+        "version": 1,
+        "colors": {
+          "primary": "orange",
+          "secondary": "yellow",
+          "neutral": "taupe"
+        },
+        "radius": 0.625,
+        "font": {
+          "sans": "Bricolage Grotesque"
+        },
+        "icons": "tabler",
+        "style": {
+          "defaults": {
+            "variants": {
+              "panels": "subtle"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50
+            },
+            "--ui-bg-muted": {
+              "light": 100
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-highlighted": {
+              "dark": 50
+            },
+            "--ui-bg-inverted": {
+              "dark": 50
+            },
+            "--ui-border-inverted": {
+              "dark": 50
+            },
+            "--ui-primary": {
+              "light": 600
+            }
+          }
+        },
+        "components": {
+          "button": {
+            "compoundVariants": [
+              {
+                "color": "primary",
+                "variant": "solid",
+                "class": "shadow-md shadow-primary/30"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "carbon",
+      "name": "Carbon",
+      "description": "Amber on a warm carbon neutral, with ink-dark borders throughout.",
+      "doc": {
+        "version": 1,
+        "palettes": {
+          "carbon": {
+            "shades": {
+              "50": "oklch(98.5% 0.017 447.457)",
+              "100": "oklch(95.9% 0.036 438.639)",
+              "200": "oklch(92.6% 0.054 428.8)",
+              "300": "oklch(87% 0.053 417.734)",
+              "400": "oklch(70.5% 0.032 405.184)",
+              "500": "oklch(55.3% 0.014 390.836)",
+              "600": "oklch(44.7% 0.001 374.343)",
+              "700": "oklch(35.9% 0 0)",
+              "800": "oklch(28% 0 0)",
+              "900": "oklch(20.8% 0 0)",
+              "950": "oklch(14.1% 0.005 285.805)"
+            }
+          }
+        },
+        "colors": {
+          "primary": "amber",
+          "secondary": "yellow",
+          "neutral": "carbon"
+        },
+        "radius": 0.5,
+        "font": {
+          "sans": "Outfit"
+        },
+        "icons": "tabler",
+        "style": {
+          "defaults": {
+            "variants": {
+              "buttons": "solid",
+              "panels": "subtle",
+              "inputs": "subtle"
+            }
+          },
+          "tokenShades": {
+            "--ui-bg": {
+              "light": 50,
+              "dark": 800
+            },
+            "--ui-bg-muted": {
+              "light": 300,
+              "dark": 700
+            },
+            "--ui-bg-elevated": {
+              "light": 300,
+              "dark": 700
+            },
+            "--ui-bg-accented": {
+              "light": 400,
+              "dark": 600
+            },
+            "--ui-bg-inverted": {
+              "light": 900,
+              "dark": 50
+            },
+            "--ui-text-inverted": {
+              "light": 50
+            },
+            "--ui-text-dimmed": {
+              "light": 500,
+              "dark": 400
+            },
+            "--ui-text-muted": {
+              "light": 800,
+              "dark": 300
+            },
+            "--ui-text-toned": {
+              "light": 900
+            },
+            "--ui-text": {
+              "light": 900
+            },
+            "--ui-text-highlighted": {
+              "light": 950,
+              "dark": 100
+            },
+            "--ui-border": {
+              "light": 950,
+              "dark": 600
+            },
+            "--ui-border-muted": {
+              "light": 400
+            },
+            "--ui-border-accented": {
+              "light": 950,
+              "dark": 500
+            },
+            "--ui-border-inverted": {
+              "light": 500,
+              "dark": 50
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "bubblegum",
+      "name": "Bubblegum",
+      "description": "Pastel pink softness with mauve-tinted grays.",
+      "doc": {
+        "version": 1,
+        "palettes": {
+          "saturated-mauve": {
+            "shades": {
+              "50": "oklch(96.1% 0.021 325.68)",
+              "100": "oklch(92.4% 0.039 325.829)",
+              "200": "oklch(88% 0.057 325.83)",
+              "300": "oklch(81.2% 0.073 325.398)",
+              "400": "oklch(66.1% 0.084 323.292)",
+              "500": "oklch(52.4% 0.079 322.443)",
+              "600": "oklch(42.7% 0.064 322.128)",
+              "700": "oklch(34.6% 0.048 322.004)",
+              "800": "oklch(27.4% 0.034 321.983)",
+              "900": "oklch(20.7% 0.02 322.028)",
+              "950": "oklch(14.5% 0.008 322.12)"
+            }
+          }
+        },
+        "colors": {
+          "primary": "pink",
+          "secondary": "violet",
+          "neutral": "saturated-mauve"
+        },
+        "radius": 0.375,
+        "font": {
+          "sans": "Poppins"
+        },
+        "icons": "phosphor",
+        "tokens": {
+          "light": {
+            "--ui-bg": "var(--ui-color-neutral-50)",
+            "--ui-text-inverted": "var(--ui-color-neutral-50)",
+            "--ui-bg-muted": "var(--ui-color-neutral-100)"
+          },
+          "dark": {
+            "--ui-bg-inverted": "var(--ui-color-neutral-50)",
+            "--ui-text-highlighted": "var(--ui-color-neutral-50)",
+            "--ui-border-inverted": "var(--ui-color-neutral-50)"
+          }
+        }
+      }
+    },
+    {
+      "id": "parchment",
+      "name": "Parchment",
+      "description": "Warm parchment neutrals with a book-cloth clay primary.",
+      "doc": {
+        "version": 1,
+        "palettes": {
+          "clay": {
+            "shades": {
+              "50": "oklch(97.4% 0.009 48.308)",
+              "100": "oklch(94.2% 0.019 52.207)",
+              "200": "oklch(88.5% 0.036 51.142)",
+              "300": "oklch(82.1% 0.058 50.392)",
+              "400": "oklch(74.1% 0.094 47.255)",
+              "500": "oklch(67.2% 0.131 38.798)",
+              "600": "oklch(58.9% 0.138 37.63)",
+              "700": "oklch(51.4% 0.123 37.45)",
+              "800": "oklch(44.4% 0.103 36.916)",
+              "900": "oklch(38.8% 0.086 36.46)",
+              "950": "oklch(25.9% 0.054 38.197)"
+            }
+          },
+          "parchment": {
+            "shades": {
+              "50": "oklch(98% 0.006 100)",
+              "100": "oklch(96.5% 0.011 99)",
+              "200": "oklch(93.6% 0.014 97.348)",
+              "300": "oklch(85.8% 0.018 100)",
+              "400": "oklch(72.1% 0.015 102.54)",
+              "500": "oklch(57.8% 0.008 88.877)",
+              "600": "oklch(43.2% 0.006 91.526)",
+              "700": "oklch(38.2% 0.003 84.572)",
+              "800": "oklch(29.3% 0.003 106.588)",
+              "900": "oklch(21.7% 0.002 106.561)",
+              "950": "oklch(14.6% 0 0)"
+            }
+          }
+        },
+        "colors": {
+          "primary": "clay",
+          "neutral": "parchment"
+        },
+        "radius": 0.375,
+        "font": {
+          "sans": "DM Sans",
+          "serif": "Source Serif 4"
+        },
+        "icons": "heroicons",
+        "tokens": {
+          "light": {
+            "--ui-bg": "var(--ui-color-neutral-100)",
+            "--ui-bg-muted": "var(--ui-color-neutral-200)",
+            "--ui-bg-elevated": "var(--ui-color-neutral-200)",
+            "--ui-bg-accented": "var(--ui-color-neutral-300)",
+            "--ui-border": "var(--ui-color-neutral-300)",
+            "--ui-border-muted": "var(--ui-color-neutral-300)",
+            "--ui-border-accented": "var(--ui-color-neutral-400)"
+          },
+          "dark": {
+            "--ui-primary": "var(--ui-color-primary-500)",
+            "--ui-bg-accented": "var(--ui-color-neutral-800)"
+          }
+        }
+      }
+    }
+  ],
+  "fonts": [
+    {
+      "name": "Public Sans",
+      "category": "Sans",
+      "id": "public-sans"
+    },
+    {
+      "name": "Inter",
+      "category": "Sans",
+      "id": "inter"
+    },
+    {
+      "name": "DM Sans",
+      "category": "Sans",
+      "id": "dm-sans"
+    },
+    {
+      "name": "Geist",
+      "category": "Sans",
+      "id": "geist"
+    },
+    {
+      "name": "Outfit",
+      "category": "Sans",
+      "id": "outfit"
+    },
+    {
+      "name": "Poppins",
+      "category": "Sans",
+      "id": "poppins"
+    },
+    {
+      "name": "Raleway",
+      "category": "Sans",
+      "id": "raleway"
+    },
+    {
+      "name": "Roboto",
+      "category": "Sans",
+      "id": "roboto"
+    },
+    {
+      "name": "Figtree",
+      "category": "Sans",
+      "id": "figtree"
+    },
+    {
+      "name": "Nunito",
+      "category": "Sans",
+      "id": "nunito"
+    },
+    {
+      "name": "Manrope",
+      "category": "Sans",
+      "id": "manrope"
+    },
+    {
+      "name": "Plus Jakarta Sans",
+      "category": "Sans",
+      "id": "plus-jakarta-sans"
+    },
+    {
+      "name": "Bricolage Grotesque",
+      "category": "Sans",
+      "id": "bricolage-grotesque"
+    },
+    {
+      "name": "Comic Neue",
+      "category": "Sans",
+      "id": "comic-neue"
+    },
+    {
+      "name": "Source Serif 4",
+      "category": "Serif",
+      "id": "source-serif-4"
+    },
+    {
+      "name": "Lora",
+      "category": "Serif",
+      "id": "lora"
+    },
+    {
+      "name": "Playfair Display",
+      "category": "Serif",
+      "id": "playfair-display"
+    },
+    {
+      "name": "Merriweather",
+      "category": "Serif",
+      "id": "merriweather"
+    },
+    {
+      "name": "Instrument Serif",
+      "category": "Serif",
+      "id": "instrument-serif"
+    },
+    {
+      "name": "Geist Mono",
+      "category": "Mono",
+      "id": "geist-mono"
+    },
+    {
+      "name": "JetBrains Mono",
+      "category": "Mono",
+      "id": "jetbrains-mono"
+    },
+    {
+      "name": "Fira Code",
+      "category": "Mono",
+      "id": "fira-code"
+    },
+    {
+      "name": "IBM Plex Mono",
+      "category": "Mono",
+      "id": "ibm-plex-mono"
+    },
+    {
+      "name": "Space Mono",
+      "category": "Mono",
+      "id": "space-mono"
+    }
+  ],
+  "icons": {
+    "bootstrap": {
+      "arrowDown": "i-bi-arrow-down",
+      "arrowLeft": "i-bi-arrow-left",
+      "arrowRight": "i-bi-arrow-right",
+      "arrowUp": "i-bi-arrow-up",
+      "caution": "i-bi-exclamation-circle",
+      "check": "i-bi-check",
+      "chevronDoubleLeft": "i-bi-chevron-double-left",
+      "chevronDoubleRight": "i-bi-chevron-double-right",
+      "chevronDown": "i-bi-chevron-down",
+      "chevronLeft": "i-bi-chevron-left",
+      "chevronRight": "i-bi-chevron-right",
+      "chevronUp": "i-bi-chevron-up",
+      "close": "i-bi-x",
+      "copy": "i-bi-clipboard",
+      "copyCheck": "i-bi-clipboard-check",
+      "dark": "i-bi-moon",
+      "drag": "i-bi-grip-vertical",
+      "ellipsis": "i-bi-three-dots",
+      "error": "i-bi-x-circle",
+      "external": "i-bi-box-arrow-up-right",
+      "eye": "i-bi-eye",
+      "eyeOff": "i-bi-eye-slash",
+      "file": "i-bi-file-earmark",
+      "folder": "i-bi-folder",
+      "folderOpen": "i-bi-folder2-open",
+      "hash": "i-bi-hash",
+      "info": "i-bi-info-circle",
+      "light": "i-bi-sun",
+      "loading": "i-bi-arrow-repeat",
+      "menu": "i-bi-list",
+      "minus": "i-bi-dash",
+      "panelClose": "i-bi-arrow-bar-left",
+      "panelOpen": "i-bi-arrow-bar-right",
+      "plus": "i-bi-plus",
+      "reload": "i-bi-arrow-counterclockwise",
+      "search": "i-bi-search",
+      "stop": "i-bi-square",
+      "star": "i-bi-star",
+      "success": "i-bi-check-circle",
+      "system": "i-bi-display",
+      "tip": "i-bi-lightbulb",
+      "upload": "i-bi-upload",
+      "warning": "i-bi-exclamation-triangle"
+    },
+    "iconoir": {
+      "arrowDown": "i-iconoir-arrow-down",
+      "arrowLeft": "i-iconoir-arrow-left",
+      "arrowRight": "i-iconoir-arrow-right",
+      "arrowUp": "i-iconoir-arrow-up",
+      "caution": "i-iconoir-warning-circle",
+      "check": "i-iconoir-check",
+      "chevronDoubleLeft": "i-iconoir-fast-arrow-left",
+      "chevronDoubleRight": "i-iconoir-fast-arrow-right",
+      "chevronDown": "i-iconoir-nav-arrow-down",
+      "chevronLeft": "i-iconoir-nav-arrow-left",
+      "chevronRight": "i-iconoir-nav-arrow-right",
+      "chevronUp": "i-iconoir-nav-arrow-up",
+      "close": "i-iconoir-xmark",
+      "copy": "i-iconoir-copy",
+      "copyCheck": "i-iconoir-clipboard-check",
+      "dark": "i-iconoir-half-moon",
+      "drag": "i-iconoir-menu",
+      "ellipsis": "i-iconoir-more-horiz",
+      "error": "i-iconoir-xmark-circle",
+      "external": "i-iconoir-arrow-up-right",
+      "eye": "i-iconoir-eye",
+      "eyeOff": "i-iconoir-eye-closed",
+      "file": "i-iconoir-page",
+      "folder": "i-iconoir-folder",
+      "folderOpen": "i-iconoir-folder",
+      "hash": "i-iconoir-hashtag",
+      "info": "i-iconoir-info-circle",
+      "light": "i-iconoir-sun-light",
+      "loading": "i-iconoir-refresh",
+      "menu": "i-iconoir-menu",
+      "minus": "i-iconoir-minus",
+      "panelClose": "i-iconoir-sidebar-collapse",
+      "panelOpen": "i-iconoir-sidebar-expand",
+      "plus": "i-iconoir-plus",
+      "reload": "i-iconoir-undo",
+      "search": "i-iconoir-search",
+      "stop": "i-iconoir-square",
+      "star": "i-iconoir-star",
+      "success": "i-iconoir-check-circle",
+      "system": "i-iconoir-computer",
+      "tip": "i-iconoir-light-bulb",
+      "upload": "i-iconoir-upload",
+      "warning": "i-iconoir-warning-triangle"
+    },
+    "remix": {
+      "arrowDown": "i-ri-arrow-down-line",
+      "arrowLeft": "i-ri-arrow-left-line",
+      "arrowRight": "i-ri-arrow-right-line",
+      "arrowUp": "i-ri-arrow-up-line",
+      "caution": "i-ri-error-warning-line",
+      "check": "i-ri-check-line",
+      "chevronDoubleLeft": "i-ri-arrow-left-double-line",
+      "chevronDoubleRight": "i-ri-arrow-right-double-line",
+      "chevronDown": "i-ri-arrow-down-s-line",
+      "chevronLeft": "i-ri-arrow-left-s-line",
+      "chevronRight": "i-ri-arrow-right-s-line",
+      "chevronUp": "i-ri-arrow-up-s-line",
+      "close": "i-ri-close-line",
+      "copy": "i-ri-file-copy-line",
+      "copyCheck": "i-ri-checkbox-multiple-line",
+      "dark": "i-ri-moon-line",
+      "drag": "i-ri-draggable",
+      "ellipsis": "i-ri-more-line",
+      "error": "i-ri-close-circle-line",
+      "external": "i-ri-external-link-line",
+      "eye": "i-ri-eye-line",
+      "eyeOff": "i-ri-eye-off-line",
+      "file": "i-ri-file-line",
+      "folder": "i-ri-folder-line",
+      "folderOpen": "i-ri-folder-open-line",
+      "hash": "i-ri-hashtag",
+      "info": "i-ri-information-line",
+      "light": "i-ri-sun-line",
+      "loading": "i-ri-loader-4-line",
+      "menu": "i-ri-menu-line",
+      "minus": "i-ri-subtract-line",
+      "panelClose": "i-ri-sidebar-fold-line",
+      "panelOpen": "i-ri-sidebar-unfold-line",
+      "plus": "i-ri-add-line",
+      "reload": "i-ri-arrow-go-back-line",
+      "search": "i-ri-search-line",
+      "stop": "i-ri-stop-line",
+      "star": "i-ri-star-line",
+      "success": "i-ri-checkbox-circle-line",
+      "system": "i-ri-computer-line",
+      "tip": "i-ri-lightbulb-line",
+      "upload": "i-ri-upload-2-line",
+      "warning": "i-ri-alert-line"
+    },
+    "material": {
+      "arrowDown": "i-material-symbols-arrow-downward-rounded",
+      "arrowLeft": "i-material-symbols-arrow-back-rounded",
+      "arrowRight": "i-material-symbols-arrow-forward-rounded",
+      "arrowUp": "i-material-symbols-arrow-upward-rounded",
+      "caution": "i-material-symbols-error-outline-rounded",
+      "check": "i-material-symbols-check-rounded",
+      "chevronDoubleLeft": "i-material-symbols-keyboard-double-arrow-left-rounded",
+      "chevronDoubleRight": "i-material-symbols-keyboard-double-arrow-right-rounded",
+      "chevronDown": "i-material-symbols-keyboard-arrow-down-rounded",
+      "chevronLeft": "i-material-symbols-chevron-left-rounded",
+      "chevronRight": "i-material-symbols-chevron-right-rounded",
+      "chevronUp": "i-material-symbols-keyboard-arrow-up-rounded",
+      "close": "i-material-symbols-close-rounded",
+      "copy": "i-material-symbols-content-copy-outline-rounded",
+      "copyCheck": "i-material-symbols-inventory-rounded",
+      "dark": "i-material-symbols-dark-mode-outline-rounded",
+      "drag": "i-material-symbols-drag-indicator",
+      "ellipsis": "i-material-symbols-more-horiz",
+      "error": "i-material-symbols-cancel-outline-rounded",
+      "external": "i-material-symbols-arrow-outward-rounded",
+      "eye": "i-material-symbols-visibility-outline-rounded",
+      "eyeOff": "i-material-symbols-visibility-off-outline-rounded",
+      "file": "i-material-symbols-description-outline-rounded",
+      "folder": "i-material-symbols-folder-outline-rounded",
+      "folderOpen": "i-material-symbols-folder-open-outline-rounded",
+      "hash": "i-material-symbols-tag-rounded",
+      "info": "i-material-symbols-info-outline-rounded",
+      "light": "i-material-symbols:light-mode-outline-rounded",
+      "loading": "i-material-symbols-progress-activity",
+      "menu": "i-material-symbols-menu-rounded",
+      "minus": "i-material-symbols-remove-rounded",
+      "panelClose": "i-material-symbols-left-panel-close-outline-rounded",
+      "panelOpen": "i-material-symbols-left-panel-open-outline-rounded",
+      "plus": "i-material-symbols-add-rounded",
+      "reload": "i-material-symbols-refresh-rounded",
+      "search": "i-material-symbols-search-rounded",
+      "stop": "i-material-symbols-stop-outline-rounded",
+      "star": "i-material-symbols-star-outline-rounded",
+      "success": "i-material-symbols-check-circle-outline-rounded",
+      "system": "i-material-symbols-desktop-windows-outline-rounded",
+      "tip": "i-material-symbols-lightbulb-outline-rounded",
+      "upload": "i-material-symbols-upload-rounded",
+      "warning": "i-material-symbols-warning-outline-rounded"
+    },
+    "phosphor": {
+      "arrowDown": "i-ph-arrow-down",
+      "arrowLeft": "i-ph-arrow-left",
+      "arrowRight": "i-ph-arrow-right",
+      "arrowUp": "i-ph-arrow-up",
+      "caution": "i-ph-warning-circle",
+      "check": "i-ph-check",
+      "chevronDoubleLeft": "i-ph-caret-double-left",
+      "chevronDoubleRight": "i-ph-caret-double-right",
+      "chevronDown": "i-ph-caret-down",
+      "chevronLeft": "i-ph-caret-left",
+      "chevronRight": "i-ph-caret-right",
+      "chevronUp": "i-ph-caret-up",
+      "close": "i-ph-x",
+      "copy": "i-ph-copy",
+      "copyCheck": "i-ph-check-circle",
+      "dark": "i-ph-moon",
+      "drag": "i-ph-dots-six-vertical",
+      "ellipsis": "i-ph-dots-three",
+      "error": "i-ph-x-circle",
+      "external": "i-ph-arrow-up-right",
+      "eye": "i-ph-eye",
+      "eyeOff": "i-ph-eye-slash",
+      "file": "i-ph-file",
+      "folder": "i-ph-folder",
+      "folderOpen": "i-ph-folder-open",
+      "hash": "i-ph-hash",
+      "info": "i-ph-info",
+      "light": "i-ph-sun",
+      "loading": "i-ph-circle-notch",
+      "menu": "i-ph-list",
+      "minus": "i-ph-minus",
+      "panelClose": "i-ph-caret-left",
+      "panelOpen": "i-ph-caret-right",
+      "plus": "i-ph-plus",
+      "reload": "i-ph-arrow-counter-clockwise",
+      "search": "i-ph-magnifying-glass",
+      "stop": "i-ph-square",
+      "star": "i-ph-star",
+      "success": "i-ph-check-circle",
+      "system": "i-ph-monitor",
+      "tip": "i-ph-lightbulb",
+      "upload": "i-ph-upload",
+      "warning": "i-ph-warning"
+    },
+    "tabler": {
+      "arrowDown": "i-tabler-arrow-down",
+      "arrowLeft": "i-tabler-arrow-left",
+      "arrowRight": "i-tabler-arrow-right",
+      "arrowUp": "i-tabler-arrow-up",
+      "caution": "i-tabler-alert-square-rounded",
+      "check": "i-tabler-check",
+      "chevronDoubleLeft": "i-tabler-chevrons-left",
+      "chevronDoubleRight": "i-tabler-chevrons-right",
+      "chevronDown": "i-tabler-chevron-down",
+      "chevronLeft": "i-tabler-chevron-left",
+      "chevronRight": "i-tabler-chevron-right",
+      "chevronUp": "i-tabler-chevron-up",
+      "close": "i-tabler-x",
+      "copy": "i-tabler-copy",
+      "copyCheck": "i-tabler-copy-check",
+      "dark": "i-tabler-moon",
+      "drag": "i-tabler-grip-vertical",
+      "ellipsis": "i-tabler-dots",
+      "error": "i-tabler-square-rounded-x",
+      "external": "i-tabler-external-link",
+      "eye": "i-tabler-eye",
+      "eyeOff": "i-tabler-eye-off",
+      "file": "i-tabler-file",
+      "folder": "i-tabler-folder",
+      "folderOpen": "i-tabler-folder-open",
+      "hash": "i-tabler-hash",
+      "info": "i-tabler-info-square-rounded",
+      "light": "i-tabler-sun",
+      "loading": "i-tabler-loader-2",
+      "menu": "i-tabler-menu",
+      "minus": "i-tabler-minus",
+      "panelClose": "i-tabler-layout-sidebar-left-collapse",
+      "panelOpen": "i-tabler-layout-sidebar-left-expand",
+      "plus": "i-tabler-plus",
+      "reload": "i-tabler-reload",
+      "search": "i-tabler-search",
+      "stop": "i-tabler-player-stop",
+      "star": "i-tabler-star",
+      "success": "i-tabler-square-rounded-check",
+      "system": "i-tabler-device-desktop",
+      "tip": "i-tabler-bulb",
+      "upload": "i-tabler-upload",
+      "warning": "i-tabler-alert-triangle"
+    },
+    "heroicons": {
+      "arrowDown": "i-heroicons-arrow-down",
+      "arrowLeft": "i-heroicons-arrow-left",
+      "arrowRight": "i-heroicons-arrow-right",
+      "arrowUp": "i-heroicons-arrow-up",
+      "caution": "i-heroicons-exclamation-circle",
+      "check": "i-heroicons-check",
+      "chevronDoubleLeft": "i-heroicons-chevron-double-left",
+      "chevronDoubleRight": "i-heroicons-chevron-double-right",
+      "chevronDown": "i-heroicons-chevron-down",
+      "chevronLeft": "i-heroicons-chevron-left",
+      "chevronRight": "i-heroicons-chevron-right",
+      "chevronUp": "i-heroicons-chevron-up",
+      "close": "i-heroicons-x-mark",
+      "copy": "i-heroicons-clipboard",
+      "copyCheck": "i-heroicons-clipboard-document-check",
+      "dark": "i-heroicons-moon",
+      "drag": "i-heroicons-bars-3",
+      "ellipsis": "i-heroicons-ellipsis-horizontal",
+      "error": "i-heroicons-x-circle",
+      "external": "i-heroicons-arrow-up-right",
+      "eye": "i-heroicons-eye",
+      "eyeOff": "i-heroicons-eye-slash",
+      "file": "i-heroicons-document",
+      "folder": "i-heroicons-folder",
+      "folderOpen": "i-heroicons-folder-open",
+      "hash": "i-heroicons-hashtag",
+      "info": "i-heroicons-information-circle",
+      "light": "i-heroicons-sun",
+      "loading": "i-heroicons-arrow-path",
+      "menu": "i-heroicons-bars-3",
+      "minus": "i-heroicons-minus",
+      "panelClose": "i-heroicons-chevron-left",
+      "panelOpen": "i-heroicons-chevron-right",
+      "plus": "i-heroicons-plus",
+      "reload": "i-heroicons-arrow-uturn-left",
+      "search": "i-heroicons-magnifying-glass",
+      "stop": "i-heroicons-stop",
+      "star": "i-heroicons-star",
+      "success": "i-heroicons-check-circle",
+      "system": "i-heroicons-computer-desktop",
+      "tip": "i-heroicons-light-bulb",
+      "upload": "i-heroicons-arrow-up-tray",
+      "warning": "i-heroicons-exclamation-triangle"
+    }
+  }
+}

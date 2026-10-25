@@ -128,7 +128,6 @@ const parsed = ref<PcParsed | null>(null)
 const parseError = ref('')
 const importing = ref(false)
 const importResult = ref<{ ok: number; failed: number; firstError: string } | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
 
 /**
  * Dates in the register workbook are not born equal: some cells are real dates, some are Excel
@@ -151,10 +150,8 @@ function normaliseDate(value: any, raw: string): string | null {
   return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10)
 }
 
-function onPcFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
+function onPcFile(file: File) {
+  if (parsing.value || importing.value) return
   parsing.value = true
   parseError.value = ''
   parsed.value = null
@@ -194,7 +191,6 @@ function onPcFile(e: Event) {
       parseError.value = err?.message || 'Could not read that file.'
     } finally {
       parsing.value = false
-      if (fileInput.value) fileInput.value.value = ''
     }
   })()
 }
@@ -291,13 +287,10 @@ async function loadGids() {
   }
 }
 
-const gidFileInput = ref<HTMLInputElement | null>(null)
 const gidPreview = computed(() => gidParsed.value?.rows.slice(0, 5) ?? [])
 
-function onGidFile(e: Event) {
-  const input = e.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
+function onGidFile(file: File) {
+  if (gidParsing.value || gidImporting.value) return
   gidParsing.value = true
   gidParseError.value = ''
   gidParsed.value = null
@@ -324,7 +317,6 @@ function onGidFile(e: Event) {
       gidParseError.value = err?.message || 'Could not read that file.'
     } finally {
       gidParsing.value = false
-      if (gidFileInput.value) gidFileInput.value.value = ''
     }
   })()
 }
@@ -425,24 +417,9 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
           </div>
 
           <div class="px-4 py-4">
-            <div class="flex flex-wrap items-center gap-2">
-              <input ref="fileInput" type="file" accept=".xlsx,.xlsm" class="hidden" @change="onPcFile">
-              <UButton
-                icon="i-lucide-upload"
-                :label="parsed ? 'Choose another file' : 'Choose Excel file'"
-                class="record-save-hover"
-                :loading="parsing"
-                @click="fileInput?.click()"
-              />
-              <UButton
-                v-if="parsed"
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-x"
-                label="Clear"
-                @click="parsed = null; importResult = null"
-              />
-              <span v-if="parsed" class="text-xs text-muted">{{ parsed.fileName }}</span>
+            <WorkbookDropzone label="PC Ledger" :file-name="parsed?.fileName" :busy="parsing || importing" @select="onPcFile" />
+            <div v-if="parsed" class="flex justify-end">
+              <UButton color="neutral" variant="ghost" icon="i-lucide-x" label="Clear file" :disabled="parsing || importing" @click="parsed = null; parseError = ''; importResult = null" />
             </div>
 
             <UAlert v-if="parseError" color="error" variant="soft" icon="i-lucide-circle-alert" :title="parseError" class="mt-3" />
@@ -537,24 +514,9 @@ watch(activeTab, (t) => { if (t === 'gid' && !gidList.value.length) loadGids() }
           </div>
 
           <div class="px-4 py-4">
-            <div class="flex flex-wrap items-center gap-2">
-              <input ref="gidFileInput" type="file" accept=".xlsx,.xlsm" class="hidden" @change="onGidFile">
-              <UButton
-                icon="i-lucide-upload"
-                :label="gidParsed ? 'Choose another file' : 'Choose Excel file'"
-                class="record-save-hover"
-                :loading="gidParsing"
-                @click="gidFileInput?.click()"
-              />
-              <UButton
-                v-if="gidParsed"
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-x"
-                label="Clear"
-                @click="resetGidParsed"
-              />
-              <span v-if="gidParsed" class="text-xs text-muted">{{ gidParsed.fileName }}</span>
+            <WorkbookDropzone label="GID list" :file-name="gidParsed?.fileName" :busy="gidParsing || gidImporting" @select="onGidFile" />
+            <div v-if="gidParsed" class="flex justify-end">
+              <UButton color="neutral" variant="ghost" icon="i-lucide-x" label="Clear file" :disabled="gidParsing || gidImporting" @click="resetGidParsed" />
             </div>
 
             <UAlert v-if="gidParseError" color="error" variant="soft" icon="i-lucide-circle-alert" :title="gidParseError" class="mt-3" />

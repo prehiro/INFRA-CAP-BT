@@ -1,4 +1,6 @@
 import { defineNuxtConfig } from 'nuxt/config'
+import { carbonIcons } from './app/utils/themeStudio'
+import { paletteCss, referenceIconSets, normalizeStudioIcon } from './app/utils/themeReference'
 
 // Public Sans is declared HERE, in the document head, and the files are preloaded.
 //
@@ -47,7 +49,7 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       // Dynamic header-icon props are not reliably discovered by the template scanner.
-      icons: ['carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings'],
+      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings'],
       sizeLimitKb: 256
     },
     serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'andrsrxn'] },
@@ -67,14 +69,14 @@ export default defineNuxtConfig({
       title: 'INFRA-CAP',
       // See PUBLIC_SANS_FACES above: faces in the head + preload = the font is ready before the
       // first paint, so a refresh never re-renders the chrome text mid-load.
-      style: [{ innerHTML: PUBLIC_SANS_FACES }],
-      link: PUBLIC_SANS_WEIGHTS.map((w) => ({
+      style: [{ innerHTML: PUBLIC_SANS_FACES + paletteCss }],
+      link: [{ rel: 'stylesheet', href: `${BASE_URL}fonts/studio/fonts.css` }, ...PUBLIC_SANS_WEIGHTS.map((w) => ({
         rel: 'preload',
         as: 'font',
         type: 'font/woff2',
         href: `${BASE_URL}fonts/public-sans-latin-${w}-normal.woff2`,
         crossorigin: 'anonymous'
-      })),
+      }))],
       meta: [
         // Production-only guard: allow this origin, embedded images and local downloads,
         // never remote scripts/fonts/images/API calls. Dev keeps its Vite websocket/HMR.

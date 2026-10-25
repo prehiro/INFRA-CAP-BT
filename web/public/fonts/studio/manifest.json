@@ -1,0 +1,3356 @@
+{
+  "fonts": [
+    {
+      "name": "Public Sans",
+      "category": "Sans",
+      "id": "public-sans",
+      "version": "5.3.0",
+      "package": "@fontsource/public-sans",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/public-sans/-/public-sans-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "public-sans-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15644,
+          "sha256": "e9110763c65b780c1282c9ee7c7acf152b16aec93d75ba2e6e8831f74c7233a7"
+        },
+        {
+          "file": "public-sans-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14632,
+          "sha256": "36274b5787b4f03b27e65ae971d6c808a96838ccd60c9dabaee154889b6bba82"
+        },
+        {
+          "file": "public-sans-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15776,
+          "sha256": "ed521ae192296bfd28e908e99debc0a6d4850cfcc2f6acae6b548b78916ff6a2"
+        },
+        {
+          "file": "public-sans-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14656,
+          "sha256": "55e866a00caa197bc9fafa52c907f4dfe88e51bbb3f585c777931d03eb961e96"
+        },
+        {
+          "file": "public-sans-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15776,
+          "sha256": "d0b9de995bc3cca0dd0dedbddf54ad4b5519cbe73bdd1fc168354953bdcac5fc"
+        },
+        {
+          "file": "public-sans-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14592,
+          "sha256": "c7842f97346df1b3b470e9d71acde90f132dd858508ec5ae6606401e5d0938f7"
+        },
+        {
+          "file": "public-sans-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15748,
+          "sha256": "8e0990d15e994ed1c52a5c8e9912f7a900578cff18ced1ca3885ce7476a7d5f7"
+        },
+        {
+          "file": "public-sans-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14600,
+          "sha256": "dace741613696827f61dbee2d984e8685f14a2846136783f3ad1c8950914bf1d"
+        },
+        {
+          "file": "public-sans-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15788,
+          "sha256": "8b64954ab8028bb73ffdd25c51a0da8db599fc4b8e50c0440f13e0e011034466"
+        },
+        {
+          "file": "public-sans-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14772,
+          "sha256": "e16804f79bc244ab4b40f7e3e1a9b5b626bbbac4d7bc0a0864ce45b50490da19"
+        },
+        {
+          "file": "public-sans-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 10920,
+          "sha256": "e6222552947514482967d4785b869b1612b6ef47bb35fd8647c304e1d755940b"
+        },
+        {
+          "file": "public-sans-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10452,
+          "sha256": "812efcc8f7784063692076be1d14318767646847de8974a89d18074596141a54"
+        },
+        {
+          "file": "public-sans-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11044,
+          "sha256": "577e0a24b98124baade65f0296d3545ed098f41256843a8815916cbb8f9f3c36"
+        },
+        {
+          "file": "public-sans-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10448,
+          "sha256": "1787aa45adfb870a086cec11215051e3af11f3e6f3dd8e17b3d7bfc81c3521a7"
+        },
+        {
+          "file": "public-sans-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 10968,
+          "sha256": "10c6f64b387c0a4f8a8869e5774bb49c11a2f7180181a688b36156db3f9ae091"
+        },
+        {
+          "file": "public-sans-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10524,
+          "sha256": "962979846a2c91c474023dc6280864e468d512eff2b26844dffdfdb9f4a54a4f"
+        },
+        {
+          "file": "public-sans-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11048,
+          "sha256": "c27770b8b3d36f9b56683915a04b2b8b20faf0ec277e03fd140053100e5ddfbd"
+        },
+        {
+          "file": "public-sans-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10532,
+          "sha256": "dd2078a57ba3674bd8cc99488857606e47560a4555511c33d301afbdac580ab3"
+        },
+        {
+          "file": "public-sans-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 10972,
+          "sha256": "3dcde8780f2af095f700ce70cade64c2b6c0d0ba34b3afc2782bed010c088d63"
+        },
+        {
+          "file": "public-sans-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10444,
+          "sha256": "4e4da5dab3d1eba74bd6e1d6fef403943132148279b3628f6e7af8dc27c335c8"
+        }
+      ]
+    },
+    {
+      "name": "Inter",
+      "category": "Sans",
+      "id": "inter",
+      "version": "5.3.0",
+      "package": "@fontsource/inter",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/inter/-/inter-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "inter-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 25040,
+          "sha256": "7ea9d2f1274cebee837f0c6eebb426c18fbb2333a6b6da4d02ec5cf47db7fb8e"
+        },
+        {
+          "file": "inter-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23664,
+          "sha256": "8909904ab6c872eb994093482a88a28eca2cd95912d7b6fecd72103b0dc07edc"
+        },
+        {
+          "file": "inter-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 25636,
+          "sha256": "ec7b5fad608d36d16f65939bd09e70b4bb81446fa7ee32b345d0c2e4fcd174b7"
+        },
+        {
+          "file": "inter-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 24272,
+          "sha256": "f3779f1efccc4bdcdf9c0a02ab95bf6bd092ed09c48c08cedc725889edd1d19f"
+        },
+        {
+          "file": "inter-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 25812,
+          "sha256": "c45ec86655c4614e7db0b9d2ea00303c1b252dae5671227aae5955f696069de6"
+        },
+        {
+          "file": "inter-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 24452,
+          "sha256": "f9a06e79cd3a2a20951c0f0e28f66dd0e6d3fda73911d640a2125c8fcb78f21a"
+        },
+        {
+          "file": "inter-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 25868,
+          "sha256": "facd8f930c88e4bf79be48afe46671c9dd72f82cf5f4311acc84a48e616ea169"
+        },
+        {
+          "file": "inter-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 24356,
+          "sha256": "6f56409fd3d64bb85f7d070bce20749db2d66b6d63cec586cc22d1c761be2491"
+        },
+        {
+          "file": "inter-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 25924,
+          "sha256": "fe4520b77c9ad201f3a7ec11133713097e265f277bece602f21573bcd9c00428"
+        },
+        {
+          "file": "inter-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 24400,
+          "sha256": "a7d0a50f15d389cad679238466bdb5fc9787aa0715719064ce25abaff042820d"
+        },
+        {
+          "file": "inter-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 37592,
+          "sha256": "1edee689a85979c6c2f2b5c4d8b2d99994e57b7ac8e7f50d01cf842950a2f554"
+        },
+        {
+          "file": "inter-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 35000,
+          "sha256": "6744a7f509ebc6ab220a6cd4ea77e898adf014f03d88dcda5d45d8a9feefb4e9"
+        },
+        {
+          "file": "inter-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 38948,
+          "sha256": "b1b7d9a28e0326ed62303240b585eb28f24684be5f64d5972fd124e707c8d168"
+        },
+        {
+          "file": "inter-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 36024,
+          "sha256": "2c6fbc42d315528beb06c1096df45487bf4186c4b78b8111d12c9c951f8acca2"
+        },
+        {
+          "file": "inter-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 38968,
+          "sha256": "298e326a12b28c88bc14aac801d34be1f43077703254e180688ce3110985bf28"
+        },
+        {
+          "file": "inter-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 36260,
+          "sha256": "e4bdf67b0cd15ca9e184509275be95db942195d3cc2b17f6a0452f2adf75d0bf"
+        },
+        {
+          "file": "inter-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 39068,
+          "sha256": "d071e4fc8d35e023eb25adc8a3de43c6167cb718d118e413a7bce97d6ab38e26"
+        },
+        {
+          "file": "inter-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 36244,
+          "sha256": "143f9504f1377012aa3e39c90c4354ef429cb0494b9ac0e1437f1a81e5412236"
+        },
+        {
+          "file": "inter-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 39056,
+          "sha256": "f23d7bf28d678b34c3738cf59a42c6c35ca55cec2cafad9c7234986b4fd6088b"
+        },
+        {
+          "file": "inter-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 36128,
+          "sha256": "eade55593308b9e4916dd7f47826929ce3e40cad85a2b338d56e5fd1e7bf8e5e"
+        }
+      ]
+    },
+    {
+      "name": "DM Sans",
+      "category": "Sans",
+      "id": "dm-sans",
+      "version": "5.3.0",
+      "package": "@fontsource/dm-sans",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/dm-sans/-/dm-sans-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "dm-sans-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15140,
+          "sha256": "5da946c1525e99ad130ac74ad021cb4f85a8be57ee167969ce4573bff1d84f10"
+        },
+        {
+          "file": "dm-sans-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14200,
+          "sha256": "4ab51eb2cd7305d177187908d6397474d4520663f6c6e572feb0a64f4fa80006"
+        },
+        {
+          "file": "dm-sans-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15272,
+          "sha256": "a44f40e9bafa2b7c9abd0bccd85305778c48326f5c5bf731d43db6e4993c63a3"
+        },
+        {
+          "file": "dm-sans-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14304,
+          "sha256": "19bf1984956517c35c2bd35b6cdedac12a21d6fcd3596c614ecdfb88b648909d"
+        },
+        {
+          "file": "dm-sans-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15256,
+          "sha256": "3b0ba1ee5d9948eb1d157cb5522998f18956df42d5be23895dad6e6fc1019a83"
+        },
+        {
+          "file": "dm-sans-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14144,
+          "sha256": "6bb2b2645ba5eeaecf56322c543fa3a75b87b927977b9c03b1dabc4205089120"
+        },
+        {
+          "file": "dm-sans-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15224,
+          "sha256": "7f07b05e2297ea9295c9f93a950b00adf085806f4b7196ce7bf241efdea83387"
+        },
+        {
+          "file": "dm-sans-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14348,
+          "sha256": "35c5efa0e5daa52ee5c6500f5be354bf751fb65c4e49e1d6806c6eb5883e8fe9"
+        },
+        {
+          "file": "dm-sans-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 15328,
+          "sha256": "0e9ed828b906d9a68e9fffbac8d71caeb71b80eb27b299279b89fcf653d79e14"
+        },
+        {
+          "file": "dm-sans-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14404,
+          "sha256": "094c859b70f10e1e010d293381f5cd032ef9929380e2dca97d12a574c2ef5c0a"
+        },
+        {
+          "file": "dm-sans-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8128,
+          "sha256": "db30615bc41c43b0c215a907254296fe7ac9215b20d04ed609ce7cdbc91c114f"
+        },
+        {
+          "file": "dm-sans-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7364,
+          "sha256": "962730c6ff7595f9499b0d963a3bccb2139d793f0fb31fbd87aed1881c020e0a"
+        },
+        {
+          "file": "dm-sans-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8176,
+          "sha256": "3340ce066eb2df9e73baa9b4d46f803f48fe624d02f107520a57e0bb3cb5daac"
+        },
+        {
+          "file": "dm-sans-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7432,
+          "sha256": "e0a1d21584ba00798a3dbe90ef5f8a162741d454f52ab66630f9dc41da372b3d"
+        },
+        {
+          "file": "dm-sans-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8156,
+          "sha256": "4a979fb1facc2d41d49e37ba2f318315cb693e69677b1bab5de7e882732b7bc7"
+        },
+        {
+          "file": "dm-sans-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7420,
+          "sha256": "6406eb05e2eb50779cb95ee8745c98ad23cce7e67d752822782453da7f6b4491"
+        },
+        {
+          "file": "dm-sans-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8172,
+          "sha256": "55970fa485beb75f913a101a2756a5fc43fe64bcac3d9c07efd8f0dab520a2d2"
+        },
+        {
+          "file": "dm-sans-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7452,
+          "sha256": "f6640907b94df0d227f26e2fcb6db2497d6c44c4b68f731ea1e06f5b45e2e91b"
+        },
+        {
+          "file": "dm-sans-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8184,
+          "sha256": "6f7c960305cccfeae69c50f375b8925bf24b545941650dcf1bdd18b475b42952"
+        },
+        {
+          "file": "dm-sans-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7396,
+          "sha256": "099e8a6281645eb7b526b7896f8172498bc35f8acecdd9aa4f9678048abe2a1f"
+        }
+      ]
+    },
+    {
+      "name": "Geist",
+      "category": "Sans",
+      "id": "geist",
+      "version": "5.3.0",
+      "package": "@fontsource/geist",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/geist/-/geist-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "geist-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13432,
+          "sha256": "b03110df1a662d5b9d8c02c48b02395a9383f1c5b6d6fe42e92211aec500b03b"
+        },
+        {
+          "file": "geist-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 12956,
+          "sha256": "ead637fd0b6b887d829b3ce3f25fdc242b1de0cfb69c0d97987933675d1315ba"
+        },
+        {
+          "file": "geist-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13896,
+          "sha256": "9910fb77d5df143519622c7fec7f7a1f19fc54521d61655545aff07c2e3647ea"
+        },
+        {
+          "file": "geist-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13296,
+          "sha256": "6145bf6706dbc1b6686f04f871489cf724951f00b752745896ccdcac07639a53"
+        },
+        {
+          "file": "geist-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13872,
+          "sha256": "ee0f8effeb63d2bb9d7a2219a0b20e02294e667c0fefce8e82412b68d3b684cf"
+        },
+        {
+          "file": "geist-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13372,
+          "sha256": "edde7cc4e2719898f981a6d970a756030fff75a8ed36dd6a457a60181b889ebf"
+        },
+        {
+          "file": "geist-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13872,
+          "sha256": "1de6fb56bf1648848399eb0323fa7898648651b6a7df37d49b63e8cf3541cd4b"
+        },
+        {
+          "file": "geist-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13364,
+          "sha256": "728e76ff0b76212419e83011f5202c2fd1144da9d7915a4fa787561f5a3f334d"
+        },
+        {
+          "file": "geist-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13912,
+          "sha256": "e69ef1c7b515128784247ae5f5d0961d029952edfbd84ac7786a67d5021046e1"
+        },
+        {
+          "file": "geist-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13396,
+          "sha256": "4def20882cb74bf7e9cf2994058ed8d1236f6a53045cda277472bbc553714995"
+        },
+        {
+          "file": "geist-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8208,
+          "sha256": "0b76675c860c9bc0bad27f3851b1cb39918bc933ace76dc5d32df882903100b9"
+        },
+        {
+          "file": "geist-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7828,
+          "sha256": "6e4c9792d82ae0ddb7e0e4c83afa7deb9fcf785ca373c25f63cfe577d0f78fd7"
+        },
+        {
+          "file": "geist-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8356,
+          "sha256": "bc6c5e98f12ecfd182bdd88ab5a8959b57350e0225046a28b345ac23c6831326"
+        },
+        {
+          "file": "geist-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7940,
+          "sha256": "b35a1f6ecc3923cc5edfcc45b4394e5905168fe10bf6f507c1d752962f69cbc2"
+        },
+        {
+          "file": "geist-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8400,
+          "sha256": "c9d44a91c9d0641b16a6061459286c778e79f7e1839a154dd91f4393411bbebd"
+        },
+        {
+          "file": "geist-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7996,
+          "sha256": "bc1a2cbd3a79ed5b1209c2b8d3c7abe5458675f6ed6f80ddb3a16fa82d3ad5d3"
+        },
+        {
+          "file": "geist-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8364,
+          "sha256": "e0073470974965c3b8f011a992cf5ea1420afe623b77bbc633642d6cd6749bfc"
+        },
+        {
+          "file": "geist-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7980,
+          "sha256": "f942cf9480a5dc6ef1bfd4d6e2983049452b404850afdbb179ee72df438044f7"
+        },
+        {
+          "file": "geist-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8396,
+          "sha256": "e85303a6a3bd7e718ee06083e72d0660cf08810523807d94eecdeda23e51c2df"
+        },
+        {
+          "file": "geist-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8040,
+          "sha256": "09fe85f7d06e6413c3a8e8e08138d165d848d8adc26419454a57a02d3a644907"
+        }
+      ]
+    },
+    {
+      "name": "Outfit",
+      "category": "Sans",
+      "id": "outfit",
+      "version": "5.3.0",
+      "package": "@fontsource/outfit",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/outfit/-/outfit-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "outfit-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14032,
+          "sha256": "71f028fd2349990b3f8aa643abe767e82e0f596be407ae66f0004ff164121bdb"
+        },
+        {
+          "file": "outfit-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13528,
+          "sha256": "fc9bff941def6d924a71632bd8a93190528872eae6414844f3c367ff948d92fd"
+        },
+        {
+          "file": "outfit-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14140,
+          "sha256": "8cfe15c2c6de6ef8efff3eedbd52a383ac9ef23d6c23f6cd9f9b838f5f37dc36"
+        },
+        {
+          "file": "outfit-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14060,
+          "sha256": "5d5e3734089a74707292ce8a3e186def34cd63e33879f9ac3689a8d8da9d0706"
+        },
+        {
+          "file": "outfit-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14048,
+          "sha256": "eabf8cb2c01d0345e2eb19a49d04e8f8d0d520b74959b173d5ea6c2dcb95e4cd"
+        },
+        {
+          "file": "outfit-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6380,
+          "sha256": "e279fd5005b5936e4f4d20fd21e1fdd6a35d724ff576623d31e7c425c356b7ac"
+        },
+        {
+          "file": "outfit-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6244,
+          "sha256": "89894a600bea0ec4724988d191ea32a0353bb1c9c130cbdf346654d356b1ba84"
+        },
+        {
+          "file": "outfit-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6528,
+          "sha256": "a049363d2c3565ef5ea79725c71d23030c91f679cc7a0cf45e9726375bd58e7c"
+        },
+        {
+          "file": "outfit-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6484,
+          "sha256": "545d41d83230a139623b3ec2889b338bb3c5a19a8aefe9c23b203dbe72b2bbe4"
+        },
+        {
+          "file": "outfit-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6472,
+          "sha256": "76bc5d459840a87367e894a2d0e648b43e5f546b726f9bb8ef4f801107cc2e30"
+        }
+      ]
+    },
+    {
+      "name": "Poppins",
+      "category": "Sans",
+      "id": "poppins",
+      "version": "5.3.0",
+      "package": "@fontsource/poppins",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/poppins/-/poppins-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "poppins-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 8668,
+          "sha256": "50d0c1742d80ac71f4cde20e8c04d41a24806af342831f479938b527fbff0972"
+        },
+        {
+          "file": "poppins-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 7884,
+          "sha256": "7d93459d86585bfcdbb7e0376056226adb25821ee54b96236fe2123e9560929f"
+        },
+        {
+          "file": "poppins-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 8504,
+          "sha256": "1ddb074f9963be8f6275c42dbd54d18625da8f91c85803121094ec81649f488b"
+        },
+        {
+          "file": "poppins-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 7748,
+          "sha256": "cd36de204aca2d5fa263a731f7c20009b5e3d754ba1f1e03c33e93a48f3e7446"
+        },
+        {
+          "file": "poppins-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 8724,
+          "sha256": "3ad6c8bd3624555dd79177efe91f0aca20e7f28597fa6b49762c27f337500d8d"
+        },
+        {
+          "file": "poppins-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 8000,
+          "sha256": "f4e80d9dfd374d02989b87a27b5ed4cb78fbb177c27f1478e9a8b0afb7513149"
+        },
+        {
+          "file": "poppins-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 8596,
+          "sha256": "4b0864712c6e7ca75f8c003f7bc1a9270af33d6becd4119463771593274c48d2"
+        },
+        {
+          "file": "poppins-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 7816,
+          "sha256": "9338e65fc077355c7a87ae0d64cc101e23b9bf8ad78ae65f0f319c857311b526"
+        },
+        {
+          "file": "poppins-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 8680,
+          "sha256": "494d66c1f510af5609c852b228a4ad3e0f12ccf93126b5f437f8e4ac14def828"
+        },
+        {
+          "file": "poppins-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 7824,
+          "sha256": "60bf0aba6526436f3930c58c12047687fbb6bff4dd180cce4613458ed3439ea2"
+        },
+        {
+          "file": "poppins-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 5964,
+          "sha256": "1e91b430ebe5aa347934e70dcd76ca3c594e34d41d14ba3e2f1a7e1dcbc0cfc6"
+        },
+        {
+          "file": "poppins-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 5644,
+          "sha256": "0b1fcab42c18b69bcfe9ce4799fcbff5af1621c53ffcfdc4723c6f5ec4ee3ffb"
+        },
+        {
+          "file": "poppins-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 5856,
+          "sha256": "248a4c140325101536a69bff763665e7356390cbf0ce326b35bad968e42b5743"
+        },
+        {
+          "file": "poppins-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 5484,
+          "sha256": "af5fda16a19169e029a132374616728e1bf326d90bef5a552395c5053e21cd0f"
+        },
+        {
+          "file": "poppins-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6012,
+          "sha256": "10a9b6414cbebd6948c3a3a96838480b1ee019e0468033245ea1ddf1143bcda8"
+        },
+        {
+          "file": "poppins-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 5524,
+          "sha256": "bb1f2d582e7fba586ab70c91ef062d3becaf78b887654953863521b73665d171"
+        },
+        {
+          "file": "poppins-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 5860,
+          "sha256": "4c05ae2d20c308c3b949b4578256e5438d0af62a7d32ac6dfcc63a230246adb0"
+        },
+        {
+          "file": "poppins-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 5432,
+          "sha256": "ccfd87f69ef00d811da3d06488cec4e79ec99d289cfbcbe4be42031cecae775a"
+        },
+        {
+          "file": "poppins-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 5932,
+          "sha256": "fabc455f55219e7fd5c5f69adfc5b073868fa45b09dfcb24bfdf1060575f9df1"
+        },
+        {
+          "file": "poppins-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 5492,
+          "sha256": "a72eccfa6cfa9c26b4004e98dbf8592ea0fb3704b2fc749e8bd60a996e2e5a7c"
+        }
+      ]
+    },
+    {
+      "name": "Raleway",
+      "category": "Sans",
+      "id": "raleway",
+      "version": "5.3.0",
+      "package": "@fontsource/raleway",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/raleway/-/raleway-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "raleway-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22720,
+          "sha256": "8ff3768f98c46cf7065282cdf624c8fd880d6336286080766d1405ee47f8a5db"
+        },
+        {
+          "file": "raleway-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22408,
+          "sha256": "2318962e7930f55b45907ee85a6b6165ca3bba437b05ca17068a5c876d3de18b"
+        },
+        {
+          "file": "raleway-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22192,
+          "sha256": "7625d92ae1bfe5e97629143bb5645bf405cd21a2bd7ad5c8f6378a0ccd3af1bf"
+        },
+        {
+          "file": "raleway-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22004,
+          "sha256": "079304529dd9db1bdab7e005680fc30d3233e2ba828c1996a3770018334bedf3"
+        },
+        {
+          "file": "raleway-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23052,
+          "sha256": "66188c157a5f03ef8b32d7d7743a858bff03c0e27e1dbf5f77c0a0b22406b8ed"
+        },
+        {
+          "file": "raleway-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22816,
+          "sha256": "0a66971e5a13d918e9b8cddd1da9a2490694c8f508f3546e4b200d700c7a136b"
+        },
+        {
+          "file": "raleway-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23052,
+          "sha256": "93630c9e7ff7629af6caaa8c74fe3cab29396dac32b2d3685e708d39f701c071"
+        },
+        {
+          "file": "raleway-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22696,
+          "sha256": "05844cd75b25917a8463edbffc9a952205d327775c54a6697745ababb14a10d7"
+        },
+        {
+          "file": "raleway-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22924,
+          "sha256": "55eb677f32a933ef4fc48b40e13893338901b79f14b246b7a8349ccd10a382c7"
+        },
+        {
+          "file": "raleway-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22644,
+          "sha256": "12ba99eb125d1348c0ee4afe5ac74c30cb2d68eb25f17da934f94677545c89b2"
+        },
+        {
+          "file": "raleway-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17468,
+          "sha256": "9f1160f93f9d5affc94a9e063c48c3b5aa0bd11893ecb52ff831e731d0c3a32f"
+        },
+        {
+          "file": "raleway-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 17012,
+          "sha256": "e8ab3804b770bc1f6ee998bdcaa28e05d02346654356869ae726469e5148dd0d"
+        },
+        {
+          "file": "raleway-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17300,
+          "sha256": "ddfd3cbb7de0fe20a9c0c6e0a27d4ee988b6c0d82b0994b04774c367365f405b"
+        },
+        {
+          "file": "raleway-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 16920,
+          "sha256": "b16e12bb3514dc53736d08904ad137b160d125f5001911345d59fa95ff578464"
+        },
+        {
+          "file": "raleway-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17900,
+          "sha256": "c8953ddc9ca9f17645dbdc246117a0491579c1bd83aa8626036465dedcf322c1"
+        },
+        {
+          "file": "raleway-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 17248,
+          "sha256": "9c8d6e3155bcb8cc95131a1f5266a008a65326182bb9a3b740b67d0c428a0f75"
+        },
+        {
+          "file": "raleway-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17712,
+          "sha256": "2c181690662cc0dbfc6ffe2f4362194d2d180fe17f8e34dd2da3eeb79aed446e"
+        },
+        {
+          "file": "raleway-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 17160,
+          "sha256": "35df489b3e551b3ecb36b1341c9fe13040cee20b05b779159040a4eadb5c1851"
+        },
+        {
+          "file": "raleway-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17784,
+          "sha256": "6bda13ab9295c67744dd3fb4592cb4c9a0b19abfb074ffb324390fa9a5eab67b"
+        },
+        {
+          "file": "raleway-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 17204,
+          "sha256": "7740f034763a657a9d57b1ac89cfdffcc59ea80ca51581b6ec435e770685ef1c"
+        }
+      ]
+    },
+    {
+      "name": "Roboto",
+      "category": "Sans",
+      "id": "roboto",
+      "version": "5.3.0",
+      "package": "@fontsource/roboto",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/roboto/-/roboto-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "roboto-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23672,
+          "sha256": "5d0e978b6560631da2504e1612e91ee1ff959c04adae245eb320ac90cad2ba2f"
+        },
+        {
+          "file": "roboto-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21884,
+          "sha256": "425c0713a8176f92273d378599c7eac57de7fafabd4bd0ed457b70eb8f80d371"
+        },
+        {
+          "file": "roboto-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23896,
+          "sha256": "b5843bdfcb8683f34fb44444cf15d2a03ad93d6b11934a55d059aae2b650bbfe"
+        },
+        {
+          "file": "roboto-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22200,
+          "sha256": "5bcc3aa180e7f26f643cd5b2621cd7c2de193d0661d913a94afd3d4881a7a34b"
+        },
+        {
+          "file": "roboto-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 24004,
+          "sha256": "a58570b077f28746c23bcb12eb6348c8a26d9e97d2d1f4c3cf07eb4e9e04c787"
+        },
+        {
+          "file": "roboto-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22240,
+          "sha256": "3eac5e2f468629b4673394bb25a387aba117e0dfa646b7f371a2cbd2bbf91d87"
+        },
+        {
+          "file": "roboto-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23988,
+          "sha256": "cc04783263e416f8ee2a218fde6ffd532d6b81636d3187d30e39e4ad05736d5e"
+        },
+        {
+          "file": "roboto-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22240,
+          "sha256": "b9d66d1708156f765ada51939bc24ed259dafa69eb631b36e443680fe9e15879"
+        },
+        {
+          "file": "roboto-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23888,
+          "sha256": "7f369045e47f5b97f03e42274ad60201ac046477874773967af656e851ed7441"
+        },
+        {
+          "file": "roboto-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22128,
+          "sha256": "53def881828820abab0f3c56c5db052669533cb8e1a32dc98e6c254c5d4a667a"
+        },
+        {
+          "file": "roboto-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16068,
+          "sha256": "ad66d13b1a82df14c8937a7c547809471a3a42e67b0fc06c0aa7955f37b6ece9"
+        },
+        {
+          "file": "roboto-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15040,
+          "sha256": "5725eacca97303d8bce26f76cfcaee4393295bbf93c1eb6c3e5e4f260b2da189"
+        },
+        {
+          "file": "roboto-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16324,
+          "sha256": "801ba5a12568c43a3258a69f0f842af535a1c5d9771c7270e6bdf8acec54a785"
+        },
+        {
+          "file": "roboto-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15160,
+          "sha256": "1e597a6e3b163200475089698be3427ab1bb01553493d5b7d53694429948d8ec"
+        },
+        {
+          "file": "roboto-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16284,
+          "sha256": "e8114fb69205d2e6cf1c26a81731314927733b6e4562ae243f047b5a76dfec94"
+        },
+        {
+          "file": "roboto-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15188,
+          "sha256": "82ea2dcb706db06dad121fce946cdd5551985e90f7b986a3c1ea390d9bdb4244"
+        },
+        {
+          "file": "roboto-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16384,
+          "sha256": "575c2a3fc4c2a726821a49bff46bd19e916bb24e485e3f8e433895ef1073f37f"
+        },
+        {
+          "file": "roboto-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15196,
+          "sha256": "7673803a2d402018b1f726dded5bf2dbf2be4307039e8718f4bea654d6eca249"
+        },
+        {
+          "file": "roboto-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16380,
+          "sha256": "756862a64fd70eb10d3b86667f6c148060ba779c574286ea920c146c604ccde6"
+        },
+        {
+          "file": "roboto-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15216,
+          "sha256": "ce8ce842dd8f9d88c51de8585d2006c4a904a59325b035e5c8f954e0af04ce14"
+        }
+      ]
+    },
+    {
+      "name": "Figtree",
+      "category": "Sans",
+      "id": "figtree",
+      "version": "5.3.0",
+      "package": "@fontsource/figtree",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/figtree/-/figtree-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "figtree-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11872,
+          "sha256": "3a2b7966f6d36cb6b6d1b71ca83668a9234e8cf1b9adaf733d7439885c314d57"
+        },
+        {
+          "file": "figtree-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11384,
+          "sha256": "8f98dd642986f1fa39c45b89665a57372897c235b36028e0e4a136e43dc5f8ab"
+        },
+        {
+          "file": "figtree-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11944,
+          "sha256": "03049837a6c5e103764193f3bae5597eb4e9524599476ee8aa021f5773cc7392"
+        },
+        {
+          "file": "figtree-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11432,
+          "sha256": "953a6a4294b1205a1b4d4b9e5529478e8c9e1c5a67a9aa24a551414cd85b6f51"
+        },
+        {
+          "file": "figtree-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 12020,
+          "sha256": "7c38d5536cfeccdf160306bb53f5bbf2502d068200dc627a5ffec07a77490c77"
+        },
+        {
+          "file": "figtree-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11544,
+          "sha256": "367d713287918784702563518f59239989da815c80d3c7337686b9816635a08b"
+        },
+        {
+          "file": "figtree-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11956,
+          "sha256": "9d0a2a92613201db6fa0c5a7c9e21939b29e5b8e6d9f9946ab21673584e617cf"
+        },
+        {
+          "file": "figtree-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11376,
+          "sha256": "7ec4f08d09f91d349917dd6592f6aaae66d8fe1bbd58fa24707961e79236616e"
+        },
+        {
+          "file": "figtree-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11984,
+          "sha256": "64059311ae5f128ee7caf0058714430987b207c055405df07e69c4032ff9c627"
+        },
+        {
+          "file": "figtree-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11392,
+          "sha256": "90f6908a05e4dc417647be6d0637eb8ecb7977cab9e577ab284d02c2092111e3"
+        },
+        {
+          "file": "figtree-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6264,
+          "sha256": "0c6e9b3dbe55248106785aae101666177c678a491e737035de00f88a746ad3ef"
+        },
+        {
+          "file": "figtree-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6188,
+          "sha256": "3f58126100ed4da09c54adcfb8fa9f642be69101d1e18dc4c0a5489ee9b904c5"
+        },
+        {
+          "file": "figtree-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6336,
+          "sha256": "636f1e57f702eba5f275c1864a2d3f78a25704e7d502f3d54748e60c7a487e36"
+        },
+        {
+          "file": "figtree-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6156,
+          "sha256": "65f0ca6dc939a76e0d63fd7b1fae1039d0a8963d2ce68a00ec20122a452e3b08"
+        },
+        {
+          "file": "figtree-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6356,
+          "sha256": "fb491a30f74ce9544dde153968639f9b82037238f64968e918cc49fe6d7d7d1f"
+        },
+        {
+          "file": "figtree-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6240,
+          "sha256": "066f04a662a3b3f740f2e711548003e12c2475375e58a59477aa440c8fd03a17"
+        },
+        {
+          "file": "figtree-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6244,
+          "sha256": "495e91a483c91f9536517324060cf0325222864601ef14dc246aa4e6f3b70ede"
+        },
+        {
+          "file": "figtree-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6172,
+          "sha256": "b3252ef48dfbfc51b2e7eecb4de8414dec694c4c83a16ef7afd319796235ef72"
+        },
+        {
+          "file": "figtree-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 6324,
+          "sha256": "2da07d8d1f9df25db7b4a8c368bdfa0c6fb1be266a75592930e8baaca48e77f9"
+        },
+        {
+          "file": "figtree-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 6220,
+          "sha256": "75d2185f153a5b14aa7f380969a401de04cf554292a94a533386a6b49e8e322d"
+        }
+      ]
+    },
+    {
+      "name": "Nunito",
+      "category": "Sans",
+      "id": "nunito",
+      "version": "5.3.0",
+      "package": "@fontsource/nunito",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/nunito/-/nunito-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "nunito-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17140,
+          "sha256": "983e9c4b4a8f3bb81190009facbccbe5ecf9f55a758ae95c4759a00f715312d1"
+        },
+        {
+          "file": "nunito-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16316,
+          "sha256": "a5906e15ceb68f73d3b2c2076b4057c3f6ed401186d56283b45ce12944ca0735"
+        },
+        {
+          "file": "nunito-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17304,
+          "sha256": "d0eee41f3d867498e3b85f161acb24c6990c2d12ad14fa6c5e16a6c63c41cd14"
+        },
+        {
+          "file": "nunito-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16428,
+          "sha256": "23ae3083dbdaeabf3b9969a3947ddf5d5614683516e28ffa110ca4eb6192a9ff"
+        },
+        {
+          "file": "nunito-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17376,
+          "sha256": "7901a2c0d1693e089af5ec6ba529534f3bc8322a829950a329363be864ec20cf"
+        },
+        {
+          "file": "nunito-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16556,
+          "sha256": "45f437de32ff5973eb5616b43c1308bf9fe897442f3d78a603c4cd0a06d66573"
+        },
+        {
+          "file": "nunito-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17148,
+          "sha256": "e666bd4b48ad20e5385e1f1ec1607d68b85380cfe04064fbb5a2bfdc8200deaf"
+        },
+        {
+          "file": "nunito-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16228,
+          "sha256": "fa89300b9bbb3bd0f60d6991aa055965d98e2ccca27bf8688fe0c39cdc796846"
+        },
+        {
+          "file": "nunito-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17484,
+          "sha256": "24c88b08dae454cc6f5868daeea323c3ad9a347c0f4a83698f0c13338ab3ceca"
+        },
+        {
+          "file": "nunito-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16520,
+          "sha256": "2363d3ed037283ebb961e8c4b4917e40a8bc8853cf9965cf1ea7b4daa1df630a"
+        },
+        {
+          "file": "nunito-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16864,
+          "sha256": "dc974662eb582e44aef9f36fcb97513555127d11e25ade94cff6ffdba7d15941"
+        },
+        {
+          "file": "nunito-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15888,
+          "sha256": "67250a41de218bef49c04ea88c3d73c5756ad750a182209a560e1a521323a680"
+        },
+        {
+          "file": "nunito-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16884,
+          "sha256": "758d2a79d96bba669477fbf1a0999930d35e83e8e8f4ceb6cefd610247d1ec57"
+        },
+        {
+          "file": "nunito-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15976,
+          "sha256": "343e7adc7b39f89e71c6dc53244eb7e5f70a3c972b93fa06e8f57ede6236405b"
+        },
+        {
+          "file": "nunito-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16972,
+          "sha256": "cf7c951f0edc2d0b4614467e3c2fb6eeebe5367e8f8e093c89e13f0c10292dbe"
+        },
+        {
+          "file": "nunito-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 16088,
+          "sha256": "a7ba5f4fa4cb615374731c961569110f48550c36e628fc3bbe40a3f3f26a06a6"
+        },
+        {
+          "file": "nunito-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 16736,
+          "sha256": "5bb01a58beb2f2a6d4cb6cd6983bcc9ac43c2c7dcf851384635e7603dde60102"
+        },
+        {
+          "file": "nunito-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15820,
+          "sha256": "0a4e4a02e13c6b36cf2a3ce236cc5ad8c0b93352fc5fb380860161557a9b199e"
+        },
+        {
+          "file": "nunito-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17436,
+          "sha256": "0eadcc9e0dcee867dabb5722f8b3ee25269925909619993b39285e0455880296"
+        },
+        {
+          "file": "nunito-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 16284,
+          "sha256": "39f54b55b83547df294894bdf68d75c11e2ac626bc0c88b73ba8993422de2fe7"
+        }
+      ]
+    },
+    {
+      "name": "Manrope",
+      "category": "Sans",
+      "id": "manrope",
+      "version": "5.3.0",
+      "package": "@fontsource/manrope",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/manrope/-/manrope-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "manrope-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14108,
+          "sha256": "849290ef12a2eeb9af5c11924120d11aa4ae8b435ed3347d7fc8bc240c293ca3"
+        },
+        {
+          "file": "manrope-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14044,
+          "sha256": "19874318747181a650eda439c37955220b849d9c4797c9e0718ee67d4bf929bc"
+        },
+        {
+          "file": "manrope-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14172,
+          "sha256": "f7ac6258da20ab7541939b59851155753d1d24f1b30cbcb949077a3faa3d1593"
+        },
+        {
+          "file": "manrope-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14212,
+          "sha256": "d2a12c85a831e4b5db341767d0347fa3d1361d22a1fcb3e361a16b6c90080f71"
+        },
+        {
+          "file": "manrope-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 13648,
+          "sha256": "74c161dbcbce7c3590803cc72dc1f63313c360e13367aba5075a7b7b3818ea49"
+        },
+        {
+          "file": "manrope-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8292,
+          "sha256": "72c5354a6f814f3bd38dc3d8caee774f7557b301e69d8428e677b7b73d58d9ee"
+        },
+        {
+          "file": "manrope-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8192,
+          "sha256": "40787d0c2ff6301cb60b504b6c7a2518c5e0104e6f0f5329c14536d6ed1b884d"
+        },
+        {
+          "file": "manrope-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8304,
+          "sha256": "ff679412842fc3b5ce2dfad626db5261a4e663dcfd1bf1209bdfc61c2b2f37e6"
+        },
+        {
+          "file": "manrope-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8276,
+          "sha256": "dc7c46d7eb269cc90650d7f70cf49aafa39a98444e6882cc84096acbc156bfcd"
+        },
+        {
+          "file": "manrope-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 8032,
+          "sha256": "262536c3018a0830a4d3d1b1a8096ac0d53dbd059f6271cca121272ba9d4f948"
+        }
+      ]
+    },
+    {
+      "name": "Plus Jakarta Sans",
+      "category": "Sans",
+      "id": "plus-jakarta-sans",
+      "version": "5.3.0",
+      "package": "@fontsource/plus-jakarta-sans",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/plus-jakarta-sans/-/plus-jakarta-sans-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "plus-jakarta-sans-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 12592,
+          "sha256": "e3d33148aa32c737949f4f91a0a3ef014792be66c61539455c492ec2cd4796e6"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11816,
+          "sha256": "221a4135d06a4b33abbd535e9a0da4e565d19545ddd9267c4e678a916d54d9b6"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13104,
+          "sha256": "5b548794f47fad73307679fa993681dcf9cc45d402d81785f1a5aae4d3c37725"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 12312,
+          "sha256": "bad081c8dbc15aed6c5e4cde5461914f7b3bdc295b7a7aed177e4beddb79bffa"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 12984,
+          "sha256": "721f0aa84f5e86976172b46f8fc51b1ddc4c0e0a1b4969c7159e1feda3fd42bf"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 12188,
+          "sha256": "8872bb5c9111df9bd3162c2394aee6354d782b13408a4dd5bbf65c48207206e6"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 13048,
+          "sha256": "995c33d1ea0f192ac2d8038abbfeb04c5198fcd1e876beb69a848c7649378e54"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 12244,
+          "sha256": "2050755bf475817c96ac7d914c7f07cc3c2d11ff4b3fb4747b8d41de584aad17"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 12596,
+          "sha256": "714d8ba058e160238e7ebb5c9b446e3814f859c1473497757cdc75473bc0d88e"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 11896,
+          "sha256": "5f301a8ef9c266c8b596e6793d3cc826daeff9849c5af035f5386439137955ad"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11140,
+          "sha256": "8bdc0f1b580aa381668eac662c2ea4a39efabef8225987d8f7b4865120617f27"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10592,
+          "sha256": "65b5680bf2ba9c6c42af74ddd2e8aadde93af7c523454ebb3d4e32fdba3f94db"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11512,
+          "sha256": "d0a47f56b2b823867d3a5e3709378f8bc87911a6ca57c53ad3e57dcdaa947197"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10864,
+          "sha256": "d1584f50c388cae7e570bed35be331fa4a9afd6832ef45a32fa8bf81930e6db9"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11496,
+          "sha256": "5c5995ee51ecf0ba34bee04aff753202965446b407fce60061d5410f7df0c5a8"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10896,
+          "sha256": "080a1fea8589c2bd4fa08750d0d99b3388be63df8c41a649de05cb2dda1ec007"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11560,
+          "sha256": "0182ad9a833aad38b26edb33e420eed74d4fa7882ddb57c72048088e1217519c"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 11008,
+          "sha256": "b202ec87899e78825db955e6ab43858b88c0cd444abe2dfac2e763f837b8f234"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 11376,
+          "sha256": "4660dc4b0f05c7d7ce655815e33a1b05d28b0b9843cc4e9c857b1ac578106696"
+        },
+        {
+          "file": "plus-jakarta-sans-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10804,
+          "sha256": "7c27e3fd36e9c1d6a2f354943b32993b01dc0b1e64e8275bdd5122b260ca6a24"
+        }
+      ]
+    },
+    {
+      "name": "Bricolage Grotesque",
+      "category": "Sans",
+      "id": "bricolage-grotesque",
+      "version": "5.3.0",
+      "package": "@fontsource/bricolage-grotesque",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/bricolage-grotesque/-/bricolage-grotesque-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "bricolage-grotesque-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22364,
+          "sha256": "826772cb1251f09b4c9d76fc6266993d67b03507bee337ea2eac0fb3e0879de3"
+        },
+        {
+          "file": "bricolage-grotesque-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22476,
+          "sha256": "b62688707e0820a9cf2a98e9b0349fbb348fd17f76b70a05b53e7a668e3f406f"
+        },
+        {
+          "file": "bricolage-grotesque-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22456,
+          "sha256": "b34fc8c1ef0ac8798455ac2979eae4b4f90f0d327e3584d1032fa77a8a9a66ca"
+        },
+        {
+          "file": "bricolage-grotesque-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 22384,
+          "sha256": "4c373ce3c1cca41c864eb3e27c059a59fc6310547ab9c9b6cd780d387ba24206"
+        },
+        {
+          "file": "bricolage-grotesque-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21844,
+          "sha256": "3e1b5f0a56ee995b7c1445bc54e6ec98c5dffb585ef5c4baf86731cf68e27c61"
+        },
+        {
+          "file": "bricolage-grotesque-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10536,
+          "sha256": "5275e25c22f992ec0dcae578f5e352bfdf9eedda4dcecff124d5e28c1402b6e9"
+        },
+        {
+          "file": "bricolage-grotesque-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10640,
+          "sha256": "1641fdadc1fbc141be420a8a0bd9264a40454f633c6284ee8dc41c58d9a7d57c"
+        },
+        {
+          "file": "bricolage-grotesque-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10616,
+          "sha256": "9903537bd117c519eedf2d80824d1cb4591238edde5ecd00b9d69fef5c9e9375"
+        },
+        {
+          "file": "bricolage-grotesque-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10632,
+          "sha256": "25d714d702deab603819c7fbc619d6d63d86a0d055fa61b3b9f0453f9d5e697a"
+        },
+        {
+          "file": "bricolage-grotesque-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 10496,
+          "sha256": "e101adfee20e88db3b345948b0bdc43da40253cc8c7139d7752d01704718d825"
+        }
+      ]
+    },
+    {
+      "name": "Comic Neue",
+      "category": "Sans",
+      "id": "comic-neue",
+      "version": "5.3.0",
+      "package": "@fontsource/comic-neue",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/comic-neue/-/comic-neue-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "comic-neue-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 19564,
+          "sha256": "5d9b0135e0088ef23caea9f0d33d2364492b469d470957d43d5ce6d205b99120"
+        },
+        {
+          "file": "comic-neue-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 19572,
+          "sha256": "b7753f30f8bd4925cf48a2ffe936c52ff1f16fe441f8c0245acf046296ac590f"
+        },
+        {
+          "file": "comic-neue-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 19828,
+          "sha256": "ee8888e80e0763f8d5646e0a9cf01768bce3443a9edcde52e205fc105cac4d3f"
+        },
+        {
+          "file": "comic-neue-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 19244,
+          "sha256": "13e9f12e3a0239dcf740e1c7ff37be1cce9b87ead0ad9bce838da1202ac9f91c"
+        }
+      ]
+    },
+    {
+      "name": "Source Serif 4",
+      "category": "Serif",
+      "id": "source-serif-4",
+      "version": "5.3.1",
+      "package": "@fontsource/source-serif-4",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/source-serif-4/-/source-serif-4-5.3.1.tgz",
+      "faces": [
+        {
+          "file": "source-serif-4-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 20092,
+          "sha256": "882b7c150c29f29d4f8daae6b8dcae8662aac7f28ca34b34615305154136ecfd"
+        },
+        {
+          "file": "source-serif-4-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 20088,
+          "sha256": "02194deb92d3975dd30e11a3824a1f1db32b48c93654e60560cb81ce8e7b5f95"
+        },
+        {
+          "file": "source-serif-4-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 21444,
+          "sha256": "df3dca6c4e58f28f1f3d81b0640afb100dad7bef4d6a0ecd719c0a94da082fa3"
+        },
+        {
+          "file": "source-serif-4-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21528,
+          "sha256": "d3e119de0b756d9fa6d368de570f7168bb74eedf3289aaeae22dd97b900918d1"
+        },
+        {
+          "file": "source-serif-4-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 21588,
+          "sha256": "cdee523b89692709393643e25fdc066be137d5b0b9782548779e8382c3c11ce7"
+        },
+        {
+          "file": "source-serif-4-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21532,
+          "sha256": "f2b7e1cf1d277b7608231868135648f8ad8e2b58d8e97ca088bee15dc357bee7"
+        },
+        {
+          "file": "source-serif-4-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 21484,
+          "sha256": "700a80f147fe1cf69dac97c3fe0245efbbff8b46fc41d2d46d6ef0b0a4ab22d8"
+        },
+        {
+          "file": "source-serif-4-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21716,
+          "sha256": "7691c51bc286a9014db0048277d2c3f2ad0a90b533dc8adfb16cb22a95390d39"
+        },
+        {
+          "file": "source-serif-4-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 21592,
+          "sha256": "06a1127f4e6fa67ff32c4ababe243260b5d20f17fb344d851bb6645684ccc50d"
+        },
+        {
+          "file": "source-serif-4-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21572,
+          "sha256": "96c9b28d61407078182d1d11ce2838ae99e035c44e9c29471ecf1148914ba16b"
+        },
+        {
+          "file": "source-serif-4-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 18452,
+          "sha256": "d06253118f11f443e5799217c5ecaf55f68a1681115fa3a1d947e8ca288e7b8c"
+        },
+        {
+          "file": "source-serif-4-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 17844,
+          "sha256": "78ff74ea29d0cc5594ff9efd5c0a30911691b89e9021e7bcf118b95e285e007f"
+        },
+        {
+          "file": "source-serif-4-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 19000,
+          "sha256": "c18a4a2f6470cf7bc1a6a9a7d8d5ccfb7299dd051ffb399e490353b78b04837d"
+        },
+        {
+          "file": "source-serif-4-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 18380,
+          "sha256": "f33db9495e4f8e7fa818a181950c50448a6e505d33689507f7ad8e28149fc140"
+        },
+        {
+          "file": "source-serif-4-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 19056,
+          "sha256": "8518444dbc13488faf0ac5787f5608d0a9649fcb5684b84ef482c251c8e57cb7"
+        },
+        {
+          "file": "source-serif-4-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 18332,
+          "sha256": "ba70bfd7a5f52800fb9abedfe1926db2b1b614b10cb8ac1e5798a14fb06a02d4"
+        },
+        {
+          "file": "source-serif-4-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 19156,
+          "sha256": "295d03b2c1d548460fde7b883da9afb68735bce1896ff01968ad9b422430565c"
+        },
+        {
+          "file": "source-serif-4-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 18468,
+          "sha256": "06e2c39d92b45e61e0988b141fdc61632f77e5e7d793e225ee7eb9e307333308"
+        },
+        {
+          "file": "source-serif-4-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 19216,
+          "sha256": "af9ee7a3a630dec0af12ace88e3b8d20e33c73c53a33c25eab78e94830b711ba"
+        },
+        {
+          "file": "source-serif-4-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 18500,
+          "sha256": "7c3e338268ad3c40db5d60cf555a81f18e28fbb601db0878133238485082baea"
+        }
+      ]
+    },
+    {
+      "name": "Lora",
+      "category": "Serif",
+      "id": "lora",
+      "version": "5.3.0",
+      "package": "@fontsource/lora",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/lora/-/lora-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "lora-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22756,
+          "sha256": "723cc14fe86bc9fadb2f5f34efb421d246edb240a18d2a7828d2edc041d79996"
+        },
+        {
+          "file": "lora-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21148,
+          "sha256": "ac079950fd9885261c0f73d9e87233f31b5427333ce0eb20e26c119458493c40"
+        },
+        {
+          "file": "lora-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23376,
+          "sha256": "dd02a01aa86a3d388db13495b13509af4af12551fc3aa978aceecc51b8e4c17b"
+        },
+        {
+          "file": "lora-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21900,
+          "sha256": "03bcdff46fdcba0524c012d0392a5459023955e517d185c95a038e1f1e350523"
+        },
+        {
+          "file": "lora-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23340,
+          "sha256": "21a6fc2be0880cca4bc608b519eb34240ff99b29a70ea982c125f6d28b41f90c"
+        },
+        {
+          "file": "lora-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21916,
+          "sha256": "7bbfe9f3c9e9d6d07e17da4d5229a42b042cc2e16024993cb687dc08cc762557"
+        },
+        {
+          "file": "lora-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22256,
+          "sha256": "5be7722fced443a25698c6f77d12a04a2cffa921771d81f2d6f5516a381f134b"
+        },
+        {
+          "file": "lora-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21044,
+          "sha256": "c05fd5289492ed310ed882259b944ca5287e76e572a65d92d3941f9f44f0342a"
+        },
+        {
+          "file": "lora-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 12460,
+          "sha256": "3bb65e234cd07a69127592cafd08ce4242a1a4ace24dcc4c466881693fc74867"
+        },
+        {
+          "file": "lora-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12016,
+          "sha256": "525551030c504c0eb42d71b48ce10027e4431bd405d6cd04c468a535ce8d961b"
+        },
+        {
+          "file": "lora-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 12724,
+          "sha256": "00eee1f369d65376b25df438158bbef28439c34bf584f6f37dc1b298df4e6bac"
+        },
+        {
+          "file": "lora-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12212,
+          "sha256": "ce50dfd05dfd2debf6e32ba72e98aa7c44a48449bbe58dd713f4ba6d2d8ef473"
+        },
+        {
+          "file": "lora-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 12788,
+          "sha256": "2c9351842cf8cb556fcc30d880e607a6b24537e977c43d857163031cf331600e"
+        },
+        {
+          "file": "lora-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12272,
+          "sha256": "1af859efe22ded676752168b656fd5d5814a62717f4f9fcebc0475754caca27d"
+        },
+        {
+          "file": "lora-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 12260,
+          "sha256": "c722b8661fe24d9e8b5a4461b686cd9168fd2cf6ebcc1c8bc9191ba6eca2ef7d"
+        },
+        {
+          "file": "lora-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 11968,
+          "sha256": "eacd7ecd09a1b5cc2706867f2505fb139825c3db70b17123538565fb723d0000"
+        }
+      ]
+    },
+    {
+      "name": "Playfair Display",
+      "category": "Serif",
+      "id": "playfair-display",
+      "version": "5.3.0",
+      "package": "@fontsource/playfair-display",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/playfair-display/-/playfair-display-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "playfair-display-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 21884,
+          "sha256": "eabce94d4a69e439cd050755c31f9894ac8a78f93e58b063c6c01f370474e1de"
+        },
+        {
+          "file": "playfair-display-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21856,
+          "sha256": "1fe9ad5d8b2ebd8ecb8fbd05bed1e3fdfa52dae3f1a04e1c219918442fe9394d"
+        },
+        {
+          "file": "playfair-display-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23076,
+          "sha256": "8f074624e50ab805878b26ab5f3e0fa360043d546c35b043947e96a5c7071970"
+        },
+        {
+          "file": "playfair-display-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23048,
+          "sha256": "1e3429a2122b4171bf393c8de5c501820e17ca2074c498d7080e2326975d825c"
+        },
+        {
+          "file": "playfair-display-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23176,
+          "sha256": "8176ed854ef40b2cdebbdb7a1fd9283b3dada1e87c8e89d003f3485fc3c7435b"
+        },
+        {
+          "file": "playfair-display-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23228,
+          "sha256": "5d2286941a6b02a29387efa94809a064f8917598eafa67b938261cf13bb887cd"
+        },
+        {
+          "file": "playfair-display-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23196,
+          "sha256": "de2f4041e7ef84f418bd0144484e521e8df849aff47762230c981704b9661877"
+        },
+        {
+          "file": "playfair-display-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23224,
+          "sha256": "28453852ea165c47b5a941be00e418402e1407002ed87507f062a1e316328fe6"
+        },
+        {
+          "file": "playfair-display-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23088,
+          "sha256": "b2dbf82092c648374256eec29f3a935fa5863743c59fb6a25fdded4416167b4e"
+        },
+        {
+          "file": "playfair-display-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23272,
+          "sha256": "576ff9c33a472cc36e3975f24811db2234b0a10872939b04c0ba9b915e9c2b3f"
+        },
+        {
+          "file": "playfair-display-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 13668,
+          "sha256": "b02fdf18a2d7b09f409b01a1ab4afe7b5f7d08926b3c867187398765ea0fb3f1"
+        },
+        {
+          "file": "playfair-display-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12336,
+          "sha256": "b13dce34203d893eb00980383bc5abf8b75c9eb1f59c3a630e9fc8baf2e9984f"
+        },
+        {
+          "file": "playfair-display-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14028,
+          "sha256": "224ec72e732a9ccf564a90d056fc637fc29ac0be8209b0fa1a16730430d6cf02"
+        },
+        {
+          "file": "playfair-display-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12928,
+          "sha256": "30dee03523782294cd9b0d3ab46dfd3130c356cea831bf6cc8724e157f51846d"
+        },
+        {
+          "file": "playfair-display-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14124,
+          "sha256": "4f6a4778dcb42d51a922c9ee7ba5b85482473ce33e3d4eb9280912b24794b341"
+        },
+        {
+          "file": "playfair-display-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12880,
+          "sha256": "cf968562375eceed83b66f2b5445aa4ecdc4d5300de94930da06433877a975a1"
+        },
+        {
+          "file": "playfair-display-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14128,
+          "sha256": "8af70f52c55bb5cd12b43f2096f926280b099def7334690934282435b16ff18d"
+        },
+        {
+          "file": "playfair-display-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12904,
+          "sha256": "edb9f5d879b30c617698bcc288692c339d5a0a2464a5476f00025195e5cad166"
+        },
+        {
+          "file": "playfair-display-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14116,
+          "sha256": "8070143188bb531d9e269b5921b24687ce89afae0c312c0817b9e53e28d56b02"
+        },
+        {
+          "file": "playfair-display-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 12968,
+          "sha256": "24adb236cec8998bd06999d084c3f6f3f76b19e33feaeaa0ef00ac82d20500b4"
+        }
+      ]
+    },
+    {
+      "name": "Merriweather",
+      "category": "Serif",
+      "id": "merriweather",
+      "version": "5.3.0",
+      "package": "@fontsource/merriweather",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/merriweather/-/merriweather-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "merriweather-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 51836,
+          "sha256": "051559ee0644cd647c8f654cffea1d1a5ce601e573af21d0984528563fb476f6"
+        },
+        {
+          "file": "merriweather-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 49168,
+          "sha256": "66f5bd22d738a801a9e58d71920559743b0baaced04be299e3c4feca3dce3556"
+        },
+        {
+          "file": "merriweather-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 51408,
+          "sha256": "24ec33c89c262ed417612a9d7604d14b17154740354b86ec4bd7bb696577eb09"
+        },
+        {
+          "file": "merriweather-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 48876,
+          "sha256": "0b573a833832b8cafdcb3beeb64b2f4d524b7ca908c7d2232c2d78610b2c8ebd"
+        },
+        {
+          "file": "merriweather-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 51380,
+          "sha256": "8831458f7fe5347a6d35b8c660f56c568328bfae3c2cad49fd3f7d6122f877a9"
+        },
+        {
+          "file": "merriweather-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 48892,
+          "sha256": "3ef93c94387a5a08bbe3115b15b912ea9ed27cae4d5b7db869dc07c443fadc4c"
+        },
+        {
+          "file": "merriweather-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 51308,
+          "sha256": "e5adfc7eac419ec5624f00612ff7d27f0e5d4bfd898cddc88b610e9e533b641c"
+        },
+        {
+          "file": "merriweather-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 48660,
+          "sha256": "4e1ab49396c02be0d9a2a25eed7bc73781c047d85fcb5dfc2889873eaf992b09"
+        },
+        {
+          "file": "merriweather-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 51256,
+          "sha256": "261847cb920265f499ecd341a970aa1353289587d289da5967f2325a80f419c9"
+        },
+        {
+          "file": "merriweather-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 48672,
+          "sha256": "234916daa3dd072625fad30f1ae31d989c101bcd73ae8f29023cfbbc9a711c8a"
+        },
+        {
+          "file": "merriweather-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 44924,
+          "sha256": "ac83208e33a7c529dcb22b5f72951bab1e129db035176a584c8f5d68597e6098"
+        },
+        {
+          "file": "merriweather-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 42952,
+          "sha256": "be42f8d64ab6410fd300c4d352d9a0943cc1c3b4eb74016b73bcf6b252d74ac5"
+        },
+        {
+          "file": "merriweather-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 44756,
+          "sha256": "59abeb208d3c156036869bd444c9356b677066e5ec7e828fad4bef2b7f94a405"
+        },
+        {
+          "file": "merriweather-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 42656,
+          "sha256": "86ee295312b79ee33a6e9f0c287133de8366935c70341e28e2ff5a312d627289"
+        },
+        {
+          "file": "merriweather-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 44880,
+          "sha256": "ac33014e35fcbce34bf20ed3fa4ad9c91824c07bef204862264451dccb206ef7"
+        },
+        {
+          "file": "merriweather-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 42724,
+          "sha256": "031dc920d40868b6fbf7711c4d4ea499ccf9e05e139da6c0095b1786479cc878"
+        },
+        {
+          "file": "merriweather-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 44944,
+          "sha256": "6817fcf8183ce3be522ffb9f730cbc851c176456b30a43ec5b8aafd1a514591e"
+        },
+        {
+          "file": "merriweather-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 42880,
+          "sha256": "c4d28d6ee3414f8e0482f1acd62a35ea6409a2447c427191bcfa2f4f4ee670ff"
+        },
+        {
+          "file": "merriweather-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 44700,
+          "sha256": "757c669fe92c7ddf1ebb05d75f7454c38473a940993b5bdcb12c1094ab8c1ae8"
+        },
+        {
+          "file": "merriweather-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 42836,
+          "sha256": "288f7029dddca0d07d3c3961f6729b66bb6dd7b9b5e511122a02b700d2aef482"
+        }
+      ]
+    },
+    {
+      "name": "Instrument Serif",
+      "category": "Serif",
+      "id": "instrument-serif",
+      "version": "5.3.0",
+      "package": "@fontsource/instrument-serif",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/instrument-serif/-/instrument-serif-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "instrument-serif-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22128,
+          "sha256": "5a51946dfffa82972bc98745359c46761515641fda557c25116459a9f83da4a7"
+        },
+        {
+          "file": "instrument-serif-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21032,
+          "sha256": "5eb09b5ac0e28b67c2f041c8ba6d244604ca0c0980d65912ab2d47fed84ddc31"
+        },
+        {
+          "file": "instrument-serif-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 12384,
+          "sha256": "d0014821252a8a770bf7551641572f239a8ede83d75652d84fef0c3627751baf"
+        },
+        {
+          "file": "instrument-serif-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 11604,
+          "sha256": "290e6267dd833bf5f899eba4c29ad0a9b09dbe53f6075b18af38057159e1ff20"
+        }
+      ]
+    },
+    {
+      "name": "Geist Mono",
+      "category": "Mono",
+      "id": "geist-mono",
+      "version": "5.3.0",
+      "package": "@fontsource/geist-mono",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/geist-mono/-/geist-mono-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "geist-mono-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 10620,
+          "sha256": "1ace7031c634fb5773e97790f60f1b84e9776bb61582d314a50d5ce460fa6fca"
+        },
+        {
+          "file": "geist-mono-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 9864,
+          "sha256": "3f98383b122fe015a48536cd4a1cda855a201718923ffe74931a01597107b9b5"
+        },
+        {
+          "file": "geist-mono-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 10964,
+          "sha256": "c937e360f2ddb98af3dc0049added2d190a3bb6baf426166823d41fbb916ae34"
+        },
+        {
+          "file": "geist-mono-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 10116,
+          "sha256": "72971bd4908d3984fa1b1426bb363730e4957e16a0f58bfbca76993095715488"
+        },
+        {
+          "file": "geist-mono-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11012,
+          "sha256": "cf05d2e839207fc506d3d1c07d12cca53c309739dab95c171b84d2c5fa0509e2"
+        },
+        {
+          "file": "geist-mono-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 10144,
+          "sha256": "8b111a81bab818cf5393b81149c69d6a1756f3acc3a846decafef01974d12bd3"
+        },
+        {
+          "file": "geist-mono-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 10988,
+          "sha256": "d23b14248f9d86cba4a2c054b88f718099921aa5b540fefe487fa7ba38908ccf"
+        },
+        {
+          "file": "geist-mono-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 10180,
+          "sha256": "e26f16d6bda234828e574c948d9a5aca1327f83df2b3529a4ebea406ca026d0c"
+        },
+        {
+          "file": "geist-mono-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 11048,
+          "sha256": "340705c86a6edb5c3fe5d60ece90ccf4e5ae95a528faa0c017d889798de06a64"
+        },
+        {
+          "file": "geist-mono-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 10104,
+          "sha256": "adc82d640d3f58c5b602c0aa8d5d810b1acb58d221f6718eb24aaf68727a190f"
+        },
+        {
+          "file": "geist-mono-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7600,
+          "sha256": "7bd61af59284ddcdabf77b094e021b6de33c70c1b7ff9676416451d7f2abcb4a"
+        },
+        {
+          "file": "geist-mono-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7008,
+          "sha256": "8ede9cb664d0e0446ed066201d58e444f6147645ae0cb1108f765f68c54fe0a4"
+        },
+        {
+          "file": "geist-mono-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7784,
+          "sha256": "481fd4cfa186a5b0fbf85624d573375f7cd92d7eaa79219e62a1cb4e9daf24de"
+        },
+        {
+          "file": "geist-mono-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7156,
+          "sha256": "84c2a01e0e35619e561d46285ccecec68aae76cb96c618b8e047806cb5530741"
+        },
+        {
+          "file": "geist-mono-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7856,
+          "sha256": "c60cf1f87df486a24a34d6ccfea54238bd1ead9c82936fe63894c4f45efbbc22"
+        },
+        {
+          "file": "geist-mono-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7176,
+          "sha256": "80672911a59a1e1722602e54eac42bbab24bce5c21913bf19d1f5850dbf46ba9"
+        },
+        {
+          "file": "geist-mono-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7784,
+          "sha256": "1715a8be055fb2ceb41ee85ccf5791a220b3ba25d2ddd59b7554f64c00f51ad9"
+        },
+        {
+          "file": "geist-mono-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7120,
+          "sha256": "b1ebee3cc1ac18e8f8ad144e6876a218dab6aec36a780f2ae42b78d9657d69fc"
+        },
+        {
+          "file": "geist-mono-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7800,
+          "sha256": "877c46508279a3b6583dd344f501be5085eb4dba59981c0a414bd6af8195559b"
+        },
+        {
+          "file": "geist-mono-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7208,
+          "sha256": "66b16f4c18e46badda22193243f5f7e3618620b441cfe0442567391e071c02a2"
+        }
+      ]
+    },
+    {
+      "name": "JetBrains Mono",
+      "category": "Mono",
+      "id": "jetbrains-mono",
+      "version": "5.3.0",
+      "package": "@fontsource/jetbrains-mono",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/jetbrains-mono/-/jetbrains-mono-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "jetbrains-mono-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22228,
+          "sha256": "87ddac4a62229787528cf4ac3fa58137b62a9aec364c44fc0f40470bcda9efba"
+        },
+        {
+          "file": "jetbrains-mono-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21168,
+          "sha256": "14425ba9c695763c1547f48a206b7aa60350a33ae23de09f0407877f3fcd89eb"
+        },
+        {
+          "file": "jetbrains-mono-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23020,
+          "sha256": "8c2b903e070e5af56ba45a1c1ed8cfbb1be556ae115ede519acf363b63473dbb"
+        },
+        {
+          "file": "jetbrains-mono-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21832,
+          "sha256": "cb182feeed4d798ff6961d3c79f7026279448fca0676438aaecb21f3fc39553a"
+        },
+        {
+          "file": "jetbrains-mono-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23100,
+          "sha256": "a4b71abccfd3a61dfcd42b72ae3fee9d47bcf5e656bedd5bf51ad5b9001ecc50"
+        },
+        {
+          "file": "jetbrains-mono-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21860,
+          "sha256": "400c6bfda18d5d14acad1c15d6dcb9f8e13c015e7286317e0b9a482539bef147"
+        },
+        {
+          "file": "jetbrains-mono-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 23116,
+          "sha256": "2cd42fe8f872ef7e06156fe04338b23fc4ec532e66450c8e931db43473c0306c"
+        },
+        {
+          "file": "jetbrains-mono-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21908,
+          "sha256": "d0d4e818808f2a0ba39b2b09d1989366f63494e295f003c7ef436697378507e8"
+        },
+        {
+          "file": "jetbrains-mono-latin-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 22324,
+          "sha256": "82f17477d9e417911a9dc149916fe4af406fc6e51ede25c00858b9c618dda4be"
+        },
+        {
+          "file": "jetbrains-mono-latin-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 21236,
+          "sha256": "237d0cbcf1aacd607e07f610d79cbc880edbffcc99ebcf417c502f8fa873ee53"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7972,
+          "sha256": "a53b6b29b1621cdf51140761869e160521fc566a4a9f312d9b92e7178d433bc7"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7336,
+          "sha256": "505dfba8ecbe77e82765f36d317ed7ef4ac42719dc5f4ae68d1c483fd22d0d14"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8212,
+          "sha256": "6f61561408fe10d4c3f62144e4afd8bcd7ea65ca4aea49a133de972fec127635"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7528,
+          "sha256": "879df9319f1cbf633bee1dd489e376a9e1e8c458f4abddcfe381cb83b5e6b027"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8188,
+          "sha256": "d6927264eddc1600d6249903e06a33f35b9a2e41a35c127b951d70b345df8b3b"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7512,
+          "sha256": "90899aac1c15552c028fd205376bb537a2a5205164fe8626efabad77d7260c20"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 8148,
+          "sha256": "ebfe512fe16186a55f5576fec93d877718e25f90be5ad12223ea624498c33b1e"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7472,
+          "sha256": "45a606d88f72bc0afae4d1a6988e3dba3a5e77ee51aa3b550e37c31c728f4d2d"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-800-italic.woff2",
+          "weight": 800,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 7936,
+          "sha256": "26dfa91663c384c953449cda9bbd33d365625705d8a14727ebd7dea11a5685b5"
+        },
+        {
+          "file": "jetbrains-mono-latin-ext-800-normal.woff2",
+          "weight": 800,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7280,
+          "sha256": "de6b2ce7d378a96e11eec82d3fe4531295701ee2e85edd1e014c2ea9d0c3551b"
+        }
+      ]
+    },
+    {
+      "name": "Fira Code",
+      "category": "Mono",
+      "id": "fira-code",
+      "version": "5.3.0",
+      "package": "@fontsource/fira-code",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/fira-code/-/fira-code-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "fira-code-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23312,
+          "sha256": "6dc9da171ccea71d525379ee1cbf51d143e31acac330a251bb71b3d6060e687c"
+        },
+        {
+          "file": "fira-code-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23316,
+          "sha256": "9e4da5ad2c147be02544df5a732d22830a82b1e9800dc06267ba656f5c40f7e9"
+        },
+        {
+          "file": "fira-code-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23316,
+          "sha256": "53bd904d81c086b103b9e01ef84a98640b2124b78c789bb47ddabb4c41fc94b2"
+        },
+        {
+          "file": "fira-code-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 23040,
+          "sha256": "987306692df7c81d1ffa1efc98414dfaae10de5e178cfba8e22e92ad9c872e43"
+        },
+        {
+          "file": "fira-code-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7860,
+          "sha256": "587dcb11badf47fb0abd0415c12ca57da9ff365f665cede22d6523f1cfd6cc61"
+        },
+        {
+          "file": "fira-code-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7848,
+          "sha256": "a9dded45ad33708b7138beda29f36b1932eab5fc16d655c99f82dedaa6fd8eef"
+        },
+        {
+          "file": "fira-code-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7900,
+          "sha256": "d23d952314a790a78d8583299a6cb8aec1c566bb07571f9b262381a8a3e45a81"
+        },
+        {
+          "file": "fira-code-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 7736,
+          "sha256": "f7a3c0d506bcae50f35e8a517158992158a182af047ae4398c8c9367dfa1d5ea"
+        }
+      ]
+    },
+    {
+      "name": "IBM Plex Mono",
+      "category": "Mono",
+      "id": "ibm-plex-mono",
+      "version": "5.3.0",
+      "package": "@fontsource/ibm-plex-mono",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/ibm-plex-mono/-/ibm-plex-mono-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "ibm-plex-mono-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 16448,
+          "sha256": "0840095faae86403735a8c04014b72cb29e7923646b222b360b7e8252932e4e3"
+        },
+        {
+          "file": "ibm-plex-mono-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14708,
+          "sha256": "08949f728dc52d528e69b1667d15c89a5686a4ee9a296ff90983985f99c380f7"
+        },
+        {
+          "file": "ibm-plex-mono-latin-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 16484,
+          "sha256": "528cc360f6e6f5210526a33b6ed8f2c37084bd0c73b918f25a55f48b40c4ac52"
+        },
+        {
+          "file": "ibm-plex-mono-latin-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14888,
+          "sha256": "01d285447409c8a588692162439a038b8cbd7871309ee20267b0d2d91c6e8e22"
+        },
+        {
+          "file": "ibm-plex-mono-latin-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 17356,
+          "sha256": "42a8ca72a19c5ee1612ac3e35f52d08f34a09856c9466dc87a21101ad230ed6b"
+        },
+        {
+          "file": "ibm-plex-mono-latin-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 15620,
+          "sha256": "0d1f0b8d0722224e32e9f28261bdc86c79115be73444ae5eceb73976a1bcdf83"
+        },
+        {
+          "file": "ibm-plex-mono-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 16540,
+          "sha256": "2bb0d4c82652472446ed1a5a89a0553f2db1e4ea17cbda66a45e690899d83e91"
+        },
+        {
+          "file": "ibm-plex-mono-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 14908,
+          "sha256": "4f84d86cfd060f4ded334358ff8a4c81d4db2ed5addd568359d693f44a87765a"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14524,
+          "sha256": "1b07eee6df7d26b31864581c2365131d384077605e0b63ae67c4a0a64363a6de"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 13348,
+          "sha256": "6bc0f226a5b7884a8170e3f62c63d7675609d4631bdc5931b5cdab81821f00eb"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-500-italic.woff2",
+          "weight": 500,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14676,
+          "sha256": "57216564e5a42dde14048f03e32caa40c97d9b2b440be1aa2ea87ff324fbc95e"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-500-normal.woff2",
+          "weight": 500,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 13432,
+          "sha256": "6bb06407c97584b0867a959e05e8874693bfeb8c317de190811c51598f2d99ea"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-600-italic.woff2",
+          "weight": 600,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 15460,
+          "sha256": "979f73fb848c600282d2c2e48e6dc67eeb02d47b520c9fa48b0af65fbef09da4"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-600-normal.woff2",
+          "weight": 600,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 14328,
+          "sha256": "32057cf50dd14bdb21a2c93766c4a2c43e4abe688ea3922df3203cac7751a98b"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 14684,
+          "sha256": "18c8dc28d75ecbda23c88fb11126852b2232916ec2e6d6dc0225def886a0cc98"
+        },
+        {
+          "file": "ibm-plex-mono-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 13380,
+          "sha256": "5b9b81f54dd69635c7adcaacd4c4545a73fe4809c528e22734b238a83a74135f"
+        }
+      ]
+    },
+    {
+      "name": "Space Mono",
+      "category": "Mono",
+      "id": "space-mono",
+      "version": "5.3.0",
+      "package": "@fontsource/space-mono",
+      "license": "OFL-1.1",
+      "source": "https://registry.npmjs.org/@fontsource/space-mono/-/space-mono-5.3.0.tgz",
+      "faces": [
+        {
+          "file": "space-mono-latin-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 18300,
+          "sha256": "a5fb49042e7305918585561ab5fbd587d708ce74b0f54b56751e2b1151922d19"
+        },
+        {
+          "file": "space-mono-latin-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16520,
+          "sha256": "fb4a81a2d0a893e5c38c394a7e716a1cef0b24610a0af49c96f6d529bd66bf2b"
+        },
+        {
+          "file": "space-mono-latin-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin",
+          "bytes": 18640,
+          "sha256": "e84908e18ffcfab7d46490f4fd9781bc701cbd76aa3af4cb3e625858fd39ff3d"
+        },
+        {
+          "file": "space-mono-latin-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin",
+          "bytes": 16724,
+          "sha256": "2d46bd159b53f55c41167a4f1540a074649464194fd1e416f5b4694a6c0f282c"
+        },
+        {
+          "file": "space-mono-latin-ext-400-italic.woff2",
+          "weight": 400,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17196,
+          "sha256": "a7642ae8cb7a389cb781e6c63d799e62932d916089afac98087f3af76b050a11"
+        },
+        {
+          "file": "space-mono-latin-ext-400-normal.woff2",
+          "weight": 400,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15832,
+          "sha256": "44ad50c760fa8f5b62da3d489edb40adebabaf97988b9b0adbbc3f0be859050a"
+        },
+        {
+          "file": "space-mono-latin-ext-700-italic.woff2",
+          "weight": 700,
+          "style": "italic",
+          "subset": "latin-ext",
+          "bytes": 17740,
+          "sha256": "0db253a66a34fcb80b80c5f8a400055550348e7c379e67349b07471d7b81a773"
+        },
+        {
+          "file": "space-mono-latin-ext-700-normal.woff2",
+          "weight": 700,
+          "style": "normal",
+          "subset": "latin-ext",
+          "bytes": 15808,
+          "sha256": "52edd9a8959ec3e68d618e2a4757182c0e61bfeea61679850cad8744a68cadf3"
+        }
+      ]
+    }
+  ]
+}

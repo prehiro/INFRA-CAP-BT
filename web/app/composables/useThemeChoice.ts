@@ -28,14 +28,16 @@
  * treats appConfig reactively, so assigning to it updates the running UI. The cookie is only
  * the persistence layer.
  */
+import { extraAccents, extraNeutrals } from '~/utils/themeReference'
+
 export interface ThemeChoice {
   primary: string
   neutral: string
 }
 
 const COOKIE = 'infra-cap.theme'
-const VALID_PRIMARY = ['green', 'red', 'orange', 'amber', 'yellow', 'lime', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
-const VALID_NEUTRAL = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive']
+const VALID_PRIMARY = ['green', 'red', 'orange', 'amber', 'yellow', 'lime', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose', ...extraAccents]
+const VALID_NEUTRAL = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive', ...extraNeutrals]
 
 /**
  * The app-wide default (HIRO, 2026-10-05: "make accent color green, and neutral color zinc as
@@ -96,7 +98,7 @@ export function useThemeChoice() {
   }
 
   function persist(choice: ThemeChoice) {
-    writeRawCookie(JSON.stringify(choice))
+    writeRawCookie(JSON.stringify({ ...choice, version: 2 }))
   }
 
   // Applied once per page load, before anything reads a colour.
@@ -107,7 +109,7 @@ export function useThemeChoice() {
       return
     }
     try {
-      const parsed = JSON.parse(decodeURIComponent(raw)) as Partial<ThemeChoice>
+      const parsed = JSON.parse(decodeURIComponent(raw)) as Partial<ThemeChoice> & { version?: number }
       const choice: ThemeChoice = {
         primary: isValid(VALID_PRIMARY, parsed.primary) ? parsed.primary : DEFAULT_PRIMARY,
         neutral: isValid(VALID_NEUTRAL, parsed.neutral) ? parsed.neutral : DEFAULT_NEUTRAL
@@ -115,7 +117,7 @@ export function useThemeChoice() {
       // A cookie holding the pre-zinc default is not a choice - it is the old default that
       // happens to have been written down. Treat it as absent and rewrite it, so the new
       // default actually reaches browsers that already have one.
-      if (isLegacyDefault(choice)) {
+      if (parsed.version !== 2 && isLegacyDefault(choice)) {
         applyDefaults()
         persist({ primary: DEFAULT_PRIMARY, neutral: DEFAULT_NEUTRAL })
         return

@@ -1,5 +1,12 @@
 # Third-party notices
 
+## Nuxt UI theme presets and offline font catalog
+
+The 12 reference preset documents and generic icon mappings are adapted from nuxt/ui docs/app/utils/theme (MIT). Original documents are retained in app/assets/theme/reference.json. Nuxt UI's full MIT notice is bundled at public/fonts/studio/licenses/nuxt-ui.txt. Custom device/header icons remain application-specific.
+
+The 24 curated font families are vendored from Fontsource npm packages as local Latin/Latin-ext WOFF2 assets, with original family copyright/license texts in public/fonts/studio/licenses/*.txt. public/fonts/studio/manifest.json records exact package versions, source archives, faces and SHA-256 checksums. SIL OFL font licenses are retained per family. No runtime Google Fonts/CDN service is used for this catalog. scripts/vendor-theme-fonts.py reproduces downloads from the pinned manifest. Icon sets used by presets are bundled from the pinned @iconify-json dependencies; their upstream attribution is recorded in public/fonts/studio/licenses/icon-collections.json.
+
+
 ## Brand wordmark animation
 
 Stroke-dash animation timing adapted from Lissy2019/fat-wasp-24 on Uiverse.

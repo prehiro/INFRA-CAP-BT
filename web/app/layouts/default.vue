@@ -242,6 +242,7 @@ onBeforeUnmount(() => springObserver?.disconnect())
     <UDashboardSearch :groups="groups" />
 
     <slot />
+    <ThemeStudioPanel />
   </UDashboardGroup>
 </template>
 
