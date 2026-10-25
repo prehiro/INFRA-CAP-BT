@@ -620,7 +620,7 @@ onMounted(() => {
             </div>
 
             <div class="mt-5 flex items-center justify-end gap-2 border-t border-default pt-4">
-              <UButton type="button" variant="ghost" color="neutral" label="Cancel" @click="modalOpen = false" />
+              <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" @click="modalOpen = false" />
               <UButton type="submit" :class="{ 'record-save-hover': !editing }" :loading="saving" :label="editing ? 'Save changes' : 'Create user'" />
             </div>
           </UForm>

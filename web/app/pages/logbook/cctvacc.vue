@@ -1153,7 +1153,7 @@ onMounted(init)
             <span class="font-semibold text-error">*</span> Mandatory — all fields must be completed.
           </p>
           <div class="flex items-center gap-2">
-          <UButton type="button" variant="ghost" label="Cancel" @click="showForm = false" />
+          <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" @click="showForm = false" />
           <UButton type="submit" :class="{ 'record-save-hover': editing }" :loading="saving" icon="i-lucide-check"
                    :label="editing ? 'Save Changes' : 'Save Row'" />
           </div>

@@ -1329,7 +1329,7 @@ async function confirmDelete() {
             </div>
 
             <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
-              <UButton color="neutral" variant="ghost" label="Cancel" :disabled="saving" @click="showForm = false" />
+              <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
               <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save">
                 <template v-if="!editingId" #leading><ChannelAddIcon /></template>
               </UButton>
