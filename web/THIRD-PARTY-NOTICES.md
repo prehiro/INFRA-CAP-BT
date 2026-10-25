@@ -143,3 +143,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 ## Sign In glyph
 
 The Sign In button glyph is Sargam Icons "sign-in-line" (MIT, Abhimanyu Rana, github.com/planetabhi/sargam-icons), inlined as SVG so the offline build carries it without an icon dependency.
+
+## Add Record glyph
+
+ChannelAddIcon.vue inlines the Fluent UI System Icons glyph "channel-add-24-regular" (MIT, Microsoft, github.com/microsoft/fluentui-system-icons). It is embedded as SVG so the offline build carries it without an icon dependency.
