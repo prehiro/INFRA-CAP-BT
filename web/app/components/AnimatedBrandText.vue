@@ -204,7 +204,7 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
     <span class="sr-only">INFRA-BTCAP</span>
     <!-- Native text reserves the original font/letter-spacing/line-height footprint. -->
     <span ref="sizeEl" class="brand-wordmark-size" aria-hidden="true">INFRA-BTCAP</span>
-    <span class="brand-chitchat" :class="{ 'brand-chitchat-off': !entering }" aria-hidden="true"><span
+    <span v-if="entering" class="brand-chitchat" aria-hidden="true"><span
         v-for="(character, index) in introChars" :key="index" class="brand-chitchat-slot"
         :style="slotStyle(index)">{{ character }}</span></span>
     <svg class="brand-wordmark-svg" :viewBox="viewBox" preserveAspectRatio="none" aria-hidden="true">
@@ -258,24 +258,18 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   align-items: baseline;
   white-space: nowrap;
   pointer-events: none;
-  opacity: 1;
-  transition: opacity 140ms linear;
   /* 600 measures closest to the original wordmark strokes: 700 rendered 6% more ink
      (0.191 vs 0.180) and 1px heavier stems, which read as "bold". */
   font-weight: 600;
 }
 /* Each character is pinned to its final letter slot, so the wordmark only changes glyphs. */
-/* The scramble layer never unmounts: swapping it out on one frame was a visible jump, because the
-   native text and the painted paths differ by a pixel in height and a couple of pixels in width.
-   Fading one out while the other fades in hides the difference instead of pretending it is zero. */
-.brand-chitchat-off { opacity: 0; }
 .brand-chitchat-slot {
   display: inline-block;
   flex: 0 0 auto;
   text-align: left;
   letter-spacing: 0;
 }
-.brand-entering .brand-wordmark-svg { opacity: 0; }
+.brand-entering .brand-wordmark-svg { visibility: hidden; }
 .brand-entering .brand-wordmark-trace,
 .brand-entering .brand-wordmark-tip { animation: none; }
 .brand-wordmark-svg {
@@ -285,12 +279,17 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  opacity: 1;
-  transition: opacity 140ms linear;
   filter: drop-shadow(0 0 .6px rgb(0 0 0 / .65));
 }
 /* Paint the opaque glyph above the moving strokes: its white interior is never covered. */
+/* The label is rendered twice: native text during the scramble, these paths once it settles.
+   The paths alone carried ~12% less ink than the 600-weight text, so the handoff read as the
+   mark thinning. A hairline stroke of the same colour evens the weight out - the swap is then a
+   plain cut, with no fade and nothing to see at the boundary. */
 .brand-wordmark-base { fill: currentColor; opacity: 1; }
+/* Only where the scramble runs: match the painted glyph's weight to the 600-weight text it
+   replaces, so the instant swap has nothing to show. The plain mark is left exactly as it was. */
+.brand-login-intro .brand-wordmark-base { stroke: currentColor; stroke-width: 34; }
 .brand-wordmark-trace,
 .brand-wordmark-tip {
   fill: none;
@@ -324,7 +323,7 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
 }
 @media (prefers-reduced-motion: reduce), print {
   .brand-chitchat { display: none; }
-  .brand-entering .brand-wordmark-svg { opacity: 1; }
+  .brand-entering .brand-wordmark-svg { visibility: visible; }
   .brand-wordmark-trace,
   .brand-wordmark-tip { animation: none !important; display: none; }
 }

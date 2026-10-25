@@ -3,6 +3,14 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Login wordmark: instant handoff, no fade
+
+HIRO rejected the crossfade that closed the previous entry: "antar fase animasi 1 & 2 saya tidak mau ada efek memudar. efek ini membuat teks seperti berkedip". A crossfade necessarily dims, because both layers sit at partial opacity, so the fade was removed entirely - the scramble layer unmounts on one frame again (v-if) and the SVG is switched with visibility, no transition and no opacity animation anywhere.
+
+To keep that hard cut from re-introducing the jump, the two renderings were made to agree instead of being blended: the painted glyph carries a hairline stroke of its own colour only where the scramble runs (.brand-login-intro .brand-wordmark-base, stroke-width 34 user units = 0.34px at 20px). The paths previously held ~12% less ink than the 600-weight text they replace; at 34 units the gap is 1.1%.
+
+Verified over TWO independent runs, comparing the last scramble frame (all letters resolved) with the settled mark: bounding box identical on all four edges (l 564, r 700, t 206, b 219), ink 741 vs 749, and exactly ONE column out of 137 whose ink presence changes with zero rows. Before the stroke the same comparison differed by 12% ink and 7 columns; at stroke 22 it was 41 ink short and 7 columns, at 44 it overshot by 28. Reduced motion still shows the mark immediately (chitchat absent, SVG visibility visible), the resting mark still runs its 10s contour sweep, 69/69 tests and the production build pass.
+
 ### Login wordmark: crossfaded handoff instead of a jump — published
 
 HIRO: "ke animasi infra-btcap pada login page kenapa teks seperti bergeser ketika animasi pertama selesai?". Cause, measured: the scramble phase is NATIVE TEXT and the settled phase is the PAINTED SVG - two renderings of the same wordmark. Compared pixel-for-pixel against the native text at 20px, the SVG's ink was 2px narrower (137 vs 139), its cap top 1px lower (y 206 vs 205) and about 12% lighter (682 vs 872 white pixels at 700 weight, 669 vs 759 at 600), so the single-frame swap read as the wordmark shrinking and sinking by a pixel.
