@@ -605,7 +605,9 @@ onMounted(init)
               />
               <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
                        :loading="exporting" @click="exportExcel" />
-              <UButton icon="i-lucide-plus" label="Add Record" class="record-add-hover" @click="openCreate" />
+              <UButton label="Add Record" class="record-add-hover" @click="openCreate">
+                <template #leading><ChannelAddIcon /></template>
+              </UButton>
             </div>
           </div>
         </div>

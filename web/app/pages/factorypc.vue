@@ -1065,10 +1065,11 @@ async function confirmDelete() {
               </UPopover>
               <UButton
                 color="primary"
-                icon="i-lucide-plus"
                 label="Add Record" class="record-add-hover"
                 @click="openCreate"
-              />
+              >
+                <template #leading><ChannelAddIcon /></template>
+              </UButton>
             </div>
           </div>
         </div>

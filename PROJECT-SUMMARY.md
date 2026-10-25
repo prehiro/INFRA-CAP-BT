@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Add Record glyph: Fluent channel-add
+
+HIRO: "tombol add record pakai icon fluent:channel-add-24-regular". Verified first: the fluent icon overrides the collection's 20px default with its own 24x24 grid, and its plus badge reaches x=23, so the inline component uses viewBox 0 0 24 24 (rendering it in a 20 box would have clipped the badge). New ChannelAddIcon.vue carries the MIT path, paints with currentColor and sizes at 1em, matching the icon prop it replaces on all four registers that share the control - PC Ledger, Factory PC, CCTV Access and Handover - switched from icon="i-lucide-plus" to a #leading slot. The record-add-hover sheen is button-level (::after), so it is unaffected.
+
+Measured on all four pages: button 116.6x32 unchanged, glyph 14x14 (1em at the button's text size), viewBox 0 0 24 24, path starting M17.75 3a3.25 3.25, label gap 6px - identical metrics on each register. 69/69 tests and the production build (13 routes) pass.
+
 ### Sign In button glyph: Sargam "sign-in-line"
 
 HIRO: "icon tombol sign in ganti dengan iconify si:sign-in-line". si is the Sargam Icons collection (MIT, Abhimanyu Rana) - verified against the Iconify API before use: 24x24, stroke 1.5, one path (door frame plus arrow). Inlined that path into the existing #trailing slot instead of adding @iconify-json/si: the build is offline-first, the slot already carried a hand-written SVG, and inlined geometry cannot fall through to an empty span the way an unbundled collection can. The svg keeps class sign-arrow so the hover/focus sign-forward 650ms animation still drives it, and stroke-width follows the icon (2 -> 1.5).
