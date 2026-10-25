@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Wordmark sweep follows the accent, on the login mark and the sidebar
+
+HIRO: "warna merahnya bisa buat mengikuti theme accent? aplikasikan juga ke teks infra-btcap sidebar". The contour stroke, the leading tip and that tip's glow were a fixed #ef4444. They now read the runtime accent: both strokes use stroke: var(--ui-primary), and the SVG filter's emitter lost its flood-color attribute and gets it from CSS instead (feFlood { flood-color: var(--ui-primary) } - flood-color is a presentation property). Because both marks mount the same component and the colour is not scoped to the login variant, the compact sidebar wordmark re-tints too.
+
+Verified by switching the accent under the app's own theme cookie: default #00DC82 gave trace, tip and flood all rgb(0,220,130); with primary=violet the same three computed to oklch(0.702 0.183 293.541) matching --ui-primary. On the sidebar mark (96x18 box) the sweep renders 94 accent pixels against 299 white ink pixels, so it is visibly the accent rather than the old red. Accent restored to the default afterwards (cookie removed, --ui-primary back to #00DC82). 69/69 tests and the production build (13 routes) pass.
+
 ### Login wordmark: no rim on the letters, red sweep kept
 
 HIRO: "bisa buat teks pada animasi fase 2 tanpa stroke? tapi tetap ada animasi sapuan merah". The last stroked element was not a stroke property at all: .brand-wordmark-svg carried filter: drop-shadow(0 0 .6px rgba(0,0,0,.65)), which paints a thin dark rim on every glyph edge. Phase 1 is native text with no shadow, so the rim appeared together with the mark and read as the letters being outlined. Removed for the login mark only (.brand-login-intro .brand-wordmark-svg { filter: none }); the compact sidebar mark keeps the shadow it always had, and the red contour/tip paths are untouched, so the sweep still runs.

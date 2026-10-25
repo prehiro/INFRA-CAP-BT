@@ -217,8 +217,8 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
           <feMorphology in="SourceGraphic" operator="dilate" :radius="units * 0.04" result="halo-source" />
           <feGaussianBlur in="halo-source" :stdDeviation="units * 0.2" result="soft-tip" />
           <feGaussianBlur in="SourceGraphic" :stdDeviation="units * 0.015" result="tip-core" />
-          <feFlood flood-color="#ef4444" flood-opacity="0.55" result="red-light" />
-          <feComposite in="red-light" in2="soft-tip" operator="in" result="tip-halo" />
+          <feFlood flood-opacity="0.55" result="tip-light" />
+          <feComposite in="tip-light" in2="soft-tip" operator="in" result="tip-halo" />
           <feMerge>
             <feMergeNode in="tip-halo" />
             <feMergeNode in="tip-core" />
@@ -300,12 +300,16 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   opacity: 0;
   animation: brand-text-contour 10s linear infinite;
 }
+/* The contour, its leading tip and that tip's glow all follow the accent picked in the sidebar
+   instead of a fixed red, so the wordmark re-tints with the rest of the chrome. flood-color is a
+   presentation property, so the SVG filter reads it from CSS like the strokes do. */
+feFlood { flood-color: var(--ui-primary); }
 .brand-wordmark-trace {
-  stroke: #ef4444;
+  stroke: var(--ui-primary);
   stroke-dasharray: 90 270;
 }
 .brand-wordmark-tip {
-  stroke: #ef4444;
+  stroke: var(--ui-primary);
   stroke-dasharray: 6 354;
   animation-name: brand-text-tip;
 }
