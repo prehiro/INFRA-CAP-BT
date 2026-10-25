@@ -1,7 +1,21 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-24
+> Terakhir diupdate: 2026-10-25
+
+### Theme Studio: full Nuxt UI reference catalog, vendored offline — LOCAL preview
+
+HIRO asked for the complete Nuxt UI theme-selector categories, not just the four local presets. Implemented: 12 upstream preset documents vendored verbatim (app/assets/theme/reference.json, 34 KB: Mono, Cobalt, Sky, Mint, Iris, Crimson, Coral, Sunset, Carbon, Bubblegum, Parchment, Default) with their palettes, token shades, font weights, sizes and generic control-icon mappings (app/utils/themeReference.ts); 24 curated font families vendored as local Latin/Latin-ext WOFF2 (public/fonts/studio, 7.5 MB, 414 files) with fonts.css, a manifest recording exact package versions, source archives, faces and SHA-256 checksums, and 26 license texts; three extra accents (black, cobalt, clay) and four extra neutrals (cobalt-gray, carbon, saturated-mauve, parchment) added to the theme whitelist; custom palette ramps injected into the document head as CSS variables; the theme cookie now carries version 2 so the legacy-default rewrite no longer clobbers a deliberate choice.
+
+Seven @iconify-json collections (material-symbols, ph, bi, heroicons, iconoir, ri, tabler) plus the existing ones are pinned as devDependencies and bundled into the offline client/server icon bundle from the reference mappings - the office server has no internet, so nothing may be fetched at runtime. scripts/vendor-theme-fonts.py reproduces the font download from the pinned manifest. THIRD-PARTY-NOTICES.md records the Nuxt UI MIT adaptation and the per-family OFL notices.
+
+Same working tree also carries two smaller previews: WorkbookDropzone.vue extracted from data-import.vue (both tabs now share the drag-and-drop panel, inputs reset through the component instead of exposed refs) and AnimatedBrandText receiving an intro prop so the sidebar wordmark plays its scramble once on load.
+
+Verification: production build passed and prerendered all 13 routes; 69/69 frontend tests passed, including 11 new reference-preset round-trips (apply, reload, exact original rollback) and the offline Carbon icon check. Browser: the panel lists 17 preset options (12 Nuxt UI + 4 local + placeholder), 28 font options (24 vendored + 3 system + placeholder), 20 accents and 13 neutrals; every font option applies and loads with document.fonts.check true and no external font request (only the local fonts.css); Cobalt changed --ui-primary to oklch(57.8% 0.228 260.025), the palette var and the body font to Studio Roboto, survived a full reload with the cookie holding primary cobalt / neutral cobalt-gray / version 2, then Restore Original returned #00DC82 + Public Sans + dark and REMOVED the cookie because none existed before the first change, leaving the preview and original-snapshot storage empty. Mono and Parchment spot-checked (mono palette + Geist, warm clay accent + DM Sans). /data-import still renders its dropzone after the extraction.
+
+Source remains LOCAL and unpublished pending HIRO visual approval; this checkpoint is docs-only. No dependency changes beyond the pinned dev-only icon collections, no backend, data, migration or deployment changes.
+
+
 
 ### Theme Studio right-side trial with original-settings rollback — LOCAL preview
 
