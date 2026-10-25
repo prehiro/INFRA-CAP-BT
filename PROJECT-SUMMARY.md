@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Login wordmark: no rim on the letters, red sweep kept
+
+HIRO: "bisa buat teks pada animasi fase 2 tanpa stroke? tapi tetap ada animasi sapuan merah". The last stroked element was not a stroke property at all: .brand-wordmark-svg carried filter: drop-shadow(0 0 .6px rgba(0,0,0,.65)), which paints a thin dark rim on every glyph edge. Phase 1 is native text with no shadow, so the rim appeared together with the mark and read as the letters being outlined. Removed for the login mark only (.brand-login-intro .brand-wordmark-svg { filter: none }); the compact sidebar mark keeps the shadow it always had, and the red contour/tip paths are untouched, so the sweep still runs.
+
+Measured over the wordmark crop, in the luminance band that catches the rim (25-80): clean phase-2 frame went from 665 dark pixels to 439, against a 410 phase-1 baseline, while white ink stayed at 672 vs 671 and a mid-sweep frame still showed 154 red pixels. Computed on the login mark: filter none, base stroke none, base fill rgb(255,255,255), trace stroke rgb(239,68,68) with its animation running. 69/69 tests and the production build (13 routes) pass.
+
 ### Login wordmark: plain mark restored, cut left instant
 
 HIRO: "hilangkan saja strokenya bro bisa?" - the hairline stroke from the previous entry is gone, so .brand-wordmark-base is back to a pure fill with no stroke of any kind (computed stroke: none). The handoff is still a single-frame cut: no crossfade, no opacity animation, transition-duration 0s, the scramble layer unmounted with v-if and the painted layer switched by visibility.

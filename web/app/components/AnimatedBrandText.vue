@@ -281,6 +281,11 @@ const viewBox = computed(() => `0 0 ${viewWidth.value} ${viewHeight.value}`)
   pointer-events: none;
   filter: drop-shadow(0 0 .6px rgb(0 0 0 / .65));
 }
+/* Where the big login wordmark hands over from the scramble, that 0.6px shadow painted a thin dark
+   rim on every letter - it read as the mark being stroked the moment phase 2 appeared. The login
+   mark is a plain fill there, and the only outline left is the red sweep that belongs to it. The
+   compact sidebar mark keeps the shadow it has always had. */
+.brand-login-intro .brand-wordmark-svg { filter: none; }
 /* Paint the opaque glyph above the moving strokes: its white interior is never covered. */
 /* The label is rendered twice: native text during the scramble, these paths once it settles.
    The paths alone carried ~12% less ink than the 600-weight text, so the handoff read as the
