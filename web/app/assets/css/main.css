@@ -217,6 +217,45 @@
 .record-save-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-save-confirm 480ms ease-out; }
 .record-delete-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-delete-nudge 480ms ease-out; }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):active { transform: translateY(0); box-shadow: none; }
+
+/* ---------- Cancel: the X pops and a red ring radiates out ----------
+   Opt-in per button (.cancel-hover), fires only on a real pointer so a
+   touch device never replays it. The motion is on the ICON and a ::after
+   ring, never on the button itself - the ghost look stays flat. */
+.cancel-hover {
+  position: relative;
+  overflow: hidden;
+}
+@media (hover: hover) and (pointer: fine) {
+  .cancel-hover:not(:disabled):hover [data-slot='leadingIcon'] {
+    animation: cancel-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .cancel-hover:not(:disabled):hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 2px solid var(--ui-error);
+    border-radius: inherit;
+    animation: cancel-ring 600ms ease-out both;
+  }
+}
+.cancel-hover:not(:disabled):focus-visible [data-slot='leadingIcon'] {
+  animation: cancel-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes cancel-pop {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(1.25); }
+  65% { transform: scale(0.92); }
+}
+@keyframes cancel-ring {
+  0% { transform: scale(1); opacity: 0.85; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .cancel-hover [data-slot='leadingIcon'] { animation: none !important; }
+  .cancel-hover::after { display: none; }
+}
 @media (prefers-reduced-motion: reduce), print {
   .trash-bin-hover .trash-bin-lid,
   .trash-bin-hover .trash-bin-content {
