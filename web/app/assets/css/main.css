@@ -46,6 +46,10 @@
 }
 .record-add-hover:not(:disabled):focus-visible [data-slot='leadingIcon'],
 .record-add-hover:not(:disabled):focus-visible .channel-add-icon { animation: record-add-forward 650ms ease-in-out; }
+/* The modal's submit button carries the same glyph but none of the toolbar treatment, so it gets
+   the motion from its own class. */
+.channel-add-hover:not(:disabled):hover .channel-add-icon,
+.channel-add-hover:not(:disabled):focus-visible .channel-add-icon { animation: record-add-forward 650ms ease-in-out; }
 @media (prefers-reduced-motion: reduce) {
   .record-add-hover { transition: none; }
   .record-add-hover:not(:disabled):hover { transform: none; }

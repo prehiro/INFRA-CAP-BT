@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-25
 
+### Fluent glyph on the record modal's own Add record button
+
+HIRO repeated "terapkan icon ini pada form modal add record pc ledger, factory pc" after the header plate was already switched in acd2bb5, so the remaining target was the modal's submit button: the footer <UButton> that reads "Add record" now carries ChannelAddIcon in its leading slot, shown only while creating (v-if="!editingId") so Edit keeps a clean "Save changes". It gets the same record-add-forward motion through a new .channel-add-hover hook - the glyph alone, without the toolbar button's sheen and lift.
+
+Verified on both pages: the modal plate holds the 24x24 fluent path (no iconify span) and the submit button's svg is channel-add-icon, 14px, hover reports record-add-forward 0.65s mid-flight (4.5px). Edit mode confirmed clean: submit reads "Save changes" with no svg and the plate shows the pencil. 69/69 tests and the production build (13 routes) pass.
+
 ### Add Record: Sign In motion, fluent glyph in the record modals
 
 HIRO: "kasi animasi icon seperti sign in button. terapkan icon ini pada form modal add record pc ledger, factory pc". The toolbar button's leading icon used to pop in place (record-add-pop, 500ms scale/translate). That keyframe is deleted and replaced with record-add-forward, the Sign In arrow's motion - out to the right, jump back 5px, fade in, 650ms ease-in-out - on hover and focus-visible. Because the fluent glyph is inlined in the #leading slot there is no [data-slot='leadingIcon'] wrapper any more, so the CSS now also targets .channel-add-icon directly; the old selector is kept for buttons that still pass an icon prop.

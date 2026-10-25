@@ -1695,7 +1695,9 @@ async function exportExcel() {
 
             <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
               <UButton color="neutral" variant="ghost" label="Cancel" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :class="{ 'record-save-hover': editingId }" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save" />
+              <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save">
+                <template v-if="!editingId" #leading><ChannelAddIcon /></template>
+              </UButton>
             </div>
           </div>
         </template>
