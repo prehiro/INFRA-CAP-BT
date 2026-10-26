@@ -368,3 +368,14 @@
 .excel-hover:hover {
   color: rgb(0 193 106);
 }
+
+/* ---------- Filter + Excel icon hover animation ---------- */
+.filter-hover:hover [class*='i-lucide-columns-3'],
+.excel-hover:hover [class*='i-lucide-file-spreadsheet'] {
+  animation: toolbar-icon-hover 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes toolbar-icon-hover {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.12) rotate(4deg); }
+}
