@@ -48,17 +48,17 @@ async function generate() {
 <template>
   <!-- Issued Form uses 24px side gutters and max-w-6xl. Below xl its taller form
        has a 15px scroll track, so reserve that width here without forcing NOA to scroll. -->
-  <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:p-3 sm:pl-6 sm:pr-[39px] xl:py-4 xl:pr-6' }">
+  <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:pl-6 sm:pr-[39px] sm:pt-6 xl:pb-4 xl:pr-6' }">
     <template #header><PageHeader title="NOA" /></template>
     <template #body>
       <form class="mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
-        <div class="flex items-center gap-3">
+        <div class="mb-4 flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon name="i-lucide-file-text" random-halo />
           </span>
           <div class="min-w-0">
-            <h2 class="text-lg font-semibold text-highlighted">Notification of Alteration</h2>
-            <p class="text-xs text-muted">EHS - E - A5 - 301B (R3) · Original one-page master</p>
+            <h2 class="text-xl font-semibold text-highlighted">Notification of Alteration</h2>
+            <p class="mt-1 text-sm text-muted">EHS - E - A5 - 301B (R3) · Original one-page master</p>
           </div>
         </div>
 
@@ -86,9 +86,9 @@ async function generate() {
             <p class="mt-3 border-t border-default pt-3 text-xs text-muted">Month is set at generation · Waste can be edited or cleared</p>
           </UCard>
 
-          <UCard :ui="{ header: 'px-4 py-3', body: 'px-4 py-3' }">
+          <UCard class="noa-description-card" :ui="{ header: 'px-4 py-3', body: 'px-4 py-3' }">
             <template #header><h3 class="text-sm font-semibold text-highlighted">Description of changes <span class="font-normal text-muted">(5W, 1H)</span></h3></template>
-            <div class="space-y-2">
+            <div class="noa-description-fields space-y-2">
               <div v-for="field in descriptionFields" :key="field.key" class="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2">
                 <label class="text-sm font-medium" :for="`noa-${field.key}`">{{ field.label }} <span class="text-error">*</span></label>
                 <UInput :id="`noa-${field.key}`" v-model="form[field.key]" class="min-w-0 w-full" :disabled="generating" />
@@ -109,3 +109,13 @@ async function generate() {
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/* Keep the issued-form title position and 24px gap even on short screens.
+   Reclaim height inside NOA's right card, without affecting other pages. */
+@media (max-height: 600px) {
+  .noa-description-card :deep([data-slot="header"]),
+  .noa-description-card :deep([data-slot="body"]) { padding-block: 12px; }
+  .noa-description-fields > :not(:last-child) { margin-bottom: 4px; }
+}
+</style>
