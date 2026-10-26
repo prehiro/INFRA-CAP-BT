@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### Tilt ikon header PC Ledger dan Factory PC
+
+Ikon header PC Ledger dan Factory PC sebelumnya sudah dibungkus `RecordAddIcon`, tetapi glyph keduanya berasal dari slot dan tidak menerima class `.pc-add-glyph` milik ikon Issued Form. Halo sudah bergerak; glyph tidak tilt. Kedua slot sekarang diberi class opt-in `pc-add-tilt`, ditangkap oleh selector scoped `:slotted()` di `RecordAddIcon.vue`, sehingga memakai keyframe sway yang sama persis (3.6 detik) dengan Issued Form tanpa mengubah SVG, animasi scan/gear internal, atau halaman lain. QA browser menunjukkan ketiganya memakai `pc-add-sway`, plate tetap 48×48, motion scan/gear tetap berjalan, dan reduced-motion menonaktifkan sway serta halo. 69/69 tes dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/header-tilt-20261026`.
+
 ### Sidebar Form: Issued Form dan NOA
 
 Grup Form baru memakai accordion `type: 'trigger'` dengan anak Issued Form `/form/issuedform` dan NOA `/form/noa`; command palette diselaraskan. Halaman Issued Form dipindahkan ke route baru tanpa mengubah isinya, sementara `/issuedform` lama mengalihkan ke route baru untuk bookmark. Karena spesifikasi isi NOA belum diberikan, route NOA hanya menampilkan halaman informasi tanpa form atau aksi simpan; tidak ada fitur NOA yang dikarang. Posisi Device Ledger, Log Book, Data Import, Log Audit, dan User Management tetap. QA browser membuktikan kedua tautan, buka/tutup grup, redirect lama, dan halaman NOA; 69/69 tes frontend dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/form-navigation-20261026`.

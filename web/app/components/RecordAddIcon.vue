@@ -14,7 +14,8 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
 </template>
 
 <style scoped>
-.pc-add-glyph {
+.pc-add-glyph,
+:slotted(.pc-add-tilt) {
   animation: pc-add-sway 3.6s ease-in-out infinite;
   transform-origin: 50% 60%;
 }
@@ -39,6 +40,7 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
 
 @media (prefers-reduced-motion: reduce) {
   .pc-add-glyph,
+  :slotted(.pc-add-tilt),
   .pc-add-halo { animation: none; }
   .pc-add-halo { opacity: 0.18; }
 }
