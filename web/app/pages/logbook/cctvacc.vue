@@ -667,7 +667,7 @@ onMounted(init)
         <div class="flex min-w-0 items-center gap-3">
           <span class="cctv-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon size="md" random-halo>
-              <CctvIcon class="size-6" />
+              <CctvIcon class="pc-add-tilt size-6" />
             </RecordAddIcon>
           </span>
           <div class="min-w-0">
