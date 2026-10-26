@@ -99,9 +99,24 @@
   80% { transform: rotate(-4deg); }
 }
 
-/* ---------- Trash bin: the lid opens and the contents drop IN through the gap ----------
-   The bin is drawn by TrashBinIcon.vue, which splits the lucide:trash-2 path into a body,
-   a contents group and a lid group so the parts can move independently.
+/* ---------- Title icon in CCTV/PC Ledger registers ---------- */
+.cctv-title-icon,
+.pc-ledger-title-icon {
+  transition: transform 180ms ease, box-shadow 180ms ease, ring-opacity 180ms ease;
+  ring-opacity: var(--ring-opacity, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cctv-title-icon:hover,
+  .pc-ledger-title-icon:hover {
+    transform: scale(1.08);
+    --ring-opacity: 0.7;
+    box-shadow: 0 0 0 1px var(--ui-primary);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cctv-title-icon,
+  .pc-ledger-title-icon { transition: none; }
+}
 
    The bin body is an OPEN path - it has no top edge, so the rim at y=6 IS the gap. HIRO asked
    for the two strokes to go IN THROUGH that gap, which means they have to be seen AT the rim
