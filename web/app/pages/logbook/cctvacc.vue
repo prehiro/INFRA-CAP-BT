@@ -683,21 +683,24 @@ onMounted(init)
           <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
           <LogbookFilterPopover
             v-model="filters"
+            animated-icon
             :sections="sectionOptions"
             :pics="picOptions"
             :match-count="visibleRows.length"
             :total-count="rows.length"
             @clear="clearFilters"
           />
-          <!-- Excel BEFORE Add Record (HIRO). "Excel" is `soft` so the pair still reads as
-               one group, and the primary Add Record action stays rightmost where the eye
-               lands last. The Print button and its printSheet() helper were removed at
+          <!-- Excel BEFORE Add Record (HIRO). Neutral at rest like PC Ledger;
+               only text/SVG lines turn green on hover, without a colored block.
+               The Print button and its printSheet() helper were removed at
                HIRO's request - the register is filed digitally, not on paper.
                NOTE the @media print rules further down were KEPT: they are not dead code,
                they style the sheet for a browser-initiated Ctrl+P, and deleting them would
                make Ctrl+P emit an unboxed, clipped table. -->
-          <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
-                   :loading="exporting" @click="exportExcel" />
+          <UButton label="Excel" color="soft" class="toolbar-line-hover toolbar-line-hover--excel"
+                   :loading="exporting" @click="exportExcel">
+            <template #leading><ToolbarStrokeIcon :name="exporting ? 'loading' : 'excel'" /></template>
+          </UButton>
           <UButton label="Add Record" class="record-add-hover" @click="openCreate">
             <template #leading><ChannelAddIcon /></template>
           </UButton>

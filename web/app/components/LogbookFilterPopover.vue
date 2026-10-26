@@ -30,6 +30,8 @@ const props = defineProps<{
   /** How many rows survive the current filter - shown live so the user is never guessing. */
   matchCount: number
   totalCount: number
+  /** Opt in to the shared stroke-only toolbar hover; default keeps the original masked icon. */
+  animatedIcon?: boolean
   /**
    * Label for the person dropdown, and its empty-state placeholder.
    *
@@ -138,11 +140,13 @@ function applyPreset(key: string) {
          same re-rasterisation reason as the rest of the app's animations. -->
     <div class="relative inline-flex">
       <UButton
-        icon="i-lucide-list-filter"
+        :icon="animatedIcon ? undefined : 'i-lucide-list-filter'"
         label="Filter"
         variant="outline"
-        :class="activeCount ? 'border-primary text-primary' : ''"
-      />
+        :class="[activeCount ? 'border-primary text-primary' : '', animatedIcon ? 'toolbar-line-hover' : '']"
+      >
+        <template v-if="animatedIcon" #leading><ToolbarStrokeIcon name="filter" /></template>
+      </UButton>
       <Transition name="infra-badge">
         <span
           v-if="activeCount"

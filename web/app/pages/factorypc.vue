@@ -4,14 +4,12 @@
  * domain, so they never appear in the domain-joined PC Ledger or in its workbook. HIRO: "factory pc adalah
  * PC yang tidak terhubung dengan network / domain perusahaan". The page description says exactly that.
  *
- * It is a SIBLING of the PC Ledger page rather than a mode of it:, and a SIBLING of the PC Ledger page rather than a mode of it:
- * its own entity (`factory_pc`, id 11), its own nine columns (No, PIC, Email, Chassis, Model, SN, OS,
- * Status, Remarks - the Actions column is the table's own), and NO Excel export, because there is no
- * workbook it has to reproduce. HIRO asked for it to sit beside PC Ledger under a "Device Ledger" menu
- * group and to be identical to that page in design, style and animation - so everything below is the
- * PC Ledger implementation: the table chrome, the column show/hide with its FLIP, the pinned pair with
- * its measured offset, the fixed header height, the scrollbar handling, the record dialog with its
- * accent glow and the delete dialog with its danger wash.
+ * It is a sibling of the PC Ledger page: its own entity (`factory_pc`, id 11), its own
+ * nine columns (No, PIC, Email, Chassis, Model, SN, OS, Status, Remarks; Actions is UI-only),
+ * and a standalone Excel export. HIRO asked for it beside PC Ledger under "Device Ledger"
+ * with the same table design and interaction patterns.
+ * Shared details include the table chrome, column show/hide with its FLIP, pinned pair,
+ * fixed header height, scrollbar handling, record dialog glow and delete dialog wash.
  *
  * `No` is filled by the API's LogbookNumberService, which numbers any entity whose slug is registered
  * in its numbered-slug set and which carries a required+unique field named `nomor`.
@@ -19,8 +17,8 @@
 import type { EntityMeta, RecordRow } from '~/types'
 
 const ENTITY_SLUG = 'factory_pc'
-/** Reference workbook sheet name, used for the exported worksheet tab. */
-const SHEET_NAME = 'Ledger'
+/** Worksheet tab for the standalone Factory PC export. */
+const SHEET_NAME = 'Factory PC'
 
 const toast = useToast()
 
@@ -971,6 +969,52 @@ async function confirmDelete() {
   }
 }
 
+/* ---------------- Excel export ---------------- */
+// Export the filtered/sorted rows but all nine data columns, regardless of the browser's
+// visibility preference. Factory PC has no legacy master workbook to replicate.
+async function exportExcel() {
+  const data = visibleRows.value
+  if (!data.length) {
+    toast.add({ title: 'Nothing to export', description: 'No records match the current filters.', color: 'warning' })
+    return
+  }
+  exporting.value = true
+  try {
+    const module = await import('exceljs')
+    const ExcelJS = module.default ?? module
+    const wb = new (ExcelJS as any).Workbook()
+    wb.creator = 'INFRA-CAP'
+    wb.created = new Date()
+    const ws = wb.addWorksheet(SHEET_NAME, { views: [{ state: 'frozen', ySplit: 1 }] })
+    const header = ws.addRow(COLUMNS.map(c => c.label.toUpperCase()))
+    header.height = 28
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF233D4D' } }
+    header.alignment = { horizontal: 'center', vertical: 'middle' }
+    const widths = [7, 25, 36, 20, 29, 29, 26, 18, 38]
+    COLUMNS.forEach((_, i) => { ws.getColumn(i + 1).width = widths[i] })
+    ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } }
+    for (const row of data) {
+      ws.addRow(COLUMNS.map(c => c.key === 'nomor' && /^\d+$/.test(cell(row, c.key))
+        ? Number(cell(row, c.key)) : cell(row, c.key)))
+    }
+    const blob = new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const suffix = searching.value.trim() || filterChassis.value !== ALL || filterStatus.value !== ALL ? '_filtered' : ''
+    const fileName = `Factory_PC_${stamp}${suffix}.xlsx`
+    const a = document.createElement('a')
+    a.href = url; a.download = fileName
+    document.body.appendChild(a); a.click(); a.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 2000)
+    toast.add({ title: 'Export ready', description: `${data.length} rows written to ${fileName}`, icon: 'i-lucide-file-spreadsheet', color: 'primary' })
+  } catch (e: any) {
+    toast.add({ title: 'Export failed', description: e?.message || 'Unable to generate the workbook.', color: 'error' })
+  } finally {
+    exporting.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -1030,9 +1074,11 @@ async function confirmDelete() {
               <UPopover>
                 <UButton
                   color="soft"
-                  icon="i-lucide-columns-3"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
-                />
+                  class="toolbar-line-hover"
+                >
+                  <template #leading><ToolbarStrokeIcon name="columns" /></template>
+                </UButton>
                 <template #content>
                   <div class="w-64 p-3">
                     <div class="mb-2 flex items-center justify-between gap-2">
@@ -1058,11 +1104,20 @@ async function confirmDelete() {
                       />
                     </div>
                     <p class="mt-2 text-[11px] leading-snug text-muted">
-                      Remembered for this browser.
+                      Remembered for this browser. Excel exports all 9 data columns.
                     </p>
                   </div>
                 </template>
               </UPopover>
+              <UButton
+                color="soft"
+                label="Excel"
+                :loading="exporting"
+                class="toolbar-line-hover toolbar-line-hover--excel"
+                @click="exportExcel"
+              >
+                <template #leading><ToolbarStrokeIcon :name="exporting ? 'loading' : 'excel'" /></template>
+              </UButton>
               <UButton
                 color="primary"
                 label="Add Record" class="record-add-hover"

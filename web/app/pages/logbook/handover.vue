@@ -595,6 +595,7 @@ onMounted(init)
               <UInput v-model="search" icon="i-lucide-search" placeholder="Search..." class="w-48" />
               <LogbookFilterPopover
                 v-model="filters"
+                animated-icon
                 :sections="sectionOptions"
                 :pics="nameOptions"
                 person-label="Name"
@@ -603,8 +604,10 @@ onMounted(init)
                 :total-count="rows.length"
                 @clear="clearFilters"
               />
-              <UButton icon="i-lucide-file-spreadsheet" label="Excel" variant="soft"
-                       :loading="exporting" @click="exportExcel" />
+              <UButton label="Excel" color="soft" class="toolbar-line-hover toolbar-line-hover--excel"
+                       :loading="exporting" @click="exportExcel">
+                <template #leading><ToolbarStrokeIcon :name="exporting ? 'loading' : 'excel'" /></template>
+              </UButton>
               <UButton label="Add Record" class="record-add-hover" @click="openCreate">
                 <template #leading><ChannelAddIcon /></template>
               </UButton>

@@ -1378,16 +1378,9 @@ async function exportExcel() {
                 <UButton
                   color="soft"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
-                  class="filter-hover"
+                  class="toolbar-line-hover"
                 >
-                  <template #leading>
-                    <!-- Lucide columns-3 geometry, inline so its strokes can be animated. -->
-                    <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <rect width="18" height="18" x="3" y="3" rx="2" />
-                      <path class="pl-columns-line pl-columns-line-first" d="M9 3v18" />
-                      <path class="pl-columns-line pl-columns-line-second" d="M15 3v18" />
-                    </svg>
-                  </template>
+                  <template #leading><ToolbarStrokeIcon name="columns" /></template>
                 </UButton>
                 <template #content>
                   <div class="w-64 p-3">
@@ -1425,23 +1418,9 @@ async function exportExcel() {
                 label="Excel"
                 :loading="exporting"
                 @click="exportExcel"
-                class="excel-hover"
+                class="toolbar-line-hover toolbar-line-hover--excel"
               >
-                <template #leading>
-                  <svg v-if="exporting" class="size-5 shrink-0 animate-spin motion-reduce:animate-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9" opacity="0.3" />
-                    <path d="M21 12a9 9 0 0 0-9-9" />
-                  </svg>
-                  <!-- Lucide file-spreadsheet geometry; only the grid strokes redraw. -->
-                  <svg v-else class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
-                    <path d="M14 2v5a1 1 0 0 0 1 1h5" />
-                    <path class="pl-excel-line pl-excel-line-first" d="M8 13h2" />
-                    <path class="pl-excel-line pl-excel-line-second" d="M14 13h2" />
-                    <path class="pl-excel-line pl-excel-line-third" d="M8 17h2" />
-                    <path class="pl-excel-line pl-excel-line-fourth" d="M14 17h2" />
-                  </svg>
-                </template>
+                <template #leading><ToolbarStrokeIcon :name="exporting ? 'loading' : 'excel'" /></template>
               </UButton>
               <UButton
                 color="primary"
@@ -2173,36 +2152,6 @@ async function exportExcel() {
 @media (prefers-reduced-motion: reduce) {
   .copy-pill { animation: none; }
   .copy-pill::after { animation: none; opacity: 0; }
-}
-
-/* Only the inline SVG strokes redraw; the button and icon never move or gain a fill. */
-.filter-hover, .excel-hover { transition: color 180ms ease; }
-.filter-hover:is(:hover, :focus-visible) { color: var(--ui-primary); }
-.excel-hover:is(:hover, :focus-visible) { color: #4ade80; }
-:global(:root:not(.dark) .excel-hover:is(:hover, :focus-visible)) { color: #15803d; }
-.pl-columns-line { stroke-dasharray: 18; }
-.pl-excel-line { stroke-dasharray: 2; }
-.filter-hover:is(:hover, :focus-visible) .pl-columns-line {
-  animation: pl-columns-trace 440ms ease-out both;
-}
-.filter-hover:is(:hover, :focus-visible) .pl-columns-line-second { animation-delay: 75ms; }
-.excel-hover:is(:hover, :focus-visible) .pl-excel-line {
-  animation: pl-excel-trace 350ms ease-out both;
-}
-.excel-hover:is(:hover, :focus-visible) .pl-excel-line-second { animation-delay: 45ms; }
-.excel-hover:is(:hover, :focus-visible) .pl-excel-line-third { animation-delay: 90ms; }
-.excel-hover:is(:hover, :focus-visible) .pl-excel-line-fourth { animation-delay: 135ms; }
-@keyframes pl-columns-trace {
-  from { stroke-dashoffset: 18; }
-  to { stroke-dashoffset: 0; }
-}
-@keyframes pl-excel-trace {
-  from { stroke-dashoffset: 2; }
-  to { stroke-dashoffset: 0; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .filter-hover, .excel-hover { transition: none; }
-  .pl-columns-line, .pl-excel-line { animation: none !important; stroke-dashoffset: 0 !important; }
 }
 
 </style>
