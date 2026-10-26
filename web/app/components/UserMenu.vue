@@ -2,29 +2,13 @@
 import type { DropdownMenuItem } from '@nuxt/ui'
 
 /**
- * Sidebar footer user menu, adapted from the Nuxt dashboard template.
- *
- * Two deviations from the template, both deliberate:
- *  - the avatar is generated from the initials instead of a remote image URL, because
- *    the production server has no internet access and a remote avatar renders blank;
- *  - "Templates" / "Deploy to Vercel" entries are dropped; they link to nuxt.com pages
- *    that mean nothing in an internal app.
- *
- * What was kept is what HIRO asked for: free primary-colour switching and a
- * light/dark toggle, both applied to the live appConfig so they take effect instantly.
+ * Sidebar footer user menu. The avatar is built from initials so it works offline;
+ * workspace theme controls live exclusively in the right-side Theme Studio.
  */
 defineProps<{ collapsed?: boolean }>()
 
-const colorMode = useColorMode()
-/** Bound so picking Light or Dark can close the whole menu - HIRO's request. Without this the
- *  menu stayed open over the page after the theme flipped, hiding the change it just made. */
-const menuOpen = ref(false)
-const appConfig = useAppConfig()
 const { user, logout } = useAuth()
 const router = useRouter()
-
-const colors = ['green', 'red', 'orange', 'amber', 'yellow', 'lime', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose']
-const neutrals = ['slate', 'gray', 'zinc', 'neutral', 'stone', 'taupe', 'mauve', 'mist', 'olive']
 
 // Initials for the sidebar avatar; no external image request.
 const initials = computed(() => {
@@ -33,14 +17,6 @@ const initials = computed(() => {
   if (parts.length > 1) return (parts[0]![0]! + parts[parts.length - 1]![0]!)
   return String(name).slice(0, 2).toUpperCase()
 })
-
-const { setPrimary, setNeutral } = useThemeChoice()
-
-// `restore()` is NOT called here. It used to run from this component's onMounted and never took
-// effect - `useCookie` inside an onMounted hook resolves against the component's effect scope,
-// not the Nuxt instance, so the ref it returned was not the one the app reads. It now runs from
-// app/plugins/theme.client.ts, which has no such problem. `setPrimary`/`setNeutral` are
-// unaffected: a click handler in a mounted component is exactly the context where they work.
 
 const displayName = computed(() => user.value?.fullName || user.value?.username || 'User')
 const roleLabel = computed(() => (user.value?.roles?.[0]?.name) || '')
@@ -56,60 +32,6 @@ const items = computed<DropdownMenuItem[][]>(() => ([
     label: displayName.value,
     // Rendered as the button content instead of an avatar image.
     description: roleLabel.value
-  }],
-  [{
-    label: 'Accent Color',
-    icon: 'i-lucide-palette',
-    children: colors.map(color => ({
-      label: color,
-      chip: color,
-      slot: 'chip',
-      checked: appConfig.ui.colors.primary === color,
-      type: 'checkbox',
-      onSelect: (e: Event) => {
-        e.preventDefault()
-        setPrimary(color)
-      }
-    }))
-  }, {
-    label: 'Neutral Color',
-    icon: 'i-lucide-contrast',
-    children: neutrals.map(color => ({
-      label: color,
-      chip: color === 'neutral' ? 'old-neutral' : color,
-      slot: 'chip',
-      type: 'checkbox',
-      checked: appConfig.ui.colors.neutral === color,
-      onSelect: (e: Event) => {
-        e.preventDefault()
-        setNeutral(color)
-      }
-    }))
-  }],
-  [{
-    label: 'Appearance',
-    icon: 'i-lucide-sun-moon',
-    children: [{
-      label: 'Light',
-      icon: 'i-lucide-sun',
-      type: 'checkbox',
-      checked: colorMode.value === 'light',
-      onSelect(e: Event) {
-        e.preventDefault()
-        colorMode.preference = 'light'
-        menuOpen.value = false
-      }
-    }, {
-      label: 'Dark',
-      icon: 'i-lucide-moon',
-      type: 'checkbox',
-      checked: colorMode.value === 'dark',
-      onSelect(e: Event) {
-        e.preventDefault()
-        colorMode.preference = 'dark'
-        menuOpen.value = false
-      }
-    }]
   }],
   [{
     label: 'Sign Out',
@@ -146,7 +68,6 @@ const items = computed<DropdownMenuItem[][]>(() => ([
        nothing and the negative margin just drags it off to the left. -->
   <div :class="collapsed ? '-ms-1' : ''">
     <UDropdownMenu
-      v-model:open="menuOpen"
       :items="items"
       :content="{ align: 'center', collisionPadding: 12 }"
       :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
@@ -179,18 +100,6 @@ const items = computed<DropdownMenuItem[][]>(() => ([
 
         <UIcon v-if="!collapsed" name="i-lucide-chevrons-up-down" class="ml-auto size-3.5 text-dimmed" />
       </UButton>
-
-      <template #chip-leading="{ item }">
-        <div class="inline-flex items-center justify-center shrink-0 size-5">
-          <span
-            class="rounded-full ring ring-bg bg-(--chip-light) dark:bg-(--chip-dark) size-2"
-            :style="{
-              '--chip-light': `var(--color-${(item as any).chip}-500)`,
-              '--chip-dark': `var(--color-${(item as any).chip}-400)`
-            }"
-          />
-        </div>
-      </template>
     </UDropdownMenu>
   </div>
 </template>

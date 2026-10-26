@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### Popup akun tanpa pemilih tema duplikat (2026-10-26)
+
+`web/app/components/UserMenu.vue` kini hanya menampilkan identitas/role dan Sign Out. Submenu Accent Color, Neutral Color, Appearance beserta array warna, handler, state menu khusus tema, dan slot chip yang tidak lagi dipakai benar-benar dihapus; `useThemeChoice.ts`, plugin pemulihan cookie, dan Theme Studio di sisi kanan tetap utuh karena masih digunakan. QA browser: popup hanya memiliki item Sign Out, Sign Out tetap menuju `/login`, sedangkan Theme Studio masih membuka pilihan Appearance/Accent/Neutral. Nol referensi selector lama di UserMenu; 73/73 tes dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/user-menu-theme-removal-20261026/UserMenu.vue`.
+
 ### NOA: posisi judul dan jarak bawah mengikuti Issued Form (2026-10-26)
 
 Hanya `web/app/pages/form/noa.vue` diubah: padding atas body menjadi 24px, judul/subjudul mengikuti `text-xl` dan `text-sm mt-1` Issued Form, serta jarak judul ke kartu pertama tepat 24px. QA browser membandingkan koordinat keduanya: pada 1366×768 dan 1024×569, judul x292/y88, ikon y90, subjudul y120, kartu y164 di kedua halaman. Pada layar pendek (tinggi ≤600px), hanya isi kartu kanan NOA yang sedikit diringkas agar 1024×569 tetap tanpa scroll, termasuk setelah validasi kosong; tepi kanan tetap selaras. Diuji pada 1024×569, 1264×569, 1366×768 dan 1600×900, dark/light, 73/73 tes dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-title-parity-20261026/noa.vue`.
