@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### Generator PDF NOA (2026-10-26)
+
+Halaman `/form/noa` kini mengisi Please specify changes, Waste (default `Excess wire, pipe, plactic, and dust`, dapat diedit/dikosongkan), PO NO, dan uraian 1–5. Bulan/tahun dihitung ulang saat klik Generate PDF; uraian 6 tetap dari master. `noaForm.ts` mengisi teks secara lokal dengan pdf-lib ke atas template PDF satu halaman yang diturunkan dari master `.doc` tanpa mengubah dokumen asli; tidak ada penulisan record aplikasi atau ketergantungan Word di produksi. Input yang melebihi lebar sel atau tidak dapat di-encode ditolak alih-alih terpotong. `scripts/prepare-noa-template.ps1` mereproduksi template dari master lewat Word COM pada mesin pengembang saja; berhasil diuji dengan output scratch yang teks dan ukuran halamannya sama. Backup halaman sebelumnya: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-generator-20261026`. 73/73 tes frontend dan build lulus; browser login lokal menunjukkan input/default/validasi, mengunduh `NOA-2026-10.pdf` satu halaman, dan ekstraksi PDF membuktikan data baru serta nomor 6 tetap. Perbandingan render dengan master menunjukkan garis, tabel, checklist, dan posisi teks terjaga; teks dinamis tidak dijamin identik per glyph (contoh superscript 2nd dari Word menjadi teks biasa).
+
 ### Ring acak pada ikon NOA
 
 Placeholder NOA di `/form/noa` kini memakai plate accent 48×48 dan `RecordAddIcon name="i-lucide-file-text" random-halo`, selaras dengan header form lain tanpa menambahkan fitur/form NOA yang belum dispesifikasikan. Browser membuktikan ikon file-text termask dari SVG yang dibundel offline, ring berganti target skala/durasi, dan reduced-motion membekukan ring. 69/69 tes serta build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-ring-20261026`.
