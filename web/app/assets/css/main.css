@@ -370,18 +370,24 @@
 }
 
 /* ---------- Filter + Excel SVG icon: creative line draw hover ---------- */
+.filter-hover:hover svg,
+.excel-hover:hover svg {
+  animation: svg-icon-lift 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  filter: drop-shadow(0 0 2px currentColor);
+}
+
 .filter-hover:hover svg path,
 .filter-hover:hover svg line,
 .excel-hover:hover svg path,
 .excel-hover:hover svg line {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  fill: none;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
   animation: svg-line-draw 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.filter-hover:hover svg,
-.excel-hover:hover svg {
-  animation: svg-icon-lift 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 @keyframes svg-line-draw {
