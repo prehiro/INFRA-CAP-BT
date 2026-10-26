@@ -358,3 +358,13 @@
     transform: none !important;
   }
 }
+
+/* ---------- Filter column hover: accent color per accent ---------- */
+.filter-hover:hover {
+  color: var(--ui-primary);
+}
+
+/* ---------- Excel hover: green ---------- */
+.excel-hover:hover {
+  color: rgb(0 193 106);
+}

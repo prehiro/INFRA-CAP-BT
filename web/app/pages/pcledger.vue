@@ -1379,6 +1379,7 @@ async function exportExcel() {
                   color="soft"
                   icon="i-lucide-columns-3"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
+                  class="filter-hover"
                 />
                 <template #content>
                   <div class="w-64 p-3">
@@ -1417,6 +1418,7 @@ async function exportExcel() {
                 label="Excel"
                 :loading="exporting"
                 @click="exportExcel"
+                class="excel-hover"
               />
               <UButton
                 color="primary"
