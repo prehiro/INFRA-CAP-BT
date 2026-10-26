@@ -1377,10 +1377,18 @@ async function exportExcel() {
               <UPopover>
                 <UButton
                   color="soft"
-                  icon="i-lucide-columns-3"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
                   class="filter-hover"
-                />
+                >
+                  <template #leading>
+                    <!-- Lucide columns-3 geometry, inline so its strokes can be animated. -->
+                    <svg class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect width="18" height="18" x="3" y="3" rx="2" />
+                      <path class="pl-columns-line pl-columns-line-first" d="M9 3v18" />
+                      <path class="pl-columns-line pl-columns-line-second" d="M15 3v18" />
+                    </svg>
+                  </template>
+                </UButton>
                 <template #content>
                   <div class="w-64 p-3">
                     <div class="mb-2 flex items-center justify-between gap-2">
@@ -1414,12 +1422,27 @@ async function exportExcel() {
 
               <UButton
                 color="soft"
-                icon="i-lucide-file-spreadsheet"
                 label="Excel"
                 :loading="exporting"
                 @click="exportExcel"
                 class="excel-hover"
-              />
+              >
+                <template #leading>
+                  <svg v-if="exporting" class="size-5 shrink-0 animate-spin motion-reduce:animate-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" opacity="0.3" />
+                    <path d="M21 12a9 9 0 0 0-9-9" />
+                  </svg>
+                  <!-- Lucide file-spreadsheet geometry; only the grid strokes redraw. -->
+                  <svg v-else class="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                    <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                    <path class="pl-excel-line pl-excel-line-first" d="M8 13h2" />
+                    <path class="pl-excel-line pl-excel-line-second" d="M14 13h2" />
+                    <path class="pl-excel-line pl-excel-line-third" d="M8 17h2" />
+                    <path class="pl-excel-line pl-excel-line-fourth" d="M14 17h2" />
+                  </svg>
+                </template>
+              </UButton>
               <UButton
                 color="primary"
                 label="Add Record" class="record-add-hover"
@@ -2152,44 +2175,34 @@ async function exportExcel() {
   .copy-pill::after { animation: none; opacity: 0; }
 }
 
-/* PC Ledger toolbar only. The UIcon glyph is a masked span, not an SVG; the old
-   global ::before ring and svg animation could never animate the actual glyph. */
-.filter-hover,
-.excel-hover {
-  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
+/* Only the inline SVG strokes redraw; the button and icon never move or gain a fill. */
+.filter-hover, .excel-hover { transition: color 180ms ease; }
+.filter-hover:is(:hover, :focus-visible) { color: var(--ui-primary); }
+.excel-hover:is(:hover, :focus-visible) { color: #4ade80; }
+:global(:root:not(.dark) .excel-hover:is(:hover, :focus-visible)) { color: #15803d; }
+.pl-columns-line { stroke-dasharray: 18; }
+.pl-excel-line { stroke-dasharray: 2; }
+.filter-hover:is(:hover, :focus-visible) .pl-columns-line {
+  animation: pl-columns-trace 440ms ease-out both;
 }
-.filter-hover:is(:hover, :focus-visible) {
-  background-color: var(--ui-primary);
-  color: var(--ui-text-inverted);
-  box-shadow: 0 5px 16px -7px var(--ui-primary);
+.filter-hover:is(:hover, :focus-visible) .pl-columns-line-second { animation-delay: 75ms; }
+.excel-hover:is(:hover, :focus-visible) .pl-excel-line {
+  animation: pl-excel-trace 350ms ease-out both;
 }
-.excel-hover:is(:hover, :focus-visible) {
-  background-color: #15803d;
-  color: #fff;
-  box-shadow: 0 5px 16px -7px #15803d;
+.excel-hover:is(:hover, :focus-visible) .pl-excel-line-second { animation-delay: 45ms; }
+.excel-hover:is(:hover, :focus-visible) .pl-excel-line-third { animation-delay: 90ms; }
+.excel-hover:is(:hover, :focus-visible) .pl-excel-line-fourth { animation-delay: 135ms; }
+@keyframes pl-columns-trace {
+  from { stroke-dashoffset: 18; }
+  to { stroke-dashoffset: 0; }
 }
-.filter-hover:is(:hover, :focus-visible) :deep([data-slot='leadingIcon']) {
-  animation: pc-columns-flip 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-.excel-hover:is(:hover, :focus-visible) :deep([data-slot='leadingIcon']) {
-  animation: pc-excel-pop 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes pc-columns-flip {
-  0%, 100% { transform: none; }
-  28% { transform: perspective(80px) rotateY(65deg) scale(0.87); }
-  60% { transform: perspective(80px) rotateY(-18deg) scale(1.12); }
-  82% { transform: perspective(80px) rotateY(7deg) scale(1.03); }
-}
-@keyframes pc-excel-pop {
-  0%, 100% { transform: none; }
-  22% { transform: translateY(2px) scale(0.94); }
-  58% { transform: translateY(-5px) rotate(-12deg) scale(1.15); }
-  80% { transform: translateY(1px) rotate(3deg) scale(1.04); }
+@keyframes pl-excel-trace {
+  from { stroke-dashoffset: 2; }
+  to { stroke-dashoffset: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .filter-hover, .excel-hover { transition: none; }
-  .filter-hover :deep([data-slot='leadingIcon']),
-  .excel-hover :deep([data-slot='leadingIcon']) { animation: none !important; }
+  .pl-columns-line, .pl-excel-line { animation: none !important; stroke-dashoffset: 0 !important; }
 }
 
 </style>

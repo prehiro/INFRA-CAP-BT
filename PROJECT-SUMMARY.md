@@ -3,7 +3,11 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
-### PC Ledger: hover Columns/Excel diganti (2026-10-26)
+### PC Ledger: hover garis SVG tanpa blok (2026-10-26)
+
+Revisi dari efek tombol blok: hover Columns hanya mewarnai teks/garis sesuai accent, Excel hanya teks/garis hijau (lebih gelap pada light mode); tidak ada background, shadow, transform, flip, atau pop. Kedua glyph memakai path Lucide yang sama dalam SVG inline agar garis internalnya saja dapat di-trace singkat saat hover/focus, sementara outline dan label tetap diam. State loading Excel tetap mempunyai spinner. Browser QA menunjukkan ukuran tombol 147.06×32 dan 82.23×32 tidak berubah, background transparan, SVG utuh, dashoffset garis bergerak, reduced-motion statis, light/dark, dan ekspor XLSX 1 sheet valid tanpa mengubah record. Animasi flip/pop lama dihapus sampai nol referensi; 73/73 tes dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/pc-ledger-line-hover-20261026`.
+
+### PC Ledger: riwayat hover Columns/Excel sebelum revisi garis (2026-10-26)
 
 Hanya tombol Columns dan Excel di PC Ledger yang berubah. Hover/focus Columns kini memenuhi tombol dengan accent aktif (`--ui-primary`), sedangkan Excel hijau tetap `#15803d` terlepas dari accent. Animasi lama berupa ring `::before` di tengah seluruh tombol dan selector `svg` yang tidak pernah menyentuh glyph Nuxt Icon (glyph sebenarnya berupa span mask) dihapus dari `main.css`, bersama kedua keyframe dead code. Animasi baru scoped pada halaman: ikon Columns melakukan flip singkat dan Excel pop/tilt, tanpa menggeser label/tombol; reduced-motion menonaktifkan animasinya. QA browser read-only: hijau dan violet, dark/light, frame tengah kedua animasi, tidak ada ring lama, serta reduced-motion tanpa animasi; tema/cookie asli dipulihkan. 73/73 tes dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/pc-ledger-toolbar-hover-20261026`.
 
