@@ -5,7 +5,9 @@
       <div class="mx-auto w-full max-w-6xl">
         <UCard>
           <div class="flex items-start gap-3">
-            <UIcon name="i-lucide-file-text" class="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
+            <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+              <RecordAddIcon name="i-lucide-file-text" random-halo />
+            </span>
             <div>
               <h2 class="font-semibold text-highlighted">NOA</h2>
               <p class="mt-1 text-sm text-muted">The NOA form is not available yet.</p>

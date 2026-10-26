@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### Ring acak pada ikon NOA
+
+Placeholder NOA di `/form/noa` kini memakai plate accent 48×48 dan `RecordAddIcon name="i-lucide-file-text" random-halo`, selaras dengan header form lain tanpa menambahkan fitur/form NOA yang belum dispesifikasikan. Browser membuktikan ikon file-text termask dari SVG yang dibundel offline, ring berganti target skala/durasi, dan reduced-motion membekukan ring. 69/69 tes serta build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-ring-20261026`.
+
 ### Ring acak diperluas ke CCTV Access, Handover, Issued Form
 
 Tiga header tersebut sekarang ikut memakai `RecordAddIcon random-halo`, sama persis dengan PC Ledger dan Factory PC. Hanya tiga pemanggilan komponen yang berubah; SVG, animasi glyph, form, dan ring di modal lain tetap. Browser read-only menunjukkan skala/durasi yang berubah tiap siklus pada tiga halaman (plate 48×48 tetap), serta reduced-motion tanpa transform atau transisi. 69/69 tes dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/header-ring-others-20261026`.
