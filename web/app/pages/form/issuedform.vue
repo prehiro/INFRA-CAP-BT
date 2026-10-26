@@ -174,7 +174,7 @@ onMounted(loadGid)
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="flex min-w-0 items-center gap-3">
             <span class="issued-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-              <RecordAddIcon name="i-lucide-file-pen-line" />
+              <RecordAddIcon name="i-lucide-file-pen-line" random-halo />
             </span>
             <div class="min-w-0">
               <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>

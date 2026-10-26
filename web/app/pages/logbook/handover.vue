@@ -578,7 +578,7 @@ onMounted(init)
                  the sidebar entry. -->
             <div class="flex min-w-0 items-center gap-3">
               <span class="handover-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-                <RecordAddIcon size="md">
+                <RecordAddIcon size="md" random-halo>
                   <HandoverIcon class="size-6" />
                 </RecordAddIcon>
               </span>
