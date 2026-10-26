@@ -1332,7 +1332,7 @@ async function exportExcel() {
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex min-w-0 items-center gap-3">
               <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-                <RecordAddIcon size="md">
+                <RecordAddIcon size="md" random-halo>
                   <PcLedgerIcon class="pc-add-tilt size-6" />
                 </RecordAddIcon>
               </span>

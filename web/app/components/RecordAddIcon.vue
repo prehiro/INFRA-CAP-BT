@@ -1,11 +1,46 @@
 <script setup lang="ts">
-withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-carbon-data-add', size: 'sm' })
+const props = withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md'; randomHalo?: boolean }>(), {
+  name: 'i-carbon-data-add', size: 'sm', randomHalo: false
+})
+
+// Only opted-in header rings change targets; the glyph's sway and inner SVG motions stay untouched.
+const haloScale = ref(1)
+const haloOpacity = ref(0.4)
+const haloDuration = ref(1000)
+let haloTimer: ReturnType<typeof setTimeout> | undefined
+let motionQuery: MediaQueryList | undefined
+let expanded = false
+function stopHalo() { clearTimeout(haloTimer); haloTimer = undefined }
+function stepHalo() {
+  if (!props.randomHalo || motionQuery?.matches) return
+  expanded = !expanded
+  haloScale.value = expanded ? 1.16 + Math.random() * 0.19 : 0.83 + Math.random() * 0.15
+  haloOpacity.value = expanded ? 0.12 + Math.random() * 0.12 : 0.3 + Math.random() * 0.18
+  haloDuration.value = 850 + Math.round(Math.random() * 700)
+  haloTimer = setTimeout(stepHalo, haloDuration.value + 80)
+}
+function onMotionChange() {
+  stopHalo()
+  if (!motionQuery?.matches) stepHalo()
+}
+onMounted(() => {
+  if (!props.randomHalo) return
+  motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  motionQuery.addEventListener('change', onMotionChange)
+  onMotionChange()
+})
+onBeforeUnmount(() => {
+  stopHalo()
+  motionQuery?.removeEventListener('change', onMotionChange)
+})
 </script>
 
 <template>
   <!-- Explicit opt-in for header icons; preserve the existing plate and crisp glyph size. -->
   <span class="pc-add-mark relative inline-grid shrink-0 place-items-center" :class="size === 'md' ? 'size-6' : 'size-5'" aria-hidden="true">
-    <span class="pc-add-halo pointer-events-none absolute -inset-1 rounded-md" />
+    <span class="pc-add-halo pointer-events-none absolute -inset-1 rounded-md"
+      :class="{ 'pc-add-halo--random': randomHalo }"
+      :style="randomHalo ? { transform: `scale(${haloScale})`, opacity: haloOpacity, transitionDuration: `${haloDuration}ms` } : undefined" />
     <slot>
       <ChannelAddIcon v-if="name === 'channel-add'" class="pc-add-glyph size-5" />
       <UIcon v-else :name="name" class="pc-add-glyph size-5" />
@@ -23,6 +58,11 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
 .pc-add-halo {
   border: 1px solid color-mix(in oklab, var(--ui-primary) 45%, transparent);
   animation: pc-add-halo 3.6s ease-in-out infinite;
+}
+.pc-add-halo--random {
+  animation: none;
+  transition-property: transform, opacity;
+  transition-timing-function: ease-in-out;
 }
 
 @keyframes pc-add-sway {
@@ -42,6 +82,6 @@ withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' }>(), { name: 'i-ca
   .pc-add-glyph,
   :slotted(.pc-add-tilt),
   .pc-add-halo { animation: none; }
-  .pc-add-halo { opacity: 0.18; }
+  .pc-add-halo { opacity: 0.18 !important; transform: none !important; transition: none !important; }
 }
 </style>

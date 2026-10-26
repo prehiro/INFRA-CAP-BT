@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### Ring header PC Ledger/Factory PC membesar-mengecil acak
+
+Ring halo di dua header PC kini opt-in `random-halo` pada `RecordAddIcon`: setiap siklus bergantian membesar (skala acak 1.16–1.35) dan mengecil (0.83–0.98), dengan opacity serta durasi transisi 850–1550 ms yang juga diacak. Timer dibersihkan saat pindah halaman; prefers-reduced-motion menghentikan timer dan mengunci ring tanpa transisi. Issued Form, register lain, glyph tilt, dan motion scan/gear tidak diubah. Browser menunjukkan beberapa target skala/durasi berbeda pada kedua halaman, plate tetap 48×48, Issued Form tetap memakai halo lamanya, dan reduced-motion stabil setelah 3 detik. 69/69 tes serta build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/header-ring-20261026`.
+
 ### Tilt ikon header PC Ledger dan Factory PC
 
 Ikon header PC Ledger dan Factory PC sebelumnya sudah dibungkus `RecordAddIcon`, tetapi glyph keduanya berasal dari slot dan tidak menerima class `.pc-add-glyph` milik ikon Issued Form. Halo sudah bergerak; glyph tidak tilt. Kedua slot sekarang diberi class opt-in `pc-add-tilt`, ditangkap oleh selector scoped `:slotted()` di `RecordAddIcon.vue`, sehingga memakai keyframe sway yang sama persis (3.6 detik) dengan Issued Form tanpa mengubah SVG, animasi scan/gear internal, atau halaman lain. QA browser menunjukkan ketiganya memakai `pc-add-sway`, plate tetap 48×48, motion scan/gear tetap berjalan, dan reduced-motion menonaktifkan sway serta halo. 69/69 tes dan production build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/header-tilt-20261026`.
