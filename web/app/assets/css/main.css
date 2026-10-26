@@ -369,13 +369,26 @@
   color: rgb(0 193 106);
 }
 
-/* ---------- Filter + Excel icon hover animation ---------- */
-.filter-hover:hover svg,
-.excel-hover:hover svg {
-  animation: toolbar-icon-hover 480ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+/* ---------- Filter + Excel SVG icon: creative line draw hover ---------- */
+.filter-hover:hover svg path,
+.filter-hover:hover svg line,
+.excel-hover:hover svg path,
+.excel-hover:hover svg line {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: svg-line-draw 500ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes toolbar-icon-hover {
-  0%, 100% { transform: scale(1) rotate(0); }
-  50% { transform: scale(1.12) rotate(4deg); }
+.filter-hover:hover svg,
+.excel-hover:hover svg {
+  animation: svg-icon-lift 500ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes svg-line-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes svg-icon-lift {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.14) translateY(-2px) rotate(3deg); }
 }
