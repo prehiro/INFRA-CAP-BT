@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### PC Ledger: hover Columns/Excel diganti (2026-10-26)
+
+Hanya tombol Columns dan Excel di PC Ledger yang berubah. Hover/focus Columns kini memenuhi tombol dengan accent aktif (`--ui-primary`), sedangkan Excel hijau tetap `#15803d` terlepas dari accent. Animasi lama berupa ring `::before` di tengah seluruh tombol dan selector `svg` yang tidak pernah menyentuh glyph Nuxt Icon (glyph sebenarnya berupa span mask) dihapus dari `main.css`, bersama kedua keyframe dead code. Animasi baru scoped pada halaman: ikon Columns melakukan flip singkat dan Excel pop/tilt, tanpa menggeser label/tombol; reduced-motion menonaktifkan animasinya. QA browser read-only: hijau dan violet, dark/light, frame tengah kedua animasi, tidak ada ring lama, serta reduced-motion tanpa animasi; tema/cookie asli dipulihkan. 73/73 tes dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/pc-ledger-toolbar-hover-20261026`.
+
 ### NOA: batas horizontal selaras Issued Form (2026-10-26)
 
 NOA memakai `max-w-6xl` seperti Issued Form. Padding panel NOA diatur hanya pada instansinya: gutter kiri 24px; di bawah breakpoint `xl`, gutter kanan 39px meniru 24px + 15px track scroll Issued Form tanpa membuat NOA ikut scroll; di `xl` ke atas gutter kanan kembali 24px. Pengukuran browser pada kedua halaman menunjukkan tepi form sama: 1264×569 kiri/kanan 232/1224px, 1366×768 232/1341px, 1600×900 327.5/1479.5px. Mode terang juga 232/1224px pada 1264×569 dan kembali ke mode gelap seusai QA. NOA tetap tidak scroll pada 1024×569, 1264×569, 1366×768, dan 1600×900. 73/73 tes dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-align-issued-20261026`.

@@ -2152,6 +2152,46 @@ async function exportExcel() {
   .copy-pill::after { animation: none; opacity: 0; }
 }
 
+/* PC Ledger toolbar only. The UIcon glyph is a masked span, not an SVG; the old
+   global ::before ring and svg animation could never animate the actual glyph. */
+.filter-hover,
+.excel-hover {
+  transition: background-color 220ms ease, color 220ms ease, box-shadow 220ms ease;
+}
+.filter-hover:is(:hover, :focus-visible) {
+  background-color: var(--ui-primary);
+  color: var(--ui-text-inverted);
+  box-shadow: 0 5px 16px -7px var(--ui-primary);
+}
+.excel-hover:is(:hover, :focus-visible) {
+  background-color: #15803d;
+  color: #fff;
+  box-shadow: 0 5px 16px -7px #15803d;
+}
+.filter-hover:is(:hover, :focus-visible) :deep([data-slot='leadingIcon']) {
+  animation: pc-columns-flip 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.excel-hover:is(:hover, :focus-visible) :deep([data-slot='leadingIcon']) {
+  animation: pc-excel-pop 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pc-columns-flip {
+  0%, 100% { transform: none; }
+  28% { transform: perspective(80px) rotateY(65deg) scale(0.87); }
+  60% { transform: perspective(80px) rotateY(-18deg) scale(1.12); }
+  82% { transform: perspective(80px) rotateY(7deg) scale(1.03); }
+}
+@keyframes pc-excel-pop {
+  0%, 100% { transform: none; }
+  22% { transform: translateY(2px) scale(0.94); }
+  58% { transform: translateY(-5px) rotate(-12deg) scale(1.15); }
+  80% { transform: translateY(1px) rotate(3deg) scale(1.04); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .filter-hover, .excel-hover { transition: none; }
+  .filter-hover :deep([data-slot='leadingIcon']),
+  .excel-hover :deep([data-slot='leadingIcon']) { animation: none !important; }
+}
+
 </style>
 
 <!-- NON-SCOPED, and it has to be. UModal teleports its content to <body>, so a scoped rule - which
