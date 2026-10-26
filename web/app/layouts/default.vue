@@ -54,7 +54,16 @@ const links = computed<NavigationMenuItem[][]>(() => [
     }
   ],
   [
-    { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/issuedform' }
+    {
+      label: 'Form',
+      icon: 'i-lucide-files',
+      type: 'trigger',
+      defaultOpen: true,
+      children: [
+        { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/form/issuedform' },
+        { label: 'NOA', icon: 'i-lucide-file-text', to: '/form/noa' }
+      ]
+    }
   ],
   [
     // Same group as User Management, and placed BEFORE it deliberately.
@@ -76,7 +85,7 @@ const links = computed<NavigationMenuItem[][]>(() => [
 ])
 
 // Command palette (Cmd/Ctrl+K). Listed explicitly rather than derived from links.value
-// because links.value.flat() would include the Log Book trigger item itself, which is not
+// because links.value.flat() would include trigger items themselves, which are not
 // a destination. Keeping it explicit also guarantees the palette and the sidebar never
 // disagree about where things live.
 const groups = computed(() => [
@@ -90,7 +99,8 @@ const groups = computed(() => [
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
       { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },
-      { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/issuedform' },
+      { label: 'Issued Form', icon: 'i-lucide-file-pen-line', to: '/form/issuedform' },
+      { label: 'NOA', icon: 'i-lucide-file-text', to: '/form/noa' },
       { label: 'User Management', icon: 'i-lucide-users', to: '/users' },
       { label: 'Log Audit', icon: 'i-lucide-scroll-text', to: '/audit' }
     ]

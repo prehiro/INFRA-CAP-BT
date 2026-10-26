@@ -1,7 +1,11 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-25
+> Terakhir diupdate: 2026-10-26
+
+### Sidebar Form: Issued Form dan NOA
+
+Grup Form baru memakai accordion `type: 'trigger'` dengan anak Issued Form `/form/issuedform` dan NOA `/form/noa`; command palette diselaraskan. Halaman Issued Form dipindahkan ke route baru tanpa mengubah isinya, sementara `/issuedform` lama mengalihkan ke route baru untuk bookmark. Karena spesifikasi isi NOA belum diberikan, route NOA hanya menampilkan halaman informasi tanpa form atau aksi simpan; tidak ada fitur NOA yang dikarang. Posisi Device Ledger, Log Book, Data Import, Log Audit, dan User Management tetap. QA browser membuktikan kedua tautan, buka/tutup grup, redirect lama, dan halaman NOA; 69/69 tes frontend dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/form-navigation-20261026`.
 
 ### Save changes: codicon:save di semua form edit (2026-10-25)
 
