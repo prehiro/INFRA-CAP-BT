@@ -46,10 +46,12 @@ async function generate() {
 </script>
 
 <template>
-  <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:p-3 xl:p-4' }">
+  <!-- Issued Form uses 24px side gutters and max-w-6xl. Below xl its taller form
+       has a 15px scroll track, so reserve that width here without forcing NOA to scroll. -->
+  <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:p-3 sm:pl-6 sm:pr-[39px] xl:py-4 xl:pr-6' }">
     <template #header><PageHeader title="NOA" /></template>
     <template #body>
-      <form class="mx-auto flex w-full max-w-7xl flex-col gap-2" @submit.prevent="generate">
+      <form class="mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
         <div class="flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon name="i-lucide-file-text" random-halo />

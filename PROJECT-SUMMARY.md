@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-10-26
 
+### NOA: batas horizontal selaras Issued Form (2026-10-26)
+
+NOA memakai `max-w-6xl` seperti Issued Form. Padding panel NOA diatur hanya pada instansinya: gutter kiri 24px; di bawah breakpoint `xl`, gutter kanan 39px meniru 24px + 15px track scroll Issued Form tanpa membuat NOA ikut scroll; di `xl` ke atas gutter kanan kembali 24px. Pengukuran browser pada kedua halaman menunjukkan tepi form sama: 1264×569 kiri/kanan 232/1224px, 1366×768 232/1341px, 1600×900 327.5/1479.5px. Mode terang juga 232/1224px pada 1264×569 dan kembali ke mode gelap seusai QA. NOA tetap tidak scroll pada 1024×569, 1264×569, 1366×768, dan 1600×900. 73/73 tes dan build lulus. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-align-issued-20261026`.
+
 ### NOA: form dua kolom muat layar (2026-10-26)
 
 Halaman `/form/noa` direlayout hanya pada instansinya sendiri: header tetap dengan ikon ring, detail perubahan di kiri, 5W dan ringkasan How tetap di kanan; label diletakkan sejajar input, padding/gap diringkas, dan area pesan kesalahan tetap di bawah. Pada viewport 1024×569, 1264×569, dan 1366×768, body panel memiliki `scrollHeight === clientHeight`, termasuk setelah validasi gagal pada ukuran terkecil; tombol Generate PDF terlihat tanpa scroll. QA dark/light menunjukkan keduanya tetap rapi, dan dark dikembalikan. Generator diuji lewat browser: PDF satu halaman berisi data baru dan nomor 6 tetap; 73/73 tes serta build lulus. Ini tidak mematikan overflow untuk viewport yang lebih kecil, agar akses field tetap aman. Backup: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/noa-fit-screen-20261026`.
