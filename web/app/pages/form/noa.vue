@@ -46,63 +46,62 @@ async function generate() {
 </script>
 
 <template>
-  <UDashboardPanel id="noa-form" :ui="{ body: 'p-4 sm:p-6' }">
+  <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:p-3 xl:p-4' }">
     <template #header><PageHeader title="NOA" /></template>
     <template #body>
-      <form class="mx-auto w-full max-w-6xl space-y-5" @submit.prevent="generate">
-        <div class="flex flex-wrap items-center gap-3">
+      <form class="mx-auto flex w-full max-w-7xl flex-col gap-2" @submit.prevent="generate">
+        <div class="flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon name="i-lucide-file-text" random-halo />
           </span>
-          <div>
-            <h2 class="text-xl font-semibold text-highlighted">Notification of Alteration</h2>
-            <p class="mt-1 text-sm text-muted">EHS - E - A5 - 301B (R3) · PDF from the original NOA master</p>
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-highlighted">Notification of Alteration</h2>
+            <p class="text-xs text-muted">EHS - E - A5 - 301B (R3) · Original one-page master</p>
           </div>
         </div>
 
-        <div class="grid gap-5 xl:grid-cols-2 xl:items-start">
-          <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
-            <template #header><h3 class="font-semibold text-highlighted">Alteration details</h3></template>
-            <div class="space-y-4">
-              <div>
-                <label class="mb-1.5 block text-sm font-medium" for="noa-month">For month of</label>
-                <UInput id="noa-month" :model-value="currentMonth" disabled class="w-full" />
-                <p class="mt-1 text-xs text-muted">Set automatically from the local date when you generate the PDF.</p>
+        <div class="grid gap-3 lg:grid-cols-2 lg:items-stretch">
+          <UCard :ui="{ header: 'px-4 py-3', body: 'px-4 py-3' }">
+            <template #header><h3 class="text-sm font-semibold text-highlighted">Alteration details</h3></template>
+            <div class="space-y-2">
+              <div class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2">
+                <label class="text-sm font-medium" for="noa-month">For month of</label>
+                <UInput id="noa-month" :model-value="currentMonth" disabled class="min-w-0 w-full" />
               </div>
-              <div>
-                <label class="mb-1.5 block text-sm font-medium" for="noa-changes">Please specify the changes <span class="text-error">*</span></label>
-                <UInput id="noa-changes" v-model="form.changes" class="w-full" placeholder="Describe the alteration" :disabled="generating" />
+              <div class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2">
+                <label class="text-sm font-medium leading-tight" for="noa-changes">Please specify the changes <span class="text-error">*</span></label>
+                <UInput id="noa-changes" v-model="form.changes" class="min-w-0 w-full" placeholder="Describe the alteration" :disabled="generating" />
               </div>
-              <div>
-                <label class="mb-1.5 block text-sm font-medium" for="noa-waste">Waste</label>
-                <UInput id="noa-waste" v-model="form.waste" class="w-full" :disabled="generating" />
-                <p class="mt-1 text-xs text-muted">Prefilled from the master; you may edit or clear it.</p>
+              <div class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2">
+                <label class="text-sm font-medium" for="noa-waste">Waste</label>
+                <UInput id="noa-waste" v-model="form.waste" class="min-w-0 w-full" :disabled="generating" />
               </div>
-              <div>
-                <label class="mb-1.5 block text-sm font-medium" for="noa-po">PO NO <span class="text-error">*</span></label>
-                <UInput id="noa-po" v-model="form.poNo" class="w-full" placeholder="Enter PO number" :disabled="generating" />
+              <div class="grid grid-cols-[8rem_minmax(0,1fr)] items-center gap-2">
+                <label class="text-sm font-medium" for="noa-po">PO NO <span class="text-error">*</span></label>
+                <UInput id="noa-po" v-model="form.poNo" class="min-w-0 w-full" placeholder="Enter PO number" :disabled="generating" />
               </div>
             </div>
+            <p class="mt-3 border-t border-default pt-3 text-xs text-muted">Month is set at generation · Waste can be edited or cleared</p>
           </UCard>
 
-          <UCard :ui="{ header: 'px-4 py-4 sm:px-6', body: 'p-4 sm:p-6' }">
-            <template #header><h3 class="font-semibold text-highlighted">Description of changes (5W, 1H)</h3></template>
-            <div class="space-y-4">
-              <div v-for="field in descriptionFields" :key="field.key">
-                <label class="mb-1.5 block text-sm font-medium" :for="`noa-${field.key}`">{{ field.label }} <span class="text-error">*</span></label>
-                <UInput :id="`noa-${field.key}`" v-model="form[field.key]" class="w-full" :disabled="generating" />
+          <UCard :ui="{ header: 'px-4 py-3', body: 'px-4 py-3' }">
+            <template #header><h3 class="text-sm font-semibold text-highlighted">Description of changes <span class="font-normal text-muted">(5W, 1H)</span></h3></template>
+            <div class="space-y-2">
+              <div v-for="field in descriptionFields" :key="field.key" class="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2">
+                <label class="text-sm font-medium" :for="`noa-${field.key}`">{{ field.label }} <span class="text-error">*</span></label>
+                <UInput :id="`noa-${field.key}`" v-model="form[field.key]" class="min-w-0 w-full" :disabled="generating" />
               </div>
-              <div class="rounded-lg border border-default bg-elevated/50 p-3">
-                <p class="text-sm font-medium text-highlighted">6. How <span class="font-normal text-muted">(fixed in the master)</span></p>
-                <p v-for="line in fixedHow" :key="line" class="mt-1 text-sm text-muted">{{ line }}</p>
+              <div class="rounded-lg border border-default bg-elevated/50 px-3 py-2">
+                <p class="text-xs font-semibold text-highlighted">6. How <span class="font-normal text-muted">· Fixed from the master</span></p>
+                <p class="mt-1 text-xs leading-4 text-muted">{{ fixedHow.join(' · ') }}</p>
               </div>
             </div>
           </UCard>
         </div>
 
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p role="alert" class="min-h-5 text-sm text-error">{{ errorMessage }}</p>
-          <UButton type="submit" icon="i-lucide-file-down" :loading="generating" :disabled="generating" class="record-save-hover">Generate PDF</UButton>
+        <div class="flex min-h-8 items-center justify-between gap-3">
+          <p role="alert" class="min-w-0 text-sm text-error">{{ errorMessage }}</p>
+          <UButton type="submit" icon="i-lucide-file-down" :loading="generating" :disabled="generating" class="record-save-hover shrink-0">Generate PDF</UButton>
         </div>
       </form>
     </template>
