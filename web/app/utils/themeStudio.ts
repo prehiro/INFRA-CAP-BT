@@ -7,6 +7,12 @@ export const fonts = {
   ...Object.fromEntries(bundledFonts.map(f => [f.id, f.name])),
   original: 'Original Font', system: 'System Sans', serif: 'System Serif', mono: 'System Mono'
 }
+/** Randomize across the same offline font choices shown in Theme Studio, excluding
+ * the active font so each click actually changes typography. */
+export function pickDifferentFont(currentFont: string, random: () => number = Math.random): string {
+  const choices = Object.keys(fonts).filter(font => font !== currentFont)
+  return choices[Math.floor(random() * choices.length)]!
+}
 export const fontStacks: Record<string, string> = {
   ...Object.fromEntries(bundledFonts.map(f => [f.id, `"Studio ${f.name}", ${f.category === 'Mono' ? 'monospace' : f.category === 'Serif' ? 'serif' : 'sans-serif'}`])),
   system: 'system-ui, sans-serif', serif: 'Georgia, "Times New Roman", serif', mono: 'Consolas, "Courier New", monospace'

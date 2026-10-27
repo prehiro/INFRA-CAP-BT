@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { stripTypeScriptTypes } from 'node:module'
 import vm from 'node:vm'
-import { validTheme, presets, extraDefaults, carbonIcons, fontStacks } from '../app/utils/themeStudio.ts'
+import { validTheme, presets, extraDefaults, carbonIcons, fontStacks, fonts, pickDifferentFont } from '../app/utils/themeStudio.ts'
 import { referenceComponents, referenceDocs, referenceIconSets, referenceComponentOverride, referenceCss, referenceCatalog } from '../app/utils/themeReference.ts'
 
 const KEY = 'infra-cap.theme-studio.v1', BASE = `${KEY}.original`
@@ -35,6 +35,23 @@ for (const preset of referenceCatalog.presets) test(`reference ${preset.name}: a
 test('all offline presets are valid; invalid arbitrary values are rejected',()=>{
   for(const value of Object.values(presets))assert.ok(validTheme(value))
   for(const patch of [{font:'https://remote/font'},{radius:'1000'},{size:'huge'},{icons:'remote'},{mode:'invalid'},{variant:'ghost'}])assert.equal(validTheme({...presets.Ocean,...patch}),false)
+})
+test('Randomize font covers offline options, always changes font, and Undo restores it',()=>{
+  const choices=Object.keys(fonts)
+  assert.ok(choices.length>20)
+  for(const old of choices){
+    for(const sample of [0,0.5,0.999999]){
+      const next=pickDifferentFont(old,()=>sample)
+      assert.ok(choices.includes(next));assert.notEqual(next,old)
+    }
+  }
+  const h=harness(),before=h.studio.current.value.font,next=pickDifferentFont(before,()=>0)
+  h.studio.change({font:next})
+  assert.equal(h.studio.current.value.font,next)
+  assert.equal(h.styles.get('--font-sans'),fontStacks[next])
+  h.studio.undo()
+  assert.equal(h.studio.current.value.font,before)
+  assert.equal(h.styles.get('--font-sans'),'Original Font')
 })
 test('initial mounting does not mutate existing theme or create a backup',()=>{
   const h=harness();assert.deepEqual(h.ui,h.originalUi);assert.equal(h.storage.size,0);assert.equal(h.styles.get('--font-sans'),'Original Font')

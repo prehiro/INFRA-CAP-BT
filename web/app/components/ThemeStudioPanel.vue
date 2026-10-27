@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { accents, neutrals, fonts, presets } from '~/utils/themeStudio'
+import { accents, neutrals, fonts, presets, pickDifferentFont } from '~/utils/themeStudio'
 import { referenceCatalog, referenceCss, referenceIconSets } from '~/utils/themeReference'
 
 const open = ref(false)
@@ -17,7 +17,7 @@ function choose(key: string, event: Event) {
 }
 function randomize() {
   const pick = <T,>(values: T[]) => values[Math.floor(Math.random() * values.length)]!
-  change({ primary: pick(accents), neutral: pick(neutrals), radius: pick(['0.125', '0.25', '0.375', '0.5']), variant: pick(['solid', 'soft', 'outline', 'subtle']) })
+  change({ primary: pick(accents), neutral: pick(neutrals), font: pickDifferentFont(current.value.font), radius: pick(['0.125', '0.25', '0.375', '0.5']), variant: pick(['solid', 'soft', 'outline', 'subtle']) })
 }
 </script>
 
