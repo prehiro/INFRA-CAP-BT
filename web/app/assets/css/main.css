@@ -291,6 +291,14 @@
   --color-green-950: #052E16;
 }
 
+/* Light workspace only: soften existing grey surfaces toward white without changing
+   text, accent, borders, geometry or dark mode. Mix with the selected neutral ramp so
+   Theme Studio's zinc/stone/slate choices still have their own character. */
+:root.light:has(#dashboard-sidebar-app-v2) {
+  --ui-bg-elevated: color-mix(in srgb, var(--ui-color-neutral-100) 20%, white);
+  --ui-bg-muted: color-mix(in srgb, var(--ui-color-neutral-50) 15%, white);
+}
+
 /* ---------------------------------------------------------------------------
    Page-load motion.
 
