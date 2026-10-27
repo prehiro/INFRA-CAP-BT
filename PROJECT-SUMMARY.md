@@ -1,7 +1,11 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-26
+> Terakhir diupdate: 2026-10-27
+
+### Light mode: permukaan abu-abu diringankan (2026-10-27)
+
+HIRO menyetujui preview kedua dengan "push github". Hanya `web/app/assets/css/main.css` yang dipublikasi sebagai `b0f06e9`: pada halaman aplikasi dengan mode terang, `--ui-bg-elevated` kini 20% shade neutral-100 + putih, dan `--ui-bg-muted` 15% shade neutral-50 + putih. Ini mengurangi abu-abu pada panel/tabel tanpa mengubah teks, warna accent, batas, ukuran, mode gelap, atau halaman login; tetap mengikuti pilihan neutral Theme Studio. Browser memverifikasi PC Ledger (termasuk pinned dan zebra rows), CCTV Access, warna accent asli, dan mode gelap; 73/73 tes serta production build lulus. Backup sebelum iterasi terakhir: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/light-grey-further-20261027/main.css`; backup sebelum seluruh light-grey preview: `C:/Users/HIRO/AppData/Local/INFRA-CAP/backups/light-grey-reduction-20261027/main.css`. Animasi NOA dan animasi TimePicker CCTV yang masih berubah lokal adalah preview terpisah dan TIDAK termasuk publikasi ini.
 
 ### Popup akun tanpa pemilih tema duplikat (2026-10-26)
 
