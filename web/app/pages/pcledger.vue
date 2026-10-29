@@ -93,8 +93,9 @@ async function copyCellText(value: string, event?: MouseEvent) {
  *
  * The shares are hand-picked rather than the old rem values scaled down mechanically - a proportional
  * conversion would have given the No column 1.8% (30px) and the Date column 4%. The columns carrying
- * long values (Email, Hostname, Location) still get the biggest shares. They sum to 95%, leaving 5%
- * for Actions, and the pinned pair is positioned by MEASUREMENT now - see pinOffset.
+ * long values (Email, Hostname, Location) still get the biggest shares. The action column needs
+ * 6% for three 24px controls; the browser normalizes the extra percentage when all fields show.
+ * The pinned pair is positioned by MEASUREMENT now - see pinOffset.
  */
 type Column = { key: string; label: string; short?: string; w: number; align?: 'center' }
 
@@ -1161,6 +1162,18 @@ function openEdit(row: RecordRow) {
   showForm.value = true
 }
 
+/* Read-only detail uses the full row snapshot, including columns hidden from the table. */
+const showView = ref(false)
+const viewTarget = shallowRef<RecordRow | null>(null)
+function openView(row: RecordRow) {
+  viewTarget.value = row
+  showView.value = true
+}
+function detailValue(row: RecordRow, key: string): string {
+  const value = key === 'tanggal' ? fmtDate(row.values?.[key]) : cell(row, key)
+  return value.trim() || '—'
+}
+
 /**
  * `nomor` is deliberately never sent. The API's LogbookNumberService fills a required+unique
  * field named `nomor` on create, and sending our own value would either collide with that or
@@ -1389,7 +1402,7 @@ async function exportExcel() {
             <div class="flex min-w-0 items-center gap-3">
               <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
                 <RecordAddIcon size="md" random-halo>
-                  <PcLedgerIcon class="pc-add-tilt size-6" />
+                  <PcLedgerIcon class="pc-add-tilt size-7" />
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">
@@ -1488,7 +1501,7 @@ async function exportExcel() {
               </UButton>
               <UButton
                 color="primary"
-                label="Add Record" class="record-add-hover"
+                label="Add Record" class="record-add-hover stable-hover-hitbox"
                 @click="openCreate"
               >
                 <template #leading><ChannelAddIcon /></template>
@@ -1546,7 +1559,7 @@ async function exportExcel() {
                   :key="c.key"
                   :style="{ width: isVisible(c.key) ? c.w + '%' : '0%' }"
                 />
-                <col style="width: 5%" />
+                <col style="width: 6%" />
               </colgroup>
               <thead>
                 <tr>
@@ -1614,16 +1627,20 @@ async function exportExcel() {
                         @click.stop="copyCellText(c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key), $event)"
                       >{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</button>
                   </td>
-                  <!-- Matched to the CCTV register's Actions cell: centred, and the two buttons
-                       sit directly in the cell with no flex wrapper. The `gap-1` wrapper is gone
-                       because CCTV has none - the buttons carry their own padding, so they read
-                       as a pair there and now here too. `pl-actions` brings CCTV's narrower
+                  <!-- Actions sit directly in the cell with no flex wrapper or gap.
+                       `pl-actions` brings CCTV's narrower
                        `px-1 py-2` padding with it, which the shared `.pl-table td` rule cannot
                        express as a utility (it would lose on specificity). -->
                   <td class="pl-actions text-center">
                     <!-- Native equivalents of the measured xs ghost UButtons (24x24).
                          Keep theme tokens, accessible labels, icon animation hooks and handlers;
-                         avoid mounting two reactive vendor component trees for EVERY record. -->
+                         avoid mounting three reactive vendor component trees for EVERY record. -->
+                    <button type="button" data-slot="base" class="pl-view-action inline-flex items-center rounded-md p-1 text-primary outline-primary/30 focus-visible:outline-3" :aria-label="`View details for PC ${cell(row, 'nomor') || row.id}`" title="View details" @click="openView(row)">
+                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path class="pl-view-eye-outline" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                        <circle class="pl-view-eye-iris" cx="12" cy="12" r="2.5" />
+                      </svg>
+                    </button>
                     <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-default hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 hover:disabled:bg-transparent dark:hover:disabled:bg-transparent hover:aria-disabled:bg-transparent dark:hover:aria-disabled:bg-transparent p-1 pencil-hover" aria-label="Edit" @click="openEdit(row)">
                       <PencilIcon class="size-4" data-slot="leadingIcon" />
                     </button>
@@ -1651,6 +1668,55 @@ async function exportExcel() {
         </div>
       </div>
 
+      <!-- ---------------- read-only detail ---------------- -->
+      <UModal v-model:open="showView" :title="viewTarget ? `PC Ledger record ${detailValue(viewTarget, 'nomor')}` : 'PC Ledger record details'" description="Read-only information for this PC ledger record." :ui="{ content: 'w-[calc(100vw-2rem)] max-w-5xl pl-view-modal' }">
+        <template #content>
+          <div v-if="viewTarget" class="flex max-h-[min(82vh,720px)] flex-col overflow-hidden rounded-xl">
+            <div class="relative shrink-0 overflow-hidden border-b border-default px-5 pb-5 pt-6 sm:px-7">
+              <div aria-hidden="true" class="pointer-events-none absolute -right-16 -top-24 size-52 rounded-full bg-primary/15 blur-3xl" />
+              <div class="relative flex items-start gap-4">
+                <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/25">
+                  <RecordAddIcon size="md" random-halo>
+                    <svg class="pl-view-header-eye pc-add-tilt size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <g class="pl-view-header-lids"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle class="pl-view-header-pupil" cx="12" cy="12" r="2.5"/></g>
+                    </svg>
+                  </RecordAddIcon>
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">PC Ledger / Record {{ detailValue(viewTarget, 'nomor') }}</p>
+                  <h2 class="mt-1 break-words text-lg font-semibold leading-tight text-highlighted sm:text-xl">{{ detailValue(viewTarget, 'japan_hostname') }}</h2>
+                  <p class="mt-1 text-sm text-muted">{{ detailValue(viewTarget, 'staff_name') }} <span aria-hidden="true">·</span> {{ detailValue(viewTarget, 'chassis') }}</p>
+                </div>
+                <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error" aria-label="Close details" @click="showView = false">
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7">
+              <section v-for="section in FORM_SECTIONS" :key="section.title" class="mb-6 last:mb-0">
+                <h3 class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                  <span class="pl-view-section-dot relative size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />{{ section.title }}
+                </h3>
+                <dl class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+                  <div v-for="key in section.fields" :key="key" class="min-w-0 rounded-lg border border-default bg-elevated/40 px-3.5 py-3">
+                    <dt class="text-[11px] font-medium text-muted">{{ LABELS[key] }}</dt>
+                    <dd class="mt-1 break-words text-sm font-medium leading-relaxed text-highlighted" :class="{ 'text-muted': detailValue(viewTarget, key) === '—' }">{{ detailValue(viewTarget, key) }}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+            <div class="flex shrink-0 items-center justify-between gap-3 border-t border-default bg-elevated/40 px-5 py-3 sm:px-7">
+              <span class="text-xs text-muted">Read-only record details</span>
+              <UButton color="neutral" variant="soft" label="Close" class="pl-view-footer-close" @click="showView = false">
+                <template #leading>
+                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>
+                </template>
+              </UButton>
+            </div>
+          </div>
+        </template>
+      </UModal>
+
       <!-- ---------------- add / edit ---------------- -->
       <UModal v-model:open="showForm" :ui="{ content: 'w-full max-w-4xl pl-record-modal' }">
         <template #content>
@@ -1664,12 +1730,15 @@ async function exportExcel() {
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'channel-add'" />
               </span>
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New PC record' }}</h2>
                 <p class="text-xs text-muted">
                   {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new PC to the ledger system.' }}
                 </p>
               </div>
+              <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-50" aria-label="Close record form" :disabled="saving" @click="showForm = false">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
             </div>
 
             <div class="flex-1 overflow-y-auto px-5 py-4">
@@ -2097,8 +2166,8 @@ async function exportExcel() {
   background: color-mix(in oklab, var(--ui-primary) 5%, var(--ui-bg-elevated));
 }
 
-/* CCTV's Actions cell padding (measured 8px 4px, `px-1 py-2`) is narrower than a data cell's, which
-   is what keeps the two icon buttons reading as one pair. It cannot be expressed as a utility here:
+/* CCTV's Actions cell padding (measured 8px 4px, `px-1 py-2`) leaves enough room for the
+   three 24px icon buttons at the action column's 6% width. It cannot be expressed as a utility here:
    a Tailwind class would land at (0,1,0) and `.pl-table td` above is (0,1,1), so the utility would
    simply lose. Hence a rule keyed to the cell's own class. */
 .pl-table td.pl-actions {
@@ -2267,6 +2336,66 @@ async function exportExcel() {
      no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
      <style> block. -->
 <style>
+/* The page-title glyph is 28px; match only its wrapper to that size so the grid
+   centres the SVG instead of offsetting it 2px right and down inside a 24px track. */
+.pc-ledger-title-icon .pc-add-mark { width: 1.75rem; height: 1.75rem; }
+
+/* Only the PC Ledger view action animates; its hitbox stays fixed at the edges. */
+.pl-view-action { cursor: pointer; transition: background-color 180ms ease, box-shadow 180ms ease, color 180ms ease; }
+.pl-view-action:is(:hover, :focus-visible) {
+  background: color-mix(in oklab, var(--ui-primary) 13%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ui-primary) 28%, transparent), 0 0 14px color-mix(in oklab, var(--ui-primary) 15%, transparent);
+}
+.pl-view-eye-iris { transform-origin: 12px 12px; transition: transform 240ms cubic-bezier(.2,.8,.2,1); }
+.pl-view-action:is(:hover, :focus-visible) .pl-view-eye-iris { transform: scale(1.28); }
+.pl-view-action:is(:hover, :focus-visible) .pl-view-eye-outline { animation: pl-eye-trace 420ms ease-out both; }
+@keyframes pl-eye-trace { from { stroke-dasharray: 60; stroke-dashoffset: 60; } to { stroke-dasharray: 60; stroke-dashoffset: 0; } }
+.pl-view-modal[data-state='open'] { animation: pl-view-arrive 290ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes pl-view-arrive { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+/* One cycle: glance right, return, glance left, return, then close and open the lids.
+   Only the glyph moves; the icon tile and modal header never change size. */
+.pl-view-modal[data-state='open'] .pl-view-header-lids {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pl-header-blink 3.6s ease-in-out infinite;
+}
+.pl-view-modal[data-state='open'] .pl-view-header-pupil {
+  animation: pl-header-glance 3.6s ease-in-out infinite;
+}
+@keyframes pl-header-glance {
+  0%, 12%, 43%, 76%, 100% { transform: translateX(0); }
+  20%, 34% { transform: translateX(2px); }
+  52%, 67% { transform: translateX(-2px); }
+}
+@keyframes pl-header-blink {
+  0%, 78%, 91%, 100% { transform: scaleY(1); }
+  84% { transform: scaleY(.08); }
+}
+/* The solid 6px section marker stays put; only its out-of-flow ring expands. */
+.pl-view-section-dot::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 1px solid var(--ui-primary);
+  border-radius: 9999px;
+  pointer-events: none;
+  animation: pl-view-section-ping 2.4s ease-out infinite;
+}
+@keyframes pl-view-section-ping {
+  0% { transform: scale(.6); opacity: .65; }
+  50%, 100% { transform: scale(2.1); opacity: 0; }
+}
+.pl-view-modal .pl-view-footer-close:is(:hover, :focus-visible) {
+  color: var(--ui-error);
+  background-color: color-mix(in oklab, var(--ui-error) 13%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-view-action, .pl-view-eye-iris { transition: none; }
+  .pl-view-action:is(:hover, :focus-visible) .pl-view-eye-outline,
+  .pl-view-modal[data-state='open'],
+  .pl-view-modal[data-state='open'] .pl-view-header-eye :is(.pl-view-header-lids, .pl-view-header-pupil) { animation: none; }
+  .pl-view-section-dot::after { animation: none; opacity: 0; }
+}
 /* A teleported suggestion becomes the modal's last child; suppress only the NEW form's
    accidental divide-y border so opening a dropdown cannot grow/move the dialog by 1px. */
 .pl-record-modal[data-slot='content'] > .pc-new-record-content { border-bottom-width: 0; }

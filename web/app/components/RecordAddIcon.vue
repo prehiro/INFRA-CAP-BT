@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const props = withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md'; randomHalo?: boolean }>(), {
+const props = withDefaults(defineProps<{ name?: string; size?: 'sm' | 'md' | 'lg'; randomHalo?: boolean }>(), {
   name: 'i-carbon-data-add', size: 'sm', randomHalo: false
 })
 
@@ -37,13 +37,13 @@ onBeforeUnmount(() => {
 
 <template>
   <!-- Explicit opt-in for header icons; preserve the existing plate and crisp glyph size. -->
-  <span class="pc-add-mark relative inline-grid shrink-0 place-items-center" :class="size === 'md' ? 'size-6' : 'size-5'" aria-hidden="true">
+  <span class="pc-add-mark relative inline-grid shrink-0 place-items-center" :class="size === 'lg' ? 'size-7' : size === 'md' ? 'size-6' : 'size-5'" aria-hidden="true">
     <span class="pc-add-halo pointer-events-none absolute -inset-1 rounded-md"
       :class="{ 'pc-add-halo--random': randomHalo }"
       :style="randomHalo ? { transform: `scale(${haloScale})`, opacity: haloOpacity, transitionDuration: `${haloDuration}ms` } : undefined" />
     <slot>
-      <ChannelAddIcon v-if="name === 'channel-add'" class="pc-add-glyph size-5" />
-      <UIcon v-else :name="name" class="pc-add-glyph size-5" />
+      <ChannelAddIcon v-if="name === 'channel-add'" class="pc-add-glyph" :class="size === 'lg' ? 'size-7' : 'size-5'" />
+      <UIcon v-else :name="name" class="pc-add-glyph" :class="size === 'lg' ? 'size-7' : 'size-5'" />
     </slot>
   </span>
 </template>

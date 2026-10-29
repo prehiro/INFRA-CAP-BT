@@ -54,7 +54,13 @@ async function generate() {
       <form class="mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
         <div class="mb-4 flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-            <RecordAddIcon name="i-lucide-file-text" random-halo />
+            <RecordAddIcon size="lg" random-halo>
+              <!-- Same lucide:file-text paths; thinner than the Iconify mask's fixed 2px stroke. -->
+              <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                <path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8m8 4H8m8 4H8" />
+              </svg>
+            </RecordAddIcon>
           </span>
           <div class="min-w-0">
             <h2 class="text-xl font-semibold text-highlighted">Notification of Alteration</h2>
@@ -103,7 +109,7 @@ async function generate() {
 
         <div class="flex min-h-8 items-center justify-between gap-3">
           <p role="alert" class="min-w-0 text-sm text-error">{{ errorMessage }}</p>
-          <UButton type="submit" icon="i-lucide-file-down" :loading="generating" :disabled="generating" class="record-save-hover shrink-0">Generate PDF</UButton>
+          <UButton type="submit" icon="i-lucide-file-down" :loading="generating" :disabled="generating" class="record-save-hover stable-hover-hitbox shrink-0">Generate PDF</UButton>
         </div>
       </form>
     </template>

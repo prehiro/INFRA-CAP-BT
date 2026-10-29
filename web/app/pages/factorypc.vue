@@ -1183,7 +1183,7 @@ async function exportExcel() {
               </UButton>
               <UButton
                 color="primary"
-                label="Add Record" class="record-add-hover"
+                label="Add Record" class="record-add-hover stable-hover-hitbox"
                 @click="openCreate"
               >
                 <template #leading><ChannelAddIcon /></template>
@@ -1354,12 +1354,15 @@ async function exportExcel() {
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'channel-add'" />
               </span>
-              <div class="min-w-0">
+              <div class="min-w-0 flex-1">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New Factory PC record' }}</h2>
                 <p class="text-xs text-muted">
                   {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new Factory PC to the ledger system.' }}
                 </p>
               </div>
+              <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-50" aria-label="Close record form" :disabled="saving" @click="showForm = false">
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
             </div>
 
             <div class="flex-1 overflow-y-auto px-5 py-4">

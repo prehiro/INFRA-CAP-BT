@@ -174,7 +174,13 @@ onMounted(loadGid)
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="flex min-w-0 items-center gap-3">
             <span class="issued-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-              <RecordAddIcon name="i-lucide-file-pen-line" random-halo />
+              <RecordAddIcon size="lg" random-halo>
+                <!-- Same lucide:file-pen-line paths; thinner than the Iconify mask's fixed 2px stroke. -->
+                <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  <path d="M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004zm.123-5.776A1 1 0 0 1 14 7V2" />
+                  <path d="M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516M8 18h1" />
+                </svg>
+              </RecordAddIcon>
             </span>
             <div class="min-w-0">
               <h2 class="text-xl font-semibold text-highlighted">IT Equipment Issue / Return Form</h2>
@@ -322,7 +328,7 @@ onMounted(loadGid)
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4 border-t border-default pt-5">
           <p class="text-xs text-muted">Download only · No record is saved to the database.</p>
-          <UButton type="submit" icon="i-lucide-file-down" class="record-save-hover" :loading="generating" :disabled="generating">Generate PDF</UButton>
+          <UButton type="submit" icon="i-lucide-file-down" class="record-save-hover stable-hover-hitbox" :loading="generating" :disabled="generating">Generate PDF</UButton>
         </div>
         <p class="min-h-10 text-sm text-error" role="status">{{ message }}</p>
       </form>

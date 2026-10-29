@@ -666,8 +666,8 @@ onMounted(init)
              glyph inside it. The glyph is the CCTV camera, matching the sidebar entry. -->
         <div class="flex min-w-0 items-center gap-3">
           <span class="cctv-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-            <RecordAddIcon size="md" random-halo>
-              <CctvIcon class="pc-add-tilt size-6" />
+            <RecordAddIcon size="lg" random-halo>
+              <CctvIcon class="pc-add-tilt size-7" />
             </RecordAddIcon>
           </span>
           <div class="min-w-0">
@@ -987,17 +987,10 @@ onMounted(init)
           </span>
         </span>
 
-        <!-- The vendor close button, rebuilt. See the note above on what taking over the
-             #header slot costs. `close()` comes from DialogRoot, so this is the same
-             teardown path the vendor button uses, not a hand-rolled state change. -->
-        <UButton
-          icon="i-lucide-x"
-          color="neutral"
-          variant="ghost"
-          aria-label="Close"
-          class="shrink-0"
-          @click="close()"
-        />
+        <!-- Match the PC Ledger View X while retaining DialogRoot's close() teardown. -->
+        <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-50" aria-label="Close" :disabled="saving" @click="close()">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
       </template>
       <template #body>
       <!-- `:validate-on="[]"` switches OFF UForm's own validation. It is off on purpose:

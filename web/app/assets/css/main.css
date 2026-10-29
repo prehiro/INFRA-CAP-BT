@@ -222,6 +222,12 @@
   position: relative;
   overflow: hidden;
 }
+/* Four edge-sensitive actions: a 2px hover lift moves the hitbox away from a
+   pointer at the lower edge. Keep the button fixed; retain shadow, sheen and icon motion. */
+:is(.record-add-hover, .record-save-hover).stable-hover-hitbox:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) {
+  transform: none;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .cancel-hover:not(:disabled):hover [data-slot='leadingIcon'] {
     animation: cancel-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
