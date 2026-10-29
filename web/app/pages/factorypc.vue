@@ -1134,7 +1134,7 @@ async function exportExcel() {
                 <UButton
                   color="soft"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
-                  class="fpc-filter-trigger pointer-events-auto"
+                  class="fpc-filter-trigger toolbar-line-hover pointer-events-auto"
                 >
                   <template #leading><ToolbarStrokeIcon name="columns" /></template>
                 </UButton>
