@@ -157,6 +157,10 @@ const DEFAULT_VISIBLE = [
  */
 const STORAGE_KEY = 'infra-cap.pcledger.columns.v2'
 const visibleKeys = ref<string[]>([...DEFAULT_VISIBLE])
+const fireworkColumn = ref<string | null>(null)
+const fireworkPoint = ref({ left: 0, top: 0 })
+let fireworkTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(fireworkTimer))
 
 const visibleColumns = computed(() => COLUMNS.filter((c) => visibleKeys.value.includes(c.key)))
 
@@ -191,12 +195,31 @@ function saveColumnChoice() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(visibleKeys.value)) } catch { /* storage full or blocked */ }
 }
 
-function toggleColumn(key: string, on: boolean) {
+function toggleColumn(key: string, on: boolean, label: string) {
   if (on) {
-    if (!visibleKeys.value.includes(key)) visibleKeys.value = [...visibleKeys.value, key]
+    if (!visibleKeys.value.includes(key)) {
+      visibleKeys.value = [...visibleKeys.value, key]
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const checkbox = [...document.querySelectorAll<HTMLElement>('.pl-column-choice [role="checkbox"]')]
+          .find((el) => el.getAttribute('aria-label') === label)
+        const popup = checkbox?.closest<HTMLElement>('.pl-column-popover')
+        if (checkbox && popup) {
+          const rect = checkbox.getBoundingClientRect()
+          const parent = popup.getBoundingClientRect()
+          fireworkPoint.value = {
+            left: rect.left + rect.width / 2 - parent.left,
+            top: rect.top + rect.height / 2 - parent.top
+          }
+          clearTimeout(fireworkTimer)
+          fireworkColumn.value = key
+          fireworkTimer = setTimeout(() => { fireworkColumn.value = null }, 700)
+        }
+      }
+    }
   } else {
     if (visibleKeys.value.length <= 1) return // never hide the last one
     visibleKeys.value = visibleKeys.value.filter((k) => k !== key)
+    if (fireworkColumn.value === key) fireworkColumn.value = null
   }
   saveColumnChoice()
 }
@@ -465,6 +488,39 @@ const searching = ref('')
 const ALL = '__all__'
 const filterChassis = ref(ALL)
 const filterLocation = ref(ALL)
+const openFilter = ref<'chassis' | 'location' | 'columns' | null>(null)
+const chassisOpen = computed({
+  get: () => openFilter.value === 'chassis',
+  set: (open: boolean) => {
+    if (open) openFilter.value = 'chassis'
+    else if (openFilter.value === 'chassis') openFilter.value = null
+  }
+})
+const locationOpen = computed({
+  get: () => openFilter.value === 'location',
+  set: (open: boolean) => {
+    if (open) openFilter.value = 'location'
+    else if (openFilter.value === 'location') openFilter.value = null
+  }
+})
+const columnsOpen = computed({
+  get: () => openFilter.value === 'columns',
+  set: (open: boolean) => {
+    if (open) openFilter.value = 'columns'
+    else if (openFilter.value === 'columns') openFilter.value = null
+  }
+})
+let pointerSelectedFilterOption = false
+function onFilterOptionPointerDown(event: PointerEvent) {
+  pointerSelectedFilterOption = !!(event.target as Element).closest('[role="option"]')
+}
+function onSelectCloseAutoFocus(event: Event) {
+  // A Select closing restores focus to its trigger; that would dismiss Columns
+  // immediately after the same click opened its popover. Pointer selection also
+  // inherits focus-visible from the menu and paints a green ring on the trigger.
+  if (openFilter.value === 'columns' || pointerSelectedFilterOption) event.preventDefault()
+  pointerSelectedFilterOption = false
+}
 const sortKey = ref<string>('nomor')
 const sortDir = ref<'asc' | 'desc'>('asc')
 
@@ -1360,30 +1416,34 @@ async function exportExcel() {
 
               <USelect
                 v-model="filterChassis"
+                v-model:open="chassisOpen"
+                :content="{ onCloseAutoFocus: onSelectCloseAutoFocus, onPointerdown: onFilterOptionPointerDown }"
                 :items="[{ label: 'All chassis', value: ALL }, ...chassisTypes.map(d => ({ label: d, value: d }))]"
-                class="w-40"
-                :ui="{ base: 'h-9' }"
+                class="pl-filter-trigger w-40"
+                :ui="{ base: 'h-9 pointer-events-auto', item: 'pl-filter-option-row' }"
               />
 
               <USelect
                 v-model="filterLocation"
+                v-model:open="locationOpen"
+                :content="{ onCloseAutoFocus: onSelectCloseAutoFocus, onPointerdown: onFilterOptionPointerDown }"
                 :items="[{ label: 'All locations', value: ALL }, ...locations.map(d => ({ label: d, value: d }))]"
-                class="w-64"
-                :ui="{ base: 'h-9' }"
+                class="pl-filter-trigger w-64"
+                :ui="{ base: 'h-9 pointer-events-auto', item: 'pl-filter-option-row' }"
               />
 
               <!-- Column chooser. A popover of checkboxes rather than a dropdown menu: it is a
                    persistent list with a live count, not a list of one-shot actions. -->
-              <UPopover>
+              <UPopover v-model:open="columnsOpen">
                 <UButton
                   color="soft"
                   :label="`Columns (${visibleColumns.length}/${COLUMNS.length})`"
-                  class="toolbar-line-hover"
+                  class="pl-filter-trigger pointer-events-auto"
                 >
                   <template #leading><ToolbarStrokeIcon name="columns" /></template>
                 </UButton>
                 <template #content>
-                  <div class="w-64 p-3">
+                  <div class="pl-column-popover w-64 p-3">
                     <div class="mb-2 flex items-center justify-between gap-2">
                       <p class="text-[11px] font-semibold uppercase tracking-wider text-muted">Visible columns</p>
                       <UButton
@@ -1396,19 +1456,23 @@ async function exportExcel() {
                       />
                     </div>
                     <div class="max-h-72 space-y-0.5 overflow-y-auto">
-                      <UCheckbox
-                        v-for="c in COLUMNS"
-                        :key="c.key"
-                        :model-value="visibleKeys.includes(c.key)"
-                        :label="c.label"
-                        :disabled="visibleKeys.length <= 1 && visibleKeys.includes(c.key)"
-                        variant="list"
-                        @update:model-value="(v: any) => toggleColumn(c.key, !!v)"
-                      />
+                      <div v-for="c in COLUMNS" :key="c.key" class="pl-column-choice">
+                        <UCheckbox
+                          :model-value="visibleKeys.includes(c.key)"
+                          :label="c.label"
+                          :disabled="visibleKeys.length <= 1 && visibleKeys.includes(c.key)"
+                          variant="list"
+                          @update:model-value="(v: any) => toggleColumn(c.key, !!v, c.label)"
+                        />
+                      </div>
                     </div>
                     <p class="mt-2 text-[11px] leading-snug text-muted">
                       Remembered for this browser. Excel keeps exporting all 15 columns.
                     </p>
+                    <!-- Paint outside the scrollable list, but stay anchored to this popover. -->
+                    <span v-if="fireworkColumn" class="pl-column-firework" :style="{ left: `${fireworkPoint.left}px`, top: `${fireworkPoint.top}px` }" aria-hidden="true">
+                      <i v-for="ray in 8" :key="ray" :style="{ '--ray': ray - 1 }" />
+                    </span>
                   </div>
                 </template>
               </UPopover>
@@ -1776,6 +1840,48 @@ async function exportExcel() {
 </template>
 
 <style scoped>
+/* USelect's trigger lacks this page's scoped attribute; opt in only these filters. */
+:global(.pl-filter-trigger:is(:hover, :focus-visible)) {
+  background-color: color-mix(in oklab, var(--ui-primary) 5%, var(--ui-bg));
+}
+:global(.dark .pl-filter-trigger:is(:hover, :focus-visible)) {
+  background-color: color-mix(in oklab, var(--ui-primary) 10%, var(--ui-bg));
+}
+
+/* Keep the selected option (including All) tinted when the pointer highlight moves. */
+:global(.pl-filter-option-row:is([data-highlighted], [data-state=checked]):not([data-disabled])::before) {
+  background: color-mix(in oklab, var(--ui-primary) 5%, transparent);
+}
+:global(.dark .pl-filter-option-row:is([data-highlighted], [data-state=checked]):not([data-disabled])::before) {
+  /* The dark popup sits on a deeper surface than the table; keep the tint visible. */
+  background: color-mix(in oklab, var(--ui-primary) 10%, transparent);
+}
+
+.pl-column-popover { position: relative; }
+.pl-column-firework { position: absolute; z-index: 1; width: 0; height: 0; pointer-events: none; }
+.pl-column-firework::before {
+  content: ''; position: absolute; width: 18px; height: 18px; border: 2px solid var(--ui-primary);
+  border-radius: 50%; animation: pl-firework-ring 650ms ease-out both;
+}
+.pl-column-firework i {
+  position: absolute; width: 4px; height: 4px; margin: -2px;
+  border-radius: 50%; background: var(--ui-primary); box-shadow: 0 0 4px var(--ui-primary);
+  animation: pl-firework-ray 680ms cubic-bezier(.2,.7,.25,1) both;
+}
+@keyframes pl-firework-ring {
+  0% { opacity: .85; transform: translate(-50%, -50%) scale(.55); }
+  48% { opacity: .7; transform: translate(-50%, -50%) scale(1.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.3); }
+}
+@keyframes pl-firework-ray {
+  0% { opacity: 1; transform: rotate(calc(var(--ray) * 45deg)) translateY(-3px) scale(.85); }
+  50% { opacity: 1; transform: rotate(calc(var(--ray) * 45deg)) translateY(-16px); }
+  100% { opacity: 0; transform: rotate(calc(var(--ray) * 45deg)) translateY(-24px) scale(.6); }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .pl-column-firework { display: none; }
+}
+
 .pc-copy-cell { text-align: inherit; font: inherit; }
 .pl-table .pl-window-spacer td { padding: 0; border: 0; background: transparent; line-height: 0; font-size: 0; }
 /* A 15-column register cannot fit any laptop, so the table scrolls horizontally and the
