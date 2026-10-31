@@ -788,7 +788,7 @@ onMounted(init)
             <col style="width: 11%" />  <!-- ISD Sign    <- same as PIC Sign -->
             <col style="width: 6%" />   <!-- Actions -->
           </colgroup>
-          <thead class="register-table-head print:sticky-head sticky top-0 z-10">
+          <thead class="print:sticky-head sticky top-0 z-10">
             <tr class="bg-default/60 backdrop-blur-sm">
               <th v-for="c in COLUMNS" :key="c.key"
                   scope="col"
@@ -907,7 +907,7 @@ onMounted(init)
                          </table>
       </div>
 
-      <div class="register-table-footer flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
+      <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
         <!-- Left count follows the FILTERS, so it agrees with the "Showing X of Y" beside it.
              Previously it printed the raw DB total, which read "1 row / Showing 0 of 1" and
              looked like a bug. -->
@@ -1105,10 +1105,10 @@ onMounted(init)
                             :invalid="fieldInvalid('tanggal')" />
               </UFormField>
               <UFormField label="Start Time" name="pic_mulai" required>
-                <TimePicker v-model="form.pic_mulai" name="pic_mulai" animated-selection :invalid="fieldInvalid('pic_mulai')" />
+                <TimePicker v-model="form.pic_mulai" name="pic_mulai" :invalid="fieldInvalid('pic_mulai')" />
               </UFormField>
               <UFormField label="End Time" name="pic_selesai" required>
-                <TimePicker v-model="form.pic_selesai" name="pic_selesai" animated-selection :invalid="fieldInvalid('pic_selesai')" />
+                <TimePicker v-model="form.pic_selesai" name="pic_selesai" :invalid="fieldInvalid('pic_selesai')" />
               </UFormField>
             </div>
           </section>
@@ -1148,13 +1148,13 @@ onMounted(init)
           <p class="text-xs text-muted">
             <span class="font-semibold text-error">*</span> Mandatory — all fields must be completed.
           </p>
-          <div class="record-form-actions flex items-center gap-2">
+          <div class="flex items-center gap-2">
           <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" @click="showForm = false" />
-          <UButton type="submit" :class="editing ? 'record-save-hover' : 'channel-add-hover'" :loading="saving"
-                   :label="editing ? 'Save Changes' : 'Save Record'">
+          <UButton type="submit" :class="{ 'record-save-hover': editing }" :loading="saving"
+                   :label="editing ? 'Save Changes' : 'Save Row'">
             <template #leading>
               <SaveIcon v-if="editing" />
-              <UIcon v-else name="basil:save-outline" class="save-row-icon" />
+              <svg v-else xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
             </template>
           </UButton>
           </div>
@@ -1243,7 +1243,7 @@ onMounted(init)
               @click="showDelete = false"
             />
             <UButton
-              label="Delete Record" class="record-delete-hover trash-bin-hover"
+              label="Delete record" class="record-delete-hover trash-bin-hover"
               color="error"
               :loading="deleting"
               @click="confirmDelete"

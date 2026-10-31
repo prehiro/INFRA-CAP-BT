@@ -5,18 +5,6 @@ import { referenceCatalog, referenceCss, referenceIconSets } from '~/utils/theme
 const open = ref(false)
 const { current, original, error, undoStack, redoStack, change, restoreOriginal, undo, redo } = useThemeStudio()
 const config = useAppConfig()
-const playingIcon = ref('')
-let iconTimer: ReturnType<typeof setTimeout> | undefined
-onBeforeUnmount(() => clearTimeout(iconTimer))
-function perform(name: string, action: () => void) {
-  action()
-  clearTimeout(iconTimer)
-  playingIcon.value = ''
-  nextTick(() => {
-    playingIcon.value = name
-    iconTimer = setTimeout(() => { playingIcon.value = '' }, 720)
-  })
-}
 const selectedPreset = computed(() => referenceCatalog.presets.find(p => p.id === current.value.reference)?.name || '')
 useHead(() => ({ style: [{ key: 'theme-studio-reference', innerHTML: referenceCss(current.value.reference, current.value.primary) }] }))
 const titleCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1)
@@ -34,45 +22,31 @@ function randomize() {
 </script>
 
 <template>
-  <USlideover v-model:open="open" title="Accent Picker" description="Customize your workspace. Changes stay in this browser."
+  <USlideover v-model:open="open" title="Theme Studio" description="Customize your workspace. Changes stay in this browser."
     side="right" :modal="false" :overlay="false"
     :ui="{ content: 'theme-studio-panel fixed inset-y-3 right-3 w-[340px] max-w-[calc(100vw-32px)] rounded-xl ring ring-default shadow-2xl', header: 'p-5 pr-12', body: 'p-5 space-y-5', footer: 'p-4 border-t border-default' }">
     <button type="button" class="theme-studio-trigger" aria-label="Open theme selector" title="Theme Studio" :aria-expanded="open">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18h1a2 2 0 0 0 1.4-3.4 1.4 1.4 0 0 1 1-2.4H17a4 4 0 0 0 4-4c0-4.4-4-8.2-9-8.2Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="11" cy="6.8" r="1"/><circle cx="16" cy="8" r="1"/></svg>
-      <span>Accent</span>
+      <span>Theme</span>
     </button>
     <template #body>
       <div class="studio-toolbar">
-        <button type="button" :disabled="!undoStack.length" @click="perform('undo', undo)">
-          <svg class="studio-icon" data-motion="undo" :class="{ 'is-playing': playingIcon === 'undo' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 14-5-5 5-5M4 9h10a6 6 0 0 1 0 12h-2" /></svg>Undo
-        </button>
-        <button type="button" :disabled="!redoStack.length" @click="perform('redo', redo)">
-          <svg class="studio-icon" data-motion="redo" :class="{ 'is-playing': playingIcon === 'redo' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h2" /></svg>Redo
-        </button>
-        <button type="button" @click="perform('randomize', randomize)">
-          <svg class="studio-icon" data-motion="randomize" :class="{ 'is-playing': playingIcon === 'randomize' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h3c4 0 7 10 11 10h4m-4-3 4 3-4 3M3 17h3c1.5 0 2.5-1 3.5-2.5M15 9c.8-1.3 1.5-2 2.5-2H21m-4-3 4 3-4 3" /></svg>Randomize
-        </button>
+        <button type="button" :disabled="!undoStack.length" @click="undo">Undo</button>
+        <button type="button" :disabled="!redoStack.length" @click="redo">Redo</button>
+        <button type="button" @click="randomize">Randomize</button>
       </div>
       <section>
         <label for="studio-preset">Preset</label>
         <select id="studio-preset" :value="selectedPreset" @change="preset">
           <option value="" disabled>Choose a starting point</option>
-          <optgroup label="Vue Presets"><option v-for="p in referenceCatalog.presets" :key="p.id" :value="p.name">{{ p.name }}</option></optgroup>
+          <optgroup label="Nuxt UI Presets"><option v-for="p in referenceCatalog.presets" :key="p.id" :value="p.name">{{ p.name }}</option></optgroup>
           <optgroup label="Local Presets"><option v-for="name in ['Studio', 'Ocean', 'Graphite', 'Warm Paper']" :key="name" :value="name">{{ name }}</option></optgroup>
         </select>
       </section>
       <section>
         <div class="studio-label">Appearance</div>
         <div class="studio-modes" role="group" aria-label="Appearance">
-          <button type="button" :aria-pressed="current.mode === 'light'" @click="perform('light', () => change({ mode: 'light' }))">
-            <svg class="studio-icon" data-motion="light" :class="{ 'is-playing': playingIcon === 'light' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>Light
-          </button>
-          <button type="button" :aria-pressed="current.mode === 'dark'" @click="perform('dark', () => change({ mode: 'dark' }))">
-            <svg class="studio-icon" data-motion="dark" :class="{ 'is-playing': playingIcon === 'dark' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"/></svg>Dark
-          </button>
-          <button type="button" :aria-pressed="current.mode === 'system'" @click="perform('system', () => change({ mode: 'system' }))">
-            <svg class="studio-icon" data-motion="system" :class="{ 'is-playing': playingIcon === 'system' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8m-4-3v3M7 8h10"/></svg>System
-          </button>
+          <button v-for="mode in ['light', 'dark', 'system']" :key="mode" type="button" :aria-pressed="current.mode === mode" @click="change({ mode })">{{ titleCase(mode) }}</button>
         </div>
       </section>
       <section v-for="group in [{ key: 'primary', label: 'Accent Color', values: accents }, { key: 'neutral', label: 'Neutral Color', values: neutrals }]" :key="group.key">
@@ -117,9 +91,7 @@ function randomize() {
     </template>
     <template #footer>
       <div class="w-full space-y-2">
-        <button type="button" class="studio-restore" :disabled="!original" @click="perform('restore', restoreOriginal)">
-          <svg class="studio-icon" data-motion="restore" :class="{ 'is-playing': playingIcon === 'restore' }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 6.4M3 4v7h7m2-4v5l3 2"/></svg>Restore Original
-        </button>
+        <button type="button" class="studio-restore" :disabled="!original" @click="restoreOriginal">Restore Original</button>
         <p class="studio-note text-center">{{ original ? 'Restores your settings from before the first change, even after a refresh.' : 'Your original settings are active. A backup is saved before your first change.' }}</p>
       </div>
     </template>
@@ -134,22 +106,7 @@ section label, .studio-label { display: block; font-size: 12px; font-weight: 600
 select { width: 100%; min-width: 0; border: 1px solid var(--ui-border-accented); border-radius: 7px; padding: 9px 8px; background: var(--ui-bg); color: var(--ui-text); font-family: 'Public Sans', sans-serif; font-size: 12px; }
 .studio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
 .studio-toolbar, .studio-modes { display: flex; gap: 4px; padding: 4px; background: var(--ui-bg-elevated); border: 1px solid var(--ui-border); border-radius: 8px; }
-.studio-toolbar button, .studio-modes button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; padding: 7px 4px; font-size: 11px; border-radius: 5px; cursor: pointer; }
-.studio-icon { width: 15px; height: 15px; flex: none; }
-.studio-icon.is-playing[data-motion='undo'] { animation: studio-undo 620ms ease-out both; }
-.studio-icon.is-playing[data-motion='redo'] { animation: studio-redo 620ms ease-out both; }
-.studio-icon.is-playing[data-motion='randomize'] { animation: studio-random 680ms ease-out both; }
-.studio-icon.is-playing[data-motion='light'] { animation: studio-sun 680ms ease-out both; }
-.studio-icon.is-playing[data-motion='dark'] { animation: studio-moon 600ms ease-out both; }
-.studio-icon.is-playing[data-motion='system'] { animation: studio-system 600ms ease-out both; }
-.studio-icon.is-playing[data-motion='restore'] { animation: studio-restore 680ms ease-out both; }
-@keyframes studio-undo { 40% { transform: rotate(-25deg) translateX(-2px); } 72% { transform: rotate(7deg); } }
-@keyframes studio-redo { 40% { transform: rotate(25deg) translateX(2px); } 72% { transform: rotate(-7deg); } }
-@keyframes studio-random { 30% { transform: rotate(-17deg) scale(1.12); } 65% { transform: rotate(17deg) scale(1.08); } }
-@keyframes studio-sun { 60% { transform: rotate(90deg) scale(1.12); } }
-@keyframes studio-moon { 38% { transform: rotate(-18deg); } 68% { transform: rotate(9deg); } }
-@keyframes studio-system { 42% { transform: scale(1.14); } 70% { transform: scale(.95); } }
-@keyframes studio-restore { 65% { transform: rotate(-300deg); } 100% { transform: rotate(-360deg); } }
+.studio-toolbar button, .studio-modes button { flex: 1; padding: 7px 4px; font-size: 11px; border-radius: 5px; cursor: pointer; }
 .studio-toolbar button:hover:not(:disabled), .studio-modes button:hover { background: var(--ui-bg-accented); }
 .studio-modes button[aria-pressed='true'] { background: var(--ui-bg); color: var(--ui-primary); box-shadow: 0 1px 3px #0002; }
 .studio-swatches { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
@@ -160,11 +117,11 @@ select { width: 100%; min-width: 0; border: 1px solid var(--ui-border-accented);
 .studio-note { font-size: 10px; line-height: 1.6; color: var(--ui-text-muted); margin-top: 7px; }
 .studio-label.flex { display: flex; }
 .studio-preview { font-family: var(--font-sans); border: 1px solid var(--ui-border); background: var(--ui-bg-elevated); padding: 14px; border-radius: 10px; }
-.studio-restore { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 1px solid var(--ui-border-accented); border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ui-text-highlighted); }
+.studio-restore { width: 100%; border: 1px solid var(--ui-border-accented); border-radius: 8px; padding: 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--ui-text-highlighted); }
 .studio-restore:hover:not(:disabled) { border-color: var(--ui-primary); color: var(--ui-primary); }
 button:disabled { opacity: .4; cursor: default; }
 button:focus-visible, select:focus-visible { outline: 2px solid var(--ui-primary); outline-offset: 3px; }
-@media (prefers-reduced-motion: reduce) { .theme-studio-trigger { transition: none; } .studio-icon.is-playing[data-motion] { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .theme-studio-trigger { transition: none; } }
 @media print { .theme-studio-trigger { display: none !important; } }
 </style>
 <style>

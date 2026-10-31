@@ -18,12 +18,6 @@
   isolation: isolate;
   transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
-/* Toolbar buttons only: enlarge the shared glyph without changing the same icon
-   in record dialogs or header plates. The button's 32px height stays unchanged. */
-.record-add-hover > .channel-add-icon { font-size: 22px; margin-block: -1px; }
-/* Record-form footer only: keep icon growth inside the existing button height. */
-.record-form-actions > button > :is(svg, .save-row-icon) { font-size: 18px; margin-block: -2px; }
-.record-form-actions > .cancel-hover [data-slot='leadingIcon'] { width: 22px; height: 22px; margin-block: -1px; }
 .record-add-hover::after,
 .channel-add-hover::after {
   content: '';
@@ -56,24 +50,22 @@
 }
 .record-add-hover:not(:disabled):focus-visible [data-slot='leadingIcon'],
 .record-add-hover:not(:disabled):focus-visible .channel-add-icon { animation: record-add-forward 650ms ease-in-out; }
-/* The modal's create submit buttons reuse the sheen and forward glyph motion without
-   the toolbar's lift; edit buttons keep their separate Save Changes behavior. */
-.channel-add-hover:not(:disabled):hover :is(.channel-add-icon, .save-row-icon),
-.channel-add-hover:not(:disabled):focus-visible :is(.channel-add-icon, .save-row-icon) { animation: record-add-forward 650ms ease-in-out; }
+/* The modal's submit button carries the same glyph but none of the toolbar treatment, so it gets
+   the motion from its own class. */
+.channel-add-hover:not(:disabled):hover .channel-add-icon,
+.channel-add-hover:not(:disabled):focus-visible .channel-add-icon { animation: record-add-forward 650ms ease-in-out; }
 @media (prefers-reduced-motion: reduce) {
   .record-add-hover { transition: none; }
   .record-add-hover:not(:disabled):hover { transform: none; }
   .record-add-hover::after,
   .channel-add-hover::after { display: none; }
   .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
-  .channel-add-hover :is(.channel-add-icon, .save-row-icon) { animation: none !important; }
 }
 @media print {
   .record-add-hover { transform: none !important; box-shadow: none !important; }
   .record-add-hover::after,
   .channel-add-hover::after { display: none; }
   .record-add-hover [data-slot='leadingIcon'] { animation: none !important; }
-  .channel-add-hover :is(.channel-add-icon, .save-row-icon) { animation: none !important; }
 }
 
 /* Explicitly opted-in register, import and user actions only. No dimensions or handlers change. */
@@ -222,12 +214,6 @@
 .record-delete-hover:not(:disabled):not([aria-disabled='true']):focus-visible [data-slot='leadingIcon'] { animation: record-delete-nudge 480ms ease-out; }
 :is(.record-save-hover, .record-delete-hover):not(:disabled):active { transform: translateY(0); box-shadow: none; }
 
-/* Four edge-sensitive actions: a 2px hover lift moves the hitbox away from a
-   pointer at the lower edge. Keep the button fixed; retain shadow, sheen and icon motion. */
-:is(.record-add-hover, .record-save-hover).stable-hover-hitbox:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) {
-  transform: none;
-}
-
 /* ---------- Cancel: the X pops and a red ring radiates out ----------
    Opt-in per button (.cancel-hover), fires only on a real pointer so a
    touch device never replays it. The motion is on the ICON and a ::after
@@ -236,6 +222,12 @@
   position: relative;
   overflow: hidden;
 }
+/* Four edge-sensitive actions: a 2px hover lift moves the hitbox away from a
+   pointer at the lower edge. Keep the button fixed; retain shadow, sheen and icon motion. */
+:is(.record-add-hover, .record-save-hover).stable-hover-hitbox:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) {
+  transform: none;
+}
+
 @media (hover: hover) and (pointer: fine) {
   .cancel-hover:not(:disabled):hover [data-slot='leadingIcon'] {
     animation: cancel-pop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -311,23 +303,6 @@
 :root.light:has(#dashboard-sidebar-app-v2) {
   --ui-bg-elevated: color-mix(in srgb, var(--ui-color-neutral-100) 20%, white);
   --ui-bg-muted: color-mix(in srgb, var(--ui-color-neutral-50) 15%, white);
-  --register-header-bg: color-mix(in srgb, var(--ui-color-neutral-200) 30%, white);
-  --register-footer-bg: color-mix(in srgb, var(--ui-color-neutral-200) 10%, var(--ui-bg-elevated));
-}
-
-/* Only the four register tables: make their light-mode header a distinct grey band.
-   Paint the sticky thead and its cells the same opaque colour so column toggles and
-   horizontal scrolling cannot reveal a lighter strip between/past pinned cells.
-   The footer gets just 10% selected neutral over the existing card surface. */
-@media screen {
-  :root.light .register-table-head,
-  :root.light .register-table-head tr,
-  :root.light .register-table-head th {
-    background-color: var(--register-header-bg);
-  }
-  :root.light .register-table-footer {
-    background-color: var(--register-footer-bg);
-  }
 }
 
 /* ---------------------------------------------------------------------------

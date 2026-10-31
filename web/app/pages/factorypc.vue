@@ -5,7 +5,7 @@
  * PC yang tidak terhubung dengan network / domain perusahaan". The page description says exactly that.
  *
  * It is a sibling of the PC Ledger page: its own entity (`factory_pc`, id 11), its own
- * ten columns (No, PIC, Email, Section, Chassis, Model, SN, OS, Status, Remarks; Actions is UI-only),
+ * nine columns (No, PIC, Email, Chassis, Model, SN, OS, Status, Remarks; Actions is UI-only),
  * and a standalone Excel export. HIRO asked for it beside PC Ledger under "Device Ledger"
  * with the same table design and interaction patterns.
  * Shared details include the table chrome, column show/hide with its FLIP, pinned pair,
@@ -79,8 +79,8 @@ async function copyCellText(value: string, event?: MouseEvent) {
 /* ---------------- columns (mirror of the reference sheet) ---------------- */
 /**
  * `w` IS A PERCENTAGE SHARE of the table's width, not a fixed width - the same model the PC Ledger
- * page uses, so the two registers shrink and grow together. This register needs 8% for
- * three 24px controls at its 1320px minimum width; the browser normalizes the shares.
+ * page uses, so the two registers shrink and grow together. They sum to 95%, leaving 5% for the
+ * Actions column the table adds for itself.
  */
 type Column = { key: string; label: string; short?: string; w: number; align?: 'center' }
 
@@ -88,7 +88,6 @@ const COLUMNS: Column[] = [
   { key: 'nomor', label: 'No', w: 4, align: 'center' },
   { key: 'pic', label: 'PIC', w: 12 },
   { key: 'email', label: 'Email', w: 16 },
-  { key: 'section', label: 'Section', w: 10 },
   { key: 'chassis', label: 'Chassis', w: 10 },
   { key: 'model', label: 'Model', w: 12 },
   { key: 'sn', label: 'SN', w: 12 },
@@ -98,7 +97,7 @@ const COLUMNS: Column[] = [
 ]
 
 /**
- * Column visibility: the user chooses which of the register's ten data columns are on screen.
+ * Column visibility: the user chooses which of the register's 15 columns are on screen.
  *
  * STORED PER BROWSER, not on the server. Which columns someone wants to look at is a reading
  * preference, not shared department state - the same reasoning that put the theme choice in a
@@ -108,14 +107,15 @@ const COLUMNS: Column[] = [
  * always stays visible: an empty table with nothing to explain itself reads as a broken page.
  */
 /**
- * New visitors see all ten Factory PC fields. Prior browser choices are migrated once so
- * Section appears without discarding the other columns the user selected or hid.
+ * The columns on screen the FIRST time someone opens the register. HIRO picked these eleven:
+ * No, Staff Name, Email, GID, JAPAN Host, Model, S/N, Chassis, Location, Remark1, Remark2 - the
+ * register as it is actually read day to day. The four left out (Date, Vendor, O/S Name, O/S Arch)
+ * are one tick away in the column picker.
  */
 const DEFAULT_VISIBLE = [
   'nomor',
   'pic',
   'email',
-  'section',
   'chassis',
   'model',
   'sn',
@@ -126,8 +126,7 @@ const DEFAULT_VISIBLE = [
 
 /* Its own storage key, NOT the PC Ledger's: the two registers have different columns, so one shared key
    would make each page drop the other's choices on load and silently fall back to its default set. */
-const STORAGE_KEY = 'infra-cap.factorypc.columns.v2'
-const LEGACY_STORAGE_KEY = 'infra-cap.factorypc.columns'
+const STORAGE_KEY = 'infra-cap.factorypc.columns'
 const visibleKeys = ref<string[]>([...DEFAULT_VISIBLE])
 const fireworkColumn = ref<string | null>(null)
 const fireworkPoint = ref({ left: 0, top: 0 })
@@ -150,18 +149,14 @@ const visibleIndex = (key: string) => visibleColumns.value.findIndex((c) => c.ke
 
 function loadColumnChoice() {
   try {
-    const current = localStorage.getItem(STORAGE_KEY)
-    const legacy = current === null ? localStorage.getItem(LEGACY_STORAGE_KEY) : null
-    const raw = current ?? legacy
+    const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return
     const saved = JSON.parse(raw)
     if (!Array.isArray(saved)) return
     // Unknown keys are dropped rather than trusted: a stale key saved by an older build would
     // otherwise make the table render a column that no longer exists.
     const known = saved.filter((k) => COLUMNS.some((c) => c.key === k))
-    if (legacy !== null && !known.includes('section')) known.push('section')
     if (known.length) visibleKeys.value = known
-    if (legacy !== null && known.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(known))
   } catch {
     // A corrupt value must never brick the page - fall back to the default column set.
   }
@@ -395,12 +390,12 @@ function pinStyle(i: number) {
   return { left: 'var(--pc-pin-offset, 0px)' }
 }
 
-/** Ownership fits PIC, Email and Section in one desktop row; Hardware keeps its two rows. */
+/** Two sections; Hardware's second desktop row is OS, Status, Remarks. */
 const FORM_SECTIONS = [
   {
     title: 'Ownership',
     icon: 'i-lucide-user-round',
-    fields: ['pic', 'email', 'section']
+    fields: ['pic', 'email']
   },
   {
     title: 'Hardware',
@@ -413,7 +408,6 @@ const LABELS: Record<string, string> = {
   nomor: 'No',
   pic: 'PIC',
   email: 'Email',
-  section: 'Section',
   chassis: 'Chassis',
   model: 'Model',
   sn: 'SN',
@@ -823,7 +817,7 @@ type FactorySuggestion = {
   keys?: string[]; fill?: Record<string, any>
 }
 const factorySuggestions = reactive<Record<string, FactorySuggestion[]>>({
-  pic: [], email: [], section: [], chassis: [], model: [], os: []
+  pic: [], email: [], chassis: [], model: [], os: []
 })
 const identityHints = reactive<Record<string, string>>({ pic: '', email: '' })
 
@@ -837,39 +831,35 @@ function applyGidIdentitySuggestion(s: { fill?: Record<string, any> }) {
   }
 }
 
-async function readFactoryValues(all: EntityMeta[], slug: string): Promise<Record<string, any>[]> {
-  const source = all.find((e) => e.slug === slug)
-  if (!source) return []
-  const values: Record<string, any>[] = []
-  for (let pageNo = 1; ; pageNo++) {
-    const page = await apiListRecords(source.id, { page: pageNo, pageSize: 500 })
-    values.push(...(page.items ?? []).map((r) => r.values ?? {}))
-    if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
-  }
-  return values
-}
-
-function setFactorySuggestions(target: string, records: Record<string, any>[], key: string, hint: string) {
-  const counts = new Map<string, number>()
-  for (const row of records) {
-    const value = String(row[key] ?? '').trim()
-    if (value && (target !== 'section' || value.length <= 100)) {
-      counts.set(value, (counts.get(value) ?? 0) + 1)
-    }
-  }
-  factorySuggestions[target] = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([value, count]) => ({
-      value, label: value,
-      meta: count === 1 ? 'used once' : `used ${count} times`, hint
-    }))
-}
-
 async function loadFactorySuggestions() {
   try {
     const all = await apiListEntities(true)
+    const readValues = async (slug: string): Promise<Record<string, any>[]> => {
+      const source = all.find((e) => e.slug === slug)
+      if (!source) return []
+      const values: Record<string, any>[] = []
+      for (let pageNo = 1; ; pageNo++) {
+        const page = await apiListRecords(source.id, { page: pageNo, pageSize: 500 })
+        values.push(...(page.items ?? []).map((r) => r.values ?? {}))
+        if (pageNo * 500 >= page.total || !(page.items ?? []).length) break
+      }
+      return values
+    }
+    const setSuggestions = (target: string, records: Record<string, any>[], key: string, hint: string) => {
+      const counts = new Map<string, number>()
+      for (const row of records) {
+        const value = String(row[key] ?? '').trim()
+        if (value) counts.set(value, (counts.get(value) ?? 0) + 1)
+      }
+      factorySuggestions[target] = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .map(([value, count]) => ({
+          value, label: value,
+          meta: count === 1 ? 'used once' : `used ${count} times`, hint
+        }))
+    }
     // Failure in one reference source must not disable the other or block free-text entry.
-    const [gid, ledger] = await Promise.allSettled([readFactoryValues(all, 'gid_list'), readFactoryValues(all, 'pc_ledger')])
+    const [gid, ledger] = await Promise.allSettled([readValues('gid_list'), readValues('pc_ledger')])
     const gidRows = gid.status === 'fulfilled' ? gid.value : []
     for (const [target, source] of [['pic', 'name'], ['email', 'email']] as const) {
       factorySuggestions[target] = gidRows.map((row) => ({
@@ -882,37 +872,22 @@ async function loadFactorySuggestions() {
         hint: 'Auto-filled from the GID List'
       })).filter((s) => s.value)
     }
-    const ledgerRows = ledger.status === 'fulfilled' ? ledger.value : []
-    setFactorySuggestions('section', ledgerRows, 'lokasi', 'Auto-filled from PC Ledger')
     for (const [target, key] of [
       ['chassis', 'chassis'], ['model', 'computer_model'], ['os', 'os_name']
     ] as const) {
-      setFactorySuggestions(target, ledgerRows, key, 'Selected from PC Ledger')
+      setSuggestions(target, ledger.status === 'fulfilled' ? ledger.value : [], key, 'Selected from PC Ledger')
     }
     if (gid.status === 'rejected') console.error('[factory-pc] gid list', gid.reason)
     if (ledger.status === 'rejected') console.error('[factory-pc] pc ledger', ledger.reason)
   } catch (e) {
-    for (const key of ['pic', 'email', 'section', 'chassis', 'model', 'os']) factorySuggestions[key] = []
+    for (const key of ['pic', 'email', 'chassis', 'model', 'os']) factorySuggestions[key] = []
     console.error('[factory-pc] suggestion sources', e)
-  }
-}
-
-/** Edit only needs PC Ledger Location, not the GID and hardware lookups used by New. */
-async function loadFactorySectionSuggestions() {
-  try {
-    const all = await apiListEntities(true)
-    const ledgerRows = await readFactoryValues(all, 'pc_ledger')
-    setFactorySuggestions('section', ledgerRows, 'lokasi', 'Auto-filled from PC Ledger')
-  } catch (e) {
-    factorySuggestions.section = []
-    console.error('[factory-pc] pc ledger locations', e)
   }
 }
 
 const FIELD_PLACEHOLDERS: Record<string, string> = {
   pic: 'Name of person in charge',
   email: 'name@company.local',
-  section: 'Department or work area',
   chassis: 'Desktop, Notebook, or Tablet',
   model: 'PC model',
   sn: 'PC serial number',
@@ -950,18 +925,6 @@ function openEdit(row: RecordRow) {
   }
   originalSn.value = form.sn
   showForm.value = true
-  void loadFactorySectionSuggestions()
-}
-
-/* Read-only detail uses the full row snapshot, including fields hidden from the table. */
-const showView = ref(false)
-const viewTarget = shallowRef<RecordRow | null>(null)
-function openView(row: RecordRow) {
-  viewTarget.value = row
-  showView.value = true
-}
-function detailValue(row: RecordRow, key: string): string {
-  return cell(row, key).trim() || '—'
 }
 
 /**
@@ -973,12 +936,6 @@ function payload(): Record<string, any> {
   const values: Record<string, any> = {}
   for (const [k, v] of Object.entries(form)) {
     if (k === 'nomor') continue
-    // Unlike skipped optional fields, an empty Section on Edit must actually clear its old value.
-    if (k === 'section') {
-      if (v !== '' && v !== null && v !== undefined) values[k] = String(v).trim()
-      else if (editingId.value !== null) values[k] = ''
-      continue
-    }
     if (v === '' || v === null || v === undefined) continue
     values[k] = k === 'tanggal' ? String(v).slice(0, 10) : v
   }
@@ -1068,7 +1025,7 @@ async function confirmDelete() {
 }
 
 /* ---------------- Excel export ---------------- */
-// Export the filtered/sorted rows but all ten data columns, regardless of the browser's
+// Export the filtered/sorted rows but all nine data columns, regardless of the browser's
 // visibility preference. Factory PC has no legacy master workbook to replicate.
 async function exportExcel() {
   const data = visibleRows.value
@@ -1089,7 +1046,7 @@ async function exportExcel() {
     header.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     header.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF233D4D' } }
     header.alignment = { horizontal: 'center', vertical: 'middle' }
-    const widths = [7, 25, 36, 22, 20, 29, 29, 26, 18, 38]
+    const widths = [7, 25, 36, 20, 29, 29, 26, 18, 38]
     COLUMNS.forEach((_, i) => { ws.getColumn(i + 1).width = widths[i] })
     ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } }
     for (const row of data) {
@@ -1279,9 +1236,9 @@ async function exportExcel() {
                   :key="c.key"
                   :style="{ width: isVisible(c.key) ? c.w + '%' : '0%' }"
                 />
-                <col style="width: 8%" />
+                <col style="width: 5%" />
               </colgroup>
-              <thead class="register-table-head">
+              <thead>
                 <tr>
                   <th
                     v-for="c in COLUMNS"
@@ -1347,19 +1304,16 @@ async function exportExcel() {
                       @click.stop="copyCellText(c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key), $event)"
                     >{{ c.key === 'tanggal' ? fmtDate(row.values?.[c.key]) : cell(row, c.key) }}</button>
                   </td>
-                  <!-- Like PC Ledger, the three 24px actions sit directly in the cell without
-                       a flex wrapper. The 8% Actions column and narrow `pl-actions` padding
-                       keep them on one line without changing the 43px row pitch. -->
+                  <!-- Matched to the CCTV register's Actions cell: centred, and the two buttons
+                       sit directly in the cell with no flex wrapper. The `gap-1` wrapper is gone
+                       because CCTV has none - the buttons carry their own padding, so they read
+                       as a pair there and now here too. `pl-actions` brings CCTV's narrower
+                       `px-1 py-2` padding with it, which the shared `.pl-table td` rule cannot
+                       express as a utility (it would lose on specificity). -->
                   <td class="pl-actions text-center">
                     <!-- Native equivalents of the measured xs ghost UButtons (24x24).
                          Keep theme tokens, accessible labels, icon animation hooks and handlers;
-                         avoid mounting three reactive vendor component trees for EVERY record. -->
-                    <button type="button" data-slot="base" class="factory-view-action inline-flex items-center rounded-md p-1 text-primary outline-primary/30 focus-visible:outline-3" :aria-label="`View details for Factory PC ${cell(row, 'nomor') || row.id}`" title="View details" @click="openView(row)">
-                      <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <path class="factory-view-eye-outline" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
-                        <circle class="factory-view-eye-iris" cx="12" cy="12" r="2.5" />
-                      </svg>
-                    </button>
+                         avoid mounting two reactive vendor component trees for EVERY record. -->
                     <button type="button" data-slot="base" class="inline-flex items-center disabled:cursor-not-allowed aria-disabled:cursor-not-allowed disabled:opacity-75 aria-disabled:opacity-75 transition-colors font-medium rounded-md cursor-pointer text-xs gap-1 text-default hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 hover:disabled:bg-transparent dark:hover:disabled:bg-transparent hover:aria-disabled:bg-transparent dark:hover:aria-disabled:bg-transparent p-1 pencil-hover" aria-label="Edit" @click="openEdit(row)">
                       <PencilIcon class="size-4" data-slot="leadingIcon" />
                     </button>
@@ -1380,61 +1334,12 @@ async function exportExcel() {
                The LEFT count follows the FILTERS so it can never disagree with the "Showing X of Y"
                beside it - the CCTV page once printed the raw total there and read
                "1 row / Showing 0 of 1", which looks like a bug. -->
-          <div v-if="!loading && rows.length" class="register-table-footer flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+          <div v-if="!loading && rows.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
             <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
             <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
           </div>
         </div>
       </div>
-
-      <!-- ---------------- read-only detail ---------------- -->
-      <UModal v-model:open="showView" :title="viewTarget ? `Factory PC record ${detailValue(viewTarget, 'nomor')}` : 'Factory PC record details'" description="Read-only information for this Factory PC record." :ui="{ content: 'w-[calc(100vw-2rem)] max-w-5xl factory-view-modal' }">
-        <template #content>
-          <div v-if="viewTarget" class="flex max-h-[min(82vh,720px)] flex-col overflow-hidden rounded-xl">
-            <div class="relative shrink-0 overflow-hidden border-b border-default px-5 pb-5 pt-6 sm:px-7">
-              <div aria-hidden="true" class="pointer-events-none absolute -right-16 -top-24 size-52 rounded-full bg-primary/15 blur-3xl" />
-              <div class="relative flex items-start gap-4">
-                <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/25">
-                  <RecordAddIcon size="md" random-halo>
-                    <svg class="factory-view-header-eye pc-add-tilt size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <g class="factory-view-header-lids"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle class="factory-view-header-pupil" cx="12" cy="12" r="2.5"/></g>
-                    </svg>
-                  </RecordAddIcon>
-                </span>
-                <div class="min-w-0 flex-1">
-                  <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">Factory PC / Record {{ detailValue(viewTarget, 'nomor') }}</p>
-                  <h2 class="mt-1 break-words text-lg font-semibold leading-tight text-highlighted sm:text-xl">{{ detailValue(viewTarget, 'model') === '—' ? detailValue(viewTarget, 'sn') : detailValue(viewTarget, 'model') }}</h2>
-                  <p class="mt-1 text-sm text-muted">{{ detailValue(viewTarget, 'pic') }} <span aria-hidden="true">·</span> {{ detailValue(viewTarget, 'chassis') }}</p>
-                </div>
-                <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error" aria-label="Close details" @click="showView = false">
-                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                </button>
-              </div>
-            </div>
-            <div class="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7">
-              <section v-for="section in FORM_SECTIONS" :key="section.title" class="mb-6 last:mb-0">
-                <h3 class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                  <span class="factory-view-section-dot relative size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />{{ section.title }}
-                </h3>
-                <dl class="grid grid-cols-1 gap-x-4 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-                  <div v-for="key in section.fields" :key="key" class="min-w-0 rounded-lg border border-default bg-elevated/40 px-3.5 py-3">
-                    <dt class="text-[11px] font-medium text-muted">{{ LABELS[key] }}</dt>
-                    <dd class="mt-1 break-words text-sm font-medium leading-relaxed text-highlighted" :class="{ 'text-muted': detailValue(viewTarget, key) === '—' }">{{ detailValue(viewTarget, key) }}</dd>
-                  </div>
-                </dl>
-              </section>
-            </div>
-            <div class="flex shrink-0 items-center justify-between gap-3 border-t border-default bg-elevated/40 px-5 py-3 sm:px-7">
-              <span class="text-xs text-muted">Read-only record details</span>
-              <UButton color="neutral" variant="soft" label="Close" class="factory-view-footer-close" @click="showView = false">
-                <template #leading>
-                  <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>
-                </template>
-              </UButton>
-            </div>
-          </div>
-        </template>
-      </UModal>
 
       <!-- ---------------- add / edit ---------------- -->
       <UModal v-model:open="showForm" :ui="{ content: 'max-w-4xl pl-record-modal' }">
@@ -1523,20 +1428,10 @@ async function exportExcel() {
                       :placeholder="FIELD_PLACEHOLDERS[key]"
                       :header="key === 'pic' ? 'Names from GID List' : `${LABELS[key]} from PC Ledger`"
                     />
-                    <SuggestInput
-                      v-else-if="key === 'section'"
-                      v-model="form[key]"
-                      :suggestions="factorySuggestions.section"
-                      :show-on-suggestions-update="true"
-                      :max-length="100"
-                      :placeholder="!editingId ? FIELD_PLACEHOLDERS[key] : undefined"
-                      header="Locations from PC Ledger"
-                    />
                     <UInput
                       v-else
                       v-model="form[key]"
                       :placeholder="!editingId ? FIELD_PLACEHOLDERS[key] : undefined"
-                      :maxlength="key === 'section' ? 100 : undefined"
                       class="w-full"
                       :ui="{ base: 'h-9' }"
                     />
@@ -1554,7 +1449,7 @@ async function exportExcel() {
               />
             </div>
 
-            <div class="record-form-actions flex items-center justify-end gap-2 border-t border-default px-5 py-3">
+            <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
               <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
               <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save">
                 <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
@@ -1738,7 +1633,7 @@ async function exportExcel() {
      width down to this point, then the register scrolls sideways rather than squeezing them into
      unreadable slivers. Same model as the CCTV register (full width + a min-width + % columns).
      `min-width: max-content` is gone with the rem widths - it was what pinned the table at 4304px. */
-  min-width: 1320px;
+  min-width: 1200px;
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
@@ -1887,7 +1782,7 @@ async function exportExcel() {
 }
 
 /* CCTV's Actions cell padding (measured 8px 4px, `px-1 py-2`) is narrower than a data cell's, which
-   leaves room for three icon buttons at the action column's 8% width. It cannot be expressed as a utility here:
+   is what keeps the two icon buttons reading as one pair. It cannot be expressed as a utility here:
    a Tailwind class would land at (0,1,0) and `.pl-table td` above is (0,1,1), so the utility would
    simply lose. Hence a rule keyed to the cell's own class. */
 .pl-table td.pl-actions {
@@ -2057,59 +1952,6 @@ async function exportExcel() {
      no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
      <style> block. -->
 <style>
-/* Factory PC View matches PC Ledger's visual/motion recipe without changing other pages. */
-.factory-view-action { cursor: pointer; transition: background-color 180ms ease, box-shadow 180ms ease, color 180ms ease; }
-.factory-view-action:is(:hover, :focus-visible) {
-  background: color-mix(in oklab, var(--ui-primary) 13%, transparent);
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ui-primary) 28%, transparent), 0 0 14px color-mix(in oklab, var(--ui-primary) 15%, transparent);
-}
-.factory-view-eye-iris { transform-origin: 12px 12px; transition: transform 240ms cubic-bezier(.2,.8,.2,1); }
-.factory-view-action:is(:hover, :focus-visible) .factory-view-eye-iris { transform: scale(1.28); }
-.factory-view-action:is(:hover, :focus-visible) .factory-view-eye-outline { animation: factory-eye-trace 420ms ease-out both; }
-@keyframes factory-eye-trace { from { stroke-dasharray: 60; stroke-dashoffset: 60; } to { stroke-dasharray: 60; stroke-dashoffset: 0; } }
-.factory-view-modal[data-state='open'] { animation: factory-view-arrive 290ms cubic-bezier(.2,.8,.2,1) both; }
-@keyframes factory-view-arrive { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
-.factory-view-modal[data-state='open'] .factory-view-header-lids {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: factory-header-blink 3.6s ease-in-out infinite;
-}
-.factory-view-modal[data-state='open'] .factory-view-header-pupil {
-  animation: factory-header-glance 3.6s ease-in-out infinite;
-}
-@keyframes factory-header-glance {
-  0%, 12%, 43%, 76%, 100% { transform: translateX(0); }
-  20%, 34% { transform: translateX(2px); }
-  52%, 67% { transform: translateX(-2px); }
-}
-@keyframes factory-header-blink {
-  0%, 78%, 91%, 100% { transform: scaleY(1); }
-  84% { transform: scaleY(.08); }
-}
-.factory-view-section-dot::after {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  border: 1px solid var(--ui-primary);
-  border-radius: 9999px;
-  pointer-events: none;
-  animation: factory-view-section-ping 2.4s ease-out infinite;
-}
-@keyframes factory-view-section-ping {
-  0% { transform: scale(.6); opacity: .65; }
-  50%, 100% { transform: scale(2.1); opacity: 0; }
-}
-.factory-view-modal .factory-view-footer-close:is(:hover, :focus-visible) {
-  color: var(--ui-error);
-  background-color: color-mix(in oklab, var(--ui-error) 13%, transparent);
-}
-@media (prefers-reduced-motion: reduce) {
-  .factory-view-action, .factory-view-eye-iris { transition: none; }
-  .factory-view-action:is(:hover, :focus-visible) .factory-view-eye-outline,
-  .factory-view-modal[data-state='open'],
-  .factory-view-modal[data-state='open'] .factory-view-header-eye :is(.factory-view-header-lids, .factory-view-header-pupil) { animation: none; }
-  .factory-view-section-dot::after { animation: none; opacity: 0; }
-}
 /* SuggestInput's dropdown is teleported into this modal to keep pointer clicks inside it.
    Once appended, Nuxt UI's divide-y would add a 1px border under the custom content
    wrapper and move the centred form up 0.5px. Limit the correction to Factory PC only. */

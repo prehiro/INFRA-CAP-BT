@@ -48,8 +48,6 @@ const props = withDefaults(defineProps<{
   modelValue: string
   suggestions: Suggestion[]
   placeholder?: string
-  /** Optional native text limit; omitted on existing callers. */
-  maxLength?: number
   /** The dropdown's header line; omit to hide it. */
   header?: string
   /** Values already in the form, used to lift the candidate that agrees with them. */
@@ -322,7 +320,6 @@ onBeforeUnmount(() => {
       ref="inputEl"
       :model-value="modelValue"
       :placeholder="placeholder"
-      :maxlength="maxLength"
       :type="type"
       autocomplete="off"
       class="w-full"

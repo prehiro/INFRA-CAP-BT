@@ -51,7 +51,7 @@ async function generate() {
   <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:pl-6 sm:pr-[39px] sm:pt-6 xl:pb-4 xl:pr-6' }">
     <template #header><PageHeader title="NOA" /></template>
     <template #body>
-      <form class="noa-page-motion mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
+      <form class="mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
         <div class="mb-4 flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon size="lg" random-halo>
@@ -117,25 +117,6 @@ async function generate() {
 </template>
 
 <style scoped>
-/* Mount-only entrance in reading order, matching Issued Form's easing. Move just
-   6px so NOA stays non-scrolling even at 1024×569 during the last stagger. */
-.noa-page-motion > * {
-  animation: noa-page-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
-}
-.noa-page-motion > :nth-child(2) { animation-delay: 70ms; }
-.noa-page-motion > :nth-child(3) { animation-delay: 130ms; }
-@keyframes noa-page-enter {
-  from { opacity: 0; transform: translate3d(0, 6px, 0); }
-  to { opacity: 1; transform: none; }
-}
-@media (prefers-reduced-motion: reduce), print {
-  .noa-page-motion > * {
-    animation: none !important;
-    opacity: 1;
-    transform: none !important;
-  }
-}
-
 /* Keep the issued-form title position and 24px gap even on short screens.
    Reclaim height inside NOA's right card, without affecting other pages. */
 @media (max-height: 600px) {
