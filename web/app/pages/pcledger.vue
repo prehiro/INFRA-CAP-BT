@@ -867,6 +867,10 @@ const editingId = ref<number | null>(null)
 const originalIdentity = ref<Record<string, unknown>>({})
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
+// Edit-only disposition. Blank is the existing, unchanged state for regular PCs.
+const EDIT_STATUS_OPTIONS = ['Standby', 'Plan Dispose', 'Convert Factory PC'] as const
+const editAssetStatus = ref('')
+const originalAssetStatus = ref('')
 const identityHints = reactive<Record<string, string>>({ staff_name: '', email: '', gid: '' })
 const hostnamePending = ref(false)
 let hostnameRequest = 0
@@ -1145,6 +1149,8 @@ function applyGidSuggestion(s: any) {
 
 function openCreate() {
   editingId.value = null
+  editAssetStatus.value = ''
+  originalAssetStatus.value = ''
   originalIdentity.value = {}
   formError.value = ''
   blankForm()
@@ -1158,6 +1164,8 @@ function openEdit(row: RecordRow) {
   for (const k of Object.keys(LABELS)) {
     form[k] = k === 'tanggal' ? toDateInput(row.values?.[k]) : (row.values?.[k] ?? '')
   }
+  editAssetStatus.value = String(row.values?.asset_status ?? '').trim()
+  originalAssetStatus.value = editAssetStatus.value
   originalIdentity.value = Object.fromEntries(UNIQUE_FIELDS.map(key => [key, form[key]]))
   showForm.value = true
 }
@@ -1185,6 +1193,11 @@ function payload(): Record<string, any> {
     if (k === 'nomor') continue
     if (v === '' || v === null || v === undefined) continue
     values[k] = k === 'tanggal' ? String(v).slice(0, 10) : v
+  }
+  // Send an empty value only when clearing a previously selected status; otherwise leave
+  // normal records untouched. The API merges the supplied EAV values on Edit.
+  if (editingId.value !== null && (editAssetStatus.value || originalAssetStatus.value)) {
+    values.asset_status = editAssetStatus.value
   }
   return values
 }
@@ -1561,7 +1574,7 @@ async function exportExcel() {
                 />
                 <col style="width: 6%" />
               </colgroup>
-              <thead>
+              <thead class="register-table-head">
                 <tr>
                   <th
                     v-for="c in COLUMNS"
@@ -1661,7 +1674,7 @@ async function exportExcel() {
                The LEFT count follows the FILTERS so it can never disagree with the "Showing X of Y"
                beside it - the CCTV page once printed the raw total there and read
                "1 row / Showing 0 of 1", which looks like a bug. -->
-          <div v-if="!loading && rows.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+          <div v-if="!loading && rows.length" class="register-table-footer flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
             <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
             <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
           </div>
@@ -1725,7 +1738,7 @@ async function exportExcel() {
                foot of this file). One class on this wrapper is enough - it covers the header, body
                and footer at once - where the CCTV and Users dialogs set it on their header and body
                separately because those two use the vendor's header/body slots. -->
-          <div class="relative z-10 flex max-h-[85vh] flex-col" :class="{ 'pc-new-record-content': !editingId }">
+          <div class="relative z-10 flex flex-col" :class="editingId !== null ? 'max-h-[calc(100vh-4rem)]' : 'pc-new-record-content max-h-[85vh]'">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'channel-add'" />
@@ -1741,7 +1754,7 @@ async function exportExcel() {
               </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-5 py-4">
+            <div class="flex-1 overflow-y-auto px-5 py-4" :class="{ 'pc-edit-scroll': editingId !== null }">
               <div v-for="section in recordFormSections" :key="section.title" class="mb-5 last:mb-0">
                 <p class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   <UIcon :name="section.icon" class="size-3.5" />
@@ -1811,6 +1824,7 @@ async function exportExcel() {
                 </div>
               </div>
 
+
               <!-- The banner's row is RESERVED (min-h) so showing it does not resize the dialog. HIRO:
                    "tolong atur animasi pelebaran modal ketika notifikasi duplikat yang dibawah muncul
                    karena saat ini modal melebar secara tiba-tiba jelek secara visual".
@@ -1830,11 +1844,26 @@ async function exportExcel() {
               </div>
             </div>
 
-            <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
-              <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save">
-                <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
-              </UButton>
+            <div class="record-form-actions flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-default px-5 py-3">
+              <fieldset v-if="editingId !== null" aria-label="PC status" aria-describedby="pc-status-note" class="flex min-w-0 w-full flex-wrap items-center gap-x-3 gap-y-1 lg:mr-auto lg:w-auto">
+                <span id="pc-status-note" class="sr-only">This records a status only; it does not automatically transfer or delete the PC.</span>
+                <legend class="sr-only">Status</legend>
+                <span aria-hidden="true" class="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" /></svg>
+                  Status
+                </span>
+                <label v-for="status in EDIT_STATUS_OPTIONS" :key="status" class="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md px-1 text-xs hover:bg-elevated">
+                  <input v-model="editAssetStatus" type="radio" name="pc-ledger-asset-status" :value="status" class="size-4 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary" style="accent-color: var(--ui-primary)" />
+                  <span :class="editAssetStatus === status ? 'font-medium text-primary' : 'text-default'">{{ status }}</span>
+                </label>
+                <button type="button" class="shrink-0 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary" :class="{ invisible: !editAssetStatus }" :disabled="!editAssetStatus" @click="editAssetStatus = ''">Clear</button>
+              </fieldset>
+              <div class="flex items-center gap-2">
+                <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
+                <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save">
+                  <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
+                </UButton>
+              </div>
             </div>
           </div>
         </template>
@@ -1977,6 +2006,11 @@ async function exportExcel() {
   overflow-x: auto;
   scrollbar-gutter: stable;
 }
+
+/* Edit only: short viewports still scroll with wheel/touch/keyboard, but the form does not
+   draw a scrollbar. The register's own visible scrollbar and the New form are unchanged. */
+.pc-edit-scroll { scrollbar-width: none; }
+.pc-edit-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* THE SCROLLBAR LOOK, copied from the CCTV register so the two registers match rather than merely
    resemble each other. Kept in this page's own scoped block instead of reaching for `.logbook-scroll`

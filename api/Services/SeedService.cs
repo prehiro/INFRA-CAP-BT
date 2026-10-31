@@ -41,6 +41,63 @@ public class SeedService
         await SeedSampleSchemaAsync();
         await SeedCctvLogBookAsync();
         await SeedHandoverLogBookAsync();
+        await EnsureFactorySectionAsync();
+        await EnsurePcLedgerAssetStatusAsync();
+    }
+
+    /// <summary>
+    /// PC Ledger is a user-created EAV entity. Add a nullable status field for the Edit-only
+    /// disposition controls without changing existing records or the imported workbook columns.
+    /// An existing field is preserved; reopening the API cannot insert a duplicate.
+    /// </summary>
+    private async Task EnsurePcLedgerAssetStatusAsync()
+    {
+        var ledger = await _db.Entities.Include(e => e.Fields)
+            .FirstOrDefaultAsync(e => e.Slug == "pc_ledger");
+        if (ledger is null || ledger.Fields.Any(f => f.Name == "asset_status")) return;
+
+        ledger.Fields.Add(new DynamicField
+        {
+            Name = "asset_status",
+            Label = "Status",
+            Type = FieldType.Text,
+            IsRequired = false,
+            IsUnique = false,
+            IsSearchable = true,
+            IsVisible = true,
+            MaxLength = 32,
+            SortOrder = ledger.Fields.Any() ? ledger.Fields.Max(f => f.SortOrder) + 1 : 0
+        });
+        await _db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Factory PC is a user-created EAV entity, not a physical SQL table with one column per field.
+    /// Add its optional Section metadata once, after Email; existing records acquire no value and
+    /// remain untouched. Running the API again (including in a separate deployment) is idempotent.
+    /// </summary>
+    private async Task EnsureFactorySectionAsync()
+    {
+        var factory = await _db.Entities.Include(e => e.Fields)
+            .FirstOrDefaultAsync(e => e.Slug == "factory_pc");
+        if (factory is null || factory.Fields.Any(f => f.Name == "section")) return;
+
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        foreach (var field in factory.Fields.Where(f => f.SortOrder >= 3)) field.SortOrder++;
+        factory.Fields.Add(new DynamicField
+        {
+            Name = "section",
+            Label = "Section",
+            Type = FieldType.Text,
+            IsRequired = false,
+            IsUnique = false,
+            IsSearchable = true,
+            IsVisible = true,
+            MaxLength = 100,
+            SortOrder = 3
+        });
+        await _db.SaveChangesAsync();
+        await tx.CommitAsync();
     }
 
     /// <summary>

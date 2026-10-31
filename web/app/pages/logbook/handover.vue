@@ -662,7 +662,7 @@ onMounted(init)
                 <col style="width: 15%" />  <!-- Remarks -->
                 <col style="width: 6%" />   <!-- Actions -->
               </colgroup>
-              <thead class="print:sticky-head sticky top-0 z-10">
+              <thead class="register-table-head print:sticky-head sticky top-0 z-10">
                 <tr class="bg-default/60 backdrop-blur-sm">
                   <th v-for="c in COLUMNS" :key="c.key"
                       scope="col"
@@ -773,7 +773,7 @@ onMounted(init)
           </div>
 
           <!-- Left count follows the FILTERS so it agrees with "Showing X of Y" beside it. -->
-          <div class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
+          <div class="register-table-footer flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted print:hidden">
             <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'row' : 'rows' }}</span>
             <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ total }}</span>
           </div>
@@ -1012,13 +1012,13 @@ onMounted(init)
                 <p class="text-xs text-muted">
                   <span class="font-semibold text-error">*</span> Mandatory — all fields must be completed.
                 </p>
-                <div class="flex items-center gap-2">
+                <div class="record-form-actions flex items-center gap-2">
                   <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" @click="showForm = false" />
-                  <UButton type="submit" :class="{ 'record-save-hover': editing }" :loading="saving"
-                           :label="editing ? 'Save Changes' : 'Save Row'">
+                  <UButton type="submit" :class="editing ? 'record-save-hover' : 'channel-add-hover'" :loading="saving"
+                           :label="editing ? 'Save Changes' : 'Save Record'">
                     <template #leading>
                       <SaveIcon v-if="editing" />
-                      <svg v-else xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5" /></svg>
+                      <UIcon v-else name="basil:save-outline" class="save-row-icon" />
                     </template>
                   </UButton>
                 </div>
@@ -1099,7 +1099,7 @@ onMounted(init)
             @click="showDelete = false"
           />
           <UButton
-            label="Delete record" class="record-delete-hover trash-bin-hover"
+            label="Delete Record" class="record-delete-hover trash-bin-hover"
             color="error"
             :loading="deleting"
             @click="confirmDelete"

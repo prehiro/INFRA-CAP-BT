@@ -25,6 +25,7 @@
  *    actual reason to pick a card over a select.
  */
 import type { Role } from '~/types'
+import { ref } from 'vue'
 
 const props = withDefaults(defineProps<{
   modelValue?: number[]
@@ -39,6 +40,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ 'update:modelValue': [number[]] }>()
+const fireworks = ref<{ x: number; y: number }[]>([])
 
 /**
  * An icon per role, chosen from the name. This is presentation only - the control must
@@ -70,12 +72,28 @@ function isSelected(id: number): boolean {
  * shadow, "The req field is required". Keeping the model strictly number[] makes that
  * class of bug impossible to reintroduce from here.
  */
-function toggle(id: number) {
+const toggle = (id: number, event?: MouseEvent) => {
   if (props.disabled) return
   const next = isSelected(id)
     ? props.modelValue.filter(x => x !== id)
     : [...props.modelValue, id]
   emit('update:modelValue', next)
+
+  // Fireworks at the click position so the user sees the selection land.
+  if (event) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
+    // Random burst direction per particle so it looks like an explosion.
+    const angle = Math.random() * Math.PI * 2
+    const dist = 20 + Math.random() * 40
+    const dx = Math.round(Math.cos(angle) * dist)
+    const dy = Math.round(Math.sin(angle) * dist)
+    fireworks.value = [...fireworks.value, { x, y, dx, dy }]
+    window.setTimeout(() => {
+      fireworks.value = fireworks.value.filter(f => f.x !== x || f.y !== y)
+    }, 900)
+  }
 }
 </script>
 
@@ -94,7 +112,7 @@ function toggle(id: number) {
         : (invalid
             ? 'border-error/60 hover:border-error hover:bg-error/5'
             : 'border-default hover:border-primary/50 hover:bg-elevated/50')"
-      @click="toggle(r.id)"
+      @click="toggle(r.id, $event)"
     >
       <!-- The radio-shaped indicator. A ring with a filled centre when selected, so it
            reads as a radio group at a glance while behaving as the checkbox it is. -->
@@ -142,4 +160,51 @@ function toggle(id: number) {
       </span>
     </button>
   </div>
+
+  <!-- Fireworks overlay at each click position. Positioned relative to this wrapper so
+       coordinates from @click are local to the grid container. -->
+  <div class="role-fireworks-wrap relative inline-block w-full">
+    <span
+      v-for="f in fireworks"
+      :key="f.x + ',' + f.y"
+      class="role-firework absolute rounded-full pointer-events-none"
+      :style="{
+        left: `${f.x}px`,
+        top: `${f.y}px`,
+        width: '8px',
+        height: '8px',
+        backgroundColor: '#00DC82',
+        boxShadow: '0 0 8px #00DC82, 0 0 16px #00DC82, 0 0 24px rgba(0,220,130,0.4)',
+        '--dx': `${f.dx}px`,
+        '--dy': `${f.dy}px`,
+        animation: 'role-firework-burst 900ms cubic-bezier(0.4, 0, 0.2, 1) both'
+      }"
+    />
+  </div>
 </template>
+
+<style scoped>
+.role-fireworks-wrap {
+  position: relative;
+  width: 100%;
+  height: 0;
+  pointer-events: none;
+}
+
+.role-firework {
+  animation: role-firework-burst 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes role-firework-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+    box-shadow: 0 0 8px #00DC82, 0 0 16px #00DC82, 0 0 24px rgba(0,220,130,0.4);
+  }
+  100% {
+    transform: translate(var(--dx), var(--dy)) scale(0);
+    opacity: 0;
+    box-shadow: 0 0 24px #00DC82, 0 0 48px #00DC82, 0 0 80px rgba(0,220,130,0);
+  }
+}
+</style>

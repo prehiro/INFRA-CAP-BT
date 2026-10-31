@@ -48,6 +48,8 @@ const props = withDefaults(defineProps<{
   name?: string
   /** Red outline when a mandatory time has not been chosen yet. */
   invalid?: boolean
+  /** Opt-in pulse for whichever hour/minute box is currently being edited. */
+  animatedSelection?: boolean
 }>(), { placeholder: 'Select time', minuteStep: 5, name: undefined, invalid: false })
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
@@ -245,13 +247,13 @@ function display(): string {
         <div class="flex items-center justify-center gap-1 px-4 pt-3 pb-1">
           <button type="button"
                   class="w-16 rounded-lg py-1.5 text-center font-mono text-2xl tabular-nums transition-colors"
-                  :class="step === 'hour' ? 'bg-primary/15 text-primary' : 'bg-elevated text-muted hover:text-default'"
+                  :class="[step === 'hour' ? 'bg-primary/15 text-primary' : 'bg-elevated text-muted hover:text-default', animatedSelection ? 'time-part-button' : '', animatedSelection && step === 'hour' ? 'time-part-active' : '']"
                   aria-label="Choose hour"
                   @click="focus('hour')">{{ hour }}</button>
           <span class="font-mono text-2xl font-semibold text-default">:</span>
           <button type="button"
                   class="w-16 rounded-lg py-1.5 text-center font-mono text-2xl tabular-nums transition-colors"
-                  :class="step === 'minute' ? 'bg-primary/15 text-primary' : 'bg-elevated text-muted hover:text-default'"
+                  :class="[step === 'minute' ? 'bg-primary/15 text-primary' : 'bg-elevated text-muted hover:text-default', animatedSelection ? 'time-part-button' : '', animatedSelection && step === 'minute' ? 'time-part-active' : '']"
                   aria-label="Choose minute"
                   @click="focus('minute')">{{ minute }}</button>
         </div>
@@ -296,3 +298,22 @@ function display(): string {
     </template>
   </UPopover>
 </template>
+
+<style scoped>
+/* Only the active box's background breathes. A static, thin SOLID focus outline
+   replaces the browser's auto/dotted outline; no animated inset ring can thicken it. */
+.time-part-button:focus-visible {
+  outline: 1px solid var(--ui-primary);
+  outline-offset: 1px;
+}
+.time-part-active {
+  animation: time-part-breathe 1.45s ease-in-out infinite;
+}
+@keyframes time-part-breathe {
+  0%, 100% { background-color: color-mix(in srgb, var(--ui-primary) 12%, transparent); }
+  50% { background-color: color-mix(in srgb, var(--ui-primary) 30%, transparent); }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .time-part-active { animation: none !important; }
+}
+</style>
