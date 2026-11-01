@@ -41,6 +41,29 @@ public class SeedService
         await SeedSampleSchemaAsync();
         await SeedCctvLogBookAsync();
         await SeedHandoverLogBookAsync();
+        await EnsurePcLedgerAssetStatusAsync();
+    }
+
+    /// <summary>Add optional PC disposition to an existing EAV ledger without altering its records.</summary>
+    private async Task EnsurePcLedgerAssetStatusAsync()
+    {
+        var ledger = await _db.Entities.Include(e => e.Fields)
+            .FirstOrDefaultAsync(e => e.Slug == "pc_ledger");
+        if (ledger is null || ledger.Fields.Any(f => f.Name == "asset_status")) return;
+
+        ledger.Fields.Add(new DynamicField
+        {
+            Name = "asset_status",
+            Label = "Status",
+            Type = FieldType.Text,
+            IsRequired = false,
+            IsUnique = false,
+            IsSearchable = true,
+            IsVisible = true,
+            MaxLength = 32,
+            SortOrder = ledger.Fields.Any() ? ledger.Fields.Max(f => f.SortOrder) + 1 : 0
+        });
+        await _db.SaveChangesAsync();
     }
 
     /// <summary>

@@ -50,6 +50,8 @@ const props = withDefaults(defineProps<{
   placeholder?: string
   /** The dropdown's header line; omit to hide it. */
   header?: string
+  /** Opt-in breathing room between the dropdown header and its first suggestion. */
+  headerBottomGap?: boolean
   /** Values already in the form, used to lift the candidate that agrees with them. */
   context?: string[]
   /** Optional parent-owned trace, for a retrieval that fills several sibling inputs. */
@@ -365,7 +367,7 @@ onBeforeUnmount(() => {
           :key="s.value"
           type="button"
           class="flex w-full items-start gap-2 px-3 py-2 text-left text-xs transition-colors"
-          :class="i === active ? 'bg-primary/10' : 'hover:bg-elevated/60'"
+          :class="[i === active ? 'bg-primary/10' : 'hover:bg-elevated/60', i === 0 && header && headerBottomGap ? 'mt-1' : '']"
           @mouseenter="active = i"
           @mousedown.prevent="pick(s)"
           @click="pick(s)"

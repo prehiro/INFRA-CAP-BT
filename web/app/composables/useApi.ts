@@ -81,6 +81,12 @@ export const apiCreateRecord = (entityId: number, values: Record<string, any>) =
 export const apiUpdateRecord = (entityId: number, recordId: number, values: Record<string, any>) =>
   request<RecordRow>(`/records/${entityId}/${recordId}`, { method: 'PUT', body: { values } })
 
+export const apiConvertFactoryRecord = (entityId: number, recordId: number, values: Record<string, any>) =>
+  request<RecordRow>(`/records/${entityId}/${recordId}/convert-factory`, { method: 'POST', body: { values } })
+
+export const apiConvertLedgerRecord = (entityId: number, recordId: number, values: Record<string, any>) =>
+  request<RecordRow>(`/records/${entityId}/${recordId}/convert-ledger`, { method: 'POST', body: { values } })
+
 export const apiDeleteRecord = (entityId: number, recordId: number) =>
   request<void>(`/records/${entityId}/${recordId}`, { method: 'DELETE' })
 

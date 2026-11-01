@@ -806,6 +806,7 @@ onMounted(() => {
 /* ---------------- add / edit ---------------- */
 const showForm = ref(false)
 const editingId = ref<number | null>(null)
+const editTransferStatus = ref('')
 const originalSn = ref<unknown>('')
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
@@ -899,6 +900,10 @@ const STATUS_OPTIONS = [
   { label: 'Active', value: 'Active' },
   { label: 'Inactive', value: 'Inactive' }
 ]
+const TRANSFER_STATUSES = ['Standby', 'Plan Dispose', 'Domain PC'] as const
+function isTransferStatus(status: string): status is typeof TRANSFER_STATUSES[number] {
+  return TRANSFER_STATUSES.some(option => option === status)
+}
 
 function blankForm() {
   for (const k of Object.keys(LABELS)) form[k] = ''
@@ -909,6 +914,7 @@ function blankForm() {
 
 function openCreate() {
   editingId.value = null
+  editTransferStatus.value = ''
   originalSn.value = ''
   formError.value = ''
   blankForm()
@@ -918,6 +924,7 @@ function openCreate() {
 
 function openEdit(row: RecordRow) {
   editingId.value = row.id
+  editTransferStatus.value = ''
   formError.value = ''
   blankForm()
   for (const k of Object.keys(LABELS)) {
@@ -945,9 +952,11 @@ function payload(): Record<string, any> {
 async function save() {
   if (!entityId.value) return
   formError.value = ''
-  // An unmigrated record on another server must be chosen explicitly, never saved
-  // with a legacy value while the control displays only Active / Inactive.
-  if (!STATUS_OPTIONS.some(option => option.value === form.status)) {
+  const selectedStatus = String(form.status ?? '').trim()
+  const transferStatus = editingId.value !== null ? editTransferStatus.value : ''
+  const moving = isTransferStatus(transferStatus)
+  const allowed = STATUS_OPTIONS.some(option => option.value === selectedStatus) || moving
+  if (!allowed) {
     formError.value = 'Choose Active or Inactive before saving.'
     return
   }
@@ -955,25 +964,41 @@ async function save() {
   try {
     const checkedId = editingId.value
     const checkedSn = normalizeDeviceIdentity(form.sn)
-    if (shouldValidateDeviceIdentity(form.sn, originalSn.value, checkedId !== null)) {
+    if (shouldValidateDeviceIdentity(form.sn, originalSn.value, checkedId !== null) || moving) {
       let duplicate
+      let ledgerDuplicate
       try {
         duplicate = await findDuplicateDeviceIdentity('sn', form.sn, checkedId, rows.value,
           page => apiListRecords(entityId.value!, { page, pageSize: 500 }))
+        if (!duplicate && moving && checkedSn) {
+          const ledgerId = entities.value.find(e => e.slug === 'pc_ledger')?.id
+          if (ledgerId) ledgerDuplicate = await findDuplicateDeviceIdentity('computer_sn', form.sn, null, [],
+            page => apiListRecords(ledgerId, { page, pageSize: 500 }))
+        }
       } catch {
         // A network lookup failure defers to the authoritative server-side rule.
       }
       if (!showForm.value || editingId.value !== checkedId) return
-      if (checkedSn !== normalizeDeviceIdentity(form.sn)) {
+      if (checkedSn !== normalizeDeviceIdentity(form.sn) || selectedStatus !== String(form.status ?? '').trim() ||
+          transferStatus !== editTransferStatus.value) {
         formError.value = 'Device details changed during validation. Please save again.'
         return
       }
-      if (duplicate) {
-        formError.value = `S/N "${String(form.sn).trim()}" is already used by No ${cell(duplicate, 'nomor')} - ${cell(duplicate, 'pic')}.`
+      if (duplicate || ledgerDuplicate) {
+        if (duplicate) formError.value = `S/N "${String(form.sn).trim()}" is already used by ${factoryPcConflictLabel(duplicate)}.`
+        else formError.value = `S/N "${String(form.sn).trim()}" is already used by ${pcLedgerConflictLabel(ledgerDuplicate, 'computer_sn')}.`
+        if (moving) toast.add({ title: 'PC already registered', description: formError.value, color: 'error' })
         return
       }
     }
-    if (editingId.value) {
+    let resultTitle = editingId.value ? 'Record updated' : 'Record created'
+    if (editingId.value !== null && moving) {
+      await apiConvertLedgerRecord(entityId.value, editingId.value, { ...payload(), status: transferStatus })
+      rows.value = rows.value.filter(row => row.id !== editingId.value)
+      showForm.value = false
+      resultTitle = transferStatus === 'Standby' ? 'Moved to Standby PC'
+        : transferStatus === 'Plan Dispose' ? 'Moved to Dispose' : 'Moved to PC Ledger'
+    } else if (editingId.value !== null) {
       const saved = await apiUpdateRecord(entityId.value, editingId.value, payload())
       rows.value = replaceSavedRecord(rows.value, saved)
       showForm.value = false
@@ -983,7 +1008,7 @@ async function save() {
       await load()
     }
     toast.add({
-      title: editingId.value ? 'Record updated' : 'Record created',
+      title: resultTitle,
       icon: 'i-lucide-circle-check',
       color: 'primary'
     })
@@ -1357,7 +1382,7 @@ async function exportExcel() {
               <div class="min-w-0 flex-1">
                 <h2 class="text-sm font-semibold leading-tight">{{ editingId ? 'Edit PC record' : 'New Factory PC record' }}</h2>
                 <p class="text-xs text-muted">
-                  {{ editingId ? 'Changes are written to the ledger immediately.' : 'Add new Factory PC to the ledger system.' }}
+                  {{ editingId ? 'Edit this PC or move it to the domain ledger.' : 'Add new Factory PC to the ledger system.' }}
                 </p>
               </div>
               <button type="button" class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-50" aria-label="Close record form" :disabled="saving" @click="showForm = false">
@@ -1378,10 +1403,11 @@ async function exportExcel() {
                     :label="LABELS[key]"
                     :ui="{ label: 'text-xs font-medium' }"
                   >
-                    <!-- The Factory PC register uses only Active and Inactive for New and Edit. -->
+                    <!-- The original segmented Active/Inactive control stays in Hardware for New and Edit. -->
                     <URadioGroup
                       v-if="key === 'status'"
                       v-model="form.status"
+                      @update:model-value="editTransferStatus = ''"
                       :items="STATUS_OPTIONS"
                       orientation="horizontal"
                       size="sm"
@@ -1449,11 +1475,26 @@ async function exportExcel() {
               />
             </div>
 
-            <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
-              <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save">
-                <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
-              </UButton>
+            <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-default px-5 py-3">
+              <fieldset v-if="editingId !== null" aria-label="Factory PC status" aria-describedby="factory-status-note" class="flex min-w-0 w-full flex-wrap items-center gap-x-2 gap-y-1 lg:mr-auto lg:w-auto">
+                <span id="factory-status-note" class="sr-only">Active and Inactive are selected in the Hardware section and keep this PC in Factory PC. Standby moves it to Standby PC. Plan Dispose moves it to Dispose. Domain PC moves it to PC Ledger. Moving archives the Factory record after creating the destination record.</span>
+                <legend class="sr-only">Status</legend>
+                <span aria-hidden="true" class="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" /></svg>
+                  Status
+                </span>
+                <label v-for="status in TRANSFER_STATUSES" :key="status" class="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md px-1 text-xs hover:bg-elevated">
+                  <input v-model="editTransferStatus" type="radio" name="factory-pc-transfer-status" :value="status" class="size-4 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary" style="accent-color: var(--ui-primary)" />
+                  <span :class="editTransferStatus === status ? 'font-medium text-primary' : 'text-default'">{{ status }}</span>
+                </label>
+                <button type="button" class="shrink-0 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary" :class="{ invisible: !editTransferStatus }" :disabled="!editTransferStatus" @click="editTransferStatus = ''">Clear</button>
+              </fieldset>
+              <div class="flex items-center gap-2">
+                <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
+                <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" @click="save">
+                  <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
+                </UButton>
+              </div>
             </div>
           </div>
         </template>

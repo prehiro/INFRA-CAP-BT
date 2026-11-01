@@ -3,6 +3,7 @@ using Api.Contracts;
 using Api.Data;
 using Api.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Api.Services;
 
@@ -209,6 +210,34 @@ public class DynamicRecordService
         input[noField.Name] = next;
     }
 
+    private static void ValidateDispositionInput(DynamicEntity entity, Dictionary<string, object?> input)
+    {
+        if (entity.Slug == LogbookNumberService.FACTORY_PC_SLUG)
+        {
+            var factoryField = entity.Fields.FirstOrDefault(f => f.Name == "status");
+            if (!input.TryGetValue("status", out var factoryStatusRaw)
+                && (factoryField is null || !input.TryGetValue(factoryField.Id.ToString(), out factoryStatusRaw))) return;
+            if (factoryStatusRaw?.ToString()?.Trim() is "Standby" or "Plan Dispose" or "Domain PC")
+                throw new RecordValidationException(new()
+                {
+                    ["status"] = "Use the PC Ledger transfer endpoint to move a Factory PC."
+                });
+            return;
+        }
+        if (entity.Slug != LogbookNumberService.PC_LEDGER_SLUG) return;
+        var field = entity.Fields.FirstOrDefault(f => f.Name == "asset_status");
+        if (!input.TryGetValue("asset_status", out var raw)
+            && (field is null || !input.TryGetValue(field.Id.ToString(), out raw))) return;
+        var status = raw?.ToString()?.Trim() ?? "";
+        if (status is "" or "Standby" or "Plan Dispose") return;
+        throw new RecordValidationException(new()
+        {
+            ["asset_status"] = status == "Convert Factory PC"
+                ? "Use the Factory PC conversion endpoint to move this record."
+                : "Choose Standby, Plan Dispose, or clear the status."
+        });
+    }
+
     public async Task<RecordDto> CreateAsync(int entityId, SaveRecordRequest req, string username)
     {
         var entity = await GetEntityAsync(entityId);
@@ -218,7 +247,9 @@ public class DynamicRecordService
         var input = req.Values is null
             ? new Dictionary<string, object?>()
             : new Dictionary<string, object?>(req.Values);
+        ValidateDispositionInput(entity, input);
         await InjectAutoNumberAsync(entity, input);
+        await using var serialTransaction = await LockChangedSerialAsync(entity, input);
 
         var values = await MaterializeAsync(entity, input);
         await ValidateAsync(entity, values, null);
@@ -234,7 +265,9 @@ public class DynamicRecordService
         _db.Records.Add(rec);
         await _db.SaveChangesAsync();
 
-        return (await ToDtoListAsync(entity, new List<Record> { rec }))[0];
+        var dto = (await ToDtoListAsync(entity, new List<Record> { rec }))[0];
+        if (serialTransaction is not null) await serialTransaction.CommitAsync();
+        return dto;
     }
 
     public async Task<RecordDto> UpdateAsync(int entityId, long recordId, SaveRecordRequest req, string username)
@@ -255,6 +288,7 @@ public class DynamicRecordService
         var input = req.Values is null
             ? new Dictionary<string, object?>()
             : new Dictionary<string, object?>(req.Values);
+        ValidateDispositionInput(entity, input);
 
         var noField = entity.Fields.FirstOrDefault(f => f.Name == LogbookNumberService.NO_FIELD);
         if (noField is not null)
@@ -279,6 +313,7 @@ public class DynamicRecordService
             }
         }
 
+        await using var serialTransaction = await LockChangedSerialAsync(entity, input, rec);
         var values = await MaterializeAsync(entity, input);
         await ValidateAsync(entity, values, recordId, rec.Values);
 
@@ -306,7 +341,9 @@ public class DynamicRecordService
         await _db.SaveChangesAsync();
 
         await _db.Entry(rec).Collection(r => r.Values).LoadAsync();
-        return (await ToDtoListAsync(entity, new List<Record> { rec }))[0];
+        var dto = (await ToDtoListAsync(entity, new List<Record> { rec }))[0];
+        if (serialTransaction is not null) await serialTransaction.CommitAsync();
+        return dto;
     }
 
     public async Task DeleteAsync(int entityId, long recordId, string username)
@@ -434,6 +471,87 @@ public class DynamicRecordService
         (slug == "pc_ledger" && name is "japan_hostname" or "computer_sn") ||
         (slug == "factory_pc" && name == "sn");
 
+    private static bool IsCrossRegisterSerial(string slug, string name) =>
+        (slug == LogbookNumberService.PC_LEDGER_SLUG && name == "computer_sn") ||
+        (slug == LogbookNumberService.FACTORY_PC_SLUG && name == "sn");
+
+    private async Task<IDbContextTransaction?> LockChangedSerialAsync(DynamicEntity entity,
+        Dictionary<string, object?> input, Record? existing = null)
+    {
+        var fieldName = entity.Slug == LogbookNumberService.PC_LEDGER_SLUG ? "computer_sn" :
+            entity.Slug == LogbookNumberService.FACTORY_PC_SLUG ? "sn" : null;
+        if (fieldName is null || !input.TryGetValue(fieldName, out var raw)) return null;
+        var serial = raw?.ToString()?.Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(serial)) return null;
+        // SQLite is used only by the isolated CRUD regression suite; production uses SQL Server.
+        if (!_db.Database.IsSqlServer()) return null;
+        if (existing is not null)
+        {
+            var fieldId = entity.Fields.First(f => f.Name == fieldName).Id;
+            var old = existing.Values.FirstOrDefault(v => v.FieldId == fieldId)?.TextValue?.Trim();
+            if (string.Equals(serial, old, StringComparison.OrdinalIgnoreCase)) return null;
+        }
+
+        // Serialize check + write across both entity types and all API instances.
+        // Conversion reuses its existing transaction instead of committing it here.
+        var owner = _db.Database.CurrentTransaction is null
+            ? await _db.Database.BeginTransactionAsync() : null;
+        try
+        {
+            await using var cmd = _db.Database.GetDbConnection().CreateCommand();
+            cmd.Transaction = _db.Database.CurrentTransaction!.GetDbTransaction();
+            cmd.CommandText = "DECLARE @result int; EXEC @result = sp_getapplock " +
+                "@Resource = @resource, @LockMode = 'Exclusive', " +
+                "@LockOwner = 'Transaction', @LockTimeout = 30000; SELECT @result";
+            var parameter = cmd.CreateParameter();
+            parameter.ParameterName = "@resource";
+            parameter.Value = "INFRA-CAP:device-serial:" + serial;
+            cmd.Parameters.Add(parameter);
+            if (await cmd.ExecuteScalarAsync() is not int result || result < 0)
+                throw new InvalidOperationException("Serial number validation is busy. Please retry.");
+            return owner;
+        }
+        catch
+        {
+            if (owner is not null) await owner.DisposeAsync();
+            throw;
+        }
+    }
+
+    private async Task<string?> FindSerialConflictAsync(string normalized, long? excludeRecordId)
+    {
+        // Standby and Dispose are status views of pc_ledger; Factory PC is a separate entity.
+        // Read both serial fields by metadata, rather than hard-coding DEV field IDs.
+        var fields = await _db.Fields
+            .Where(f => (f.Entity!.Slug == LogbookNumberService.PC_LEDGER_SLUG && f.Name == "computer_sn") ||
+                        (f.Entity!.Slug == LogbookNumberService.FACTORY_PC_SLUG && f.Name == "sn"))
+            .Select(f => new { f.Id, f.EntityId, Slug = f.Entity!.Slug })
+            .ToListAsync();
+        var serialIds = fields.Select(f => f.Id).ToList();
+        if (serialIds.Count == 0) return null;
+        var match = await _db.RecordValues
+            .Where(v => serialIds.Contains(v.FieldId) && v.TextValue != null &&
+                        v.TextValue.Trim().ToUpper() == normalized &&
+                        (excludeRecordId == null || v.RecordId != excludeRecordId) &&
+                        _db.Records.Any(r => r.Id == v.RecordId && !r.IsDeleted))
+            .Select(v => new { v.RecordId, v.FieldId })
+            .FirstOrDefaultAsync();
+        if (match is null) return null;
+
+        var source = fields.First(f => f.Id == match.FieldId);
+        var isFactory = source.Slug == LogbookNumberService.FACTORY_PC_SLUG;
+        var statusField = await _db.Fields
+            .Where(f => f.EntityId == source.EntityId && f.Name == (isFactory ? "status" : "asset_status"))
+            .Select(f => f.Id).FirstOrDefaultAsync();
+        var status = statusField == 0 ? null : await _db.RecordValues
+            .Where(v => v.RecordId == match.RecordId && v.FieldId == statusField)
+            .Select(v => v.TextValue).FirstOrDefaultAsync();
+        status = string.IsNullOrWhiteSpace(status) ? "Active" : status.Trim();
+        var register = isFactory ? "Factory PC" : status == "Standby" ? "Standby PC" :
+            status == "Plan Dispose" ? "Dispose" : "PC Ledger";
+        return $"{register} (Status: {status})";
+    }
+
     private async Task ValidateAsync(DynamicEntity entity, List<RecordValue> values, long? excludeRecordId,
         ICollection<RecordValue>? storedValues = null)
     {
@@ -452,6 +570,12 @@ public class DynamicRecordService
                 if (excludeRecordId.HasValue && stored is not null &&
                     string.Equals(normalized, (stored.TextValue ?? "").Trim(), StringComparison.OrdinalIgnoreCase))
                     continue;
+                if (IsCrossRegisterSerial(entity.Slug, f.Name))
+                {
+                    var location = await FindSerialConflictAsync(normalized, excludeRecordId);
+                    if (location is not null) errors[f.Name] = $"{f.Label} sudah dipakai di {location}";
+                    continue;
+                }
 
                 var duplicate = await _db.RecordValues.AnyAsync(rv =>
                     rv.FieldId == f.Id && rv.TextValue != null && rv.TextValue.Trim().ToUpper() == normalized &&

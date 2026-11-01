@@ -22,6 +22,12 @@ import { loadNextPcHostname } from '~/utils/pcHostnames'
  */
 import type { EntityMeta, RecordRow } from '~/types'
 
+type LedgerView = 'active' | 'standby' | 'dispose'
+const props = withDefaults(defineProps<{ ledgerView?: LedgerView }>(), { ledgerView: 'active' })
+const viewTitle = computed(() => props.ledgerView === 'standby' ? 'Standby PC' : props.ledgerView === 'dispose' ? 'Dispose' : 'PC Ledger')
+const sheetTitle = computed(() => props.ledgerView === 'active' ? 'Domain Joined PC Ledger' : viewTitle.value)
+const filePrefix = computed(() => props.ledgerView === 'standby' ? 'Standby_PC' : props.ledgerView === 'dispose' ? 'Dispose' : 'PC_Ledger')
+
 const ENTITY_SLUG = 'pc_ledger'
 /** Reference workbook sheet name, used for the exported worksheet tab. */
 const SHEET_NAME = 'Ledger'
@@ -544,12 +550,20 @@ function haystack(r: RecordRow): string {
   return COLUMNS.map((c) => cell(r, c.key)).join(' ').toLowerCase()
 }
 
+// Keep one physical PC Ledger record. Archived pages are status-filtered views of its
+// complete data, not duplicate entities whose fields could get out of sync.
+const ledgerRows = computed(() => rows.value.filter((row) => {
+  const status = cell(row, 'asset_status').trim()
+  if (props.ledgerView === 'standby') return status === 'Standby'
+  if (props.ledgerView === 'dispose') return status === 'Plan Dispose'
+  return status === '' || status === 'Active'
+}))
 // Index and sort only when the API snapshot/sort choice changes, not on each keystroke.
-const searchIndex = computed(() => new Map(rows.value.map(row => [row.id, haystack(row)])))
+const searchIndex = computed(() => new Map(ledgerRows.value.map(row => [row.id, haystack(row)])))
 const sortedRows = computed(() => {
   const key = sortKey.value
   const dir = sortDir.value === 'asc' ? 1 : -1
-  return [...rows.value].sort((a, b) => {
+  return [...ledgerRows.value].sort((a, b) => {
     if (key === 'nomor') return ((Number(cell(a, key)) || 0) - (Number(cell(b, key)) || 0)) * dir
     if (key === 'tanggal') return ((Date.parse(cell(a, key)) || 0) - (Date.parse(cell(b, key)) || 0)) * dir
     return cell(a, key).localeCompare(cell(b, key), undefined, { sensitivity: 'base' }) * dir
@@ -809,10 +823,10 @@ watch(rows, () => { measurePinOffset() }, { flush: 'post' })
    that input no longer exists. `locations` is the filter's source, built the same way as `chassisTypes`
    so the two behave identically. */
 const chassisTypes = computed(() =>
-  [...new Set(rows.value.map((r) => cell(r, 'chassis')).filter(Boolean))].sort()
+  [...new Set(ledgerRows.value.map((r) => cell(r, 'chassis')).filter(Boolean))].sort()
 )
 const locations = computed(() =>
-  [...new Set(rows.value.map((r) => cell(r, 'lokasi')).filter(Boolean))].sort()
+  [...new Set(ledgerRows.value.map((r) => cell(r, 'lokasi')).filter(Boolean))].sort()
 )
 
 function toggleSort(key: string) {
@@ -846,8 +860,13 @@ async function load() {
     entities.value = await apiListEntities(true)
     const id = entityId.value
     if (!id) throw new Error('entity pc_ledger not found')
-    const page = await apiListRecords(id, { page: 1, pageSize: 500 })
-    rows.value = page.items ?? []
+    const all: RecordRow[] = []
+    for (let pageNo = 1; ; pageNo++) {
+      const page = await apiListRecords(id, { page: pageNo, pageSize: 500 })
+      all.push(...(page.items ?? []))
+      if (all.length >= page.total || !page.items?.length) break
+    }
+    rows.value = all
   } catch (e) {
     loadError.value = 'Cannot load the PC Ledger. Check that the API is running.'
     console.error('[pc-ledger]', e)
@@ -867,6 +886,30 @@ const editingId = ref<number | null>(null)
 const originalIdentity = ref<Record<string, unknown>>({})
 const form = reactive<Record<string, any>>({})
 const formError = ref('')
+// Edit keeps its dimensions when a warning appears; reveal the new alert inside the scroll body.
+watch(formError, async (message) => {
+  if (!message || editingId.value === null || !showForm.value) return
+  await nextTick()
+  const body = document.querySelector<HTMLElement>('.pl-record-modal[data-state="open"] .pc-edit-scroll')
+  body?.scrollTo({
+    top: body.scrollHeight,
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  })
+})
+const EDIT_STATUS_OPTIONS = ['Standby', 'Plan Dispose', 'Convert Factory PC'] as const
+const editAssetStatus = ref('')
+const originalAssetStatus = ref('')
+const statusBurst = ref<{ id: number; value: string } | null>(null)
+let statusBurstId = 0
+let statusBurstTimer: ReturnType<typeof setTimeout> | undefined
+onBeforeUnmount(() => clearTimeout(statusBurstTimer))
+function onStatusSelected(value: string) {
+  clearTimeout(statusBurstTimer)
+  statusBurst.value = null
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  statusBurst.value = { id: ++statusBurstId, value }
+  statusBurstTimer = setTimeout(() => { statusBurst.value = null }, 700)
+}
 const identityHints = reactive<Record<string, string>>({ staff_name: '', email: '', gid: '' })
 const hostnamePending = ref(false)
 let hostnameRequest = 0
@@ -1001,12 +1044,6 @@ const UNIQUE_FIELDS = ['japan_hostname', 'computer_sn']
 const uniqueErrors = ref<Record<string, string>>({})
 const uniqueWarned = ref('')
 
-/** How a duplicate is described to the user: the ledger number and who holds it. */
-function recordLabel(r: any) {
-  const no = String(cell(r, 'nomor') ?? '').trim()
-  const who = String(cell(r, 'staff_name') ?? '').trim()
-  return [no ? 'No ' + no : '', who].filter(Boolean).join(' - ') || 'record ' + r.id
-}
 
 async function checkUnique(key: string) {
   if (!UNIQUE_FIELDS.includes(key)) return
@@ -1019,7 +1056,17 @@ async function checkUnique(key: string) {
     if (!id) return
     const hit = await findDuplicateDeviceIdentity(key, value, editingId.value, rows.value,
       page => apiListRecords(id, { page, pageSize: 500 }))
-    uniqueErrors.value[key] = hit ? `${LABELS[key]} "${value}" is already used by ${recordLabel(hit)}.` : ''
+    if (hit) {
+      uniqueErrors.value[key] = `${LABELS[key]} "${value}" is already used by ${pcLedgerConflictLabel(hit, key)}.`
+    } else if (key === 'computer_sn') {
+      const factory = entities.value.find(e => e.slug === 'factory_pc')
+      const factoryHit = factory && await findDuplicateDeviceIdentity('sn', value, null, [],
+        page => apiListRecords(factory.id, { page, pageSize: 500 }))
+      uniqueErrors.value[key] = factoryHit
+        ? `${LABELS[key]} "${value}" is already used by ${factoryPcConflictLabel(factoryHit)}.` : ''
+    } else {
+      uniqueErrors.value[key] = ''
+    }
   } catch {
     uniqueErrors.value[key] = ''
   } finally {
@@ -1145,6 +1192,10 @@ function applyGidSuggestion(s: any) {
 
 function openCreate() {
   editingId.value = null
+  editAssetStatus.value = ''
+  originalAssetStatus.value = ''
+  clearTimeout(statusBurstTimer)
+  statusBurst.value = null
   originalIdentity.value = {}
   formError.value = ''
   blankForm()
@@ -1153,11 +1204,15 @@ function openCreate() {
 
 function openEdit(row: RecordRow) {
   editingId.value = row.id
+  clearTimeout(statusBurstTimer)
+  statusBurst.value = null
   formError.value = ''
   blankForm()
   for (const k of Object.keys(LABELS)) {
     form[k] = k === 'tanggal' ? toDateInput(row.values?.[k]) : (row.values?.[k] ?? '')
   }
+  editAssetStatus.value = String(row.values?.asset_status ?? '').trim()
+  originalAssetStatus.value = editAssetStatus.value
   originalIdentity.value = Object.fromEntries(UNIQUE_FIELDS.map(key => [key, form[key]]))
   showForm.value = true
 }
@@ -1186,6 +1241,9 @@ function payload(): Record<string, any> {
     if (v === '' || v === null || v === undefined) continue
     values[k] = k === 'tanggal' ? String(v).slice(0, 10) : v
   }
+  if (editingId.value !== null && (editAssetStatus.value || originalAssetStatus.value)) {
+    values.asset_status = editAssetStatus.value
+  }
   return values
 }
 
@@ -1205,11 +1263,30 @@ async function save() {
     }
     if (uniqueWarned.value) {
       formError.value = `${uniqueWarned.value} Hostname and Serial number must be unique.`
+      // New form can scroll past its inline alert; keep the reason visible beside the modal
+      // without adding space or shifting any fields when Add record is clicked.
+      if (editingId.value === null) {
+        toast.add({ id: 'pc-ledger-duplicate', title: 'PC already registered',
+          description: uniqueWarned.value, icon: 'i-lucide-circle-alert', color: 'error' })
+      }
       return
     }
-    if (editingId.value) {
-      const saved = await apiUpdateRecord(entityId.value, editingId.value, payload())
-      rows.value = replaceSavedRecord(rows.value, saved)
+    let resultTitle = editingId.value ? 'Record updated' : 'Record created'
+    if (editingId.value !== null) {
+      const recordId = editingId.value
+      const values = payload()
+      if (editAssetStatus.value === 'Convert Factory PC') {
+        await apiConvertFactoryRecord(entityId.value, recordId, values)
+        rows.value = rows.value.filter(row => row.id !== recordId)
+        resultTitle = 'Moved to Factory PC'
+      } else {
+        const saved = await apiUpdateRecord(entityId.value, recordId, values)
+        rows.value = replaceSavedRecord(rows.value, saved)
+        if (editAssetStatus.value !== originalAssetStatus.value) {
+          resultTitle = editAssetStatus.value === 'Standby' ? 'Moved to Standby PC'
+            : editAssetStatus.value === 'Plan Dispose' ? 'Moved to Dispose' : 'Moved to PC Ledger'
+        }
+      }
       showForm.value = false
     } else {
       await apiCreateRecord(entityId.value, payload())
@@ -1217,7 +1294,7 @@ async function save() {
       await load()
     }
     toast.add({
-      title: editingId.value ? 'Record updated' : 'Record created',
+      title: resultTitle,
       icon: 'i-lucide-circle-check',
       color: 'primary'
     })
@@ -1295,24 +1372,26 @@ async function exportExcel() {
     wb.creator = 'INFRA-CAP'
     wb.created = new Date()
 
-    const ws = wb.addWorksheet(SHEET_NAME, { views: [{ state: 'frozen', ySplit: 10 }] })
+    const ws = wb.addWorksheet(props.ledgerView === 'active' ? SHEET_NAME : viewTitle.value, { views: [{ state: 'frozen', ySplit: 10 }] })
     SHEET_WIDTHS.forEach((w, i) => { ws.getColumn(i + 1).width = w })
 
     // --- title block ---
     ws.mergeCells(1, 1, 1, COLUMNS.length + 1)
     const title = ws.getCell(1, 1)
-    title.value = 'List PC Ledger CAP Only'
+    title.value = props.ledgerView === 'active' ? 'List PC Ledger CAP Only' : `${viewTitle.value} · CAPACITOR Only`
     title.font = { bold: true, size: 16 }
     title.alignment = { horizontal: 'center', vertical: 'middle' }
     ws.getRow(1).height = 21
 
-    NOTES.forEach((text, i) => {
-      const c = ws.getCell(3 + i, 3) // column C, matching the source sheet
-      c.value = text
-      c.font = { bold: true, size: 11 }
-      c.alignment = { wrapText: true, vertical: 'top' }
-    })
-    ws.getRow(6).height = 28
+    if (props.ledgerView === 'active') {
+      NOTES.forEach((text, i) => {
+        const c = ws.getCell(3 + i, 3) // column C, matching the source sheet
+        c.value = text
+        c.font = { bold: true, size: 11 }
+        c.alignment = { wrapText: true, vertical: 'top' }
+      })
+      ws.getRow(6).height = 28
+    }
 
     /* Row 9 is deliberately left empty now: the register no longer carries a sheet-level value there,
        so nothing is written to cells (9,3) or (9,4). The rows below are addressed absolutely - the
@@ -1368,14 +1447,14 @@ async function exportExcel() {
     const stamp = new Date().toISOString().slice(0, 10)
     const suffix = (searching.value || filterChassis.value !== ALL || filterLocation.value !== ALL) ? '_filtered' : ''
     a.href = url
-    a.download = `PC_Ledger_${stamp}${suffix}.xlsx`
+    a.download = `${filePrefix.value}_${stamp}${suffix}.xlsx`
     document.body.appendChild(a)
     a.click()
     a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 2000)
     toast.add({
       title: 'Export ready',
-      description: `${data.length} row${data.length === 1 ? '' : 's'} written to PC_Ledger_${stamp}${suffix}.xlsx`,
+      description: `${data.length} row${data.length === 1 ? '' : 's'} written to ${filePrefix.value}_${stamp}${suffix}.xlsx`,
       icon: 'i-lucide-file-spreadsheet',
       color: 'primary'
     })
@@ -1391,7 +1470,7 @@ async function exportExcel() {
 <template>
   <UDashboardPanel :ui="{ body: 'p-6' }">
     <template #header>
-      <PageHeader title="PC Ledger" />
+      <PageHeader :title="viewTitle" />
     </template>
 
     <template #body>
@@ -1406,10 +1485,10 @@ async function exportExcel() {
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">
-              <h1 class="text-lg font-bold tracking-wide">Domain Joined PC Ledger</h1>
+              <h1 class="text-lg font-bold tracking-wide">{{ sheetTitle }}</h1>
               <p class="text-xs text-muted">
-                List of PC, Notebook, Tablet &middot; CAPACITOR Only
-                <span v-if="!loading"> &middot; {{ rows.length }} record{{ rows.length === 1 ? '' : 's' }}</span>
+                {{ props.ledgerView === 'active' ? 'List of PC, Notebook, Tablet · CAPACITOR Only' : props.ledgerView === 'standby' ? 'PCs currently on standby' : 'PCs planned for disposal' }}
+                <span v-if="!loading"> · {{ ledgerRows.length }} record{{ ledgerRows.length === 1 ? '' : 's' }}</span>
               </p>
               </div>
             </div>
@@ -1500,6 +1579,7 @@ async function exportExcel() {
                 <template #leading><ToolbarStrokeIcon :name="exporting ? 'loading' : 'excel'" /></template>
               </UButton>
               <UButton
+                v-if="props.ledgerView === 'active'"
                 color="primary"
                 label="Add Record" class="record-add-hover stable-hover-hitbox"
                 @click="openCreate"
@@ -1539,11 +1619,11 @@ async function exportExcel() {
             <RegisterLoading />
           </div>
 
-          <div v-else-if="!rows.length" class="p-12 text-center">
+          <div v-else-if="!ledgerRows.length" class="p-12 text-center">
             <UIcon name="i-lucide-hard-drive" class="mx-auto size-8 text-dimmed" />
-            <p class="mt-3 text-sm font-medium">No PCs recorded yet</p>
+            <p class="mt-3 text-sm font-medium">{{ props.ledgerView === 'standby' ? 'No standby PCs yet' : props.ledgerView === 'dispose' ? 'No PCs planned for disposal' : 'No PCs recorded yet' }}</p>
             <p class="mt-1 text-xs text-muted">
-              Start with Add Record, or copy the rows across from the existing spreadsheet.
+              {{ props.ledgerView === 'active' ? 'Start with Add Record, or copy the rows across from the existing spreadsheet.' : 'Change a PC record status in the Edit form to move it here.' }}
             </p>
           </div>
 
@@ -1661,9 +1741,9 @@ async function exportExcel() {
                The LEFT count follows the FILTERS so it can never disagree with the "Showing X of Y"
                beside it - the CCTV page once printed the raw total there and read
                "1 row / Showing 0 of 1", which looks like a bug. -->
-          <div v-if="!loading && rows.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+          <div v-if="!loading && ledgerRows.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
             <span>{{ visibleRows.length }} {{ visibleRows.length === 1 ? 'record' : 'records' }}</span>
-            <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ rows.length }}</span>
+            <span class="tabular-nums">Showing {{ visibleRows.length }} of {{ ledgerRows.length }}</span>
           </div>
         </div>
       </div>
@@ -1725,7 +1805,7 @@ async function exportExcel() {
                foot of this file). One class on this wrapper is enough - it covers the header, body
                and footer at once - where the CCTV and Users dialogs set it on their header and body
                separately because those two use the vendor's header/body slots. -->
-          <div class="relative z-10 flex max-h-[85vh] flex-col" :class="{ 'pc-new-record-content': !editingId }">
+          <div class="relative z-10 flex flex-col" :class="editingId !== null ? 'pc-edit-record-content h-[min(calc(100vh-4rem),662px)]' : 'pc-new-record-content max-h-[85vh]'">
             <div class="flex items-center gap-3 border-b border-default px-5 py-4">
               <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
                 <RecordAddIcon :name="editingId ? 'i-lucide-pencil' : 'channel-add'" />
@@ -1741,7 +1821,7 @@ async function exportExcel() {
               </button>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-5 py-4">
+            <div class="flex-1 overflow-y-auto px-5 pt-4" :class="editingId !== null ? 'pc-edit-scroll pb-10 lg:pb-4' : 'pb-4'">
               <div v-for="section in recordFormSections" :key="section.title" class="mb-5 last:mb-0">
                 <p class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   <UIcon :name="section.icon" class="size-3.5" />
@@ -1784,6 +1864,7 @@ async function exportExcel() {
                       :suggestions="registerSuggestionsFor(key)"
                       :placeholder="registerSuggestPlaceholder(key)"
                       :header="SUGGEST_HEADERS[key]"
+                      header-bottom-gap
                     />
                     <SuggestInput
                       v-else-if="(SUGGEST_FIELDS as readonly string[]).includes(key)"
@@ -1795,6 +1876,7 @@ async function exportExcel() {
                       v-model:source-hint="identityHints[key]"
                       :placeholder="key === 'staff_name' ? 'Search or enter a staff name' : key === 'email' ? 'Search or enter an email address' : 'Search or enter a Global ID'"
                       header="Smart Suggestion - Click or Enter ↵"
+                      header-bottom-gap
                       @fill="applyGidSuggestion"
                       @keydown="onNewIdentityKeydown"
                     />
@@ -1811,14 +1893,8 @@ async function exportExcel() {
                 </div>
               </div>
 
-              <!-- The banner's row is RESERVED (min-h) so showing it does not resize the dialog. HIRO:
-                   "tolong atur animasi pelebaran modal ketika notifikasi duplikat yang dibawah muncul
-                   karena saat ini modal melebar secara tiba-tiba jelek secara visual".
-                   The per-field message is hidden (`error: 'hidden'` on the UFormField) and carried here
-                   instead: the message would wrap to three lines inside a one-third-width column and the
-                   dialog grew 86px every time it appeared. The field keeps its red ring, so which box is
-                   wrong is still obvious, and the dialog now has the same height before and after. -->
-              <div class="mt-4 min-h-[64px]">
+              <!-- New retains its reserved warning row; only Edit removes the empty space. -->
+              <div v-if="editingId === null" class="mt-4 min-h-[64px]">
                 <UAlert
                   v-if="formError"
                   color="error"
@@ -1828,13 +1904,41 @@ async function exportExcel() {
                   class="anim-fade-in"
                 />
               </div>
+              <!-- Edit has a fixed modal height, so errors add scrollable content without
+                   enlarging the dialog or leaving a blank warning row at rest. -->
+              <UAlert
+                v-else-if="formError"
+                color="error"
+                variant="soft"
+                icon="i-lucide-circle-alert"
+                :title="formError"
+                class="mt-4 anim-fade-in"
+              />
             </div>
 
-            <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
-              <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
-              <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save">
-                <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
-              </UButton>
+            <div class="record-form-actions flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-default px-5 py-3">
+              <fieldset v-if="editingId !== null" aria-label="PC status" aria-describedby="pc-status-note" class="flex min-w-0 w-full flex-wrap items-center gap-x-3 gap-y-1 lg:mr-auto lg:w-auto">
+                <span id="pc-status-note" class="sr-only">Saving Standby moves this PC to Standby PC. Saving Plan Dispose moves it to Dispose. Saving Convert Factory PC creates an Active Factory PC with only name, email, chassis, model, serial number, OS, and remarks, and archives the original PC Ledger record.</span>
+                <legend class="sr-only">Status</legend>
+                <span aria-hidden="true" class="mr-1 inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" /></svg>
+                  Status
+                </span>
+                <label v-for="status in EDIT_STATUS_OPTIONS" :key="status" class="relative inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-md px-1 text-xs hover:bg-elevated">
+                  <input v-model="editAssetStatus" type="radio" name="pc-ledger-asset-status" :value="status" class="size-4 shrink-0 cursor-pointer focus-visible:outline-2 focus-visible:outline-primary" style="accent-color: var(--ui-primary)" @change="onStatusSelected(status)" />
+                  <span :class="editAssetStatus === status ? 'font-medium text-primary' : 'text-default'">{{ status }}</span>
+                  <span v-if="statusBurst?.value === status" :key="statusBurst.id" class="pl-status-firework" aria-hidden="true">
+                    <i v-for="ray in 8" :key="ray" :style="{ '--ray': ray - 1 }" />
+                  </span>
+                </label>
+                <button type="button" class="shrink-0 text-xs font-medium text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary" :class="{ invisible: !editAssetStatus }" :disabled="!editAssetStatus" @click="editAssetStatus = ''; statusBurst = null">Clear</button>
+              </fieldset>
+              <div class="flex items-center gap-2">
+                <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="saving" @click="showForm = false" />
+                <UButton color="primary" :class="[{ 'record-save-hover': editingId }, !editingId ? 'channel-add-hover' : '']" :label="editingId ? 'Save changes' : 'Add record'" :loading="saving" :disabled="!editingId && hostnamePending" @click="save">
+                  <template #leading><SaveIcon v-if="editingId" /><ChannelAddIcon v-else /></template>
+                </UButton>
+              </div>
             </div>
           </div>
         </template>
@@ -1937,6 +2041,21 @@ async function exportExcel() {
   border-radius: 50%; background: var(--ui-primary); box-shadow: 0 0 4px var(--ui-primary);
   animation: pl-firework-ray 680ms cubic-bezier(.2,.7,.25,1) both;
 }
+/* Same burst as the Columns chooser, anchored to the selected radio in the Edit footer. */
+.pl-status-firework {
+  position: absolute; left: 12px; top: 50%; z-index: 1;
+  width: 0; height: 0; pointer-events: none;
+}
+.pl-status-firework::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  border: 2px solid var(--ui-primary); border-radius: 50%;
+  animation: pl-firework-ring 650ms ease-out both;
+}
+.pl-status-firework i {
+  position: absolute; width: 4px; height: 4px; margin: -2px;
+  border-radius: 50%; background: var(--ui-primary); box-shadow: 0 0 4px var(--ui-primary);
+  animation: pl-firework-ray 680ms cubic-bezier(.2,.7,.25,1) both;
+}
 @keyframes pl-firework-ring {
   0% { opacity: .85; transform: translate(-50%, -50%) scale(.55); }
   48% { opacity: .7; transform: translate(-50%, -50%) scale(1.4); }
@@ -1948,7 +2067,7 @@ async function exportExcel() {
   100% { opacity: 0; transform: rotate(calc(var(--ray) * 45deg)) translateY(-24px) scale(.6); }
 }
 @media (prefers-reduced-motion: reduce), print {
-  .pl-column-firework { display: none; }
+  .pl-column-firework, .pl-status-firework { display: none; }
 }
 
 .pc-copy-cell { text-align: inherit; font: inherit; }
@@ -1977,6 +2096,10 @@ async function exportExcel() {
   overflow-x: auto;
   scrollbar-gutter: stable;
 }
+
+/* Edit keeps wheel/touch scrolling on short screens without showing the modal scrollbar. */
+.pc-edit-scroll { scrollbar-width: none; }
+.pc-edit-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
 
 /* THE SCROLLBAR LOOK, copied from the CCTV register so the two registers match rather than merely
    resemble each other. Kept in this page's own scoped block instead of reaching for `.logbook-scroll`
@@ -2396,9 +2519,11 @@ async function exportExcel() {
   .pl-view-modal[data-state='open'] .pl-view-header-eye :is(.pl-view-header-lids, .pl-view-header-pupil) { animation: none; }
   .pl-view-section-dot::after { animation: none; opacity: 0; }
 }
-/* A teleported suggestion becomes the modal's last child; suppress only the NEW form's
-   accidental divide-y border so opening a dropdown cannot grow/move the dialog by 1px. */
-.pl-record-modal[data-slot='content'] > .pc-new-record-content { border-bottom-width: 0; }
+/* Teleporting the suggestion into this dialog makes the form wrapper a non-last child;
+   Nuxt UI's divide-y would add a 1px bottom border and shrink Edit's scroll body on
+   every open/close. Keep that accidental border off both wrappers, not other dialogs. */
+.pl-record-modal[data-slot='content'] > .pc-new-record-content,
+.pl-record-modal[data-slot='content'] > .pc-edit-record-content { border-bottom-width: 0; }
 
 /* ---- accent glow in the top-right corner of the record dialog ----
    The same recipe as the Users and CCTV dialogs, which was measured against the reference template:

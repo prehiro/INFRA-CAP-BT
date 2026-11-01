@@ -15,9 +15,10 @@ namespace Api.Controllers;
 public class RecordsController : ControllerBase
 {
     private readonly DynamicRecordService _svc;
+    private readonly DeviceDispositionService _disposition;
         private readonly AuditService _audit;
-        public RecordsController(DynamicRecordService svc, AuditService audit)
-        { _svc = svc; _audit = audit; }
+        public RecordsController(DynamicRecordService svc, DeviceDispositionService disposition, AuditService audit)
+        { _svc = svc; _disposition = disposition; _audit = audit; }
 
     private string Username => User.Identity?.Name ?? "unknown";
 
@@ -81,6 +82,16 @@ public class RecordsController : ControllerBase
                 details: new { fields = dto.Values.Keys.ToArray() });
             return Ok(dto);
         }
+
+        [HttpPost("{recordId:long}/convert-factory")]
+        public async Task<ActionResult<RecordDto>> ConvertFactory(
+            [FromRoute] int entityId, [FromRoute] long recordId, [FromBody] SaveRecordRequest req)
+            => Ok(await _disposition.ConvertToFactoryAsync(entityId, recordId, req, Username));
+
+        [HttpPost("{recordId:long}/convert-ledger")]
+        public async Task<ActionResult<RecordDto>> ConvertLedger(
+            [FromRoute] int entityId, [FromRoute] long recordId, [FromBody] SaveRecordRequest req)
+            => Ok(await _disposition.ConvertToLedgerAsync(entityId, recordId, req, Username));
 
         [HttpDelete("{recordId:long}")]
         public async Task<IActionResult> Delete([FromRoute] int entityId, [FromRoute] long recordId)

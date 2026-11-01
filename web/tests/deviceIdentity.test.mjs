@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeDeviceIdentity, shouldValidateDeviceIdentity, findDuplicateDeviceIdentity } from '../app/utils/deviceIdentity.ts'
+import { normalizeDeviceIdentity, shouldValidateDeviceIdentity, findDuplicateDeviceIdentity, pcLedgerConflictLabel, factoryPcConflictLabel } from '../app/utils/deviceIdentity.ts'
 
 const row=(id,key,value)=>({id,values:{[key]:value}})
 for (const key of ['japan_hostname','computer_sn','sn']) {
@@ -25,6 +25,22 @@ for (const key of ['japan_hostname','computer_sn','sn']) {
     assert.equal(duplicate.id,501);assert.deepEqual(calls,[1,2])
   })
 }
+test('PC Ledger duplicate serial warning includes the matching record status',()=>{
+  const match={id:9,values:{nomor:'7',staff_name:'Example Owner',computer_sn:'ABC-1',asset_status:'Standby'}}
+  assert.equal(pcLedgerConflictLabel(match,'computer_sn'),'No 7 - Example Owner (Standby PC; Status: Standby)')
+  match.values.asset_status='Plan Dispose'
+  assert.equal(pcLedgerConflictLabel(match,'computer_sn'),'No 7 - Example Owner (Dispose; Status: Plan Dispose)')
+  match.values.asset_status=''
+  assert.equal(pcLedgerConflictLabel(match,'computer_sn'),'No 7 - Example Owner (PC Ledger; Status: Active)')
+  assert.equal(pcLedgerConflictLabel(match,'japan_hostname'),'No 7 - Example Owner')
+})
+test('Factory PC collision displays its register, PIC and status',()=>{
+  const match={id:12,values:{nomor:'9',pic:'Factory Owner',sn:'ABC-1',status:'Active'}}
+  assert.equal(factoryPcConflictLabel(match),'Factory PC No 9 - Factory Owner (Status: Active)')
+  match.values.status=''
+  assert.equal(factoryPcConflictLabel(match),'Factory PC No 9 - Factory Owner (Status: Active)')
+})
+
 test('snapshot normalization handles nulls without treating blanks as device identities',()=>{
   assert.equal(normalizeDeviceIdentity(null),'')
   assert.equal(normalizeDeviceIdentity(' nb123 '),'NB123')

@@ -24,6 +24,7 @@ var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>() ?? new JwtOp
 builder.Services.AddSingleton(jwt);
 builder.Services.AddSingleton<TokenService>();
 builder.Services.AddScoped<DynamicRecordService>();
+builder.Services.AddScoped<DeviceDispositionService>();
 builder.Services.AddScoped<DynamicSchemaService>();
 builder.Services.AddScoped<SeedService>();
 builder.Services.AddScoped<LogbookNumberService>();

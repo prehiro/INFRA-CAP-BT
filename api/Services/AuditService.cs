@@ -13,6 +13,7 @@ public static class AuditActions
     public const string RecordCreate = "record_create";
     public const string RecordUpdate = "record_update";
     public const string RecordDelete = "record_delete";
+    public const string RecordTransfer = "record_transfer";
     public const string UserCreate = "user_create";
     public const string UserUpdate = "user_update";
     public const string UserDelete = "user_delete";
