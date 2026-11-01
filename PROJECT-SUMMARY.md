@@ -1,7 +1,11 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-10-29
+> Terakhir diupdate: 2026-11-01
+
+### Disposisi PC dan keunikan S/N lintas register — publikasi GitHub (2026-11-01)
+
+HIRO meminta pengecekan S/N pada PC Ledger, Standby PC, Factory PC, dan Dispose, lalu meminta kontrol Active/Inactive Factory PC kembali ke desain segmented semula sebelum push. Dipublikasi sebagai `30d3463`: Standby PC dan Dispose adalah tampilan menurut `asset_status` pada satu entitas PC Ledger, bukan salinan record; status Edit dapat memindahkan PC antar tampilan. Factory PC Edit mempertahankan segmented Active/Inactive di bagian Hardware, sedangkan pilihan transfer Standby/Plan Dispose/Domain PC terpisah di footer. Transfer antar entitas membuat record tujuan, mengarsipkan asal, dan mencatat audit dalam transaksi; S/N baru/berubah ditolak jika sudah aktif di salah satu register, dinormalisasi trim/case, dengan lock SQL untuk request bersamaan. Peringatan duplikat menyebut register dan status; New PC Ledger menampilkannya tanpa perlu menggulir form. Tidak ada record QA yang ditulis ke DEV/PROD; uji konversi, rollback, dan konkurensi memakai database SQL terisolasi yang kemudian dihapus. Setelah listrik mati, 88/88 tes frontend, 26/26 regresi CRUD terisolasi, build frontend (17 route), dan verifikasi browser read-only atas segmented Active/Inactive serta pilihan transfer lulus. Peringatan audit dependency Pkcs yang sudah ada belum ditangani; paket migrasi/production tidak diubah. Publikasi dokumentasi ini menyusul pada commit tersendiri.
 
 ### Modal View, ikon judul, dan tombol X form — publikasi GitHub (2026-10-29)
 
