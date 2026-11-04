@@ -37,9 +37,9 @@ const links = computed<NavigationMenuItem[][]>(() => [
       defaultOpen: true,
       children: [
         { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
-        { label: 'Standby PC', icon: 'i-lucide-circle-pause', to: '/standbypc' },
+        { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/standbypc' },
         { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/factorypc' },
-        { label: 'Dispose', icon: 'i-lucide-archive', to: '/dispose' }
+        { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/dispose' }
       ]
     }
   ],
@@ -97,9 +97,9 @@ const groups = computed(() => [
     items: [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
       { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
-      { label: 'Standby PC', icon: 'i-lucide-circle-pause', to: '/standbypc' },
+      { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/standbypc' },
       { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/factorypc' },
-      { label: 'Dispose', icon: 'i-lucide-archive', to: '/dispose' },
+      { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/dispose' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
       { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },

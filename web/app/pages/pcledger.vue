@@ -1479,9 +1479,11 @@ async function exportExcel() {
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex min-w-0 items-center gap-3">
-              <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-                <RecordAddIcon size="md" random-halo>
-                  <PcLedgerIcon class="pc-add-tilt size-7" />
+              <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'pc-ledger-title-icon--large': props.ledgerView !== 'standby' }" aria-hidden="true">
+                <RecordAddIcon size="lg" random-halo>
+                  <StandbyIcon v-if="props.ledgerView === 'standby'" class="pc-add-tilt size-7" />
+                  <DisposeIcon v-else-if="props.ledgerView === 'dispose'" class="pc-add-tilt size-8" />
+                  <PcLedgerIcon v-else class="pc-add-tilt size-8" />
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">
@@ -2459,9 +2461,10 @@ async function exportExcel() {
      no scope id from this component. Same reason the CCTV and Users dialogs keep this CSS in a plain
      <style> block. -->
 <style>
-/* The page-title glyph is 28px; match only its wrapper to that size so the grid
-   centres the SVG instead of offsetting it 2px right and down inside a 24px track. */
+/* Match each title glyph's track to its SVG: Standby stays 28px;
+   PC Ledger and Dispose use 32px inside the unchanged 48px plate. */
 .pc-ledger-title-icon .pc-add-mark { width: 1.75rem; height: 1.75rem; }
+.pc-ledger-title-icon--large .pc-add-mark { width: 2rem; height: 2rem; }
 
 /* Only the PC Ledger view action animates; its hitbox stays fixed at the edges. */
 .pl-view-action { cursor: pointer; transition: background-color 180ms ease, box-shadow 180ms ease, color 180ms ease; }

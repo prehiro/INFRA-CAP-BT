@@ -49,10 +49,10 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       // Dynamic header-icon props are not reliably discovered by the template scanner.
-      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:circle-pause', 'lucide:archive', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline'],
+      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:monitor-x', 'streamline-flex:desktop-screensaver-sleep', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline'],
       sizeLimitKb: 256
     },
-    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'andrsrxn'] },
+    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'streamline-flex', 'andrsrxn'] },
     provider: 'none',
     fallbackToApi: false
   },
