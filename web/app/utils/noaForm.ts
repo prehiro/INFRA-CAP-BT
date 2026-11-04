@@ -12,6 +12,17 @@ export type NoaInput = {
   who: string
 }
 
+export const DEFAULT_NOA_INPUT: Readonly<NoaInput> = {
+  changes: 'New LAN Point installation at ',
+  waste: DEFAULT_NOA_WASTE,
+  poNo: 'PTCAP__',
+  what: 'LAN Point installation at ',
+  why: 'Additional WiFi device to cover 2nd floor area',
+  where: 'Capacitor Building 2',
+  when: '23 Okt 2026 – 31 Des 2026',
+  who: 'PT DUTA COMPUTER'
+}
+
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 /** Use the user's local calendar month at the instant Generate is clicked. */

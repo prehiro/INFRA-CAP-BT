@@ -1,10 +1,62 @@
 <script setup lang="ts">
-import { DEFAULT_NOA_WASTE, generateNoaPdf, noaMonth, validateNoaInput } from '~/utils/noaForm'
+import { DEFAULT_NOA_INPUT, generateNoaPdf, noaMonth, validateNoaInput } from '~/utils/noaForm'
+import { chooseNoaRangeDay, displayNoaDate, formatNoaDateRange, noaMonthGrid, parseNoaDateRange } from '~/utils/noaDateRange'
 import type { NoaInput } from '~/utils/noaForm'
 import templateUrl from '~/assets/forms/noa-r3-template.pdf?url'
 
 const toast = useToast()
-const form = reactive<NoaInput>({ changes: '', waste: DEFAULT_NOA_WASTE, poNo: '', what: '', why: '', where: '', when: '', who: '' })
+const form = reactive<NoaInput>({ ...DEFAULT_NOA_INPUT })
+const whenOpen = ref(false)
+const whenFrom = ref('')
+const whenTo = ref('')
+const whenStep = ref<'from' | 'to'>('from')
+const today = new Date()
+const whenView = ref({ year: today.getFullYear(), month: today.getMonth() })
+const weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+const whenPanels = computed(() => [0, 1].map(offset => {
+  const date = new Date(whenView.value.year, whenView.value.month + offset, 1)
+  return {
+    key: `${date.getFullYear()}-${date.getMonth()}`,
+    title: new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric' }).format(date),
+    days: noaMonthGrid(date.getFullYear(), date.getMonth(), whenFrom.value, whenTo.value)
+  }
+}))
+const whenPreview = computed(() => formatNoaDateRange(whenFrom.value, whenTo.value))
+watch(whenOpen, (open) => {
+  if (!open) return
+  const range = parseNoaDateRange(form.when)
+  whenFrom.value = range?.from ?? ''
+  whenTo.value = range?.to ?? ''
+  whenStep.value = 'from'
+  const base = range?.from ?? ''
+  const month = base ? new Date(Number(base.slice(0, 4)), Number(base.slice(5, 7)) - 1, 1) : new Date()
+  whenView.value = { year: month.getFullYear(), month: month.getMonth() }
+})
+function focusWhen(which: 'from' | 'to') {
+  whenStep.value = which
+  const selected = which === 'from' ? whenFrom.value : whenTo.value
+  if (!selected) return
+  whenView.value = { year: Number(selected.slice(0, 4)), month: Number(selected.slice(5, 7)) - 1 }
+}
+function shiftWhenMonth(delta: number) {
+  const month = new Date(whenView.value.year, whenView.value.month + delta, 1)
+  whenView.value = { year: month.getFullYear(), month: month.getMonth() }
+}
+function pickWhen(value: string) {
+  const selection = chooseNoaRangeDay({ from: whenFrom.value, to: whenTo.value }, whenStep.value, value)
+  whenFrom.value = selection.range.from
+  whenTo.value = selection.range.to
+  whenStep.value = selection.nextStep
+}
+function applyWhen() {
+  if (!whenPreview.value) return
+  form.when = whenPreview.value
+  whenOpen.value = false
+}
+function clearWhen() {
+  form.when = ''
+  whenOpen.value = false
+}
 const generating = ref(false)
 const errorMessage = ref('')
 const currentMonth = ref(noaMonth(new Date()))
@@ -51,7 +103,7 @@ async function generate() {
   <UDashboardPanel id="noa-form" :ui="{ body: 'p-3 sm:pl-6 sm:pr-[39px] sm:pt-6 xl:pb-4 xl:pr-6' }">
     <template #header><PageHeader title="NOA" /></template>
     <template #body>
-      <form class="mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
+      <form class="noa-page-motion mx-auto flex w-full max-w-6xl flex-col gap-2" @submit.prevent="generate">
         <div class="mb-4 flex items-center gap-3">
           <span class="noa-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon size="lg" random-halo>
@@ -97,7 +149,99 @@ async function generate() {
             <div class="noa-description-fields space-y-2">
               <div v-for="field in descriptionFields" :key="field.key" class="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2">
                 <label class="text-sm font-medium" :for="`noa-${field.key}`">{{ field.label }} <span class="text-error">*</span></label>
-                <UInput :id="`noa-${field.key}`" v-model="form[field.key]" class="min-w-0 w-full" :disabled="generating" />
+                <UInput v-if="field.key !== 'when'" :id="`noa-${field.key}`" v-model="form[field.key]" class="min-w-0 w-full" :disabled="generating" />
+                <UInput v-else :id="`noa-${field.key}`" v-model="form.when" class="min-w-0 w-full"
+                  placeholder="23 Okt 2026 – 31 Des 2026" :disabled="generating">
+                  <template #trailing>
+                    <UPopover v-model:open="whenOpen" :content="{ align: 'end' }"
+                      :ui="{ content: 'max-h-[var(--reka-popper-available-height)] overflow-y-auto' }">
+                      <UButton type="button" size="xs" variant="ghost" color="neutral"
+                        class="noa-range-trigger" aria-label="Select date range" :disabled="generating">
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                          <rect width="18" height="18" x="3" y="3" rx="2" />
+                          <path d="M16 2v3M3 9h18M8 2v3m9 8h-6m2 4H7m0-4h.01M17 17h.01" />
+                        </svg>
+                      </UButton>
+                      <template #content>
+                        <div class="w-[min(19rem,calc(100vw-2rem))] p-3 sm:w-[35rem]">
+                          <div class="mb-3">
+                            <p class="text-sm font-semibold text-highlighted">Work schedule</p>
+                            <p class="text-xs text-muted">Choose a start date, then an end date.</p>
+                          </div>
+                          <div class="mb-3 grid grid-cols-2 gap-2">
+                            <button type="button" class="noa-range-choice min-w-0 rounded-lg border px-3 py-2 text-left transition-colors"
+                              :class="whenStep === 'from' ? 'border-primary/60 bg-primary/10' : 'border-default hover:bg-elevated'"
+                              :aria-pressed="whenStep === 'from'" @click="focusWhen('from')">
+                              <span class="block text-[11px] text-muted">Start date</span>
+                              <span class="block truncate text-sm font-medium">{{ displayNoaDate(whenFrom) || 'Select date' }}</span>
+                            </button>
+                            <button type="button" class="noa-range-choice min-w-0 rounded-lg border px-3 py-2 text-left transition-colors"
+                              :class="whenStep === 'to' ? 'border-primary/60 bg-primary/10' : 'border-default hover:bg-elevated'"
+                              :aria-pressed="whenStep === 'to'" @click="focusWhen('to')">
+                              <span class="block text-[11px] text-muted">End date</span>
+                              <span class="block truncate text-sm font-medium">{{ displayNoaDate(whenTo) || 'Select date' }}</span>
+                            </button>
+                          </div>
+                          <div class="mb-2 flex items-center justify-between">
+                            <UButton type="button" size="xs" variant="ghost" color="neutral" class="noa-range-nav noa-range-prev" aria-label="Previous month" @click="shiftWhenMonth(-1)">
+                              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                            </UButton>
+                            <span class="text-xs text-muted">{{ whenStep === 'from' ? 'Select start date' : 'Select end date' }}</span>
+                            <UButton type="button" size="xs" variant="ghost" color="neutral" class="noa-range-nav noa-range-next" aria-label="Next month" @click="shiftWhenMonth(1)">
+                              <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                            </UButton>
+                          </div>
+                          <div class="grid gap-3 sm:grid-cols-2">
+                            <div v-for="(panel, index) in whenPanels" :key="panel.key" :class="index === 1 ? 'hidden sm:block' : ''">
+                              <p class="mb-2 text-center text-sm font-semibold capitalize text-highlighted">{{ panel.title }}</p>
+                              <div class="mb-1 grid grid-cols-7 gap-0.5">
+                                <span v-for="weekday in weekdays" :key="weekday" class="text-center text-[10px] font-medium text-muted">{{ weekday }}</span>
+                              </div>
+                              <div class="grid grid-cols-7 gap-0.5">
+                                <button v-for="day in panel.days" :key="day.iso" type="button"
+                                  class="noa-range-day h-8 rounded-md text-xs tabular-nums transition-colors hover:bg-elevated focus-visible:outline-2 focus-visible:outline-primary"
+                                  :class="[
+                                    day.inMonth ? 'text-default' : 'text-muted/40',
+                                    day.between ? 'bg-primary/10 text-primary' : '',
+                                    day.isStart || day.isEnd ? 'bg-primary font-semibold text-primary-contrast hover:bg-primary' : ''
+                                  ]"
+                                  :aria-label="displayNoaDate(day.iso) || day.iso" :aria-pressed="day.isStart || day.isEnd"
+                                  @click="pickWhen(day.iso)">{{ day.day }}</button>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="sticky bottom-0 z-10 -mx-3 mt-3 flex items-center justify-between gap-2 border-t border-default bg-default px-3 pb-1 pt-3">
+                            <UButton type="button" size="xs" variant="ghost" color="error" label="Clear"
+                              class="trash-bin-hover" @click="clearWhen">
+                              <template #leading><TrashBinIcon class="size-4" data-slot="leadingIcon" /></template>
+                            </UButton>
+                            <div class="flex items-center gap-2">
+                              <UButton type="button" size="xs" variant="ghost" color="neutral" label="Cancel"
+                                class="cancel-hover" @click="whenOpen = false">
+                                <template #leading>
+                                  <svg class="size-4" data-slot="leadingIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+                                    <path d="M18 6 6 18M6 6l12 12" />
+                                  </svg>
+                                </template>
+                              </UButton>
+                              <UButton type="button" size="xs" label="Apply" :disabled="!whenPreview"
+                                class="record-save-hover stable-hover-hitbox" @click="applyWhen">
+                                <template #leading>
+                                  <svg class="size-4" data-slot="leadingIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                    <path d="m20 6-11 11-5-5" />
+                                  </svg>
+                                </template>
+                              </UButton>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                    </UPopover>
+                  </template>
+                </UInput>
               </div>
               <div class="rounded-lg border border-default bg-elevated/50 px-3 py-2">
                 <p class="text-xs font-semibold text-highlighted">6. How <span class="font-normal text-muted">· Fixed from the master</span></p>
@@ -117,11 +261,53 @@ async function generate() {
 </template>
 
 <style scoped>
+/* Reveal only the three stable form sections on route entry, like Issued Form. */
+.noa-page-motion > * {
+  animation: noa-page-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.noa-page-motion > :nth-child(2) { animation-delay: 70ms; }
+.noa-page-motion > :nth-child(3) { animation-delay: 140ms; }
+@keyframes noa-page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce), print {
+  .noa-page-motion > * { animation: none !important; opacity: 1; transform: none !important; }
+}
+
 /* Keep the issued-form title position and 24px gap even on short screens.
    Reclaim height inside NOA's right card, without affecting other pages. */
 @media (max-height: 600px) {
   .noa-description-card :deep([data-slot="header"]),
   .noa-description-card :deep([data-slot="body"]) { padding-block: 12px; }
   .noa-description-fields > :not(:last-child) { margin-bottom: 4px; }
+}
+
+/* Only the NOA range picker moves; the form and button hitboxes stay put. */
+.noa-range-trigger :deep(svg),
+.noa-range-nav :deep(svg) { transition: transform 180ms ease-out; }
+.noa-range-choice,
+.noa-range-day { transition: transform 180ms ease-out, background-color 150ms ease, color 150ms ease, border-color 150ms ease; }
+
+@media (hover: hover) and (pointer: fine) {
+  .noa-range-trigger:not(:disabled):hover :deep(svg) { transform: scale(1.12) rotate(-7deg); }
+  .noa-range-choice:hover,
+  .noa-range-day:hover { transform: translateY(-2px); }
+  .noa-range-prev:not(:disabled):hover :deep(svg) { transform: translateX(-2px); }
+  .noa-range-next:not(:disabled):hover :deep(svg) { transform: translateX(2px); }
+}
+.noa-range-trigger:not(:disabled):focus-visible :deep(svg) { transform: scale(1.12) rotate(-7deg); }
+.noa-range-choice:focus-visible,
+.noa-range-day:focus-visible { transform: translateY(-2px); }
+.noa-range-prev:not(:disabled):focus-visible :deep(svg) { transform: translateX(-2px); }
+.noa-range-next:not(:disabled):focus-visible :deep(svg) { transform: translateX(2px); }
+.noa-range-choice:active,
+.noa-range-day:active { transform: translateY(0) scale(.96); }
+
+@media (prefers-reduced-motion: reduce), print {
+  .noa-range-trigger :deep(svg),
+  .noa-range-nav :deep(svg),
+  .noa-range-choice,
+  .noa-range-day { transition: none !important; transform: none !important; }
 }
 </style>
