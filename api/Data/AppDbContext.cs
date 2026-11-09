@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
     public DbSet<Record> Records => Set<Record>();
     public DbSet<RecordValue> RecordValues => Set<RecordValue>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<NetworkFloorMap> NetworkFloorMaps => Set<NetworkFloorMap>();
+    public DbSet<NetworkAccessPoint> NetworkAccessPoints => Set<NetworkAccessPoint>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -79,6 +81,21 @@ public class AppDbContext : DbContext
             e.Property(x => x.NumberValue).HasPrecision(18, 4);
         });
 
+        b.Entity<NetworkFloorMap>(e =>
+        {
+            e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.Property(x => x.ImageContentType).HasMaxLength(30).IsRequired();
+            e.Property(x => x.ImageBytes).HasColumnType("varbinary(max)").IsRequired();
+        });
+        b.Entity<NetworkAccessPoint>(e =>
+        {
+            e.HasOne(x => x.FloorMap).WithMany(x => x.AccessPoints)
+                .HasForeignKey(x => x.FloorMapId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.FloorMapId);
+            e.Property(x => x.Hostname).HasMaxLength(160).IsRequired();
+            e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
+            e.Property(x => x.Position).HasMaxLength(200).IsRequired();
+        });
         b.Entity<AuditEntry>(e =>
         {
             // The Log Audit page always reads newest-first with a date filter, so the

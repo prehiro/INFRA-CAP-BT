@@ -1,0 +1,409 @@
+<script setup lang="ts">
+import type { AccessPoint, AccessPointInput, FloorMapDetail, FloorMapSummary } from '~/types'
+
+const { isAdmin } = useAuth()
+const toast = useToast()
+const floors = ref<FloorMapSummary[]>([])
+const activeId = ref<number | null>(null)
+const floor = ref<FloorMapDetail | null>(null)
+const imageUrl = ref('')
+const selectedId = ref<number | null>(null)
+const loading = ref(true)
+const busy = ref(false)
+const error = ref('')
+const uploadName = ref('')
+const uploadFile = ref<File | null>(null)
+const uploadInput = ref<HTMLInputElement | null>(null)
+const uploadPreviewUrl = ref('')
+const uploadError = ref('')
+const showUpload = ref(false)
+const showEditor = ref(false)
+const showDetails = ref(false)
+const detailError = ref('')
+const editingId = ref<number | null>(null)
+const editorError = ref('')
+const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', x: 0.5, y: 0.5 })
+const mapEl = ref<HTMLElement | null>(null)
+const selectedPoint = computed(() => floor.value?.accessPoints.find(p => p.id === selectedId.value) ?? null)
+let loadVersion = 0
+let suppressMarkerClickId: number | null = null
+let suppressMarkerClickUntil = 0
+let drag: { id: number; mapId: number; pointer: number; startX: number; startY: number; clientX: number; clientY: number; moved: boolean } | null = null
+
+watch(showUpload, open => {
+  if (open) return
+  uploadName.value = ''; uploadFile.value = null; uploadError.value = ''
+  if (uploadInput.value) uploadInput.value.value = ''
+  setUploadPreviewUrl('')
+})
+watch(showDetails, open => { if (!open) selectedId.value = null })
+
+function message(e: any): string { return e?.data?.message || e?.message || 'The request could not be completed.' }
+function setImageUrl(url: string) {
+  if (imageUrl.value) URL.revokeObjectURL(imageUrl.value)
+  imageUrl.value = url
+}
+function setUploadPreviewUrl(url: string) {
+  if (uploadPreviewUrl.value) URL.revokeObjectURL(uploadPreviewUrl.value)
+  uploadPreviewUrl.value = url
+}
+async function loadFloor(id: number) {
+  const version = ++loadVersion
+  showDetails.value = false
+  showEditor.value = false
+  activeId.value = id
+  floor.value = null
+  selectedId.value = null
+  setImageUrl('')
+  error.value = ''
+  try {
+    const [detail, blob] = await Promise.all([apiGetNetworkFloor(id), apiGetNetworkFloorImage(id)])
+    if (version !== loadVersion) return
+    floor.value = detail
+    setImageUrl(URL.createObjectURL(blob))
+  } catch (e) { if (version === loadVersion) error.value = message(e) }
+}
+async function refresh(preferId?: number) {
+  loading.value = true
+  error.value = ''
+  try {
+    floors.value = await apiListNetworkFloors()
+    const next = preferId && floors.value.some(f => f.id === preferId) ? preferId
+      : floors.value.some(f => f.id === activeId.value) ? activeId.value! : floors.value[0]?.id
+    if (next) await loadFloor(next)
+    else { ++loadVersion; activeId.value = null; floor.value = null; setImageUrl('') }
+  } catch (e) { error.value = message(e) }
+  finally { loading.value = false }
+}
+onMounted(() => { void refresh() })
+onBeforeUnmount(() => { ++loadVersion; setImageUrl(''); setUploadPreviewUrl('') })
+
+function pickImage(event: Event) {
+  uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
+  uploadError.value = ''
+  setUploadPreviewUrl(uploadFile.value && ['image/png', 'image/jpeg', 'image/webp'].includes(uploadFile.value.type)
+    ? URL.createObjectURL(uploadFile.value) : '')
+}
+async function createFloor() {
+  if (!isAdmin.value || busy.value) return
+  if (!uploadName.value.trim() || !uploadFile.value) { uploadError.value = 'Enter a floor name and choose a plan image.'; return }
+  if (uploadFile.value.size > 8 * 1024 * 1024) { uploadError.value = 'The image must be smaller than 8 MB.'; return }
+  busy.value = true; uploadError.value = ''
+  try {
+    const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadFile.value)
+    showUpload.value = false
+    await refresh(created.id)
+    toast.add({ title: 'Floor plan added', color: 'primary' })
+  } catch (e) { uploadError.value = message(e) }
+  finally { busy.value = false }
+}
+async function deleteFloor() {
+  if (!isAdmin.value || !floor.value || busy.value) return
+  const id = floor.value.id
+  if (!window.confirm(`Delete “${floor.value.name}” and all its access points?`)) return
+  busy.value = true; error.value = ''
+  try {
+    await apiDeleteNetworkFloor(id)
+    activeId.value = null
+    await refresh()
+    toast.add({ title: 'Floor plan deleted', color: 'primary' })
+  } catch (e) { error.value = message(e) }
+  finally { busy.value = false }
+}
+function openAdd(x = 0.5, y = 0.5) {
+  if (!isAdmin.value || !floor.value || busy.value) return
+  showDetails.value = false
+  editingId.value = null
+  Object.assign(draft, { hostname: '', ipAddress: '', position: '', x, y })
+  editorError.value = ''; showEditor.value = true
+}
+function openDetails(point: AccessPoint) {
+  if (point.id === suppressMarkerClickId && performance.now() < suppressMarkerClickUntil) return
+  selectedId.value = point.id
+  detailError.value = ''
+  showDetails.value = true
+}
+function openEdit(point: AccessPoint) {
+  if (!isAdmin.value || busy.value) return
+  showDetails.value = false
+  editingId.value = point.id
+  Object.assign(draft, { hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, x: point.x, y: point.y })
+  editorError.value = ''; showEditor.value = true
+}
+async function savePoint() {
+  if (!isAdmin.value || !floor.value || busy.value) return
+  if (!draft.hostname.trim() || !draft.ipAddress.trim()) { editorError.value = 'Hostname and IP address are required.'; return }
+  const id = floor.value.id
+  busy.value = true; editorError.value = ''
+  try {
+    const payload = { ...draft, hostname: draft.hostname.trim(), ipAddress: draft.ipAddress.trim(), position: draft.position.trim() }
+    const saved = editingId.value === null ? await apiCreateAccessPoint(id, payload)
+      : await apiUpdateAccessPoint(id, editingId.value, payload)
+    if (floor.value?.id === id) {
+      const index = floor.value.accessPoints.findIndex(p => p.id === saved.id)
+      if (index < 0) floor.value.accessPoints.push(saved)
+      else floor.value.accessPoints[index] = saved
+      selectedId.value = saved.id
+    }
+    floors.value = floors.value.map(f => f.id === id ? { ...f, accessPointCount: floor.value?.accessPoints.length ?? 0 } : f)
+    showEditor.value = false
+    toast.add({ title: editingId.value === null ? 'Access point added' : 'Access point updated', color: 'primary' })
+  } catch (e) { editorError.value = message(e) }
+  finally { busy.value = false }
+}
+async function deletePoint() {
+  if (!isAdmin.value || !floor.value || !selectedPoint.value || busy.value) return
+  const id = floor.value.id, point = selectedPoint.value
+  if (!window.confirm(`Delete access point “${point.hostname}”?`)) return
+  busy.value = true; error.value = ''
+  try {
+    await apiDeleteAccessPoint(id, point.id)
+    if (floor.value?.id === id) floor.value.accessPoints = floor.value.accessPoints.filter(p => p.id !== point.id)
+    floors.value = floors.value.map(f => f.id === id ? { ...f, accessPointCount: floor.value?.accessPoints.length ?? 0 } : f)
+    selectedId.value = null; showEditor.value = false; showDetails.value = false
+    toast.add({ title: 'Access point deleted', color: 'primary' })
+  } catch (e) { detailError.value = message(e) }
+  finally { busy.value = false }
+}
+function placeOnMap(event: MouseEvent) {
+  if (!isAdmin.value || !mapEl.value || event.target !== mapEl.value && event.target !== mapEl.value.querySelector('img')) return
+  const rect = mapEl.value.getBoundingClientRect()
+  openAdd(Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)),
+    Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)))
+}
+function pointerDown(event: PointerEvent, point: AccessPoint) {
+  selectedId.value = point.id
+  if (!isAdmin.value || !floor.value || busy.value) return
+  event.preventDefault()
+  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  drag = { id: point.id, mapId: floor.value.id, pointer: event.pointerId, startX: point.x, startY: point.y,
+    clientX: event.clientX, clientY: event.clientY, moved: false }
+}
+function pointerMove(event: PointerEvent, point: AccessPoint) {
+  if (!drag || drag.pointer !== event.pointerId || drag.id !== point.id || drag.mapId !== floor.value?.id || !mapEl.value) return
+  const dx = event.clientX - drag.clientX, dy = event.clientY - drag.clientY
+  if (!drag.moved && Math.hypot(dx, dy) < 4) return
+  drag.moved = true
+  const rect = mapEl.value.getBoundingClientRect()
+  point.x = Math.max(0, Math.min(1, Math.round((drag.startX + dx / rect.width) * 10000) / 10000))
+  point.y = Math.max(0, Math.min(1, Math.round((drag.startY + dy / rect.height) * 10000) / 10000))
+}
+async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = false) {
+  if (!drag || drag.pointer !== event.pointerId || drag.id !== point.id) return
+  const current = drag; drag = null
+  if (current.moved) { suppressMarkerClickId = point.id; suppressMarkerClickUntil = performance.now() + 250 }
+  if (cancelled) { point.x = current.startX; point.y = current.startY; return }
+  if (!current.moved || current.mapId !== floor.value?.id) return
+  try {
+    const saved = await apiMoveAccessPoint(current.mapId, point.id, point.x, point.y)
+    if (floor.value?.id === current.mapId) { point.x = saved.x; point.y = saved.y }
+  } catch (e) {
+    if (floor.value?.id === current.mapId) { point.x = current.startX; point.y = current.startY }
+    error.value = message(e)
+  }
+}
+</script>
+
+<template>
+  <UDashboardPanel id="network-access-point" :ui="{ body: 'p-4 sm:p-6' }">
+    <template #header><PageHeader title="Access Point" /></template>
+    <template #body>
+      <div class="mx-auto w-full max-w-[1500px] space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-semibold text-highlighted">Access Point</h2>
+            <p class="mt-1 text-sm text-muted">Place access points on a floor plan. Select a marker to see its network details.</p>
+          </div>
+          <UButton v-if="isAdmin" type="button" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
+        </div>
+
+        <p v-if="error" role="alert" class="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ error }}</p>
+        <div v-if="loading" class="py-10 text-center text-sm text-muted">Loading floor plans…</div>
+        <UCard v-else-if="!floors.length" :ui="{ body: 'p-10 text-center' }">
+          <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary"><UIcon name="i-lucide-wifi" class="size-7" /></div>
+          <h3 class="mt-4 font-semibold text-highlighted">No floor plans yet</h3>
+          <p class="mt-1 text-sm text-muted">{{ isAdmin ? 'Upload a plan to start mapping access points.' : 'An administrator can add the first floor plan.' }}</p>
+        </UCard>
+        <template v-else>
+          <div class="flex gap-2 overflow-x-auto pb-1" aria-label="Floor plans">
+            <button v-for="item in floors" :key="item.id" type="button"
+              class="ap-floor-tab shrink-0 rounded-lg border px-3 py-2 text-left text-sm transition-colors"
+              :class="activeId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-default bg-default text-muted hover:border-primary/40 hover:text-highlighted'"
+              :aria-pressed="activeId === item.id" @click="loadFloor(item.id)">
+              <span class="block font-semibold">{{ item.name }}</span>
+              <span class="flex items-center gap-1 text-xs opacity-70"><UIcon name="i-lucide-wifi" class="ap-tab-icon size-3" aria-hidden="true" />{{ item.accessPointCount }} AP</span>
+            </button>
+          </div>
+          <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
+            <UCard :ui="{ body: 'p-3 sm:p-4', header: 'px-4 py-3' }" class="min-w-0">
+              <template #header>
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div><h3 class="font-semibold text-highlighted">{{ floor?.name ?? 'Loading plan…' }}</h3><p class="text-xs text-muted">{{ isAdmin ? 'Click a marker for details. Drag to move it, or click the plan to add an AP.' : 'Click a marker to view its details.' }}</p></div>
+                  <div v-if="isAdmin && floor" class="flex gap-2">
+                    <UButton type="button" size="xs" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAdd()">Add AP</UButton>
+                    <UButton type="button" size="xs" icon="i-lucide-trash-2" color="error" variant="ghost" class="record-delete-hover ap-stable-action" :disabled="busy" @click="deleteFloor">Delete plan</UButton>
+                  </div>
+                </div>
+              </template>
+              <div v-if="floor && imageUrl" ref="mapEl" class="relative mx-auto w-full max-w-[1100px] overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
+                <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-auto w-full select-none" />
+                <button v-for="point in floor.accessPoints" :key="point.id" type="button"
+                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
+                  :class="[selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
+                  :style="{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }" :aria-label="`${point.hostname}, ${point.ipAddress}${point.position ? `, ${point.position}` : ''}`"
+                  :title="point.hostname" @click.stop="openDetails(point)" @pointerdown.stop="pointerDown($event, point)" @pointermove="pointerMove($event, point)" @pointerup="pointerUp($event, point)" @pointercancel="pointerUp($event, point, true)">
+                  <span class="ap-marker-ping absolute -inset-1 rounded-full border-2" aria-hidden="true" />
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="relative z-10 size-4 pointer-events-none">
+                    <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
+                    <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
+                    <path d="M8.5 15.2a5 5 0 0 1 7 0" />
+                    <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </button>
+              </div>
+              <p v-else class="py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
+            </UCard>
+            <div class="space-y-4">
+              <UCard v-if="floor?.accessPoints.length" :ui="{ header: 'px-4 py-3', body: 'p-0' }">
+                <template #header>
+                  <h3 class="font-semibold text-highlighted">Devices · {{ floor.accessPoints.length }}</h3>
+                  <p class="mt-0.5 text-xs text-muted">Click a marker on the plan to view details.</p>
+                </template>
+                <div v-for="point in floor.accessPoints" :key="point.id" class="flex items-center gap-3 border-b border-default px-4 py-3 last:border-b-0">
+                  <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><UIcon name="i-lucide-wifi" class="size-4" /></span>
+                  <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-highlighted">{{ point.hostname }}</p><p class="truncate text-xs text-muted">{{ point.position || 'Location not specified' }}</p></div>
+                  <span class="max-w-24 truncate font-mono text-xs text-muted" :title="point.ipAddress">{{ point.ipAddress }}</span>
+                </div>
+              </UCard>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <UModal v-if="isAdmin" v-model:open="showUpload" title="Add floor plan" description="Upload an image and give this map a clear name." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+        <template #body>
+          <form class="space-y-4" @submit.prevent="createFloor">
+            <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
+              <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon name="i-lucide-upload" class="size-5" /></span>
+              <p>Upload a floor image, then place access points directly on the plan.</p>
+            </div>
+            <div><label for="floor-name" class="mb-1.5 block text-sm font-medium text-highlighted">Floor name</label><UInput id="floor-name" v-model="uploadName" placeholder="e.g. Building A · Level 2" class="w-full" :disabled="busy" maxlength="120" /></div>
+            <div>
+              <label for="floor-image" class="mb-1.5 block text-sm font-medium text-highlighted">Floor-plan image</label>
+              <input id="floor-image" ref="uploadInput" type="file" accept="image/png,image/jpeg,image/webp" class="block w-full rounded-lg border border-dashed border-default bg-elevated/40 px-3 py-3 text-sm text-highlighted file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-primary" :disabled="busy" @change="pickImage" />
+              <p class="mt-1.5 text-xs text-muted">PNG, JPG or WebP · up to 8 MB</p>
+              <div v-if="uploadPreviewUrl" class="mt-3 overflow-hidden rounded-lg border border-default bg-elevated p-2">
+                <img :src="uploadPreviewUrl" alt="Preview of selected floor plan" class="h-36 w-full object-contain" />
+                <p class="mt-1.5 truncate text-xs text-muted">{{ uploadFile?.name }}</p>
+              </div>
+            </div>
+            <p role="alert" class="min-h-5 text-sm text-error">{{ uploadError }}</p>
+            <div class="flex justify-end gap-2 border-t border-default pt-4">
+              <UButton type="button" color="red" variant="ghost" icon="basil:cancel-outline" class="cancel-hover" :disabled="busy" @click="showUpload = false">Cancel</UButton>
+              <UButton type="submit" icon="i-lucide-upload" class="record-save-hover stable-hover-hitbox" :loading="busy" :disabled="busy">Upload plan</UButton>
+            </div>
+          </form>
+        </template>
+      </UModal>
+
+      <UModal v-if="isAdmin" v-model:open="showEditor" :title="editingId === null ? 'Add access point' : 'Edit access point'" :description="editingId === null ? 'Place a network device on this floor plan.' : 'Update this device’s network details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+        <template #body>
+          <form class="space-y-4" @submit.prevent="savePoint">
+            <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+              <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showEditor }"><UIcon name="i-lucide-wifi" class="size-5" /></span>
+              <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p><p class="text-xs text-muted">Position: {{ Math.round(draft.x * 100) }}% across · {{ Math.round(draft.y * 100) }}% down</p></div>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div><label for="ap-hostname" class="mb-1.5 block text-sm font-medium text-highlighted">Hostname</label><UInput id="ap-hostname" v-model="draft.hostname" class="w-full" maxlength="160" placeholder="e.g. AP-L2-01" :disabled="busy" /></div>
+              <div><label for="ap-ip" class="mb-1.5 block text-sm font-medium text-highlighted">IP address</label><UInput id="ap-ip" v-model="draft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.10" :disabled="busy" /></div>
+            </div>
+            <div><label for="ap-position" class="mb-1.5 block text-sm font-medium text-highlighted">Position / location</label><UInput id="ap-position" v-model="draft.position" class="w-full" maxlength="200" placeholder="e.g. North corridor ceiling" :disabled="busy" /></div>
+            <p class="text-xs text-muted">You can drag the marker on the plan to adjust its position later.</p>
+            <p role="alert" class="min-h-5 text-sm text-error">{{ editorError }}</p>
+            <div class="flex justify-end gap-2 border-t border-default pt-4">
+              <UButton type="button" color="red" variant="ghost" icon="basil:cancel-outline" class="cancel-hover" :disabled="busy" @click="showEditor = false">Cancel</UButton>
+              <UButton type="submit" :icon="editingId === null ? 'i-lucide-plus' : 'i-lucide-pencil'" :class="editingId === null ? 'record-add-hover stable-hover-hitbox' : 'record-save-hover stable-hover-hitbox'" :loading="busy" :disabled="busy">{{ editingId === null ? 'Add AP' : 'Save changes' }}</UButton>
+            </div>
+          </form>
+        </template>
+      </UModal>
+
+      <UModal v-model:open="showDetails" title="Access point details" description="Selected marker on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md', body: 'p-4 sm:p-5' }">
+        <template #body>
+          <div v-if="selectedPoint" class="space-y-4">
+            <div class="flex items-center gap-3">
+              <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'ap-modal-icon-active': showDetails }"><UIcon name="i-lucide-wifi" class="size-6" /></span>
+              <div class="min-w-0"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedPoint.hostname }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
+            </div>
+            <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
+              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">IP address</dt><dd class="break-all font-mono text-highlighted">{{ selectedPoint.ipAddress }}</dd></div>
+              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Location</dt><dd class="break-words text-highlighted">{{ selectedPoint.position || 'Not specified' }}</dd></div>
+            </dl>
+            <p v-if="isAdmin" role="alert" class="min-h-5 text-sm text-error">{{ detailError }}</p>
+            <div class="flex justify-end gap-2 border-t border-default pt-4">
+              <UButton type="button" color="neutral" variant="ghost" icon="i-lucide-x" class="ap-close-action" :disabled="busy" @click="showDetails = false">Close</UButton>
+              <template v-if="isAdmin">
+                <UButton type="button" icon="i-lucide-pencil" variant="soft" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openEdit(selectedPoint)">Edit</UButton>
+                <UButton type="button" icon="i-lucide-trash-2" color="error" variant="soft" class="record-delete-hover ap-stable-action" :disabled="busy" @click="deletePoint">Delete</UButton>
+              </template>
+            </div>
+          </div>
+        </template>
+      </UModal>
+    </template>
+  </UDashboardPanel>
+</template>
+
+<style scoped>
+/* Only actions on this map opt in; keep button hitboxes fixed during hover. */
+.ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+.ap-floor-tab :deep(.ap-tab-icon) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.ap-close-action :deep([data-slot='leadingIcon']) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.ap-marker > svg { transition: transform 200ms ease-out; }
+.ap-modal-icon-active { animation: ap-icon-arrive 420ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes ap-icon-arrive {
+  from { transform: scale(.88) rotate(-9deg); opacity: .55; }
+  to { transform: scale(1) rotate(0); opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .ap-floor-tab:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 14%, transparent); }
+  .ap-floor-tab:hover :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
+  .ap-close-action:not(:disabled):hover :deep([data-slot='leadingIcon']) { transform: scale(1.14) rotate(12deg); }
+  .ap-marker:hover:not(:active) > svg { transform: scale(1.12); }
+}
+.ap-floor-tab:focus-visible :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
+.ap-marker:focus-visible > svg { transform: scale(1.12); }
+.ap-stable-action.record-delete-hover:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .ap-floor-tab, .ap-floor-tab :deep(.ap-tab-icon),
+  .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
+  .ap-modal-icon-active { animation: none; }
+}
+
+/* Fade each arc in and back out: one → two → three → two → one, without a hard cut. */
+.ap-wifi-mid { animation: ap-wifi-middle 2.7s ease-in-out infinite; }
+.ap-wifi-outer { animation: ap-wifi-outer 2.7s ease-in-out infinite; }
+@keyframes ap-wifi-middle {
+  0%, 14%, 95%, 100% { opacity: .12; }
+  27%, 82% { opacity: 1; }
+}
+@keyframes ap-wifi-outer {
+  0%, 38%, 77%, 100% { opacity: .12; }
+  51%, 64% { opacity: 1; }
+}
+.ap-marker-ping {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ui-primary) 75%, transparent),
+              0 0 16px 4px color-mix(in srgb, var(--ui-primary) 30%, transparent);
+  pointer-events: none;
+  animation: ap-marker-breathe 2.7s ease-in-out infinite;
+}
+@keyframes ap-marker-breathe {
+  0%, 100% { opacity: .2; transform: scale(.92); }
+  50% { opacity: .65; transform: scale(1.27); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
+  .ap-marker-ping { animation: none; opacity: 0; }
+}
+</style>

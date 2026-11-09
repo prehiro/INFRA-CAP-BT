@@ -1,3 +1,22 @@
+export interface AccessPoint {
+  id: number
+  hostname: string
+  ipAddress: string
+  position: string
+  x: number
+  y: number
+}
+export type AccessPointInput = Omit<AccessPoint, 'id'>
+export interface FloorMapSummary {
+  id: number
+  name: string
+  createdAt: string
+  accessPointCount: number
+}
+export interface FloorMapDetail extends Omit<FloorMapSummary, 'accessPointCount'> {
+  accessPoints: AccessPoint[]
+}
+
 export interface Role {
   id: number
   name: string

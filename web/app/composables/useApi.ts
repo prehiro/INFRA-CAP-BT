@@ -1,5 +1,6 @@
 import type {
-  AuditPage, EntityMeta, FieldMeta, LoginResponse, MetricsSnapshot, RecordPage, RecordRow, User
+  AuditPage, EntityMeta, FieldMeta, LoginResponse, MetricsSnapshot, RecordPage, RecordRow, User,
+  FloorMapSummary, FloorMapDetail, AccessPoint, AccessPointInput
 } from '~/types'
 
 /**
@@ -55,6 +56,28 @@ export const apiLogin = (username: string, password: string) =>
   request<LoginResponse>('/auth/login', { method: 'POST', body: { username, password } })
 
 export const apiMe = () => request<User>('/auth/me')
+
+export const apiListNetworkFloors = () => request<FloorMapSummary[]>('/network/floor-maps')
+export const apiGetNetworkFloor = (id: number) => request<FloorMapDetail>(`/network/floor-maps/${id}`)
+export const apiGetNetworkFloorImage = (id: number) => $fetch<Blob>(`/network/floor-maps/${id}/image`, {
+  baseURL: useRuntimeConfig().public.apiBase,
+  responseType: 'blob', headers: authHeaders()
+})
+export const apiCreateNetworkFloor = (name: string, image: File) => {
+  const body = new FormData()
+  body.set('name', name)
+  body.set('image', image)
+  return request<FloorMapSummary>('/network/floor-maps', { method: 'POST', body })
+}
+export const apiDeleteNetworkFloor = (id: number) => request<void>(`/network/floor-maps/${id}`, { method: 'DELETE' })
+export const apiCreateAccessPoint = (floorId: number, point: AccessPointInput) =>
+  request<AccessPoint>(`/network/floor-maps/${floorId}/access-points`, { method: 'POST', body: point })
+export const apiUpdateAccessPoint = (floorId: number, id: number, point: AccessPointInput) =>
+  request<AccessPoint>(`/network/floor-maps/${floorId}/access-points/${id}`, { method: 'PUT', body: point })
+export const apiMoveAccessPoint = (floorId: number, id: number, x: number, y: number) =>
+  request<AccessPoint>(`/network/floor-maps/${floorId}/access-points/${id}/position`, { method: 'PATCH', body: { x, y } })
+export const apiDeleteAccessPoint = (floorId: number, id: number) =>
+  request<void>(`/network/floor-maps/${floorId}/access-points/${id}`, { method: 'DELETE' })
 
 // ---- host metrics (Dashboard System Metrics panel) ----
 

@@ -282,6 +282,75 @@ namespace Api.Data.Migrations
                     b.ToTable("Fields");
                 });
 
+            modelBuilder.Entity("Api.Domain.NetworkAccessPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FloorMapId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Hostname")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<double>("X")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Y")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FloorMapId");
+
+                    b.ToTable("NetworkAccessPoints");
+                });
+
+            modelBuilder.Entity("Api.Domain.NetworkFloorMap", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("ImageBytes")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<string>("ImageContentType")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NetworkFloorMaps");
+                });
+
             modelBuilder.Entity("Api.Domain.Record", b =>
                 {
                     b.Property<long>("Id")
@@ -388,6 +457,17 @@ namespace Api.Data.Migrations
                     b.Navigation("Entity");
                 });
 
+            modelBuilder.Entity("Api.Domain.NetworkAccessPoint", b =>
+                {
+                    b.HasOne("Api.Domain.NetworkFloorMap", "FloorMap")
+                        .WithMany("AccessPoints")
+                        .HasForeignKey("FloorMapId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FloorMap");
+                });
+
             modelBuilder.Entity("Api.Domain.Record", b =>
                 {
                     b.HasOne("Api.Domain.DynamicEntity", "Entity")
@@ -433,6 +513,11 @@ namespace Api.Data.Migrations
                     b.Navigation("Fields");
 
                     b.Navigation("Records");
+                });
+
+            modelBuilder.Entity("Api.Domain.NetworkFloorMap", b =>
+                {
+                    b.Navigation("AccessPoints");
                 });
 
             modelBuilder.Entity("Api.Domain.Record", b =>
