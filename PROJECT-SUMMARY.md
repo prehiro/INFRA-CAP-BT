@@ -1,7 +1,11 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-11-04
+> Terakhir diupdate: 2026-11-09
+
+### Networks / Access Point — publikasi GitHub (2026-11-09)
+
+HIRO menyetujui push sumber `c0ec71e` (11 file) untuk fitur `/networks/access-point` dan animasi tombol/ikon halaman itu. Sidebar **Networks → Access Point** dan pencarian navigasi membuka denah bergambar; Admin dapat mengunggah PNG/JPEG/WebP ≤8 MB, menambah/mengedit/menghapus AP, serta drag marker. API membatasi mutasi pada Admin, memvalidasi signature gambar/IP/koordinat, dan menyimpan gambar/AP di SQL Server lewat migrasi `AddNetworkFloorMaps`; pembacaan butuh login. Posisi marker berupa fraksi dimensi gambar agar responsif. Add floor plan dan Add AP/Edit AP memakai UModal dengan preview/validasi; detail AP hanya muncul ketika marker diklik, sedangkan daftar perangkat hanya ringkasan. Sinyal Wi-Fi marker berulang halus 1→2→3→2→1 bar, ring bernapas dengan glow accent, dan tombol aksi/ikon halaman mendapat animasi hover/focus opt-in (bukan CSS global), hitbox tetap, reduced motion statis. QA browser menguji upload/tambah AP memakai denah sementara yang kemudian dihapus (GET detail 404, daftar tinggal BUILDING 1 dengan 2 AP), modal, klik marker, dark/light/mobile, motion dan reduced motion. 95/95 tes frontend, production build Nuxt, build API, dan diff-check lulus; build API masih melaporkan dua advisory lama `System.Security.Cryptography.Pkcs` 9.0.4 (NU1902/NU1903), tanpa perubahan dependensi dalam fitur ini. Belum ada fitur mengganti gambar pada floor plan yang sama; menghapus floor plan saat ini juga menghapus seluruh AP terkait. Push GitHub bukan deployment IIS. Perubahan lokal tak terkait `web/package-lock.json` (`@iconify-json/basil`) sengaja tidak disertakan.
 
 ### NOA: default editable, kalender rentang, dan entrance — publikasi GitHub (2026-11-04)
 
