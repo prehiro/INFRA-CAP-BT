@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-09
 
+### Networks / Access Point — animasi Wi-Fi marker: titik → 1 → 2 → 3 bar (2026-11-09)
+
+HIRO meminta animasi Wi-Fi marker berubah urutannya dari titik, 1 bar, 2 bar, 3 bar (sebelumnya bar 1 selalu menyala sehingga titik tidak pernah terlihat sendirian). Arc dalam kini mendapat kelas `ap-wifi-inner` dan ikut beranimasi: siklus 2,7 detik mulai dari titik saja, lalu bar dalam menyala (1 bar), bar tengah (2 bar), bar luar (3 bar), kemudian memudar kembali ke titik. Reduced-motion menampilkan ketiga bar sekaligus. Verifikasi browser dengan sampling opacity: terlihat fase titik saja (0,16/0,12/0,12), 1 bar (1/0,12/0,12), 2 bar (1/1/0,12), 3 bar (1/1/0,99), lalu kembali ke titik. Marker tetap design awal hasil revert.
+
 ### Networks / Access Point — marker revert ke design awal (2026-11-09)
 
 HIRO menginstruksikan revert marker AP ke design awal setelah rangkaian redesign pin/sonar ditolak. Marker dikembalikan persis seperti semula (dari git history `79609b6^`): disc `bg-primary` dengan `border-2 border-white`, ikon Wi-Fi langsung di dalam disc, dan ring ping breathing dengan glow accent (`ap-marker-breathe`); seluruh markup/CSS pin, disc terpisah, ekor, dan sonar dihapus (grep nol referensi). Ikon judul sheet-header dan layout fit-to-screen tidak ikut revert karena itu permintaan terpisah yang sudah disetujui. Verifikasi browser: 2 marker render dengan border 2px putih, background accent, animasi `ap-marker-breathe`, dan nol elemen pin/disc. Compile OK.

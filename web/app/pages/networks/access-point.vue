@@ -303,7 +303,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="relative z-10 size-4 pointer-events-none">
                     <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
                     <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
-                    <path d="M8.5 15.2a5 5 0 0 1 7 0" />
+                    <path class="ap-wifi-inner" d="M8.5 15.2a5 5 0 0 1 7 0" />
                     <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
                   </svg>
                 </button>
@@ -447,16 +447,24 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   .ap-modal-icon-active { animation: none; }
 }
 
-/* Fade each arc in and back out: one → two → three → two → one, without a hard cut. */
+/* Wifi builds up from the dot alone: dot → 1 bar → 2 bars → 3 bars, then fades back to the dot. */
+.ap-wifi-inner { animation: ap-wifi-inner 2.7s ease-in-out infinite; }
 .ap-wifi-mid { animation: ap-wifi-middle 2.7s ease-in-out infinite; }
 .ap-wifi-outer { animation: ap-wifi-outer 2.7s ease-in-out infinite; }
+@keyframes ap-wifi-inner {
+  0%, 8% { opacity: .12; }
+  20%, 88% { opacity: 1; }
+  100% { opacity: .12; }
+}
 @keyframes ap-wifi-middle {
-  0%, 14%, 95%, 100% { opacity: .12; }
-  27%, 82% { opacity: 1; }
+  0%, 30% { opacity: .12; }
+  42%, 80% { opacity: 1; }
+  92%, 100% { opacity: .12; }
 }
 @keyframes ap-wifi-outer {
-  0%, 38%, 77%, 100% { opacity: .12; }
-  51%, 64% { opacity: 1; }
+  0%, 52% { opacity: .12; }
+  62%, 72% { opacity: 1; }
+  84%, 100% { opacity: .12; }
 }
 .ap-marker-ping {
   border-color: var(--ui-primary);
@@ -470,7 +478,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   50% { opacity: .65; transform: scale(1.27); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
+  .ap-wifi-inner, .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
   .ap-marker-ping { animation: none; opacity: 0; }
 }
 </style>
