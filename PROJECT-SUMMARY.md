@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-09
 
+### Networks / Access Point — marker pin flat + ping sonar (2026-11-09)
+
+Setelah dua desain marker ditolak HIRO ("jelek"), empat konsep (putih bersih, dark charcoal, hexagon, pin flat + ping) ditampilkan dalam satu preview dan HIRO memilih D: pin flat + ping. Marker kini berbentuk pin solid accent tanpa gradasi (disc + ekor sama-sama `bg-primary`, mengikuti warna tema), ikon Wi-Fi putih dengan animasi sinyal, dan efek ping sonar: dua ring ellipse tipis menyebar dari ujung pin secara bergantian (2,6 detik) lalu memudar. Desain disc polos, pin gradasi, dan glow breathing sebelumnya dihapus beserta CSS-nya. Dev compile ulang tanpa error; konsep D sudah dipilih HIRO dari preview sebelum dipasang.
+
 ### Networks / Access Point — ikon judul + marker tanpa border putih (2026-11-09)
 
 HIRO meminta border putih pada marker AP dihapus dan ikon beranimasi di sebelah kiri judul halaman, disamakan dengan halaman lain. Marker kini tanpa `border-white` (ring glow accent saat hover/terpilih dan ping tetap ada). Blok judul memakai chrome sheet-header yang sama dengan CCTV Access dan PC Ledger: kartu `rounded-lg border bg-elevated p-4`, plate 48px `bg-primary/10` dengan ring accent, `RecordAddIcon size="lg" random-halo`, dan glyph Wi-Fi SVG inline `pc-add-tilt size-7` (sway yang sama dengan `CctvIcon`/`HandoverIcon` di halaman lain, reduced-motion statis lewat komponen yang sama). Judul menjadi `text-lg font-bold tracking-wide` dan subtitle `text-xs` mengikuti halaman lain; wording judul/subtitle tidak berubah. Dev compile ulang tanpa error; verifikasi visual menunggu cek HIRO di browser nyata (harness tidak bisa membuka halaman login-gated).
