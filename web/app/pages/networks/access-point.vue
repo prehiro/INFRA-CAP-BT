@@ -24,6 +24,36 @@ const editingId = ref<number | null>(null)
 const editorError = ref('')
 const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', x: 0.5, y: 0.5 })
 const mapEl = ref<HTMLElement | null>(null)
+const mapStageEl = ref<HTMLElement | null>(null)
+const mapNatural = ref<{ w: number; h: number } | null>(null)
+const mapFit = ref<{ w: number; h: number } | null>(null)
+let mapResizeObserver: ResizeObserver | null = null
+
+function fitMap() {
+  const stage = mapStageEl.value
+  const nat = mapNatural.value
+  if (!stage || !nat || nat.w <= 0 || nat.h <= 0) return
+  const cw = stage.clientWidth, ch = stage.clientHeight
+  if (cw <= 0 || ch <= 0) return
+  const scale = Math.min(cw / nat.w, ch / nat.h)
+  mapFit.value = { w: Math.max(1, Math.floor(nat.w * scale)), h: Math.max(1, Math.floor(nat.h * scale)) }
+}
+function onMapImageLoad(event: Event) {
+  const img = event.target as HTMLImageElement
+  if (img.naturalWidth > 0) mapNatural.value = { w: img.naturalWidth, h: img.naturalHeight }
+  fitMap()
+}
+const mapFitStyle = computed(() => mapFit.value ? { width: `${mapFit.value.w}px`, height: `${mapFit.value.h}px` } : undefined)
+
+watch(mapStageEl, el => {
+  mapResizeObserver?.disconnect()
+  mapResizeObserver = null
+  if (el) {
+    mapResizeObserver = new ResizeObserver(() => fitMap())
+    mapResizeObserver.observe(el)
+  }
+  fitMap()
+})
 const selectedPoint = computed(() => floor.value?.accessPoints.find(p => p.id === selectedId.value) ?? null)
 let loadVersion = 0
 let suppressMarkerClickId: number | null = null
@@ -55,6 +85,8 @@ async function loadFloor(id: number) {
   floor.value = null
   selectedId.value = null
   setImageUrl('')
+  mapNatural.value = null
+  mapFit.value = null
   error.value = ''
   try {
     const [detail, blob] = await Promise.all([apiGetNetworkFloor(id), apiGetNetworkFloorImage(id)])
@@ -76,7 +108,7 @@ async function refresh(preferId?: number) {
   finally { loading.value = false }
 }
 onMounted(() => { void refresh() })
-onBeforeUnmount(() => { ++loadVersion; setImageUrl(''); setUploadPreviewUrl('') })
+onBeforeUnmount(() => { ++loadVersion; mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
 
 function pickImage(event: Event) {
   uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -205,10 +237,10 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 </script>
 
 <template>
-  <UDashboardPanel id="network-access-point" :ui="{ body: 'p-4 sm:p-6' }">
+  <UDashboardPanel id="network-access-point" :ui="{ body: 'flex min-h-0 flex-col p-4 sm:p-6' }">
     <template #header><PageHeader title="Access Point" /></template>
     <template #body>
-      <div class="mx-auto w-full max-w-[1500px] space-y-5">
+      <div class="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 class="text-xl font-semibold text-highlighted">Access Point</h2>
@@ -225,7 +257,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           <p class="mt-1 text-sm text-muted">{{ isAdmin ? 'Upload a plan to start mapping access points.' : 'An administrator can add the first floor plan.' }}</p>
         </UCard>
         <template v-else>
-          <div class="flex gap-2 overflow-x-auto pb-1" aria-label="Floor plans">
+          <div class="flex min-h-0 flex-1 flex-col gap-4">
+          <div class="flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Floor plans">
             <button v-for="item in floors" :key="item.id" type="button"
               class="ap-floor-tab shrink-0 rounded-lg border px-3 py-2 text-left text-sm transition-colors"
               :class="activeId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-default bg-default text-muted hover:border-primary/40 hover:text-highlighted'"
@@ -234,7 +267,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <span class="flex items-center gap-1 text-xs opacity-70"><UIcon name="i-lucide-wifi" class="ap-tab-icon size-3" aria-hidden="true" />{{ item.accessPointCount }} AP</span>
             </button>
           </div>
-          <UCard :ui="{ body: 'p-3 sm:p-4', header: 'px-4 py-3' }" class="min-w-0">
+          <UCard :ui="{ body: 'flex min-h-0 flex-1 flex-col p-3 sm:p-4', header: 'shrink-0 px-4 py-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
               <template #header>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div><h3 class="font-semibold text-highlighted">{{ floor?.name ?? 'Loading plan…' }}</h3><p class="text-xs text-muted">{{ isAdmin ? 'Click a marker for details. Drag to move it, or click the plan to add an AP.' : 'Click a marker to view its details.' }}</p></div>
@@ -244,8 +277,9 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                   </div>
                 </div>
               </template>
-              <div v-if="floor && imageUrl" ref="mapEl" class="relative w-full overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
-                <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-auto w-full select-none" />
+              <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+                <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
+                <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
                   class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
                   :class="[selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
@@ -259,9 +293,11 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                     <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
                   </svg>
                 </button>
+                </div>
               </div>
-              <p v-else class="py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
+              <p v-else class="flex flex-1 items-center justify-center py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
             </UCard>
+          </div>
         </template>
       </div>
 

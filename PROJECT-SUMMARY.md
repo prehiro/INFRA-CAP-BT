@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-09
 
+### Networks / Access Point — denah pas satu layar, tanpa scroll halaman (2026-11-09)
+
+Lanjutan permintaan fit-to-screen yang belum dikerjakan saat push `f070ea6`: halaman `/networks/access-point` sekarang memakai rantai tinggi `flex min-h-0 flex-col` pada body `UDashboardPanel`, pembungkus konten, dan `UCard` denah (pola yang sama dengan halaman Audit), sehingga sisa tinggi viewport dipakai kartu denah dan halaman tidak di-scroll lagi. Gambar denah di-scale pas ke stage lewat `fitMap()` + `ResizeObserver` + event load gambar (ukuran natural → `min(cw/nat.w, ch/nat.h)`), dipusatkan di stage, dan marker tetap memakai fraksi posisi terhadap rect gambar yang sudah di-fit, jadi klik tambah AP dan drag marker tetap akurat. Dev meng-compile ulang tanpa error (error "missing end tag" hanya dari edit perantara sebelum tag penutup ditambahkan); harness browser tidak bisa verifikasi visual halaman login-gated (hanya menampilkan halaman login), jadi verifikasi visual menunggu cek HIRO di browser nyata.
+
 ### Networks / Access Point — upload dan denah lebar penuh (2026-11-09)
 
 HIRO menyetujui push `f070ea6`: modal Add floor plan kini punya ikon upload bergerak halus, pemilih file kustom dengan input native yang tetap bisa difokuskan keyboard, nama file terpilih, preview, dan satu gradient aksen di pojok kanan atas. Panel Devices di kanan dihapus; kartu dan gambar denah memakai lebar halaman yang tersedia, sedangkan detail AP tetap hanya terbuka dari marker. 95/95 tes frontend, build Nuxt, dan diff-check lulus; browser menguji file/preview, desktop/ponsel, tema terang/gelap, reduced motion, posisi marker, serta modal detail. Denah masih memakai tinggi alami gambar sehingga halaman dapat di-scroll; permintaan berikutnya untuk membuatnya pas satu layar belum dikerjakan saat HIRO beralih meminta push. `web/package-lock.json` tetap lokal dan tidak termasuk commit. Push kode bukan deployment IIS.
