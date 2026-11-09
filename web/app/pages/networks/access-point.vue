@@ -295,22 +295,17 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
-                  class="ap-marker absolute h-12 w-10 -translate-x-1/2 -translate-y-full bg-transparent outline-primary focus-visible:outline-2"
-                  :class="isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer'"
+                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
+                  :class="[selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
                   :style="{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }" :aria-label="`${point.hostname}, ${point.ipAddress}${point.position ? `, ${point.position}` : ''}`"
                   :title="point.hostname" @click.stop="openDetails(point)" @pointerdown.stop="pointerDown($event, point)" @pointermove="pointerMove($event, point)" @pointerup="pointerUp($event, point)" @pointercancel="pointerUp($event, point, true)">
-                  <span class="ap-marker-ping absolute left-1/2 top-12 block h-[18px] w-11 rounded-full border-2 border-primary" aria-hidden="true" />
-                  <span class="ap-marker-ping ap-marker-ping--delay absolute left-1/2 top-12 block h-[18px] w-11 rounded-full border-2 border-primary" aria-hidden="true" />
-                  <span class="ap-marker-tail absolute left-1/2 top-7 size-3.5 -translate-x-1/2 rotate-45 rounded-[3px] bg-primary" aria-hidden="true" />
-                  <span class="ap-marker-disc relative z-10 grid size-9 place-items-center rounded-full bg-primary text-white shadow-[0_6px_14px_rgba(0,0,0,0.35)] ring-1 ring-inset ring-white/20"
-                    :class="selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30'">
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="ap-marker-icon size-5 pointer-events-none">
+                  <span class="ap-marker-ping absolute -inset-1 rounded-full border-2" aria-hidden="true" />
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="relative z-10 size-4 pointer-events-none">
                     <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
                     <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
                     <path d="M8.5 15.2a5 5 0 0 1 7 0" />
                     <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
                   </svg>
-                  </span>
                 </button>
                 </div>
               </div>
@@ -431,7 +426,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .ap-floor-tab :deep(.ap-tab-icon) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
 .ap-close-action :deep([data-slot='leadingIcon']) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
-.ap-marker-icon { transition: transform 200ms ease-out; }
+.ap-marker > svg { transition: transform 200ms ease-out; }
 .ap-modal-icon-active { animation: ap-icon-arrive 420ms cubic-bezier(.2,.8,.2,1) both; }
 @keyframes ap-icon-arrive {
   from { transform: scale(.88) rotate(-9deg); opacity: .55; }
@@ -441,14 +436,14 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   .ap-floor-tab:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 14%, transparent); }
   .ap-floor-tab:hover :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
   .ap-close-action:not(:disabled):hover :deep([data-slot='leadingIcon']) { transform: scale(1.14) rotate(12deg); }
-  .ap-marker:hover:not(:active) .ap-marker-icon { transform: scale(1.12); }
+  .ap-marker:hover:not(:active) > svg { transform: scale(1.12); }
 }
 .ap-floor-tab:focus-visible :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
-.ap-marker:focus-visible .ap-marker-icon { transform: scale(1.12); }
+.ap-marker:focus-visible > svg { transform: scale(1.12); }
 .ap-stable-action.record-delete-hover:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .ap-floor-tab, .ap-floor-tab :deep(.ap-tab-icon),
-  .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker-icon { transition: none; transform: none !important; }
+  .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
   .ap-modal-icon-active { animation: none; }
 }
 
@@ -463,19 +458,20 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   0%, 38%, 77%, 100% { opacity: .12; }
   51%, 64% { opacity: 1; }
 }
+.ap-marker-ping {
+  border-color: var(--ui-primary);
+  box-shadow: 0 0 8px 2px color-mix(in srgb, var(--ui-primary) 75%, transparent),
+              0 0 16px 4px color-mix(in srgb, var(--ui-primary) 30%, transparent);
+  pointer-events: none;
+  animation: ap-marker-breathe 2.7s ease-in-out infinite;
+}
+@keyframes ap-marker-breathe {
+  0%, 100% { opacity: .2; transform: scale(.92); }
+  50% { opacity: .65; transform: scale(1.27); }
+}
 @media (prefers-reduced-motion: reduce) {
   .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
   .ap-marker-ping { animation: none; opacity: 0; }
-}
-/* Sonar ping: two thin ellipse rings expand from the pin tip and fade, staggered. */
-.ap-marker-ping {
-  pointer-events: none;
-  animation: ap-marker-sonar 2.6s cubic-bezier(0, 0, .2, 1) infinite;
-}
-.ap-marker-ping--delay { animation-delay: 1.3s; }
-@keyframes ap-marker-sonar {
-  0% { transform: translate(-50%, -50%) scale(.45); opacity: .9; }
-  80%, 100% { transform: translate(-50%, -50%) scale(1.9); opacity: 0; }
 }
 </style>
 
