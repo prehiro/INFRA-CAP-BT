@@ -234,8 +234,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <span class="flex items-center gap-1 text-xs opacity-70"><UIcon name="i-lucide-wifi" class="ap-tab-icon size-3" aria-hidden="true" />{{ item.accessPointCount }} AP</span>
             </button>
           </div>
-          <div class="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-            <UCard :ui="{ body: 'p-3 sm:p-4', header: 'px-4 py-3' }" class="min-w-0">
+          <UCard :ui="{ body: 'p-3 sm:p-4', header: 'px-4 py-3' }" class="min-w-0">
               <template #header>
                 <div class="flex flex-wrap items-center justify-between gap-2">
                   <div><h3 class="font-semibold text-highlighted">{{ floor?.name ?? 'Loading plan…' }}</h3><p class="text-xs text-muted">{{ isAdmin ? 'Click a marker for details. Drag to move it, or click the plan to add an AP.' : 'Click a marker to view its details.' }}</p></div>
@@ -245,7 +244,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                   </div>
                 </div>
               </template>
-              <div v-if="floor && imageUrl" ref="mapEl" class="relative mx-auto w-full max-w-[1100px] overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
+              <div v-if="floor && imageUrl" ref="mapEl" class="relative w-full overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-auto w-full select-none" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
                   class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
@@ -263,34 +262,26 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               </div>
               <p v-else class="py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
             </UCard>
-            <div class="space-y-4">
-              <UCard v-if="floor?.accessPoints.length" :ui="{ header: 'px-4 py-3', body: 'p-0' }">
-                <template #header>
-                  <h3 class="font-semibold text-highlighted">Devices · {{ floor.accessPoints.length }}</h3>
-                  <p class="mt-0.5 text-xs text-muted">Click a marker on the plan to view details.</p>
-                </template>
-                <div v-for="point in floor.accessPoints" :key="point.id" class="flex items-center gap-3 border-b border-default px-4 py-3 last:border-b-0">
-                  <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary"><UIcon name="i-lucide-wifi" class="size-4" /></span>
-                  <div class="min-w-0 flex-1"><p class="truncate text-sm font-medium text-highlighted">{{ point.hostname }}</p><p class="truncate text-xs text-muted">{{ point.position || 'Location not specified' }}</p></div>
-                  <span class="max-w-24 truncate font-mono text-xs text-muted" :title="point.ipAddress">{{ point.ipAddress }}</span>
-                </div>
-              </UCard>
-            </div>
-          </div>
         </template>
       </div>
 
-      <UModal v-if="isAdmin" v-model:open="showUpload" title="Add floor plan" description="Upload an image and give this map a clear name." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showUpload" title="Add floor plan" description="Upload an image and give this map a clear name." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="createFloor">
             <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
-              <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon name="i-lucide-upload" class="size-5" /></span>
+              <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon name="i-lucide-upload" class="ap-upload-glyph size-5" /></span>
               <p>Upload a floor image, then place access points directly on the plan.</p>
             </div>
             <div><label for="floor-name" class="mb-1.5 block text-sm font-medium text-highlighted">Floor name</label><UInput id="floor-name" v-model="uploadName" placeholder="e.g. Building A · Level 2" class="w-full" :disabled="busy" maxlength="120" /></div>
             <div>
               <label for="floor-image" class="mb-1.5 block text-sm font-medium text-highlighted">Floor-plan image</label>
-              <input id="floor-image" ref="uploadInput" type="file" accept="image/png,image/jpeg,image/webp" class="block w-full rounded-lg border border-dashed border-default bg-elevated/40 px-3 py-3 text-sm text-highlighted file:mr-3 file:rounded-md file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-primary" :disabled="busy" @change="pickImage" />
+              <div class="flex min-w-0 items-center gap-3 rounded-xl border border-dashed border-default bg-elevated/40 p-3">
+                <input id="floor-image" ref="uploadInput" type="file" accept="image/png,image/jpeg,image/webp" class="ap-file-input sr-only" :disabled="busy" @change="pickImage" />
+                <label for="floor-image" class="ap-file-trigger inline-flex shrink-0 items-center gap-2 rounded-lg border border-primary/25 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary" :class="{ 'ap-file-disabled': busy }">
+                  <UIcon name="i-lucide-upload" class="ap-choose-icon size-4" aria-hidden="true" />Choose file
+                </label>
+                <span class="min-w-0 truncate text-sm" :class="uploadFile ? 'text-highlighted' : 'text-muted'" :title="uploadFile?.name || 'No file selected'">{{ uploadFile?.name || 'No file selected' }}</span>
+              </div>
               <p class="mt-1.5 text-xs text-muted">PNG, JPG or WebP · up to 8 MB</p>
               <div v-if="uploadPreviewUrl" class="mt-3 overflow-hidden rounded-lg border border-default bg-elevated p-2">
                 <img :src="uploadPreviewUrl" alt="Preview of selected floor plan" class="h-36 w-full object-contain" />
@@ -355,6 +346,32 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 </template>
 
 <style scoped>
+.ap-modal-icon-active :deep(.ap-upload-glyph) { animation: ap-upload-rise 2.2s ease-in-out .42s infinite; }
+@keyframes ap-upload-rise {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  40% { transform: translate3d(0, -3px, 0); }
+  72% { transform: translate3d(0, 1px, 0); }
+}
+.ap-file-trigger {
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+.ap-file-trigger :deep(.ap-choose-icon) { transition: transform 180ms ease; }
+.ap-file-trigger.ap-file-disabled { cursor: not-allowed; opacity: .5; }
+.ap-file-input:focus-visible + .ap-file-trigger { outline: 2px solid var(--ui-primary); outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .ap-file-trigger:not(.ap-file-disabled):hover {
+    background-color: color-mix(in srgb, var(--ui-primary) 18%, transparent);
+    border-color: var(--ui-primary);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 12%, transparent);
+  }
+  .ap-file-trigger:not(.ap-file-disabled):hover :deep(.ap-choose-icon) { transform: translate3d(0, -2px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-modal-icon-active :deep(.ap-upload-glyph) { animation: none; }
+  .ap-file-trigger, .ap-file-trigger :deep(.ap-choose-icon) { transition: none; transform: none !important; }
+}
+
 /* Only actions on this map opt in; keep button hitboxes fixed during hover. */
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .ap-floor-tab :deep(.ap-tab-icon) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
@@ -405,5 +422,20 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 @media (prefers-reduced-motion: reduce) {
   .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
   .ap-marker-ping { animation: none; opacity: 0; }
+}
+</style>
+
+<style>
+/* UModal teleports to body; this unique class limits the wash to the upload popup. */
+.ap-upload-modal[data-slot='content']::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(70%, 300px);
+  height: 170px;
+  background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--ui-primary) 17%, transparent), transparent 72%);
+  pointer-events: none;
+  z-index: 0;
 }
 </style>
