@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-09
 
+### Networks / Access Point — ikon judul + marker tanpa border putih (2026-11-09)
+
+HIRO meminta border putih pada marker AP dihapus dan ikon beranimasi di sebelah kiri judul halaman, disamakan dengan halaman lain. Marker kini tanpa `border-white` (ring glow accent saat hover/terpilih dan ping tetap ada). Blok judul memakai chrome sheet-header yang sama dengan CCTV Access dan PC Ledger: kartu `rounded-lg border bg-elevated p-4`, plate 48px `bg-primary/10` dengan ring accent, `RecordAddIcon size="lg" random-halo`, dan glyph Wi-Fi SVG inline `pc-add-tilt size-7` (sway yang sama dengan `CctvIcon`/`HandoverIcon` di halaman lain, reduced-motion statis lewat komponen yang sama). Judul menjadi `text-lg font-bold tracking-wide` dan subtitle `text-xs` mengikuti halaman lain; wording judul/subtitle tidak berubah. Dev compile ulang tanpa error; verifikasi visual menunggu cek HIRO di browser nyata (harness tidak bisa membuka halaman login-gated).
+
 ### Networks / Access Point — denah pas satu layar, tanpa scroll halaman (2026-11-09)
 
 Lanjutan permintaan fit-to-screen yang belum dikerjakan saat push `f070ea6`: halaman `/networks/access-point` sekarang memakai rantai tinggi `flex min-h-0 flex-col` pada body `UDashboardPanel`, pembungkus konten, dan `UCard` denah (pola yang sama dengan halaman Audit), sehingga sisa tinggi viewport dipakai kartu denah dan halaman tidak di-scroll lagi. Gambar denah di-scale pas ke stage lewat `fitMap()` + `ResizeObserver` + event load gambar (ukuran natural → `min(cw/nat.w, ch/nat.h)`), dipusatkan di stage, dan marker tetap memakai fraksi posisi terhadap rect gambar yang sudah di-fit, jadi klik tambah AP dan drag marker tetap akurat. Dev meng-compile ulang tanpa error (error "missing end tag" hanya dari edit perantara sebelum tag penutup ditambahkan); harness browser tidak bisa verifikasi visual halaman login-gated (hanya menampilkan halaman login), jadi verifikasi visual menunggu cek HIRO di browser nyata.

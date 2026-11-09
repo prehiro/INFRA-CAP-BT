@@ -241,12 +241,26 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
     <template #header><PageHeader title="Access Point" /></template>
     <template #body>
       <div class="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 class="text-xl font-semibold text-highlighted">Access Point</h2>
-            <p class="mt-1 text-sm text-muted">Place access points on a floor plan. Select a marker to see its network details.</p>
+        <div class="rounded-lg border border-default bg-elevated p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+                <RecordAddIcon size="lg" random-halo>
+                  <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <path d="M2 8.8a15 15 0 0 1 20 0" />
+                    <path d="M5 12a10 10 0 0 1 14 0" />
+                    <path d="M8.5 15.2a5 5 0 0 1 7 0" />
+                    <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </RecordAddIcon>
+              </span>
+              <div class="min-w-0">
+                <h2 class="text-lg font-bold tracking-wide text-highlighted">Access Point</h2>
+                <p class="text-xs text-muted">Place access points on a floor plan. Select a marker to see its network details.</p>
+              </div>
+            </div>
+            <UButton v-if="isAdmin" type="button" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
           </div>
-          <UButton v-if="isAdmin" type="button" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
         </div>
 
         <p v-if="error" role="alert" class="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ error }}</p>
@@ -281,7 +295,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
-                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
+                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
                   :class="[selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
                   :style="{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }" :aria-label="`${point.hostname}, ${point.ipAddress}${point.position ? `, ${point.position}` : ''}`"
                   :title="point.hostname" @click.stop="openDetails(point)" @pointerdown.stop="pointerDown($event, point)" @pointermove="pointerMove($event, point)" @pointerup="pointerUp($event, point)" @pointercancel="pointerUp($event, point, true)">
