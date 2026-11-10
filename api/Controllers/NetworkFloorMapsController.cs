@@ -1,6 +1,7 @@
 using System.Net;
 using Api.Data;
 using Api.Domain;
+using Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +14,7 @@ public record AccessPointPosition(double X, double Y);
 [ApiController]
 [Route("api/network/floor-maps")]
 [Authorize]
-public class NetworkFloorMapsController(AppDbContext db) : ControllerBase
+public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCache) : ControllerBase
 {
     private const int MaxImageBytes = 8 * 1024 * 1024;
 
@@ -36,12 +37,20 @@ public class NetworkFloorMapsController(AppDbContext db) : ControllerBase
     [HttpGet("{id:int}/image")]
     public async Task<IActionResult> Image(int id, CancellationToken ct)
     {
-        var floor = await db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
-            .Select(x => new { x.ImageBytes, x.ImageContentType }).SingleOrDefaultAsync(ct);
-        if (floor is null) return NotFound();
+        var hit = imageCache.TryGet(id, out var image);
+        if (!hit)
+        {
+            var generation = imageCache.Generation;
+            var floor = await db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
+                .Select(x => new { x.ImageBytes, x.ImageContentType }).SingleOrDefaultAsync(ct);
+            if (floor is null) return NotFound();
+            image = new FloorImage(floor.ImageBytes, floor.ImageContentType);
+            imageCache.StoreIfCurrent(id, image, generation);
+        }
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers.CacheControl = "private, no-store";
-        return File(floor.ImageBytes, floor.ImageContentType);
+        Response.Headers["X-Floor-Image-Cache"] = hit ? "HIT" : "MISS";
+        return File(image!.Bytes, image.ContentType);
     }
 
     [HttpPost]
@@ -74,6 +83,7 @@ public class NetworkFloorMapsController(AppDbContext db) : ControllerBase
         if (floor is null) return NotFound();
         db.NetworkFloorMaps.Remove(floor); // cascades to its markers
         await db.SaveChangesAsync(ct);
+        imageCache.Remove(id);
         return NoContent();
     }
 

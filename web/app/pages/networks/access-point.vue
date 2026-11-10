@@ -28,6 +28,30 @@ const mapStageEl = ref<HTMLElement | null>(null)
 const mapNatural = ref<{ w: number; h: number } | null>(null)
 const mapFit = ref<{ w: number; h: number } | null>(null)
 let mapResizeObserver: ResizeObserver | null = null
+// Only keep a few images in this page's memory; never persist protected images to disk.
+const floorImages = new Map<number, Blob>()
+const pendingFloorImages = new Map<number, Promise<Blob>>()
+let disposed = false
+
+function getFloorImage(id: number): Promise<Blob> {
+  const cached = floorImages.get(id)
+  if (cached) {
+    floorImages.delete(id)
+    floorImages.set(id, cached)
+    return Promise.resolve(cached)
+  }
+  const pending = pendingFloorImages.get(id)
+  if (pending) return pending
+  const request = apiGetNetworkFloorImage(id).then(blob => {
+    if (!disposed) {
+      floorImages.set(id, blob)
+      if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
+    }
+    return blob
+  }).finally(() => pendingFloorImages.delete(id))
+  pendingFloorImages.set(id, request)
+  return request
+}
 
 function fitMap() {
   const stage = mapStageEl.value
@@ -89,7 +113,7 @@ async function loadFloor(id: number) {
   mapFit.value = null
   error.value = ''
   try {
-    const [detail, blob] = await Promise.all([apiGetNetworkFloor(id), apiGetNetworkFloorImage(id)])
+    const [detail, blob] = await Promise.all([apiGetNetworkFloor(id), getFloorImage(id)])
     if (version !== loadVersion) return
     floor.value = detail
     setImageUrl(URL.createObjectURL(blob))
@@ -108,7 +132,7 @@ async function refresh(preferId?: number) {
   finally { loading.value = false }
 }
 onMounted(() => { void refresh() })
-onBeforeUnmount(() => { ++loadVersion; mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
+onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
 
 function pickImage(event: Event) {
   uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -135,6 +159,7 @@ async function deleteFloor(item: FloorMapSummary) {
   busy.value = true; error.value = ''
   try {
     await apiDeleteNetworkFloor(item.id)
+    floorImages.delete(item.id)
     if (activeId.value === item.id) activeId.value = null
     await refresh()
     toast.add({ title: 'Floor plan deleted', color: 'primary' })
