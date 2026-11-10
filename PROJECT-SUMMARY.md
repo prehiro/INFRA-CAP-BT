@@ -1,7 +1,11 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-11-09
+> Terakhir diupdate: 2026-11-10
+
+### Networks / Access Point — header toolbar dan denah lapang (2026-11-10, LOCAL preview)
+
+Permintaan HIRO: pindahkan tombol pemilihan floor, Add AP, dan Delete plan ke kartu header berglyph, rancang toolbar rapi/profesional, lalu maksimalkan gambar denah di sisa ruang. Perubahan lokal hanya di `web/app/pages/networks/access-point.vue`: pemilihan floor menjadi pill satu baris dengan jumlah AP dan fokus keyboard; Add AP/Delete plan ada di toolbar header di bawah judul, sedangkan Add floor plan tetap di kanan judul dengan varian soft. Header terpisah divider tipis; kartu denah tidak lagi punya header kedua atau baris tab sendiri, padding isi 8–12px agar stage gambar lebih tinggi. Gambar tetap utuh/rasio benar, fitMap + marker fraksi tidak berubah. Browser QA pada build statis terautentikasi: di desktop 1366×768 stage 1085×463px dan gambar 607×463px (terbatas tinggi), body panel scrollHeight=clientHeight=704px; di ponsel 390×844 dua tab seluruhnya tampak, body 780px tanpa scroll/horizontal overflow, marker membuka modal detail. Setelah penyesuaian terakhir subtitle admin, production build berhasil; 95/95 tes frontend lulus sebelum penyesuaian teks tersebut. Perubahan sumber ini **belum di-commit/di-push** menunggu evaluasi visual HIRO; `web/package-lock.json` tetap perubahan lokal terpisah. QA pergantian BUILDING 2 belum tuntas karena unduhan gambar dari QA API tertunda, sedangkan detail JSON-nya berhasil 200; jangan mengklaim alur kedua denah itu terverifikasi.
 
 ### Networks / Access Point — animasi Wi-Fi marker: titik → 1 → 2 → 3 bar (2026-11-09)
 
