@@ -49,10 +49,10 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       // Dynamic header-icon props are not reliably discovered by the template scanner.
-      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:monitor-x', 'lucide:network', 'lucide:wifi', 'streamline-flex:desktop-screensaver-sleep', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline'],
+      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:monitor-x', 'lucide:network', 'lucide:wifi', 'streamline-flex:desktop-screensaver-sleep', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline', 'iconoven:floor-plan', 'bi:router'],
       sizeLimitKb: 256
     },
-    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'streamline-flex', 'andrsrxn'] },
+    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'streamline-flex', 'andrsrxn', 'iconoven', 'bi'] },
     provider: 'none',
     fallbackToApi: false
   },

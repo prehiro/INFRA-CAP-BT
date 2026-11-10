@@ -129,14 +129,13 @@ async function createFloor() {
   } catch (e) { uploadError.value = message(e) }
   finally { busy.value = false }
 }
-async function deleteFloor() {
-  if (!isAdmin.value || !floor.value || busy.value) return
-  const id = floor.value.id
-  if (!window.confirm(`Delete “${floor.value.name}” and all its access points?`)) return
+async function deleteFloor(item: FloorMapSummary) {
+  if (!isAdmin.value || busy.value) return
+  if (!window.confirm(`Delete “${item.name}” and all its access points?`)) return
   busy.value = true; error.value = ''
   try {
-    await apiDeleteNetworkFloor(id)
-    activeId.value = null
+    await apiDeleteNetworkFloor(item.id)
+    if (activeId.value === item.id) activeId.value = null
     await refresh()
     toast.add({ title: 'Floor plan deleted', color: 'primary' })
   } catch (e) { error.value = message(e) }
@@ -241,25 +240,39 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
     <template #header><PageHeader title="Access Point" /></template>
     <template #body>
       <div class="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
-        <div class="rounded-lg border border-default bg-elevated p-4">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="flex min-w-0 items-center gap-3">
-              <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-                <RecordAddIcon size="lg" random-halo>
-                  <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                    <path d="M2 8.8a15 15 0 0 1 20 0" />
-                    <path d="M5 12a10 10 0 0 1 14 0" />
-                    <path d="M8.5 15.2a5 5 0 0 1 7 0" />
-                    <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
-                  </svg>
-                </RecordAddIcon>
-              </span>
-              <div class="min-w-0">
-                <h2 class="text-lg font-bold tracking-wide text-highlighted">Access Point</h2>
-                <p class="text-xs text-muted">Place access points on a floor plan. Select a marker to see its network details.</p>
-              </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4 lg:flex-nowrap">
+          <div class="flex w-full min-w-0 items-center gap-3 lg:w-auto lg:max-w-[320px] lg:shrink-0">
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+              <RecordAddIcon size="lg" random-halo>
+                <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                  <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
+                  <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
+                  <path d="M8.5 15.2a5 5 0 0 1 7 0" />
+                  <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </RecordAddIcon>
+            </span>
+            <div class="min-w-0">
+              <h2 class="text-lg font-bold tracking-wide text-highlighted">Access Point</h2>
+              <p class="text-xs text-muted">{{ isAdmin ? 'Click the plan to add an AP, drag markers to move, or select one for details.' : 'Select a marker to see its network details.' }}</p>
             </div>
-            <UButton v-if="isAdmin" type="button" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
+          </div>
+          <div v-if="floors.length" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto lg:w-auto lg:flex-1" aria-label="Floor plans">
+            <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
+              :class="activeId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
+              <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeId === item.id" :disabled="busy" @click="loadFloor(item.id)">
+                <span class="w-full truncate text-sm font-semibold leading-tight" :title="item.name">{{ item.name }}</span>
+                <span class="text-[11px] leading-tight opacity-70">{{ item.accessPointCount }} AP</span>
+              </button>
+              <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost"
+                class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"
+                :disabled="busy" @click.stop="deleteFloor(item)" />
+            </div>
+          </div>
+          <div v-if="isAdmin" class="flex w-full shrink-0 items-center justify-end gap-2 lg:w-auto">
+            <UButton v-if="floor" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAdd()">Add AP</UButton>
+            <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
           </div>
         </div>
 
@@ -271,27 +284,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           <p class="mt-1 text-sm text-muted">{{ isAdmin ? 'Upload a plan to start mapping access points.' : 'An administrator can add the first floor plan.' }}</p>
         </UCard>
         <template v-else>
-          <div class="flex min-h-0 flex-1 flex-col gap-4">
-          <div class="flex shrink-0 gap-2 overflow-x-auto pb-1" aria-label="Floor plans">
-            <button v-for="item in floors" :key="item.id" type="button"
-              class="ap-floor-tab shrink-0 rounded-lg border px-3 py-2 text-left text-sm transition-colors"
-              :class="activeId === item.id ? 'border-primary bg-primary/10 text-primary' : 'border-default bg-default text-muted hover:border-primary/40 hover:text-highlighted'"
-              :aria-pressed="activeId === item.id" @click="loadFloor(item.id)">
-              <span class="block font-semibold">{{ item.name }}</span>
-              <span class="flex items-center gap-1 text-xs opacity-70"><UIcon name="i-lucide-wifi" class="ap-tab-icon size-3" aria-hidden="true" />{{ item.accessPointCount }} AP</span>
-            </button>
-          </div>
-          <UCard :ui="{ body: 'flex min-h-0 flex-1 flex-col p-3 sm:p-4', header: 'shrink-0 px-4 py-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
-              <template #header>
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div><h3 class="font-semibold text-highlighted">{{ floor?.name ?? 'Loading plan…' }}</h3><p class="text-xs text-muted">{{ isAdmin ? 'Click a marker for details. Drag to move it, or click the plan to add an AP.' : 'Click a marker to view its details.' }}</p></div>
-                  <div v-if="isAdmin && floor" class="flex gap-2">
-                    <UButton type="button" size="xs" icon="i-lucide-plus" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAdd()">Add AP</UButton>
-                    <UButton type="button" size="xs" icon="i-lucide-trash-2" color="error" variant="ghost" class="record-delete-hover ap-stable-action" :disabled="busy" @click="deleteFloor">Delete plan</UButton>
-                  </div>
-                </div>
-              </template>
-              <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
+          <UCard :ui="{ body: 'flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
@@ -310,8 +304,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 </div>
               </div>
               <p v-else class="flex flex-1 items-center justify-center py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
-            </UCard>
-          </div>
+          </UCard>
         </template>
       </div>
 
@@ -422,9 +415,33 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   .ap-file-trigger, .ap-file-trigger :deep(.ap-choose-icon) { transition: none; transform: none !important; }
 }
 
+/* Distinct glyph motions for the two map actions; the buttons keep their fixed hitboxes. */
+@keyframes ap-floor-lift {
+  0%, 100% { transform: translate3d(0px, 0px, 0px) rotate(0deg); }
+  45% { transform: translate3d(0px, -3px, 0px) rotate(-8deg); }
+  75% { transform: translate3d(0px, -1px, 0px) rotate(3deg); }
+}
+@keyframes ap-router-wake {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  40% { transform: scale(1.15) rotate(-6deg); }
+  70% { transform: scale(1.08) rotate(4deg); }
+}
+.ap-floor-add-action.record-add-hover:not(:disabled):focus-visible :deep([data-slot='leadingIcon']) { animation: ap-floor-lift 650ms ease-in-out; }
+.ap-ap-add-action.record-add-hover:not(:disabled):focus-visible :deep([data-slot='leadingIcon']) { animation: ap-router-wake 650ms ease-in-out; }
+@media (hover: hover) and (pointer: fine) {
+  .ap-floor-add-action.record-add-hover:not(:disabled):hover :deep([data-slot='leadingIcon']) { animation: ap-floor-lift 650ms ease-in-out; }
+  .ap-ap-add-action.record-add-hover:not(:disabled):hover :deep([data-slot='leadingIcon']) { animation: ap-router-wake 650ms ease-in-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-floor-add-action :deep([data-slot='leadingIcon']), .ap-ap-add-action :deep([data-slot='leadingIcon']) { animation: none !important; }
+}
+
 /* Only actions on this map opt in; keep button hitboxes fixed during hover. */
+.ap-floor-list { scrollbar-width: none; }
+.ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
-.ap-floor-tab :deep(.ap-tab-icon) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
+.ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }
+.ap-plan-delete:focus-visible { color: var(--ui-error); outline: 2px solid var(--ui-error); outline-offset: 1px; }
 .ap-close-action :deep([data-slot='leadingIcon']) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
 .ap-marker > svg { transition: transform 200ms ease-out; }
 .ap-modal-icon-active { animation: ap-icon-arrive 420ms cubic-bezier(.2,.8,.2,1) both; }
@@ -434,16 +451,14 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 }
 @media (hover: hover) and (pointer: fine) {
   .ap-floor-tab:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 14%, transparent); }
-  .ap-floor-tab:hover :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
+  .ap-plan-delete:not(:disabled):hover { color: var(--ui-error); background-color: color-mix(in srgb, var(--ui-error) 12%, transparent); }
   .ap-close-action:not(:disabled):hover :deep([data-slot='leadingIcon']) { transform: scale(1.14) rotate(12deg); }
   .ap-marker:hover:not(:active) > svg { transform: scale(1.12); }
 }
-.ap-floor-tab:focus-visible :deep(.ap-tab-icon) { transform: scale(1.15) rotate(-9deg); }
 .ap-marker:focus-visible > svg { transform: scale(1.12); }
 .ap-stable-action.record-delete-hover:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { transform: none; }
 @media (prefers-reduced-motion: reduce) {
-  .ap-floor-tab, .ap-floor-tab :deep(.ap-tab-icon),
-  .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
+  .ap-floor-tab, .ap-plan-delete, .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
   .ap-modal-icon-active { animation: none; }
 }
 
