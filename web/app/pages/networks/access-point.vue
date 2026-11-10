@@ -240,8 +240,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
     <template #header><PageHeader title="Access Point" /></template>
     <template #body>
       <div class="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4 lg:flex-nowrap">
-          <div class="flex w-full min-w-0 items-center gap-3 lg:w-auto lg:max-w-[320px] lg:shrink-0">
+        <div class="ap-header-row flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4">
+          <div class="flex w-full min-w-0 items-center gap-3 xl:max-w-[320px]">
             <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
               <RecordAddIcon size="lg" random-halo>
                 <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
@@ -257,7 +257,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <p class="text-xs text-muted">{{ isAdmin ? 'Click the plan to add an AP, drag markers to move, or select one for details.' : 'Select a marker to see its network details.' }}</p>
             </div>
           </div>
-          <div v-if="floors.length" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto lg:w-auto lg:flex-1" aria-label="Floor plans">
+          <div v-if="floors.length" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto" aria-label="Floor plans">
             <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
               :class="activeId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -270,8 +270,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 :disabled="busy" @click.stop="deleteFloor(item)" />
             </div>
           </div>
-          <div v-if="isAdmin" class="flex w-full shrink-0 items-center justify-end gap-2 lg:w-auto">
-            <UButton v-if="floor" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAdd()">Add AP</UButton>
+          <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
+            <UButton v-if="floors.length" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAdd()">Add AP</UButton>
             <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
           </div>
         </div>
@@ -437,7 +437,13 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 }
 
 /* Only actions on this map opt in; keep button hitboxes fixed during hover. */
-.ap-floor-list { scrollbar-width: none; }
+/* Equal side tracks align the floor-card strip with the centred map image, not the space between controls. */
+@media (min-width: 1280px) {
+  .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 405px) minmax(0, 1fr); }
+  .ap-header-actions { grid-column: 3; }
+}
+/* Centre the floor cards when they fit; overflow falls back to start so every card stays reachable. */
+.ap-floor-list { justify-content: safe center; scrollbar-width: none; }
 .ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }
