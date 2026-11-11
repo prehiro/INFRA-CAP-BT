@@ -144,9 +144,13 @@ async function createFloor() {
   if (!isAdmin.value || busy.value) return
   if (!uploadName.value.trim() || !uploadFile.value) { uploadError.value = 'Enter a floor name and choose a plan image.'; return }
   if (uploadFile.value.size > 8 * 1024 * 1024) { uploadError.value = 'The image must be smaller than 8 MB.'; return }
+  const uploadedFile = uploadFile.value
   busy.value = true; uploadError.value = ''
   try {
-    const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadFile.value)
+    const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile)
+    // The browser already has these bytes; the first view needs no image request.
+    floorImages.set(created.id, uploadedFile)
+    if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
     showUpload.value = false
     await refresh(created.id)
     toast.add({ title: 'Floor plan added', color: 'primary' })

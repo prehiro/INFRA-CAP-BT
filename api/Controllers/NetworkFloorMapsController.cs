@@ -82,9 +82,12 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         var bytes = buffer.ToArray();
         var contentType = ImageType(bytes);
         if (contentType is null) return BadRequest(new { message = "Only PNG, JPEG or WebP floor-plan images are supported." });
+        var cacheGeneration = imageCache.Generation;
         var floor = new NetworkFloorMap { Name = name, ImageBytes = bytes, ImageContentType = contentType };
         db.NetworkFloorMaps.Add(floor);
         await db.SaveChangesAsync(ct);
+        // The uploaded bytes are already here; avoid a needless SQL round-trip on first view.
+        imageCache.StoreIfCurrent(floor.Id, new FloorImage(bytes, contentType), cacheGeneration);
         return CreatedAtAction(nameof(Get), new { id = floor.Id }, new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = 0 });
     }
 
