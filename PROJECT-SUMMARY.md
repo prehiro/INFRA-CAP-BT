@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-11
 
+### Networks / Access Point — copy IP address per AP (2026-11-11, published)
+
+Source commit `eaa3c7b`: di dialog detail setiap AP Primary maupun BCP, baris IP mempunyai tombol **ikon copy saja**, tanpa tulisan atau tooltip. Alamat yang disalin persis nilai tersimpan; sukses mengganti glyph sementara menjadi centang tanpa menggeser tombol dan mengumumkan hasil lewat status tersembunyi untuk screen reader. Browser secure memakai Clipboard API; server kantor HTTP memakai fallback textarea sementara + `execCommand('copy')`, dengan fokus/seleksi dipulihkan. Kegagalan tidak mengaku sukses dan menampilkan toast error. QA browser pada AP Primary/BCP membaca balik nilai clipboard, fallback HTTP dan kegagalan akses diuji; ukuran tombol 36px stabil, modal ponsel 390px tanpa overflow. 95 tes frontend dan build Nuxt lulus. Perubahan loader map, teks judul/subtitle/upload milik HIRO dan Basil lockfile tetap lokal, tidak ikut publikasi.
+
 ### Networks / Access Point — tipe Primary dan BCP (2026-11-11, published)
 
 Source commit `cf87973` menambah kolom `NetworkAccessPoints.ApType` dengan default `primary` lewat migrasi `20261111145325_AddAccessPointType`, sehingga AP lama tetap Primary tanpa mengganti ID/koordinat. API hanya menerima `primary` atau `bcp`, dan mengembalikan tipe pada detail, create/edit, serta update posisi. Add AP default Primary; Add/Edit menyediakan pilihan Primary/BCP. Marker BCP berlian amber dengan ikon Wi-Fi, orbit berputar dan glow pelan, tanpa rectangle saat hover; Primary tetap bundar hijau dengan animasi Wi-Fi asal. Detail AP tetap memperlihatkan tipenya; reduced motion mematikan animasi BCP. Klasifikasi ini **bukan** monitoring atau failover otomatis saat jaringan Primary down.
