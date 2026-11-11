@@ -290,6 +290,13 @@ namespace Api.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ApType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(12)
+                        .HasColumnType("nvarchar(12)")
+                        .HasDefaultValue("primary");
+
                     b.Property<int>("FloorMapId")
                         .HasColumnType("int");
 

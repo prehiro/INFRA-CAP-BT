@@ -19,6 +19,8 @@ public class NetworkAccessPoint
     public string Hostname { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string Position { get; set; } = string.Empty;
+    // Existing access points are primary; BCP units are standby/failover devices.
+    public string ApType { get; set; } = "primary";
     // Fractions of image width/height (0..1), independent of screen size.
     public double X { get; set; }
     public double Y { get; set; }

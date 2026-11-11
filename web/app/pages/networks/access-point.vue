@@ -22,7 +22,7 @@ const showDetails = ref(false)
 const detailError = ref('')
 const editingId = ref<number | null>(null)
 const editorError = ref('')
-const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', x: 0.5, y: 0.5 })
+const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', apType: 'primary', x: 0.5, y: 0.5 })
 const mapEl = ref<HTMLElement | null>(null)
 const mapStageEl = ref<HTMLElement | null>(null)
 const mapNatural = ref<{ w: number; h: number } | null>(null)
@@ -174,7 +174,7 @@ function openAdd(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
   showDetails.value = false
   editingId.value = null
-  Object.assign(draft, { hostname: '', ipAddress: '', position: '', x, y })
+  Object.assign(draft, { hostname: '', ipAddress: '', position: '', apType: 'primary', x, y })
   editorError.value = ''; showEditor.value = true
 }
 function openDetails(point: AccessPoint) {
@@ -187,7 +187,7 @@ function openEdit(point: AccessPoint) {
   if (!isAdmin.value || busy.value) return
   showDetails.value = false
   editingId.value = point.id
-  Object.assign(draft, { hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, x: point.x, y: point.y })
+  Object.assign(draft, { hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, apType: point.apType, x: point.x, y: point.y })
   editorError.value = ''; showEditor.value = true
 }
 async function savePoint() {
@@ -318,10 +318,21 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
-                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-md outline-primary transition-[box-shadow] focus-visible:outline-2 sm:size-9"
-                  :class="[selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
-                  :style="{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }" :aria-label="`${point.hostname}, ${point.ipAddress}${point.position ? `, ${point.position}` : ''}`"
-                  :title="point.hostname" @click.stop="openDetails(point)" @pointerdown.stop="pointerDown($event, point)" @pointermove="pointerMove($event, point)" @pointerup="pointerUp($event, point)" @pointercancel="pointerUp($event, point, true)">
+                  class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center border-2 transition-[box-shadow] focus-visible:outline-2 sm:size-9"
+                  :class="[point.apType === 'bcp' ? 'rounded-full border-transparent bg-transparent outline-amber-400' : 'rounded-full border-white bg-primary text-white shadow-md outline-primary', point.apType !== 'bcp' && (selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30'), isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
+                  :style="{ left: `${point.x * 100}%`, top: `${point.y * 100}%` }" :aria-label="`${point.apType === 'bcp' ? 'BCP' : 'Primary'} access point ${point.hostname}, ${point.ipAddress}${point.position ? `, ${point.position}` : ''}`"
+                  :title="point.apType === 'bcp' ? `BCP · ${point.hostname}` : point.hostname" @click.stop="openDetails(point)" @pointerdown.stop="pointerDown($event, point)" @pointermove="pointerMove($event, point)" @pointerup="pointerUp($event, point)" @pointercancel="pointerUp($event, point, true)">
+                  <template v-if="point.apType === 'bcp'">
+                    <span class="ap-bcp-orbit pointer-events-none absolute -inset-[5px] rounded-full" aria-hidden="true" />
+                    <span class="ap-bcp-core pointer-events-none absolute inset-1 rotate-45 rounded-[5px] border-2 border-white bg-amber-400" aria-hidden="true" />
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="ap-bcp-wifi pointer-events-none relative z-10 size-4 text-slate-950">
+                      <path d="M2 8.8a15 15 0 0 1 20 0" />
+                      <path d="M5 12a10 10 0 0 1 14 0" />
+                      <path d="M8.5 15.2a5 5 0 0 1 7 0" />
+                      <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                    </svg>
+                  </template>
+                  <template v-else>
                   <span class="ap-marker-ping absolute -inset-1 rounded-full border-2" aria-hidden="true" />
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" class="relative z-10 size-4 pointer-events-none">
                     <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
@@ -329,6 +340,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                     <path class="ap-wifi-inner" d="M8.5 15.2a5 5 0 0 1 7 0" />
                     <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
                   </svg>
+                  </template>
                 </button>
                 </div>
               </div>
@@ -373,9 +385,25 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         <template #body>
           <form class="space-y-4" @submit.prevent="savePoint">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-              <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showEditor }"><UIcon name="i-lucide-wifi" class="size-5" /></span>
+              <span v-if="draft.apType === 'bcp'" class="relative grid size-10 shrink-0 place-items-center rounded-xl bg-amber-400/10"><span class="absolute inset-2 rotate-45 rounded-[5px] border-2 border-white bg-amber-400" /><span class="relative text-[9px] font-black text-slate-950">BCP</span></span>
+              <span v-else class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showEditor }"><UIcon name="i-lucide-wifi" class="size-5" /></span>
               <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p><p class="text-xs text-muted">Position: {{ Math.round(draft.x * 100) }}% across · {{ Math.round(draft.y * 100) }}% down</p></div>
             </div>
+            <fieldset :disabled="busy">
+              <legend class="mb-1.5 text-sm font-medium text-highlighted">Access point type</legend>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex min-w-0 items-center gap-2 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-primary/40" :class="[draft.apType === 'primary' ? 'border-primary/60 bg-primary/10' : 'border-default bg-elevated/40', busy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer']">
+                  <input v-model="draft.apType" type="radio" name="ap-type" value="primary" class="sr-only" />
+                  <span class="grid size-8 shrink-0 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-sm"><UIcon name="i-lucide-wifi" class="size-4" /></span>
+                  <span class="min-w-0"><span class="block text-sm font-semibold text-highlighted">Primary</span><span class="block text-xs text-muted">Main network</span></span>
+                </label>
+                <label class="flex min-w-0 items-center gap-2 rounded-xl border p-3 focus-within:ring-2 focus-within:ring-amber-400/40" :class="[draft.apType === 'bcp' ? 'border-amber-400/70 bg-amber-400/10' : 'border-default bg-elevated/40', busy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer']">
+                  <input v-model="draft.apType" type="radio" name="ap-type" value="bcp" class="sr-only" />
+                  <span class="relative grid size-8 shrink-0 place-items-center"><span class="absolute inset-1 rotate-45 rounded-[4px] border-2 border-white bg-amber-400" /><span class="relative text-[9px] font-black text-slate-950">BCP</span></span>
+                  <span class="min-w-0"><span class="block text-sm font-semibold text-highlighted">BCP</span><span class="block text-xs text-muted">Backup network</span></span>
+                </label>
+              </div>
+            </fieldset>
             <div class="grid gap-4 sm:grid-cols-2">
               <div><label for="ap-hostname" class="mb-1.5 block text-sm font-medium text-highlighted">Hostname</label><UInput id="ap-hostname" v-model="draft.hostname" class="w-full" maxlength="160" placeholder="e.g. AP-L2-01" :disabled="busy" /></div>
               <div><label for="ap-ip" class="mb-1.5 block text-sm font-medium text-highlighted">IP address</label><UInput id="ap-ip" v-model="draft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.10" :disabled="busy" /></div>
@@ -395,10 +423,12 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         <template #body>
           <div v-if="selectedPoint" class="space-y-4">
             <div class="flex items-center gap-3">
-              <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'ap-modal-icon-active': showDetails }"><UIcon name="i-lucide-wifi" class="size-6" /></span>
+              <span v-if="selectedPoint.apType === 'bcp'" class="relative grid size-12 shrink-0 place-items-center rounded-xl bg-amber-400/10 ring-1 ring-inset ring-amber-400/25"><span class="absolute inset-2 rotate-45 rounded-[6px] border-2 border-white bg-amber-400" /><span class="relative text-[10px] font-black text-slate-950">BCP</span></span>
+              <span v-else class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'ap-modal-icon-active': showDetails }"><UIcon name="i-lucide-wifi" class="size-6" /></span>
               <div class="min-w-0"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedPoint.hostname }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
             </div>
             <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
+              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Type</dt><dd class="font-semibold" :class="selectedPoint.apType === 'bcp' ? 'text-amber-700 dark:text-amber-400' : 'text-primary'">{{ selectedPoint.apType === 'bcp' ? 'BCP · Backup' : 'Primary · Main network' }}</dd></div>
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">IP address</dt><dd class="break-all font-mono text-highlighted">{{ selectedPoint.ipAddress }}</dd></div>
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Location</dt><dd class="break-words text-highlighted">{{ selectedPoint.position || 'Not specified' }}</dd></div>
             </dl>
@@ -478,7 +508,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 .ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }
 .ap-plan-delete:focus-visible { color: var(--ui-error); outline: 2px solid var(--ui-error); outline-offset: 1px; }
 .ap-close-action :deep([data-slot='leadingIcon']) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
-.ap-marker > svg { transition: transform 200ms ease-out; }
+.ap-marker > svg:not(.ap-bcp-wifi) { transition: transform 200ms ease-out; }
 .ap-modal-icon-active { animation: ap-icon-arrive 420ms cubic-bezier(.2,.8,.2,1) both; }
 @keyframes ap-icon-arrive {
   from { transform: scale(.88) rotate(-9deg); opacity: .55; }
@@ -488,13 +518,34 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   .ap-floor-tab:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 14%, transparent); }
   .ap-plan-delete:not(:disabled):hover { color: var(--ui-error); background-color: color-mix(in srgb, var(--ui-error) 12%, transparent); }
   .ap-close-action:not(:disabled):hover :deep([data-slot='leadingIcon']) { transform: scale(1.14) rotate(12deg); }
-  .ap-marker:hover:not(:active) > svg { transform: scale(1.12); }
+  .ap-marker:hover:not(:active) > svg:not(.ap-bcp-wifi) { transform: scale(1.12); }
 }
-.ap-marker:focus-visible > svg { transform: scale(1.12); }
+.ap-marker:focus-visible > svg:not(.ap-bcp-wifi) { transform: scale(1.12); }
 .ap-stable-action.record-delete-hover:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .ap-floor-tab, .ap-plan-delete, .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
   .ap-modal-icon-active { animation: none; }
+}
+
+/* BCP keeps its diamond and Wi-Fi glyph still; two moving amber segments signal standby. */
+.ap-bcp-orbit {
+  background: conic-gradient(from 0deg, #fbbf24 0deg 40deg, transparent 40deg 178deg, #f59e0b 178deg 204deg, transparent 204deg 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  filter: drop-shadow(0 0 3px #f59e0b);
+  animation: ap-bcp-scan 3.6s linear infinite;
+}
+.ap-bcp-core {
+  box-shadow: 0 3px 9px rgba(107, 70, 21, .35);
+  animation: ap-bcp-glow 3.6s ease-in-out infinite;
+}
+@keyframes ap-bcp-scan { to { transform: rotate(360deg); } }
+@keyframes ap-bcp-glow {
+  0%, 100% { box-shadow: 0 3px 9px rgba(107, 70, 21, .35); }
+  50% { box-shadow: 0 3px 9px rgba(107, 70, 21, .35), 0 0 13px 3px rgba(245, 158, 11, .45); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-bcp-orbit, .ap-bcp-core { animation: none; }
 }
 
 /* Wifi builds up from the dot alone: dot → 1 bar → 2 bars → 3 bars, then fades back to the dot. */

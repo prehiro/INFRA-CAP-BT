@@ -1,8 +1,10 @@
+export type AccessPointType = 'primary' | 'bcp'
 export interface AccessPoint {
   id: number
   hostname: string
   ipAddress: string
   position: string
+  apType: AccessPointType
   x: number
   y: number
 }

@@ -95,6 +95,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Hostname).HasMaxLength(160).IsRequired();
             e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
             e.Property(x => x.Position).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ApType).HasMaxLength(12).HasDefaultValue("primary").IsRequired();
         });
         b.Entity<AuditEntry>(e =>
         {

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
-public record AccessPointInput(string? Hostname, string? IpAddress, string? Position, double X, double Y);
+public record AccessPointInput(string? Hostname, string? IpAddress, string? Position, double X, double Y, string ApType = "primary");
 public record AccessPointPosition(double X, double Y);
 
 [ApiController]
@@ -29,7 +29,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     {
         var floor = await db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
             .Select(x => new { x.Id, x.Name, x.CreatedAt, AccessPoints = x.AccessPoints
-                .OrderBy(a => a.Hostname).Select(a => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.X, a.Y }).ToList() })
+                .OrderBy(a => a.Hostname).Select(a => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y }).ToList() })
             .SingleOrDefaultAsync(ct);
         return floor is null ? NotFound() : Ok(floor);
     }
@@ -165,6 +165,9 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         if (string.IsNullOrWhiteSpace(ip) || ip.Length > 45 || !IPAddress.TryParse(ip, out _))
             return "Enter a valid IP address.";
         if (input.Position?.Length > 200) return "Position description is too long (maximum 200 characters).";
+        if (!string.Equals(input.ApType?.Trim(), "primary", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(input.ApType?.Trim(), "bcp", StringComparison.OrdinalIgnoreCase))
+            return "Choose Primary or BCP for the access point type.";
         if (!ValidCoordinate(input.X) || !ValidCoordinate(input.Y)) return "Marker position must be within the floor plan.";
         return null;
     }
@@ -173,10 +176,11 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         target.Hostname = source.Hostname!.Trim();
         target.IpAddress = source.IpAddress!.Trim();
         target.Position = source.Position?.Trim() ?? string.Empty;
+        target.ApType = source.ApType.Trim().ToLowerInvariant();
         target.X = source.X;
         target.Y = source.Y;
     }
-    private static object ToDto(NetworkAccessPoint a) => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.X, a.Y };
+    private static object ToDto(NetworkAccessPoint a) => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y };
     private static string? ImageType(byte[] b)
     {
         if (b.Length >= 8 && b.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })) return "image/png";
