@@ -40,12 +40,25 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         var hit = imageCache.TryGet(id, out var image);
         if (!hit)
         {
-            var generation = imageCache.Generation;
-            var floor = await db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
-                .Select(x => new { x.ImageBytes, x.ImageContentType }).SingleOrDefaultAsync(ct);
-            if (floor is null) return NotFound();
-            image = new FloorImage(floor.ImageBytes, floor.ImageContentType);
-            imageCache.StoreIfCurrent(id, image, generation);
+            var gate = imageCache.MissGate(id);
+            await gate.WaitAsync(ct);
+            try
+            {
+                // Another request may have populated this floor while we waited.
+                if (imageCache.TryGet(id, out image)) hit = true;
+                else
+                {
+                    var generation = imageCache.Generation;
+                    // Microsoft.Data.SqlClient async LOB reads are much slower on the dev SQL path.
+                    // Only this cold, bounded image query uses synchronous execution.
+                    var floor = db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
+                        .Select(x => new { x.ImageBytes, x.ImageContentType }).SingleOrDefault();
+                    if (floor is null) return NotFound();
+                    image = new FloorImage(floor.ImageBytes, floor.ImageContentType);
+                    imageCache.StoreIfCurrent(id, image, generation);
+                }
+            }
+            finally { gate.Release(); }
         }
         Response.Headers["X-Content-Type-Options"] = "nosniff";
         Response.Headers.CacheControl = "private, no-store";

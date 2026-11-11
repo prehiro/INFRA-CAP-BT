@@ -1,7 +1,13 @@
 # INFRA-CAP — Ringkasan Project
 
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
-> Terakhir diupdate: 2026-11-10
+> Terakhir diupdate: 2026-11-11
+
+### Networks / Access Point — BUILDING 2 cold load dipercepat (2026-11-11, published)
+
+Keluhan HIRO: BUILDING 2 tetap terlalu lama karena cache sebelumnya hanya mempercepat permintaan berikutnya; pengambilan `ImageBytes` pertama masih `SingleOrDefaultAsync()` di EF/SqlClient. Eksperimen langsung pada gambar 329.220 byte: pembacaan async sebelumnya 34–47 detik/timeout, tetapi `SqlCommand.ExecuteScalar()` sinkron pada tiga pengulangan mengambil 1,864s/6,481s/5,460s (pembukaan koneksi terpisah ~4,9s). Jadi diagnosis sebelumnya "hanya jaringan" tidak lengkap: jalur pembacaan LOB async memperburuk latency pada dev. API kini memakai query EF sinkron **hanya** saat cache gambar miss; 64 semaphore stripe bounded menggabungkan miss serentak per floor agar request tidak ramai-ramai memblokir thread dan membaca SQL. Semua endpoint lain tetap async, autentikasi gambar dan cache no-store tetap sama, tidak ada perubahan data.
+
+QA build/API terpisah `:5103`: BUILDING 2 MISS 2,699s → HIT 0,005s; tiga request cold bersamaan untuk BUILDING 1 menghasilkan tepat satu MISS, dua HIT, dan SHA-256 byte sama. Tes service cache (hit, delete invalidation, generation guard, batas 32 MiB) serta build API lulus. API dev `:5099` diganti build baru; browser nyata `localhost:3000/networks/access-point` membuka gambar BUILDING 2 dan satu markernya dalam 2,505s saat cold, lalu pindah balik ke BUILDING 2 dalam 0,112s; anonymous GET image tetap 401. Dialog Delete yang sempat terbuka saat QA **dibatalkan**, floor list tetap dua dan tidak ada penghapusan. QA API sementara `:5103` dimatikan, dev `:5099` tetap hidup. Edit teks HIRO di Vue dan Basil lockfile tetap lokal, tidak ikut push. Prod IIS/SQL lokal belum diuji langsung; ukur cold/warm sesudah deploy.
 
 ### Networks / Access Point — cache gambar, dev refresh, dan batas cold load (2026-11-10, published)
 
