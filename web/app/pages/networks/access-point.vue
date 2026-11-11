@@ -20,6 +20,8 @@ const showUpload = ref(false)
 const showEditor = ref(false)
 const showDetails = ref(false)
 const detailError = ref('')
+const copiedIpId = ref<number | null>(null)
+let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
 const editingId = ref<number | null>(null)
 const editorError = ref('')
 const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', apType: 'primary', x: 0.5, y: 0.5 })
@@ -90,7 +92,7 @@ watch(showUpload, open => {
   if (uploadInput.value) uploadInput.value.value = ''
   setUploadPreviewUrl('')
 })
-watch(showDetails, open => { if (!open) selectedId.value = null })
+watch(showDetails, open => { if (!open) { selectedId.value = null; copiedIpId.value = null } })
 
 function message(e: any): string { return e?.data?.message || e?.message || 'The request could not be completed.' }
 function setImageUrl(url: string) {
@@ -132,7 +134,7 @@ async function refresh(preferId?: number) {
   finally { loading.value = false }
 }
 onMounted(() => { void refresh() })
-onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
+onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer); setImageUrl(''); setUploadPreviewUrl('') })
 
 function pickImage(event: Event) {
   uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -179,9 +181,44 @@ function openAdd(x = 0.5, y = 0.5) {
 }
 function openDetails(point: AccessPoint) {
   if (point.id === suppressMarkerClickId && performance.now() < suppressMarkerClickUntil) return
+  copiedIpId.value = null
   selectedId.value = point.id
   detailError.value = ''
   showDetails.value = true
+}
+async function copyIpAddress(point: AccessPoint) {
+  try {
+    if (window.isSecureContext && navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(point.ipAddress)
+    } else {
+      // The office runs over HTTP, where the Clipboard API is unavailable.
+      const previous = document.activeElement as HTMLElement | null
+      const selection = window.getSelection()
+      const ranges = selection ? Array.from({ length: selection.rangeCount }, (_, i) => selection.getRangeAt(i).cloneRange()) : []
+      const input = document.createElement('textarea')
+      input.value = point.ipAddress
+      input.readOnly = true
+      input.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'
+      document.body.appendChild(input)
+      try {
+        input.select()
+        if (!document.execCommand('copy')) throw new Error('Clipboard unavailable')
+      } finally {
+        input.remove()
+        previous?.focus({ preventScroll: true })
+        if (selection) { selection.removeAllRanges(); ranges.forEach(range => selection.addRange(range)) }
+      }
+    }
+    if (showDetails.value && selectedPoint.value?.id === point.id) {
+      copiedIpId.value = point.id
+      if (copyFeedbackTimer) clearTimeout(copyFeedbackTimer)
+      copyFeedbackTimer = setTimeout(() => { copiedIpId.value = null; copyFeedbackTimer = null }, 1600)
+    }
+  } catch {
+    copiedIpId.value = null
+    if (copyFeedbackTimer) { clearTimeout(copyFeedbackTimer); copyFeedbackTimer = null }
+    toast.add({ id: 'ap-ip-copy-error', title: 'Unable to copy IP address', description: 'Allow clipboard access or copy the IP address manually.', color: 'error' })
+  }
 }
 function openEdit(point: AccessPoint) {
   if (!isAdmin.value || busy.value) return
@@ -429,7 +466,22 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             </div>
             <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Type</dt><dd class="font-semibold" :class="selectedPoint.apType === 'bcp' ? 'text-amber-700 dark:text-amber-400' : 'text-primary'">{{ selectedPoint.apType === 'bcp' ? 'BCP · Backup' : 'Primary · Main network' }}</dd></div>
-              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">IP address</dt><dd class="break-all font-mono text-highlighted">{{ selectedPoint.ipAddress }}</dd></div>
+              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3">
+                <dt class="text-muted">IP address</dt>
+                <dd class="flex min-w-0 items-center gap-2">
+                  <span class="min-w-0 flex-1 break-all font-mono text-highlighted">{{ selectedPoint.ipAddress }}</span>
+                  <UButton type="button" size="sm" color="neutral" variant="ghost" class="size-9 shrink-0 justify-center" :disabled="busy"
+                    :aria-label="`${copiedIpId === selectedPoint.id ? 'Copied' : 'Copy'} IP address ${selectedPoint.ipAddress}`" @click="copyIpAddress(selectedPoint)">
+                    <svg v-if="copiedIpId === selectedPoint.id" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4">
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                    <svg v-else aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-4">
+                      <rect x="8" y="8" width="13" height="13" rx="2" /><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" />
+                    </svg>
+                  </UButton>
+                  <span role="status" class="sr-only">{{ copiedIpId === selectedPoint.id ? 'IP address copied' : '' }}</span>
+                </dd>
+              </div>
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Location</dt><dd class="break-words text-highlighted">{{ selectedPoint.position || 'Not specified' }}</dd></div>
             </dl>
             <p v-if="isAdmin" role="alert" class="min-h-5 text-sm text-error">{{ detailError }}</p>
