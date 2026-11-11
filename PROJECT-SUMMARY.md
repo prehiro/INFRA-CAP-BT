@@ -3,6 +3,12 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-11
 
+### Networks / Access Point — tipe Primary dan BCP (2026-11-11, published)
+
+Source commit `cf87973` menambah kolom `NetworkAccessPoints.ApType` dengan default `primary` lewat migrasi `20261111145325_AddAccessPointType`, sehingga AP lama tetap Primary tanpa mengganti ID/koordinat. API hanya menerima `primary` atau `bcp`, dan mengembalikan tipe pada detail, create/edit, serta update posisi. Add AP default Primary; Add/Edit menyediakan pilihan Primary/BCP. Marker BCP berlian amber dengan ikon Wi-Fi, orbit berputar dan glow pelan, tanpa rectangle saat hover; Primary tetap bundar hijau dengan animasi Wi-Fi asal. Detail AP tetap memperlihatkan tipenya; reduced motion mematikan animasi BCP. Klasifikasi ini **bukan** monitoring atau failover otomatis saat jaringan Primary down.
+
+QA dev: AP lama tetap terbaca Primary; create tanpa tipe default Primary, tipe invalid ditolak 400, BCP Add/Edit dan pindah posisi bertahan setelah reload. Marker diuji pada denah hidup desktop/ponsel, tema terang/gelap, hover tanpa rectangle, detail klik, serta reduced motion. 95 tes frontend dan build web/API lulus. Floor dan AP uji dihapus; dua floor asli tetap ada. Perubahan loader `RegisterLoading`, edit teks judul/subtitle/upload milik HIRO di `access-point.vue`, dan edit Basil di `web/package-lock.json` **tetap lokal**, tidak ikut commit/push ini. Produksi IIS/SQL belum diuji untuk migrasi/latency.
+
 ### Networks / Access Point — floor baru ke-3 dan seterusnya langsung tampil (2026-11-11, published)
 
 Tes skala DB dev dengan menambah sementara tiga floor WebP 329.220 byte (QA floor ke-3/4/5) membuktikan list tetap ~0,007–0,010s dan hanya image floor terpilih yang dimuat. Namun sebelum perbaikan, masing-masing floor baru masih perlu SQL cold read 4,114s/6,345s/1,617s; cache setelahnya HIT ~0,004s. Perbaikan: setelah `POST /api/network/floor-maps` sukses menyimpan DB, API menyemai `FloorImageCache` dari byte upload yang sudah di memori dengan generation guard agar Delete serentak tidak mengembalikan gambar terhapus. Browser juga langsung menyimpan `File` yang diupload dalam cache Blob per-page (tetap maksimum tiga), sehingga pemuatan pertama setelah upload tidak memanggil endpoint image sama sekali, bahkan jika cache API penuh. Tidak ada perubahan penyimpanan gambar di DB atau akses auth.
