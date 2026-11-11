@@ -343,7 +343,9 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         </div>
 
         <p v-if="error" role="alert" class="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">{{ error }}</p>
-        <div v-if="loading" class="py-10 text-center text-sm text-muted">Loading floor plans…</div>
+        <div v-if="loading" class="flex items-center justify-center py-10 text-sm text-muted">
+          <RegisterLoading label="Loading floor plans..." />
+        </div>
         <UCard v-else-if="!floors.length" :ui="{ body: 'p-10 text-center' }">
           <div class="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/10 text-primary"><UIcon name="i-lucide-wifi" class="size-7" /></div>
           <h3 class="mt-4 font-semibold text-highlighted">No floor plans yet</h3>
@@ -381,7 +383,9 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 </button>
                 </div>
               </div>
-              <p v-else class="flex flex-1 items-center justify-center py-20 text-center text-sm text-muted">Loading floor-plan image…</p>
+              <div v-else class="flex min-h-0 flex-1 items-center justify-center p-3 text-sm text-muted">
+                <RegisterLoading label="Loading floor-plan image..." />
+              </div>
           </UCard>
         </template>
       </div>
