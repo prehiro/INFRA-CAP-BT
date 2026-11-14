@@ -4949,3 +4949,23 @@ status/sinyal, bukan tone. Warna netral (steel, kaca, chassis, UPS merah APC) ju
 CATATAN: accent dibaca per mount, jadi mengganti accent saat modal rack terbuka baru terlihat
 setelah modal dibuka ulang. Terverifikasi di harness: var `#00c16a` -> glow/stripe hijau,
 var `#8b5cf6` -> glow/stripe ungu, 0 error di dua-duanya.
+
+
+### Preset kamera: Rear & PDU dihapus, dock di-center (2026-11-14, lanjutan)
+
+HIRO: "hapus tombol rear & pdu, lalu centerkan view control button nya".
+- Tombol `data-cam="rear"` (label "Rear & PDU") dihapus dari dock preset, dan entri `rear` di objek
+  `presets` ikut dibuang supaya tidak menyisakan preset tanpa tombol. Sisa 4 preset: Angled View,
+  Front View, Close-Up Ports, Bottom UPS.
+- Dock preset dulu `left-1/2 -translate-x-1/2` -> terpusat pada SELURUH canvas, padahal HUD kanan
+  (w-80 + right-3 = 332px) menutup sisi kanan, jadi secara visual terlihat geser ke kanan. Sekarang
+  dock jadi bar `absolute bottom-3 left-0 right-0 flex justify-center px-3 sm:right-[336px]`
+  sehingga titik tengahnya jatuh di area yang benar-benar kosong (di bawah sm HUD disembunyikan,
+  jadi offset hanya berlaku dari sm ke atas). Baris tombol di dalamnya juga `justify-center`.
+- Geometri rack tidak disentuh: pintu belakang berperforasi dan PDU 0U tetap ada di scene, hanya
+  tombol preset-nya yang hilang (kamera belakang masih bisa dicapai dengan orbit manual).
+
+Verifikasi: harness 0 error, 4 tombol cam terdeteksi (angled/front/ports/ups), `data-cam="rear"`
+false, scene tetap 24.294 triangle; `npx nuxt build` lulus dan utilitas `sm:right-[336px]` benar
+ada di CSS hasil build. CATATAN: pemusatan dock tidak bisa diukur di harness karena harness tidak
+memuat Tailwind, jadi penilaian visual terakhir tetap di browser HIRO.

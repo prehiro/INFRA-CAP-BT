@@ -1621,8 +1621,7 @@ onMounted(async () => {
       angled: { pos: new THREE.Vector3(1.45, 1.15, 1.95), target: new THREE.Vector3(0, 0.72, 0) },
       front:  { pos: new THREE.Vector3(0, 0.78, 2.05),    target: new THREE.Vector3(0, 0.72, 0) },
       ports:  { pos: new THREE.Vector3(0.18, 0.92, 0.92), target: new THREE.Vector3(0, 0.88, 0.32) },
-      ups:    { pos: new THREE.Vector3(0.45, 0.32, 1.15), target: new THREE.Vector3(0, 0.16, 0.25) },
-      rear:   { pos: new THREE.Vector3(-1.35, 1.05, -1.85), target: new THREE.Vector3(0, 0.72, 0) }
+      ups:    { pos: new THREE.Vector3(0.45, 0.32, 1.15), target: new THREE.Vector3(0, 0.16, 0.25) }
     }
 
     document.querySelectorAll('.cam-btn').forEach(btn => {
@@ -2159,9 +2158,9 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Bottom Camera Presets Dock -->
-    <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-1.5rem)]">
-      <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-1.5 overflow-x-auto">
+    <!-- Bottom Camera Presets Dock - centred in the area the right HUD leaves free -->
+    <div class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:right-[336px] sm:pl-0">
+      <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-center gap-1.5 overflow-x-auto max-w-full">
         <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap">
           Angled View
         </button>
@@ -2173,9 +2172,6 @@ onMounted(async () => {
         </button>
         <button data-cam="ups" class="cam-btn px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition whitespace-nowrap">
           Bottom UPS
-        </button>
-        <button data-cam="rear" class="cam-btn px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition whitespace-nowrap">
-          Rear & PDU
         </button>
       </div>
     </div>
