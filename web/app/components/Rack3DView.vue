@@ -50,6 +50,22 @@ onMounted(async () => {
   if (!container) return
 
   try {
+    // The scene's colour tone follows the app's accent (--ui-primary), which the user can switch
+    // live from the theme picker. The value is read ONCE per mount: the modal rebuilds the scene
+    // on every open, so a changed accent is picked up the next time the rack is opened.
+    const accentCss = (() => {
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--ui-primary, #00c16a)'
+      probe.style.display = 'none'
+      document.body.appendChild(probe)
+      const css = getComputedStyle(probe).color
+      probe.remove()
+      return css
+    })()
+    const accentColor = new THREE.Color(accentCss)
+    const accentRgb = (accentCss.match(/\d+/g) || ['0', '193', '106']).slice(0, 3).map(Number)
+    const accentRgba = (alpha) => `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, ${alpha})`
+
     // =====================================================================
     // 1. SCENE, RENDERER, CAMERA & CURSOR-TARGETED ZOOM CONTROLS
     // =====================================================================
@@ -118,7 +134,7 @@ onMounted(async () => {
     scene.add(keyLight)
 
     // Cool cyan rim light & subtle warm back fill for metallic edge definition
-    const rimLight = new THREE.DirectionalLight(0x38bdf8, 0.9)
+    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.9)
     rimLight.position.set(-2.5, 2.2, -2.5)
     scene.add(rimLight)
 
@@ -144,10 +160,10 @@ onMounted(async () => {
     gridHelper.position.y = 0.001
     scene.add(gridHelper)
 
-    // Subtle cyan under-rack glow strip
+    // Subtle accent-coloured under-rack glow strip
     const glowPlane = new THREE.Mesh(
       new THREE.PlaneGeometry(0.68, 0.86),
-      new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.14 })
+      new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.14 })
     )
     glowPlane.rotation.x = -Math.PI / 2
     glowPlane.position.y = 0.002
@@ -224,12 +240,12 @@ onMounted(async () => {
       ctx.beginPath()
       ctx.roundRect(4, 6, 504, 116, 14)
       ctx.fill()
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)'
+      ctx.strokeStyle = accentRgba(0.45)
       ctx.lineWidth = 3
       ctx.stroke()
 
       // Cisco signature bridge icon bars (cyan/teal)
-      ctx.fillStyle = '#049fd9'
+      ctx.fillStyle = accentCss
       const bars = [16, 28, 44, 28, 16, 28, 44, 28, 16]
       bars.forEach((h, idx) => {
         ctx.fillRect(22 + idx * 11, 64 - h, 6, h)
@@ -240,7 +256,7 @@ onMounted(async () => {
       ctx.font = 'bold 24px "Inter", sans-serif'
       ctx.fillText('CISCO', 22, 98)
 
-      ctx.fillStyle = '#38bdf8'
+      ctx.fillStyle = accentCss
       ctx.font = '600 18px "JetBrains Mono", monospace'
       ctx.fillText(modelLabel, 112, 98)
 
@@ -275,12 +291,12 @@ onMounted(async () => {
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, 512, 192)
 
-      ctx.strokeStyle = '#38bdf8'
+      ctx.strokeStyle = accentCss
       ctx.lineWidth = 6
       ctx.strokeRect(4, 4, 504, 184)
 
       // Top status header
-      ctx.fillStyle = '#38bdf8'
+      ctx.fillStyle = accentCss
       ctx.font = 'bold 24px "JetBrains Mono", monospace'
       ctx.fillText(`APC Smart-UPS ${vaRating}VA`, 22, 40)
 
@@ -328,10 +344,10 @@ onMounted(async () => {
       metalness: 0.7
     })
     const matCiscoTeal = new THREE.MeshStandardMaterial({
-      color: 0x049fd9,
+      color: accentColor.clone(),
       roughness: 0.3,
       metalness: 0.4,
-      emissive: 0x024e6b,
+      emissive: accentColor.clone().multiplyScalar(0.32),
       emissiveIntensity: 0.25
     })
     const matPortMetal = new THREE.MeshStandardMaterial({
@@ -566,10 +582,10 @@ onMounted(async () => {
     glassPane.name = 'frontGlassDoor'
     doorPivot.add(glassPane)
 
-    // Subtle cyan vertical accent pinstripes on glass edge
+    // Subtle accent-coloured vertical pinstripes on glass edge
     const glassStripe = new THREE.Mesh(
       new THREE.BoxGeometry(0.004, doorH - frameThickness * 2, 0.007),
-      new THREE.MeshBasicMaterial({ color: 0x06b6d4, transparent: true, opacity: 0.45 })
+      new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.45 })
     )
     glassStripe.position.set(doorW - frameThickness - 0.012, 0, 0)
     doorPivot.add(glassStripe)
@@ -1230,7 +1246,7 @@ onMounted(async () => {
       document.querySelectorAll('.ups-btn').forEach(btn => {
         const val = btn.getAttribute('data-ups')
         btn.className = val === upsModel
-          ? 'ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 transition'
+          ? 'ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-primary/25 text-primary border border-primary/50 transition'
           : 'ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition'
       })
 
@@ -1265,17 +1281,17 @@ onMounted(async () => {
         return `
                     <div draggable="true" data-select-id="${sw.id}" class="inv-row flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border cursor-grab active:cursor-grabbing transition ${
                         active
-                            ? 'bg-cyan-500/15 border-cyan-400/50 text-white'
+                            ? 'bg-primary/15 border-primary/50 text-white'
                             : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
                     }">
-                        <div class="text-slate-500 hover:text-cyan-400 shrink-0" title="Drag to reorder">
+                        <div class="text-slate-500 hover:text-primary shrink-0" title="Drag to reorder">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
                             </svg>
                         </div>
                         <div class="min-w-0 flex-1">
                             <div class="flex items-center gap-1.5">
-                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400">U${String(sw.u).padStart(2, '0')}</span>
+                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-primary">U${String(sw.u).padStart(2, '0')}</span>
                                 <span class="text-xs font-mono font-semibold truncate">${sw.hostname}</span>
                             </div>
                             <div class="flex items-center gap-1.5 mt-0.5 pl-0.5 flex-wrap">
@@ -1328,7 +1344,7 @@ onMounted(async () => {
 
         row.addEventListener('dragstart', (e) => {
           draggedSwitchId = Number(row.getAttribute('data-select-id'))
-          row.classList.add('opacity-45', 'border-cyan-400')
+          row.classList.add('opacity-45', 'border-primary')
           if (e.dataTransfer) {
             e.dataTransfer.effectAllowed = 'move'
             e.dataTransfer.setData('text/plain', String(draggedSwitchId))
@@ -1338,7 +1354,7 @@ onMounted(async () => {
         row.addEventListener('dragend', () => {
           draggedSwitchId = null
           inventoryList.querySelectorAll('.inv-row').forEach(el => {
-            el.classList.remove('opacity-45', 'border-cyan-400', 'border-t-2', 'border-t-cyan-400', 'border-b-2', 'border-b-cyan-400')
+            el.classList.remove('opacity-45', 'border-primary', 'border-t-2', 'border-t-primary', 'border-b-2', 'border-b-primary')
           })
         })
 
@@ -1350,13 +1366,13 @@ onMounted(async () => {
           const rect = row.getBoundingClientRect()
           const isTopHalf = (e.clientY - rect.top) < rect.height / 2
           row.classList.toggle('border-t-2', isTopHalf)
-          row.classList.toggle('border-t-cyan-400', isTopHalf)
+          row.classList.toggle('border-t-primary', isTopHalf)
           row.classList.toggle('border-b-2', !isTopHalf)
-          row.classList.toggle('border-b-cyan-400', !isTopHalf)
+          row.classList.toggle('border-b-primary', !isTopHalf)
         })
 
         row.addEventListener('dragleave', () => {
-          row.classList.remove('border-t-2', 'border-t-cyan-400', 'border-b-2', 'border-b-cyan-400')
+          row.classList.remove('border-t-2', 'border-t-primary', 'border-b-2', 'border-b-primary')
         })
 
         row.addEventListener('drop', (e) => {
@@ -1522,14 +1538,14 @@ onMounted(async () => {
     tabHardware.addEventListener('click', () => {
       viewHardware.classList.remove('hidden')
       viewRack.classList.add('hidden')
-      tabHardware.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition'
+      tabHardware.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-primary/20 text-primary border border-primary/30 transition'
       tabRack.className = 'flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition'
     })
 
     tabRack.addEventListener('click', () => {
       viewRack.classList.remove('hidden')
       viewHardware.classList.add('hidden')
-      tabRack.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition'
+      tabRack.className = 'flex-1 py-1.5 text-xs font-semibold rounded-lg bg-primary/20 text-primary border border-primary/30 transition'
       tabHardware.className = 'flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition'
     })
 
@@ -1555,7 +1571,7 @@ onMounted(async () => {
       btnDoor.textContent = isDoorOpen ? 'Open (Click to Close)' : 'Closed (Click to Open)'
       btnDoor.className = isDoorOpen
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition'
-        : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition'
+        : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
     }
 
     btnDoor.addEventListener('click', toggleDoor)
@@ -1566,7 +1582,7 @@ onMounted(async () => {
       btnSides.textContent = areSidesVisible ? 'Installed' : 'Removed (Open)'
       btnSides.className = areSidesVisible
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition'
-        : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition'
+        : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
     })
 
     btnTraffic.addEventListener('click', () => {
@@ -1582,7 +1598,7 @@ onMounted(async () => {
       controls.autoRotateSpeed = 1.4
       btnAutoRotate.textContent = controls.autoRotate ? 'On' : 'Off'
       btnAutoRotate.className = controls.autoRotate
-        ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition'
+        ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
         : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition'
     })
 
@@ -1630,7 +1646,7 @@ onMounted(async () => {
         document.querySelectorAll('.cam-btn').forEach(b => {
           b.className = 'cam-btn px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition whitespace-nowrap'
         })
-        btn.className = 'cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-cyan-500 text-slate-950 font-semibold shadow-lg shadow-cyan-500/25 transition whitespace-nowrap'
+        btn.className = 'cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap'
       })
     })
 
@@ -1929,15 +1945,15 @@ onMounted(async () => {
 
     <!-- Loading Overlay -->
     <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#06090f] transition-opacity duration-700">
-      <div class="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
-      <div class="text-sm font-mono tracking-widest uppercase text-cyan-400">Initializing 24U Rack & Switch Telemetry...</div>
+      <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
+      <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing 24U Rack & Switch Telemetry...</div>
     </div>
 
     <!-- Hover Inspection Tooltip -->
     <div id="hover-tooltip" class="absolute z-30 pointer-events-none opacity-0 transition-opacity duration-150 transform -translate-x-1/2 -translate-y-full pb-3">
-      <div class="glass-panel rounded-xl px-3.5 py-2.5 border border-cyan-400/40 shadow-2xl min-w-[265px]">
+      <div class="glass-panel rounded-xl px-3.5 py-2.5 border border-primary/40 shadow-2xl min-w-[265px]">
         <div class="flex items-center justify-between gap-2">
-          <span id="tt-slot" class="text-[11px] font-mono font-bold text-cyan-400 bg-cyan-950/80 px-1.5 py-0.5 rounded">U23</span>
+          <span id="tt-slot" class="text-[11px] font-mono font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded">U23</span>
           <span id="tt-ip" class="text-[11px] font-mono font-semibold text-amber-300">10.10.1.11</span>
           <span id="tt-status" class="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> ONLINE
@@ -1946,14 +1962,14 @@ onMounted(async () => {
         <div id="tt-name" class="text-xs font-semibold text-white mt-1">SW-CORE-01 — Catalyst 9300-48P</div>
         <div class="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-700/80">
           <span class="text-slate-500">S/N:</span>
-          <span id="tt-sn" class="text-cyan-300 font-semibold tracking-wider">FCW2419L08A</span>
+          <span id="tt-sn" class="text-primary font-semibold tracking-wider">FCW2419L08A</span>
         </div>
         <div id="tt-meta" class="text-[11px] font-mono text-slate-400 mt-1">48x RJ45 PoE+ | 4x 10G SFP+ | Click to Edit</div>
       </div>
     </div>
 
     <!-- Collapsible Toggle Button for Mobile / Compact View -->
-    <button id="toggle-hud-btn" class="absolute top-3 right-3 z-30 glass-panel p-2.5 rounded-xl text-slate-200 hover:text-cyan-400 transition sm:hidden" title="Toggle Controls">
+    <button id="toggle-hud-btn" class="absolute top-3 right-3 z-30 glass-panel p-2.5 rounded-xl text-slate-200 hover:text-primary transition sm:hidden" title="Toggle Controls">
       <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
       </svg>
@@ -1963,7 +1979,7 @@ onMounted(async () => {
     <div id="control-panel" class="absolute top-3 right-3 z-20 w-80 max-w-[calc(100%-1.5rem)] max-h-full flex flex-col glass-panel rounded-2xl p-4 transition-all duration-300 hidden sm:flex">
       <!-- Drawer Tabs -->
       <div class="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 mb-3 shrink-0">
-        <button id="tab-hardware" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition">
+        <button id="tab-hardware" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-primary/20 text-primary border border-primary/30 transition">
           Hardware & Inventory
         </button>
         <button id="tab-rack" class="flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition">
@@ -1977,11 +1993,11 @@ onMounted(async () => {
       <!-- TAB 1: HARDWARE, SWITCH CONFIG & UPS MANAGEMENT -->
       <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-3">
         <!-- Selected Switch Editor Card -->
-        <div id="switch-editor-card" class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-cyan-500/35 shadow-lg shadow-cyan-950/20 space-y-2.5">
-          <div class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-cyan-400 via-sky-400 to-amber-400"></div>
+        <div id="switch-editor-card" class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-2.5">
+          <div class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-primary to-amber-400"></div>
           <div class="flex items-center justify-between">
-            <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               <span id="editor-title">Switch Asset (U23)</span>
             </span>
             <button id="btn-delete-selected" class="text-[11px] px-2 py-0.5 rounded-lg bg-rose-500/15 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30 transition">
@@ -1993,28 +2009,28 @@ onMounted(async () => {
             <div>
               <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Switch Hostname</label>
               <input id="input-hostname" type="text" maxlength="18" placeholder="SW-CORE-01"
-                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-white focus:outline-none focus:border-cyan-400 transition" />
+                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-white focus:outline-none focus:border-primary transition" />
             </div>
             <div class="grid grid-cols-3 gap-2">
               <div class="col-span-2">
                 <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Management IP</label>
                 <input id="input-ip" type="text" maxlength="18" placeholder="10.10.1.11"
-                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-amber-300 focus:outline-none focus:border-cyan-400 transition" />
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-amber-300 focus:outline-none focus:border-primary transition" />
               </div>
               <div>
                 <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Rack Slot</label>
-                <select id="select-slot" class="w-full px-1.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-cyan-300 focus:outline-none focus:border-cyan-400 transition"></select>
+                <select id="select-slot" class="w-full px-1.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-primary focus:outline-none focus:border-primary transition"></select>
               </div>
             </div>
             <div>
               <div class="flex items-center justify-between mb-1">
                 <label class="text-[10px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                   </svg>
                   Switch Serial Number (S/N)
                 </label>
-                <button id="btn-copy-sw-sn" type="button" title="Copy Serial Number" class="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition">
+                <button id="btn-copy-sw-sn" type="button" title="Copy Serial Number" class="text-[10px] font-mono text-primary hover:text-primary flex items-center gap-1 transition">
                   Copy S/N
                 </button>
               </div>
@@ -2029,7 +2045,7 @@ onMounted(async () => {
 
         <!-- Add Switch Action -->
         <div class="flex items-center justify-between gap-2">
-          <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition flex items-center justify-center gap-1.5">
+          <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition flex items-center justify-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -2054,7 +2070,7 @@ onMounted(async () => {
             <button data-ups="none" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
               None
             </button>
-            <button data-ups="3000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 transition">
+            <button data-ups="3000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-primary/25 text-primary border border-primary/50 transition">
               3000VA (2U)
             </button>
             <button data-ups="5000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
@@ -2097,7 +2113,7 @@ onMounted(async () => {
         <div class="space-y-2.5">
           <div class="flex items-center justify-between">
             <span class="text-xs text-slate-300">Front Glass Door</span>
-            <button id="btn-door" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition">
+            <button id="btn-door" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition">
               Closed (Click to Open)
             </button>
           </div>
@@ -2128,7 +2144,7 @@ onMounted(async () => {
         <div class="pt-3 border-t border-slate-800">
           <div class="flex justify-between items-center mb-1.5">
             <label for="slider-intensity" class="text-xs text-slate-300">Traffic Burst Intensity</label>
-            <span id="intensity-val" class="text-xs font-mono text-cyan-400">75%</span>
+            <span id="intensity-val" class="text-xs font-mono text-primary">75%</span>
           </div>
           <input id="slider-intensity" type="range" min="5" max="100" value="75" class="w-full" />
         </div>
@@ -2146,7 +2162,7 @@ onMounted(async () => {
     <!-- Bottom Camera Presets Dock -->
     <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 max-w-[calc(100%-1.5rem)]">
       <div class="glass-panel rounded-2xl p-1.5 flex items-center gap-1.5 overflow-x-auto">
-        <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-cyan-500 text-slate-950 font-semibold shadow-lg shadow-cyan-500/25 transition whitespace-nowrap">
+        <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap">
           Angled View
         </button>
         <button data-cam="front" class="cam-btn px-3.5 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-slate-800/80 transition whitespace-nowrap">
@@ -2190,7 +2206,7 @@ onMounted(async () => {
   background: rgba(11, 17, 29, 0.82);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid color-mix(in oklab, var(--ui-primary) 22%, transparent);
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.78);
 }
 /* Custom thin scrollbar for equipment inventory list */
@@ -2202,7 +2218,7 @@ onMounted(async () => {
   border-radius: 999px;
 }
 .custom-scroll::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.35);
+  background: color-mix(in oklab, var(--ui-primary) 45%, transparent);
   border-radius: 999px;
 }
 /* Custom range slider */

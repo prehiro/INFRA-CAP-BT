@@ -4924,3 +4924,28 @@ memasang ulang CRUD (mis. menyambungkan editor HUD kanan ke API), jadi ini kode 
 pemanggil, bukan kode mati.
 
 Verifikasi: `npx nuxt build` lulus (exit 0).
+
+
+### Tone warna 3D rack ikut accent color (2026-11-14, lanjutan)
+
+HIRO: "color tone nya sesuaikan accent color". Sebelumnya scene memakai cyan/teal bawaan sample.
+Sekarang warna mengikuti accent aplikasi (`--ui-primary`, bisa diganti dari theme picker).
+
+DUA LAPIS YANG DIUBAH:
+1. CHROME HUD (Tailwind): 66 kelas `cyan-*`/`sky-*` dipetakan ke utilitas `primary` milik Nuxt UI
+   (`text-primary`, `bg-primary/20`, `border-primary/40`, `from-primary`, `via-primary`,
+   `shadow-primary/25`, `border-t-primary`/`border-b-primary` untuk indikator drag-sort). Dua
+   pengecualian yang perlu opacity lebih kecil: `bg-cyan-950/80` -> `bg-primary/15` dan
+   `shadow-cyan-950/20` -> `shadow-primary/10`. Terbukti semua utilitas ini benar-benar ada di CSS
+   hasil build (`.bg-primary\/15`, `.border-t-primary`, `.shadow-primary\/25`, `.via-primary`).
+2. SCENE three.js: nilai accent dibaca sekali per mount lewat elemen probe
+   (`color: var(--ui-primary, #00c16a)` + getComputedStyle), lalu dipakai untuk rim light, glow di
+   bawah rack, pinstripe pintu kaca, stripe aksen di faceplate switch, dan badge hostname/IP di
+   canvas texture (lewat `accentCss` + `accentRgba(alpha)`).
+
+YANG SENGAJA TIDAK DIUBAH: LED port (hijau/amber), LED SFP (cyan), dan kabel fiber (aqua) - itu
+status/sinyal, bukan tone. Warna netral (steel, kaca, chassis, UPS merah APC) juga tetap.
+
+CATATAN: accent dibaca per mount, jadi mengganti accent saat modal rack terbuka baru terlihat
+setelah modal dibuka ulang. Terverifikasi di harness: var `#00c16a` -> glow/stripe hijau,
+var `#8b5cf6` -> glow/stripe ungu, 0 error di dua-duanya.
