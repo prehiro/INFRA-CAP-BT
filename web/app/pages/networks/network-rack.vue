@@ -328,11 +328,11 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
           <div class="flex w-full min-w-0 items-center gap-3 xl:max-w-[320px]">
             <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
               <RecordAddIcon size="lg" random-halo>
-                <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                  <rect x="2" y="4" width="20" height="16" rx="1" />
-                  <line class="nr-rack-line nr-rack-line-1" x1="6" y1="8" x2="18" y2="8" />
-                  <line class="nr-rack-line nr-rack-line-2" x1="6" y1="12" x2="18" y2="12" />
-                  <line class="nr-rack-line nr-rack-line-3" x1="12" y1="16" x2="12" y2="20" />
+                <svg class="pc-add-tilt size-7" viewBox="0 0 512 512" fill="currentColor" focusable="false" aria-hidden="true">
+                  <path d="M 25 457 L 25 487 L 155.2 487 L 175.2 457 Z M 196.8 457 L 176.8 487 L 335.2 487 L 315.2 457 Z M 336.8 457 L 356.8 487 L 487 487 L 487 457 Z" />
+                  <path class="nr-rack-line nr-rack-line-1" d="M 41 25 L 41 103 L 471 103 L 471 25 Z M 295 48 L 313 48 L 313 80 L 295 80 Z M 416 48 A 16 16 0 0 1 432 64 A 16 16 0 0 1 416 80 A 16 16 0 0 1 400 64 A 16 16 0 0 1 416 48 Z M 64 55 L 112 55 L 112 73 L 64 73 Z M 144 55 L 192 55 L 192 73 L 144 73 Z M 224 55 L 272 55 L 272 73 L 224 73 Z M 105 121 L 105 151 L 407 151 L 407 121 Z" />
+                  <path class="nr-rack-line nr-rack-line-2" d="M 41 169 L 41 247 L 471 247 L 471 169 Z M 295 192 L 313 192 L 313 224 L 295 224 Z M 416 192 A 16 16 0 0 1 432 208 A 16 16 0 0 1 416 224 A 16 16 0 0 1 400 208 A 16 16 0 0 1 416 192 Z M 64 199 L 112 199 L 112 217 L 64 217 Z M 144 199 L 192 199 L 192 217 L 144 217 Z M 224 199 L 272 199 L 272 217 L 224 217 Z M 105 265 L 105 295 L 407 295 L 407 265 Z" />
+                  <path class="nr-rack-line nr-rack-line-3" d="M 41 313 L 41 391 L 471 391 L 471 313 Z M 295 336 L 313 336 L 313 368 L 295 368 Z M 416 336 A 16 16 0 0 1 432 352 A 16 16 0 0 1 416 368 A 16 16 0 0 1 400 352 A 16 16 0 0 1 416 336 Z M 64 343 L 112 343 L 112 361 L 64 361 Z M 144 343 L 192 343 L 192 361 L 144 361 Z M 224 343 L 272 343 L 272 361 L 224 361 Z M 237 409 L 237 439 L 275 439 L 275 409 Z" />
                 </svg>
               </RecordAddIcon>
             </span>
@@ -609,7 +609,9 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
 }
 .ap-rack-marker:focus-visible .ap-rack-body { transform: scale(1.1); }
 
-/* Rack units light up in sequence: line 1 -> 2 -> 3 all lit, then back to line 1. */
+/* Rack units light up in sequence: band 1 -> 2 -> 3 all lit, then back to band 1.
+   Geometry is the exact game-icons:server-rack body (same as the sidebar icon),
+   split into its three unit bands so each band can fade on its own. */
 .nr-rack-line { animation: nr-rack-line-1 2.7s ease-in-out infinite; }
 .nr-rack-line-2 { animation-name: nr-rack-line-2; }
 .nr-rack-line-3 { animation-name: nr-rack-line-3; }
