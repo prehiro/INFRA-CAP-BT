@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<NetworkFloorMap> NetworkFloorMaps => Set<NetworkFloorMap>();
     public DbSet<NetworkAccessPoint> NetworkAccessPoints => Set<NetworkAccessPoint>();
+    public DbSet<NetworkRack> NetworkRacks => Set<NetworkRack>();
+    public DbSet<NetworkSwitch> NetworkSwitches => Set<NetworkSwitch>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -96,6 +98,24 @@ public class AppDbContext : DbContext
             e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
             e.Property(x => x.Position).HasMaxLength(200).IsRequired();
             e.Property(x => x.ApType).HasMaxLength(12).HasDefaultValue("primary").IsRequired();
+        });
+
+        b.Entity<NetworkRack>(e =>
+        {
+            e.HasOne(x => x.FloorMap).WithMany()
+                .HasForeignKey(x => x.FloorMapId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.FloorMapId);
+            e.Property(x => x.Name).HasMaxLength(60).IsRequired();
+            e.Property(x => x.Description).HasMaxLength(300);
+        });
+        b.Entity<NetworkSwitch>(e =>
+        {
+            e.HasOne(x => x.Rack).WithMany(x => x.Switches)
+                .HasForeignKey(x => x.RackId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.RackId);
+            e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
+            e.Property(x => x.Hostname).HasMaxLength(160);
+            e.Property(x => x.Position).HasMaxLength(100);
         });
         b.Entity<AuditEntry>(e =>
         {

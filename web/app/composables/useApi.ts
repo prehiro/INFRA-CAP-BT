@@ -1,6 +1,7 @@
 import type {
   AuditPage, EntityMeta, FieldMeta, LoginResponse, MetricsSnapshot, RecordPage, RecordRow, User,
-  FloorMapSummary, FloorMapDetail, AccessPoint, AccessPointInput
+  FloorMapSummary, FloorMapDetail, AccessPoint, AccessPointInput,
+  NetworkRackSummary, NetworkRackDetail, NetworkRackInput, NetworkSwitch, NetworkSwitchInput
 } from '~/types'
 
 /**
@@ -78,6 +79,27 @@ export const apiMoveAccessPoint = (floorId: number, id: number, x: number, y: nu
   request<AccessPoint>(`/network/floor-maps/${floorId}/access-points/${id}/position`, { method: 'PATCH', body: { x, y } })
 export const apiDeleteAccessPoint = (floorId: number, id: number) =>
   request<void>(`/network/floor-maps/${floorId}/access-points/${id}`, { method: 'DELETE' })
+
+// ---- network racks & switches ----
+export const apiListNetworkRacks = (floorId: number) =>
+  request<NetworkRackSummary[]>(`/network/floor-maps/${floorId}/racks`)
+export const apiGetNetworkRack = (floorId: number, id: number) =>
+  request<NetworkRackDetail>(`/network/floor-maps/${floorId}/racks/${id}`)
+export const apiCreateNetworkRack = (floorId: number, rack: NetworkRackInput) =>
+  request<NetworkRackSummary>(`/network/floor-maps/${floorId}/racks`, { method: 'POST', body: rack })
+export const apiUpdateNetworkRack = (floorId: number, id: number, rack: NetworkRackInput) =>
+  request<NetworkRackSummary>(`/network/floor-maps/${floorId}/racks/${id}`, { method: 'PUT', body: rack })
+export const apiMoveNetworkRack = (floorId: number, id: number, x: number, y: number) =>
+  request<NetworkRackSummary>(`/network/floor-maps/${floorId}/racks/${id}/position`, { method: 'PATCH', body: { x, y } })
+export const apiDeleteNetworkRack = (floorId: number, id: number) =>
+  request<void>(`/network/floor-maps/${floorId}/racks/${id}`, { method: 'DELETE' })
+
+export const apiAddNetworkSwitch = (floorId: number, rackId: number, sw: NetworkSwitchInput) =>
+  request<NetworkSwitch>(`/network/floor-maps/${floorId}/racks/${rackId}/switches`, { method: 'POST', body: sw })
+export const apiUpdateNetworkSwitch = (floorId: number, rackId: number, switchId: number, sw: NetworkSwitchInput) =>
+  request<NetworkSwitch>(`/network/floor-maps/${floorId}/racks/${rackId}/switches/${switchId}`, { method: 'PUT', body: sw })
+export const apiDeleteNetworkSwitch = (floorId: number, rackId: number, switchId: number) =>
+  request<void>(`/network/floor-maps/${floorId}/racks/${rackId}/switches/${switchId}`, { method: 'DELETE' })
 
 // ---- host metrics (Dashboard System Metrics panel) ----
 

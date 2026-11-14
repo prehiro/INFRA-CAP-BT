@@ -49,10 +49,10 @@ export default defineNuxtConfig({
     clientBundle: {
       scan: true,
       // Dynamic header-icon props are not reliably discovered by the template scanner.
-      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:monitor-x', 'lucide:network', 'lucide:wifi', 'streamline-flex:desktop-screensaver-sleep', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline', 'iconoven:floor-plan', 'bi:router'],
+      icons: [...new Set([...Object.values(carbonIcons), ...Object.values(referenceIconSets).flatMap(set => Object.values(set))].map(normalizeStudioIcon)), 'carbon:data-add', 'streamline-cyber:network', 'lucide:user-plus', 'lucide:user-pen', 'lucide:monitor-x', 'lucide:network', 'lucide:wifi', 'streamline-flex:desktop-screensaver-sleep', 'andrsrxn:device-pc-cpu', 'ix:pc-tower-settings', 'basil:cancel-outline', 'iconoven:floor-plan', 'bi:router', 'game-icons:server-rack'],
       sizeLimitKb: 256
     },
-    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'streamline-flex', 'andrsrxn', 'iconoven', 'bi'] },
+    serverBundle: { collections: ['lucide', 'carbon', 'streamline-cyber', 'streamline-flex', 'andrsrxn', 'iconoven', 'bi', 'game-icons'] },
     provider: 'none',
     fallbackToApi: false
   },

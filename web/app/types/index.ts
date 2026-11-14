@@ -19,6 +19,36 @@ export interface FloorMapDetail extends Omit<FloorMapSummary, 'accessPointCount'
   accessPoints: AccessPoint[]
 }
 
+export type NetworkRackType = 'standard' | 'server' | 'wall'
+export interface NetworkRack {
+  id: number
+  name: string
+  description: string
+  x: number
+  y: number
+  createdAt: string
+  switchCount: number
+  switches: NetworkSwitch[]
+}
+export interface NetworkRackSummary {
+  id: number
+  name: string
+  description: string
+  x: number
+  y: number
+  createdAt: string
+  switchCount: number
+}
+export type NetworkRackInput = Omit<NetworkRackSummary, 'id' | 'createdAt' | 'switchCount'>
+export interface NetworkSwitch {
+  id: number
+  ipAddress: string
+  hostname: string
+  position: string
+  createdAt: string
+}
+export type NetworkSwitchInput = Omit<NetworkSwitch, 'id' | 'createdAt'>
+
 export interface Role {
   id: number
   name: string

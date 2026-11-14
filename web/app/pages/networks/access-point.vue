@@ -319,8 +319,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               </RecordAddIcon>
             </span>
             <div class="min-w-0">
-              <h2 class="text-lg font-bold tracking-wide text-highlighted">Access Point</h2>
-              <p class="text-xs text-muted">{{ isAdmin ? 'Click the plan to add an AP, drag markers to move, or select one for details.' : 'Select a marker to see its network details.' }}</p>
+              <h2 class="text-lg font-bold tracking-wide text-highlighted">BTCAP Access Point Map</h2>
+              <p class="text-xs text-muted">{{ isAdmin ? 'Click the plan to add AP, Click AP for details.' : 'Select a marker to see its network details.' }}</p>
             </div>
           </div>
           <div v-if="floors.length" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto" aria-label="Floor plans">
@@ -395,7 +395,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           <form class="space-y-4" @submit.prevent="createFloor">
             <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
               <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon name="i-lucide-upload" class="ap-upload-glyph size-5" /></span>
-              <p>Upload a floor image, then place access points directly on the plan.</p>
+              <p>Set floor name and floor layout, then place access points directly on the plan.</p>
             </div>
             <div><label for="floor-name" class="mb-1.5 block text-sm font-medium text-highlighted">Floor name</label><UInput id="floor-name" v-model="uploadName" placeholder="e.g. Building A · Level 2" class="w-full" :disabled="busy" maxlength="120" /></div>
             <div>

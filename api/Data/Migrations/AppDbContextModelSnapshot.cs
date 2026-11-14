@@ -358,6 +358,79 @@ namespace Api.Data.Migrations
                     b.ToTable("NetworkFloorMaps");
                 });
 
+            modelBuilder.Entity("Api.Domain.NetworkRack", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<int>("FloorMapId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<double>("X")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Y")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FloorMapId");
+
+                    b.ToTable("NetworkRacks");
+                });
+
+            modelBuilder.Entity("Api.Domain.NetworkSwitch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Hostname")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RackId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RackId");
+
+                    b.ToTable("NetworkSwitches");
+                });
+
             modelBuilder.Entity("Api.Domain.Record", b =>
                 {
                     b.Property<long>("Id")
@@ -475,6 +548,28 @@ namespace Api.Data.Migrations
                     b.Navigation("FloorMap");
                 });
 
+            modelBuilder.Entity("Api.Domain.NetworkRack", b =>
+                {
+                    b.HasOne("Api.Domain.NetworkFloorMap", "FloorMap")
+                        .WithMany()
+                        .HasForeignKey("FloorMapId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FloorMap");
+                });
+
+            modelBuilder.Entity("Api.Domain.NetworkSwitch", b =>
+                {
+                    b.HasOne("Api.Domain.NetworkRack", "Rack")
+                        .WithMany("Switches")
+                        .HasForeignKey("RackId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Rack");
+                });
+
             modelBuilder.Entity("Api.Domain.Record", b =>
                 {
                     b.HasOne("Api.Domain.DynamicEntity", "Entity")
@@ -525,6 +620,11 @@ namespace Api.Data.Migrations
             modelBuilder.Entity("Api.Domain.NetworkFloorMap", b =>
                 {
                     b.Navigation("AccessPoints");
+                });
+
+            modelBuilder.Entity("Api.Domain.NetworkRack", b =>
+                {
+                    b.Navigation("Switches");
                 });
 
             modelBuilder.Entity("Api.Domain.Record", b =>

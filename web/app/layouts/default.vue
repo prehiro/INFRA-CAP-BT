@@ -50,7 +50,8 @@ const links = computed<NavigationMenuItem[][]>(() => [
       type: 'trigger',
       defaultOpen: true,
       children: [
-        { label: 'Access Point', icon: 'i-lucide-wifi', to: '/networks/access-point' }
+        { label: 'Access Point', icon: 'i-lucide-wifi', to: '/networks/access-point' },
+        { label: 'Network Rack', icon: 'game-icons:server-rack', to: '/networks/network-rack' }
       ]
     }
   ],
@@ -112,6 +113,7 @@ const groups = computed(() => [
       { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/factorypc' },
       { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/dispose' },
       { label: 'Access Point', icon: 'i-lucide-wifi', to: '/networks/access-point' },
+      { label: 'Network Rack', icon: 'game-icons:server-rack', to: '/networks/network-rack' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
       { label: 'Handover', icon: 'i-lucide-clipboard-list', to: '/logbook/handover' },
       { label: 'Data Import', icon: 'i-lucide-file-up', to: '/data-import' },
