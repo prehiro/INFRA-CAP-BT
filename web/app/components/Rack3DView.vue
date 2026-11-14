@@ -1927,9 +1927,6 @@ onMounted(async () => {
       :aria-label="`3D view of a 24U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"
     ></div>
 
-    <!-- Rack register (real switches + per-row edit/delete) drawn over the canvas, left side -->
-    <div class="rack3d-register"><slot name="panel" /></div>
-
     <!-- Loading Overlay -->
     <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#06090f] transition-opacity duration-700">
       <div class="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mb-4"></div>
@@ -2170,22 +2167,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.rack3d-register {
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 10px;
-  z-index: 15;
-  width: 232px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border-radius: 10px;
-  border: 1px solid rgb(148 163 184 / 0.18);
-  background: rgb(2 6 23 / 0.72);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
-}
 .rack3d-host {
   position: relative;
   overflow: hidden;

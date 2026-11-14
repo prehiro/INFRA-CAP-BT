@@ -4871,3 +4871,32 @@ diverifikasi lewat browser harness (halaman Nuxt render kosong di harness - kete
 CATATAN PRODUKSI: @nuxt/fonts saat build mengunduh Inter + JetBrains Mono dari fonts.gstatic.com
 (build-time, mesin dev masih online; runtime tetap lokal + CSP font-src 'self'). Kalau build harus
 100% offline, provider google perlu dimatikan di nuxt.config.
+
+
+### Switch list KIRI yang dihapus, bukan yang kanan (2026-11-14, koreksi)
+
+HIRO: "maksud saya yang sebelah kiri bro". Jadi yang saya hapus sebelumnya (inventory list HUD kanan)
+DIBATALKAN lewat `git revert 3dd35ec` (commit 32b1a72), sehingga HUD kanan utuh kembali: inventory
+list drag-sort, kartu UPS di list, tombol remove per baris, dan label tab "Hardware & Inventory".
+
+Yang dihapus sekarang adalah register switch di KIRI dalam canvas:
+- `Rack3DView.vue`: div `.rack3d-register` + `<slot name="panel" />` beserta CSS-nya
+- `network-rack.vue`: seluruh blok `<template #panel>` (judul "Switches in this rack", badge jumlah,
+  daftar li per switch, tombol pensil/hapus per baris, baris error) -> komponen sekarang self-closing
+
+KONSEKUENSI YANG HARUS DIINGAT: satu-satunya UI edit/hapus PER SWITCH ikut hilang. `openEditSwitch()`
+dan `deleteSwitch()` di network-rack.vue sekarang tidak punya pemanggil (sengaja DIBIARKAN sesuai
+pembedaan HIRO: kode yang sekadar kehilangan pemanggil beda dengan kode mati - dan menghapusnya
+berarti menutup jalan mengembalikan fitur). Yang masih hidup: Add Switch (footer, dialog switch),
+Edit Rack, Delete Rack, dan editor switch di HUD kanan - tapi editor HUD itu LOKAL, tidak menulis
+ke database.
+
+`detailError` dulu ditampilkan di panel kiri; sekarang pindah ke baris footer (mr-auto, min-h-5)
+supaya kegagalan loadRackDetail/deleteSwitch tidak lagi senyap.
+
+Modal tetap max-w-7xl: HUD kanan mengambil 320px dan 3D-nya memang lebih enak lebar; tinggal satu
+baris kalau mau dikembalikan ke max-w-3xl.
+
+Verifikasi: harness 0 error, canvas 1200x720, 24.294 triangle, `.rack3d-register` = 0,
+`#inventory-list` = 1 (kanan kembali), 8 switch tetap U23/21/19/17/15/13/9 + satu di U3;
+`npx nuxt build` lulus (exit 0).

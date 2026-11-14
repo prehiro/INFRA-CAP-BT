@@ -510,32 +510,9 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         </template>
         <template #body>
           <div v-if="selectedRackDetail" class="space-y-4">
-            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default">
-              <template #panel>
-                <div class="flex items-center justify-between gap-2 border-b border-default px-3 py-2.5">
-                  <h4 class="text-sm font-semibold text-highlighted">Switches in this rack</h4>
-                  <span class="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-primary">{{ selectedRackDetail.switchCount }}</span>
-                </div>
-                <div v-if="selectedRackDetail.switches.length === 0" class="grid flex-1 place-items-center px-3 text-center text-xs text-muted">No switches yet</div>
-                <ul v-else class="flex-1 space-y-1.5 overflow-y-auto p-2">
-                  <li v-for="sw in selectedRackDetail.switches" :key="sw.id" class="rounded-lg border border-default bg-elevated/50 p-2 text-sm ring-1 ring-inset ring-default/40">
-                    <div class="flex items-start justify-between gap-2">
-                      <div class="min-w-0">
-                        <p class="truncate font-mono text-xs font-semibold text-highlighted">{{ sw.ipAddress }}</p>
-                        <p v-if="sw.hostname" class="truncate text-[11px] text-muted">{{ sw.hostname }}</p>
-                        <p v-if="sw.position" class="truncate text-[11px] text-muted">U-position: {{ sw.position }}</p>
-                      </div>
-                      <template v-if="isAdmin">
-                        <UButton type="button" size="xs" icon="i-lucide-pencil" variant="ghost" class="shrink-0" :disabled="busy" @click="openEditSwitch(sw)" />
-                        <UButton type="button" size="xs" icon="i-lucide-trash-2" color="error" variant="ghost" class="shrink-0" :disabled="busy" @click="deleteSwitch(sw)" />
-                      </template>
-                    </div>
-                  </li>
-                </ul>
-                <p v-if="isAdmin" role="alert" class="min-h-5 px-3 pb-2 text-xs text-error">{{ detailError }}</p>
-              </template>
-            </LazyRack3DView>
+            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
             <div class="flex justify-end gap-2 border-t border-default pt-4">
+              <p v-if="isAdmin" role="alert" class="mr-auto min-h-5 self-center text-xs text-error">{{ detailError }}</p>
               <UButton type="button" color="neutral" variant="ghost" icon="i-lucide-x" class="ap-close-action" :disabled="busy" @click="closeRackDetails">Close</UButton>
               <template v-if="isAdmin">
                 <UButton type="button" icon="i-lucide-plus" variant="soft" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAddSwitch">Add Switch</UButton>
