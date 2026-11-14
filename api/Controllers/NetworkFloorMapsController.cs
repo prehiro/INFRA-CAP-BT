@@ -21,7 +21,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct) => Ok(await db.NetworkFloorMaps
         .AsNoTracking().OrderBy(x => x.Name).ThenBy(x => x.Id)
-        .Select(x => new { x.Id, x.Name, x.CreatedAt, AccessPointCount = x.AccessPoints.Count })
+        .Select(x => new { x.Id, x.Name, x.CreatedAt, AccessPointCount = x.AccessPoints.Count, RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id) })
         .ToListAsync(ct));
 
     [HttpGet("{id:int}")]
@@ -88,7 +88,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         await db.SaveChangesAsync(ct);
         // The uploaded bytes are already here; avoid a needless SQL round-trip on first view.
         imageCache.StoreIfCurrent(floor.Id, new FloorImage(bytes, contentType), cacheGeneration);
-        return CreatedAtAction(nameof(Get), new { id = floor.Id }, new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = 0 });
+        return CreatedAtAction(nameof(Get), new { id = floor.Id }, new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = 0, RackCount = 0 });
     }
 
     [HttpDelete("{id:int}")]

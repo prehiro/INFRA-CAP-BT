@@ -365,7 +365,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeFloorId === item.id" :disabled="busy" @click="loadFloor(item.id)">
                 <span class="w-full truncate text-sm font-semibold leading-tight" :title="item.name">{{ item.name }}</span>
-                <span class="text-[11px] leading-tight opacity-70">{{ item.accessPointCount }} AP</span>
+                <span class="text-[11px] leading-tight opacity-70">{{ item.rackCount }} rack{{ item.rackCount === 1 ? '' : 's' }}</span>
               </button>
               <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost"
                 class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"

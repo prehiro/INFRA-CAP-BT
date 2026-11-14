@@ -14,8 +14,9 @@ export interface FloorMapSummary {
   name: string
   createdAt: string
   accessPointCount: number
+  rackCount: number
 }
-export interface FloorMapDetail extends Omit<FloorMapSummary, 'accessPointCount'> {
+export interface FloorMapDetail extends Omit<FloorMapSummary, 'accessPointCount' | 'rackCount'> {
   accessPoints: AccessPoint[]
 }
 
