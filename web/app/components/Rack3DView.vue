@@ -269,7 +269,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div ref="host" class="rack3d-host" role="img" :aria-label="`3D view of a 24U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`">
+  <div class="rack3d-host">
+    <div ref="host" class="rack3d-canvas" role="img" :aria-label="`3D view of a 24U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"></div>
+    <div class="rack3d-panel"><slot name="panel" /></div>
     <span class="rack3d-hint">Drag to orbit · scroll to zoom</span>
   </div>
 </template>
@@ -277,9 +279,28 @@ onMounted(async () => {
 <style scoped>
 .rack3d-host {
   position: relative;
-  height: 100%;
   background:
     radial-gradient(120% 90% at 50% 0%, #16202f 0%, #0b1220 55%, #070c15 100%);
+}
+.rack3d-canvas {
+  position: absolute;
+  inset: 0;
+}
+.rack3d-panel {
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 10px;
+  width: 232px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgb(148 163 184 / 0.18);
+  background: rgb(2 6 23 / 0.72);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.45);
+  pointer-events: auto;
 }
 .rack3d-hint {
   position: absolute;
