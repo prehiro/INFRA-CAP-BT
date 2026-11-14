@@ -4969,3 +4969,23 @@ Verifikasi: harness 0 error, 4 tombol cam terdeteksi (angled/front/ports/ups), `
 false, scene tetap 24.294 triangle; `npx nuxt build` lulus dan utilitas `sm:right-[336px]` benar
 ada di CSS hasil build. CATATAN: pemusatan dock tidak bisa diukur di harness karena harness tidak
 memuat Tailwind, jadi penilaian visual terakhir tetap di browser HIRO.
+
+
+### Rack di-center terhadap area yang terlihat, bukan terhadap canvas (2026-11-14, lanjutan)
+
+HIRO: "rack nya kurang tengah". Penyebabnya bukan posisi model: kamera mengarah ke (0, 0.72, 0) yang
+memproyeksi tepat ke TENGAH CANVAS, padahal HUD kanan (w-80 + right-3) MENUTUPI sisi kanan canvas.
+Jadi rak terlihat geser ke kanan di area yang benar-benar kelihatan.
+
+Fix: `applyViewport()` di Rack3DView.vue. Kalau `#control-panel` tampil, kamera dikasih
+`setViewOffset(w, h, Math.round((panel.offsetWidth + 12) / 2), 0, w, h)`; kalau panel disembunyikan
+(< sm) `clearViewOffset()`. setViewOffset hanya menggeser frustum - FOV dan framing tidak berubah.
+Fungsi ini dipanggil sekali saat mount dan dari ResizeObserver, jadi ikut menyesuaikan saat modal
+di-resize.
+
+ANGKA TERUKUR (harness 1200x720, panel 322px): `viewShiftX` 167, titik tengah rak `rackX` 433,
+titik tengah area bebas `(1200 - 334) / 2` = 433. Rack kini tepat di tengah area pandang.
+
+Harness ditambah dua hal supaya ini bisa diukur, bukan dikira-kira: probe `rackX`/`rackY`/
+`viewShiftX` (proyeksi world point (0, 0.72, 0) lewat kamera) dan shim CSS harness-only yang memberi
+`#control-panel` ukuran 320px karena Tailwind tidak dimuat di harness.

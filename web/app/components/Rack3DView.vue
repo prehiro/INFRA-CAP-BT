@@ -1804,17 +1804,27 @@ onMounted(async () => {
     // =========================================================================
     // 9. RESPONSIVE RESIZE HANDLER
     // =========================================================================
-    const resizeObserver = new ResizeObserver(() => {
+    // The right-hand HUD floats OVER the canvas, so a camera aimed at the canvas centre renders the
+    // rack half-hidden under the panel and it reads as off-centre. When the panel is on screen we
+    // pan the projection by half the panel's width, which puts the rack in the middle of the area
+    // that is actually visible. setViewOffset(width, height, x, 0, width, height) only shifts the
+    // frustum, so the framing and field of view stay exactly as before.
+    const applyViewport = () => {
       const w = container.clientWidth
       const h = container.clientHeight
       if (!w || !h) return
+      const panel = $('control-panel')
+      const panelShown = !!panel && getComputedStyle(panel).display !== 'none'
+      const shiftX = panelShown ? Math.round((panel.offsetWidth + 12) / 2) : 0
       camera.aspect = w / h
+      if (shiftX > 0) camera.setViewOffset(w, h, shiftX, 0, w, h)
+      else camera.clearViewOffset()
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
-    })
+    }
+    const resizeObserver = new ResizeObserver(() => applyViewport())
     resizeObserver.observe(container)
-    camera.aspect = container.clientWidth / container.clientHeight
-    camera.updateProjectionMatrix()
+    applyViewport()
 
     // =========================================================================
     // 10. MAIN RENDER & ASYNCHRONOUS LED PACKET-BURST ANIMATION LOOP
