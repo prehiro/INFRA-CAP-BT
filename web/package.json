@@ -10,6 +10,8 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "@fontsource/public-sans": "^5.3.0",
     "@iconify-json/basil": "^1.2.4",
     "@iconify-json/carbon": "1.2.28",

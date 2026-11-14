@@ -4819,3 +4819,55 @@ langkah 2.2 di panduan.
 CATATAN: installer .NET Hosting Bundle TIDAK bisa diunduh otomatis - aka.ms/dotnet/10.0/HostingBundle/win-x64
 sekarang dialihkan ke bing.com dan mengembalikan 0 byte. Panduan menyuruh memeriksa Control Panel dulu
 (cari Windows Server Hosting) dan hanya mengunduh dari dotnet.microsoft.com/download/dotnet/10.0 bila belum ada.
+
+
+## Interactive 3D network rack diganti port sample (2026-11-14)
+
+HIRO minta 3D canvas lama dihapus dan diganti interactive 3D network rack seperti sample
+`D:\WORK\PANASONIC\Web\INFRA-CAP\reff\3d_24u_network_rack_cisco_switches.html` (2099 baris),
+dengan syarat semua sumber internet dilokalkan karena server produksi tanpa internet.
+
+Hasil: `web/app/components/Rack3DView.vue` ditulis ulang total (2240 baris) sebagai port setia
+sample - rack 24U dengan pintu kaca, chassis switch Cisco lengkap (48 port RJ45 + 4 SFP + LED
+instanced), UPS APC dengan LCD, cable management bar, badge hostname/IP di faceplate, HUD kanan
+(Hardware & Inventory / Rack & Telemetry, editor switch, inventory drag-sort, preset kamera,
+tooltip hover) - dengan penggantian sumber daya luar:
+- three.js + OrbitControls dari npm (0.180.0), bukan importmap jsdelivr 0.164.1
+- font Inter + JetBrains Mono dari @fontsource (paket baru di package.json), bukan Google Fonts
+- Tailwind dari build aplikasi, bukan Play CDN
+- renderer window-sized -> container-sized + ResizeObserver, pointer/tooltip relatif container
+
+INTEGRASI DATA (bukan lagi demo): `switches` prop adalah satu-satunya sumber hardware. Posisi U
+dibaca dari field `position`; baris tanpa posisi valid / di area UPS / bentrok U dijejalkan ke U
+bebas di atas UPS, jadi setiap switch nyata muncul tepat sekali. Register switch asli (slot `#panel`,
+CRUD per baris) tetap hidup di dalam canvas sisi kiri, dan Add/Edit/Delete memicu rebuild rack
+lewat watcher `props.switches`. UPS selalu U01-U02.
+
+TIDAK ADA DATA KARANGAN: register tidak punya kolom model/serial, jadi badge hanya menulis seri
+("C9300"), tooltip serial = UNASSIGNED, dan baris "N/48 Active Ports" tidak ditampilkan. Pola LED
+port diturunkan dari id record, murni visual.
+
+DUA BUG LATEN YANG IKUT DIPERBAIKI:
+1. `onUnmounted` didaftarkan SETELAH `await document.fonts.ready` di dalam onMounted async - hook
+   itu tidak lagi terikat ke instance komponen, jadi teardown tidak pernah jalan dan WebGL context
+   bocor setiap modal ditutup. Sekarang teardown didaftarkan sinkron di setup (`disposeScene`).
+2. PORT SEMANTIK: sample memakai titik koma, versi port tidak. Baris yang dimulai `[...]` setelah
+   statement berakhir (`ctx.fillStyle = '#090d16'` lalu `[0.22, 0.5, 0.78].forEach`, dan
+   `const railFaceMat = new THREE.MeshStandardMaterial({...})` lalu `[-x, x].forEach`) dibaca JS
+   sebagai index/member access pada nilai sebelumnya -> `undefined.forEach` -> seluruh scene gagal
+   dengan pesan palsu "3D view is not available in this browser". Sembilan literal array seperti itu
+   diangkat jadi const bernama. Ini penyebab kenapa sample aslinya jalan tapi port-nya tidak.
+
+MODAL RACK DIPERLEBAR: `max-w-3xl` -> `max-w-7xl`, khusus modal rack di halaman Network Rack.
+Sebabnya terukur: HUD sample 320px + register 232px pada modal 768px hanya menyisakan ~176px untuk
+rak 24U. Perubahan ini page-local (hanya modal itu), bukan tema global.
+
+VERIFIKASI: `npx nuxt build` lulus (exit 0, 19 route prerender). Scene dibuktikan render lewat
+harness standalone (SFC di-lift: template + body onMounted + style scoped, three 0.180 dari npm):
+0 error, canvas 1200x720, 24.294 triangle / 1.128 draw call, 8 switch nyata di U23/21/19/17/15/13/9
+dan satu tanpa posisi dijejalkan ke U3, kamera di preset sample. Aplikasi sendiri TIDAK bisa
+diverifikasi lewat browser harness (halaman Nuxt render kosong di harness - keterbatasan lama).
+
+CATATAN PRODUKSI: @nuxt/fonts saat build mengunduh Inter + JetBrains Mono dari fonts.gstatic.com
+(build-time, mesin dev masih online; runtime tetap lokal + CSP font-src 'self'). Kalau build harus
+100% offline, provider google perlu dimatikan di nuxt.config.

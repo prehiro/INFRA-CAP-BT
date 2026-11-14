@@ -500,7 +500,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
       </UModal>
 
       <!-- Rack modal -->
-      <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-3xl', body: 'p-4 sm:p-5' }">
+      <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl', body: 'p-4 sm:p-5' }">
         <template #header="{ close }">
           <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
