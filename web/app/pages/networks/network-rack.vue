@@ -28,6 +28,9 @@ const mapNatural = ref<{ w: number; h: number } | null>(null)
 const mapFit = ref<{ w: number; h: number } | null>(null)
 let mapResizeObserver: ResizeObserver | null = null
 let disposed = false
+// Only keep a few images in this page's memory; never persist protected images to disk.
+const floorImages = new Map<number, Blob>()
+const pendingFloorImages = new Map<number, Promise<Blob>>()
 
 const uploadName = ref('')
 const uploadFile = ref<File | null>(null)
@@ -37,11 +40,23 @@ const uploadError = ref('')
 const showUpload = ref(false)
 
 function getFloorImage(id: number): Promise<Blob> {
-  return $fetch<Blob>(`/network/floor-maps/${id}/image`, {
-    baseURL: useRuntimeConfig().public.apiBase,
-    responseType: 'blob',
-    headers: authHeaders()
-  })
+  const cached = floorImages.get(id)
+  if (cached) {
+    floorImages.delete(id)
+    floorImages.set(id, cached)
+    return Promise.resolve(cached)
+  }
+  const pending = pendingFloorImages.get(id)
+  if (pending) return pending
+  const request = apiGetNetworkFloorImage(id).then(blob => {
+    if (!disposed) {
+      floorImages.set(id, blob)
+      if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
+    }
+    return blob
+  }).finally(() => pendingFloorImages.delete(id))
+  pendingFloorImages.set(id, request)
+  return request
 }
 
 function fitMap() {
@@ -122,7 +137,7 @@ async function refresh(preferFloorId?: number) {
   finally { loading.value = false }
 }
 onMounted(() => { void refresh() })
-onBeforeUnmount(() => { disposed = true; ++loadVersion; mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
+onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl('') })
 
 function pickImage(event: Event) {
   uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -138,6 +153,8 @@ async function createFloor() {
   busy.value = true; uploadError.value = ''
   try {
     const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile)
+    floorImages.set(created.id, uploadedFile)
+    if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
     showUpload.value = false
     await refresh(created.id)
     toast.add({ title: 'Floor plan added', color: 'primary' })
@@ -150,6 +167,7 @@ async function deleteFloor(item: FloorMapSummary) {
   busy.value = true; error.value = ''
   try {
     await apiDeleteNetworkFloor(item.id)
+    floorImages.delete(item.id)
     if (activeFloorId.value === item.id) activeFloorId.value = null
     await refresh()
     toast.add({ title: 'Floor plan deleted', color: 'primary' })
