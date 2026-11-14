@@ -500,13 +500,14 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
       </UModal>
 
       <!-- Rack details modal -->
-      <UModal v-model:open="showRackDetails" title="Rack details" description="Selected rack on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md', body: 'p-4 sm:p-5' }">
+      <UModal v-model:open="showRackDetails" title="Rack details" description="Selected rack on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-3xl', body: 'p-4 sm:p-5' }">
         <template #body>
           <div v-if="selectedRackDetail" class="space-y-4">
             <div class="flex items-center gap-3">
               <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
               <div class="min-w-0"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
             </div>
+            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[300px] overflow-hidden rounded-xl border border-default sm:h-[340px]" />
             <div v-if="selectedRackDetail.description" class="text-sm text-highlighted">{{ selectedRackDetail.description }}</div>
             <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Switches</dt><dd class="font-semibold text-primary">{{ selectedRackDetail.switchCount }}</dd></div>

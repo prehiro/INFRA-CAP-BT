@@ -144,6 +144,10 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 The Sign In button glyph is Sargam Icons "sign-in-line" (MIT, Abhimanyu Rana, github.com/planetabhi/sargam-icons), inlined as SVG so the offline build carries it without an icon dependency.
 
+## three.js
+
+Rack3DView.vue renders the 24U rack preview in the Network Rack details modal with three.js (MIT, three.js authors, github.com/mrdoob/three.js). The library is loaded on demand when the modal opens, so pages that do not open it never download it.
+
 ## Add Record glyph
 
 ChannelAddIcon.vue inlines the Fluent UI System Icons glyph "channel-add-24-regular" (MIT, Microsoft, github.com/microsoft/fluentui-system-icons). It is embedded as SVG so the offline build carries it without an icon dependency.
