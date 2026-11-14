@@ -305,7 +305,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   <UDashboardPanel id="network-access-point" :ui="{ body: 'flex min-h-0 flex-col p-4 sm:p-6' }">
     <template #header><PageHeader title="Access Point" /></template>
     <template #body>
-      <div class="mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
+      <div class="ap-page-enter mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
         <div class="ap-header-row flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4">
           <div class="flex w-full min-w-0 items-center gap-3 xl:max-w-[320px]">
             <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
@@ -637,6 +637,14 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 @media (prefers-reduced-motion: reduce) {
   .ap-wifi-inner, .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
   .ap-marker-ping { animation: none; opacity: 0; }
+  .ap-page-enter { animation: none; }
+}
+
+/* Page load: the whole body eases in once (fade + 10px rise) instead of popping. */
+.ap-page-enter { animation: ap-page-arrive 420ms cubic-bezier(.2,.8,.2,1) both; }
+@keyframes ap-page-arrive {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 </style>
 
