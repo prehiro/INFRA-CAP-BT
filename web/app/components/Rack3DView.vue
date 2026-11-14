@@ -1208,6 +1208,7 @@ onMounted(async () => {
     const selectSlot = $('select-slot')
     const editorCard = $('switch-editor-card')
     const editorTitle = $('editor-title')
+    const inventoryList = $('inventory-list')
 
     function syncHudUI() {
       const swCount = switchesData.length
@@ -1257,6 +1258,154 @@ onMounted(async () => {
         editorCard.classList.add('hidden')
       }
 
+      // Build Sorted Inventory List (U24 down to U01)
+      const sortedSwitches = [...switchesData].sort((a, b) => b.u - a.u)
+      let html = sortedSwitches.map(sw => {
+        const active = sw.id === selectedSwitchId
+        return `
+                    <div draggable="true" data-select-id="${sw.id}" class="inv-row flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl border cursor-grab active:cursor-grabbing transition ${
+                        active
+                            ? 'bg-cyan-500/15 border-cyan-400/50 text-white'
+                            : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 text-slate-300'
+                    }">
+                        <div class="text-slate-500 hover:text-cyan-400 shrink-0" title="Drag to reorder">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                            </svg>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-slate-800 text-cyan-400">U${String(sw.u).padStart(2, '0')}</span>
+                                <span class="text-xs font-mono font-semibold truncate">${sw.hostname}</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5 pl-0.5 flex-wrap">
+                                <span class="text-[11px] font-mono text-amber-300/90">${sw.ip}</span>
+                                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-950/90 text-emerald-300 border border-slate-700/80">S/N: ${sw.sn || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <button data-remove-id="${sw.id}" title="Remove Switch" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/15 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                `
+      }).join('')
+
+      if (upsU > 0) {
+        html += `
+                    <div class="flex items-center justify-between gap-2 px-2.5 py-2 rounded-xl bg-emerald-950/35 border border-emerald-500/30">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">U01–U0${upsU}</span>
+                                <span class="text-xs font-semibold text-emerald-200 truncate">APC Smart-UPS ${upsModel}VA</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                <span class="text-[10px] font-mono text-emerald-400/80">${upsU}U Backup</span>
+                                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-slate-950/90 text-emerald-300 border border-emerald-500/30">S/N: ${upsSerial || 'N/A'}</span>
+                            </div>
+                        </div>
+                        <button id="btn-remove-ups-inv" title="Remove UPS" class="p-1.5 rounded-lg text-emerald-300/70 hover:text-rose-400 hover:bg-rose-500/15 transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                `
+      }
+
+      inventoryList.innerHTML = html
+
+      // Attach row click, drag-and-drop sorting & remove listeners
+      let draggedSwitchId = null
+
+      inventoryList.querySelectorAll('.inv-row').forEach(row => {
+        row.addEventListener('click', (e) => {
+          if (e.target.closest('[data-remove-id]')) return
+          selectedSwitchId = Number(row.getAttribute('data-select-id'))
+          rebuildRackEquipment()
+        })
+
+        row.addEventListener('dragstart', (e) => {
+          draggedSwitchId = Number(row.getAttribute('data-select-id'))
+          row.classList.add('opacity-45', 'border-cyan-400')
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = 'move'
+            e.dataTransfer.setData('text/plain', String(draggedSwitchId))
+          }
+        })
+
+        row.addEventListener('dragend', () => {
+          draggedSwitchId = null
+          inventoryList.querySelectorAll('.inv-row').forEach(el => {
+            el.classList.remove('opacity-45', 'border-cyan-400', 'border-t-2', 'border-t-cyan-400', 'border-b-2', 'border-b-cyan-400')
+          })
+        })
+
+        row.addEventListener('dragover', (e) => {
+          e.preventDefault()
+          const targetId = Number(row.getAttribute('data-select-id'))
+          if (draggedSwitchId === null || draggedSwitchId === targetId) return
+
+          const rect = row.getBoundingClientRect()
+          const isTopHalf = (e.clientY - rect.top) < rect.height / 2
+          row.classList.toggle('border-t-2', isTopHalf)
+          row.classList.toggle('border-t-cyan-400', isTopHalf)
+          row.classList.toggle('border-b-2', !isTopHalf)
+          row.classList.toggle('border-b-cyan-400', !isTopHalf)
+        })
+
+        row.addEventListener('dragleave', () => {
+          row.classList.remove('border-t-2', 'border-t-cyan-400', 'border-b-2', 'border-b-cyan-400')
+        })
+
+        row.addEventListener('drop', (e) => {
+          e.preventDefault()
+          const targetId = Number(row.getAttribute('data-select-id'))
+          if (draggedSwitchId === null || draggedSwitchId === targetId) return
+
+          // Ambil urutan switch saat ini dari atas ke bawah (U tertinggi -> terendah)
+          const ordered = [...switchesData].sort((a, b) => b.u - a.u)
+          // Simpan daftar slot U yang sedang dipakai (tetap berurutan dari atas ke bawah)
+          const activeUSlots = ordered.map(s => s.u)
+
+          const fromIndex = ordered.findIndex(s => s.id === draggedSwitchId)
+          let toIndex = ordered.findIndex(s => s.id === targetId)
+          if (fromIndex === -1 || toIndex === -1) return
+
+          const rect = row.getBoundingClientRect()
+          const isTopHalf = (e.clientY - rect.top) < rect.height / 2
+          if (!isTopHalf && fromIndex > toIndex) toIndex += 1
+          if (isTopHalf && fromIndex < toIndex) toIndex -= 1
+
+          const [movedItem] = ordered.splice(fromIndex, 1)
+          ordered.splice(toIndex, 0, movedItem)
+
+          // Terapkan kembali slot U ke urutan switch yang baru sehingga model 3D langsung ikut berpindah
+          ordered.forEach((sw, idx) => {
+            sw.u = activeUSlots[idx]
+          })
+
+          selectedSwitchId = movedItem.id
+          showToast(`Moved ${movedItem.hostname} to U${String(movedItem.u).padStart(2, '0')}.`)
+          rebuildRackEquipment()
+        })
+      })
+
+      inventoryList.querySelectorAll('[data-remove-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation()
+          removeSwitchById(Number(btn.getAttribute('data-remove-id')))
+        })
+      })
+
+      const btnRemoveUpsInv = $('btn-remove-ups-inv')
+      if (btnRemoveUpsInv) {
+        btnRemoveUpsInv.addEventListener('click', () => {
+          upsModel = 'none'
+          rebuildRackEquipment()
+        })
+      }
     }
 
     function removeSwitchById(id) {
@@ -1818,7 +1967,7 @@ onMounted(async () => {
       <!-- Drawer Tabs -->
       <div class="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 mb-3 shrink-0">
         <button id="tab-hardware" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition">
-          Hardware
+          Hardware & Inventory
         </button>
         <button id="tab-rack" class="flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition">
           Rack & Telemetry
@@ -1883,7 +2032,6 @@ onMounted(async () => {
 
         <!-- Add Switch Action -->
         <div class="flex items-center justify-between gap-2">
-          <span id="free-u-count" class="text-[10px] font-mono text-slate-400 shrink-0">12U Free</span>
           <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 transition flex items-center justify-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -1937,6 +2085,14 @@ onMounted(async () => {
           </p>
         </div>
 
+        <!-- Installed Equipment Inventory List (U24 -> U01) -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rack Inventory (Drag to Sort)</span>
+            <span id="free-u-count" class="text-[10px] font-mono text-slate-400">12U Free</span>
+          </div>
+          <div id="inventory-list" class="space-y-1.5"></div>
+        </div>
       </div>
 
       <!-- TAB 2: RACK ENCLOSURE & TELEMETRY CONTROLS -->

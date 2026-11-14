@@ -4871,23 +4871,3 @@ diverifikasi lewat browser harness (halaman Nuxt render kosong di harness - kete
 CATATAN PRODUKSI: @nuxt/fonts saat build mengunduh Inter + JetBrains Mono dari fonts.gstatic.com
 (build-time, mesin dev masih online; runtime tetap lokal + CSP font-src 'self'). Kalau build harus
 100% offline, provider google perlu dimatikan di nuxt.config.
-
-
-### Switch list kanan dihapus (2026-11-14, lanjutan)
-
-HIRO: "hapus switch list kanan". Yang dihapus adalah inventory list di dalam HUD kanan
-(blok `#inventory-list` + judul "Rack Inventory (Drag to Sort)"): markup, pembangun HTML per baris,
-seluruh listener drag-and-drop untuk menggeser slot U, tombol remove per baris, dan kartu UPS di
-dalam list itu (tombol `btn-remove-ups-inv`). Const `inventoryList` ikut dibuang supaya tidak ada
-referensi mati. Satu-satunya daftar switch sekarang adalah register di kiri dalam canvas.
-
-Yang TETAP ada di HUD kanan: tab Hardware (editor switch terpilih: hostname/IP/slot/serial + Remove),
-tombol Add Cisco 1U Switch, kartu Bottom UPS (None/3000VA/5000VA + serial), dan tab Rack & Telemetry
-(pintu kaca, side panel, simulasi LED, auto-orbit, slider intensitas, preset kamera).
-
-Dua penyesuaian kecil karena bloknya hilang: badge `#free-u-count` dipindah ke baris tombol
-Add Switch (syncHudUI masih mengisinya, terbukti "14U Free" untuk 8 switch + UPS 2U), dan label tab
-"Hardware & Inventory" jadi "Hardware" karena inventory-nya sudah tidak ada.
-
-Verifikasi: harness standalone 0 error, canvas 1200x720, 24.294 triangle, 8 switch tetap di
-U23/21/19/17/15/13/9 + satu di U3; `npx nuxt build` lulus (exit 0).
