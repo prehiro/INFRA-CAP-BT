@@ -499,20 +499,18 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         </template>
       </UModal>
 
-      <!-- Rack details modal -->
-      <UModal v-model:open="showRackDetails" title="Rack details" description="Selected rack on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-3xl', body: 'p-4 sm:p-5' }">
+      <!-- Rack modal -->
+      <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-3xl', body: 'p-4 sm:p-5' }">
+        <template #header="{ close }">
+          <div v-if="selectedRackDetail" class="flex items-center gap-3">
+            <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
+            <div class="min-w-0 flex-1"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
+            <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" class="ap-close-action" :disabled="busy" :aria-label="`Close ${selectedRackDetail.name}`" @click="close" />
+          </div>
+        </template>
         <template #body>
           <div v-if="selectedRackDetail" class="space-y-4">
-            <div class="flex items-center gap-3">
-              <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
-              <div class="min-w-0"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
-            </div>
-            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[300px] overflow-hidden rounded-xl border border-default sm:h-[340px]" />
-            <div v-if="selectedRackDetail.description" class="text-sm text-highlighted">{{ selectedRackDetail.description }}</div>
-            <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
-              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Switches</dt><dd class="font-semibold text-primary">{{ selectedRackDetail.switchCount }}</dd></div>
-              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Position</dt><dd class="text-highlighted">{{ Math.round(selectedRackDetail.x * 100) }}% across · {{ Math.round(selectedRackDetail.y * 100) }}% down</dd></div>
-            </dl>
+            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[400px] overflow-hidden rounded-xl border border-default sm:h-[480px]" />
             <h4 class="text-sm font-semibold text-highlighted">Switches in this rack</h4>
             <div v-if="selectedRackDetail.switches.length === 0" class="text-sm text-muted text-center py-4">No switches yet</div>
             <ul v-else class="space-y-2">
