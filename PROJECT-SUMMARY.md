@@ -4900,3 +4900,27 @@ baris kalau mau dikembalikan ke max-w-3xl.
 Verifikasi: harness 0 error, canvas 1200x720, 24.294 triangle, `.rack3d-register` = 0,
 `#inventory-list` = 1 (kanan kembali), 8 switch tetap U23/21/19/17/15/13/9 + satu di U3;
 `npx nuxt build` lulus (exit 0).
+
+
+### Footer modal rack dikosongkan (2026-11-14, lanjutan)
+
+HIRO: "hapus tombol control pada footer nya". Seluruh baris footer modal rack dihapus: Close,
+Add Switch, Edit Rack, Delete Rack. Sekarang modal rack hanya berisi canvas 3D (penuh), tutup lewat
+tombol X di header.
+
+Ikut dibersihkan: `detailError` (ref + 4 titik assignment) karena satu-satunya tempat menampilkannya
+ada di footer itu, dan baris itu memang tidak pernah tampil saat gagal load (body dibungkus
+`v-if="selectedRackDetail"`, jadi saat load gagal seluruh body kosong). Kegagalan load detail rack
+sekarang jadi toast `color: 'error'`, kegagalan delete switch juga.
+
+HITUNG ULANG AKSESIBILITAS CRUD SETELAH INI (penting, jangan sampai lupa):
+- Rack: tambah MASIH bisa (toolbar "Add Rack" + klik denah -> openAddRack). Edit rack dan Delete
+  rack TIDAK BISA lagi (tombolnya hanya ada di footer yang dihapus).
+- Switch: tambah, edit, hapus TIDAK BISA lagi dari UI (satunya Add Switch di footer). Editor switch
+  di HUD kanan masih ada tapi LOKAL, tidak menulis ke database.
+Fungsi yang sekarang hanya tersisa definisinya: closeRackDetails, openAddSwitch, openEditSwitch,
+deleteSwitch, openEditRack, deleteRack. SENGAJA belum dihapus: menghapusnya berarti menutup jalan
+memasang ulang CRUD (mis. menyambungkan editor HUD kanan ke API), jadi ini kode yang kehilangan
+pemanggil, bukan kode mati.
+
+Verifikasi: `npx nuxt build` lulus (exit 0).

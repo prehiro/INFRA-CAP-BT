@@ -17,7 +17,6 @@ const busy = ref(false)
 const error = ref('')
 const rackError = ref('')
 const switchError = ref('')
-const detailError = ref('')
 const editingRackId = ref<number | null>(null)
 const editingSwitchId = ref<number | null>(null)
 const rackDraft = reactive<NetworkRackInput>({ name: '', description: '', x: 0.5, y: 0.5 })
@@ -235,13 +234,12 @@ function openRackDetails(rack: NetworkRackSummary) {
   if (rack.id === suppressRackClickId && performance.now() < suppressRackClickUntil) return
   selectedRackId.value = rack.id
   showRackDetails.value = true
-  detailError.value = ''
   loadRackDetail(rack.id)
 }
 async function loadRackDetail(rackId: number) {
   try {
     selectedRackDetail.value = await apiGetNetworkRack(floor.value!.id, rackId)
-  } catch (e) { detailError.value = message(e) }
+  } catch (e) { toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' }) }
 }
 function closeRackDetails() { showRackDetails.value = false; selectedRackId.value = null; selectedRackDetail.value = null }
 
@@ -286,7 +284,7 @@ async function saveSwitch() {
 async function deleteSwitch(sw: NetworkSwitch) {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
   if (!window.confirm(`Delete switch ${sw.ipAddress}?`)) return
-  busy.value = true; detailError.value = ''
+  busy.value = true
   try {
     await apiDeleteNetworkSwitch(floor.value!.id, selectedRackDetail.value.id, sw.id)
     if (selectedRackDetail.value) {
@@ -296,7 +294,7 @@ async function deleteSwitch(sw: NetworkSwitch) {
     const rackIdx = racks.value.findIndex(r => r.id === selectedRackDetail.value?.id)
     if (rackIdx >= 0) racks.value[rackIdx].switchCount = selectedRackDetail.value?.switchCount ?? 0
     toast.add({ title: 'Switch deleted', color: 'primary' })
-  } catch (e) { detailError.value = message(e) }
+  } catch (e) { toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' }) }
   finally { busy.value = false }
 }
 
@@ -509,17 +507,8 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
           </div>
         </template>
         <template #body>
-          <div v-if="selectedRackDetail" class="space-y-4">
+          <div v-if="selectedRackDetail">
             <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
-            <div class="flex justify-end gap-2 border-t border-default pt-4">
-              <p v-if="isAdmin" role="alert" class="mr-auto min-h-5 self-center text-xs text-error">{{ detailError }}</p>
-              <UButton type="button" color="neutral" variant="ghost" icon="i-lucide-x" class="ap-close-action" :disabled="busy" @click="closeRackDetails">Close</UButton>
-              <template v-if="isAdmin">
-                <UButton type="button" icon="i-lucide-plus" variant="soft" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openAddSwitch">Add Switch</UButton>
-                <UButton type="button" icon="i-lucide-pencil" variant="soft" class="record-add-hover stable-hover-hitbox" :disabled="busy" @click="openEditRack(selectedRackDetail)">Edit Rack</UButton>
-                <UButton type="button" icon="i-lucide-trash-2" color="error" variant="soft" class="record-delete-hover ap-stable-action" :disabled="busy" @click="deleteRack(selectedRackDetail)">Delete Rack</UButton>
-              </template>
-            </div>
           </div>
         </template>
       </UModal>
