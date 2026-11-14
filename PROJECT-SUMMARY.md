@@ -4989,3 +4989,17 @@ titik tengah area bebas `(1200 - 334) / 2` = 433. Rack kini tepat di tengah area
 Harness ditambah dua hal supaya ini bisa diukur, bukan dikira-kira: probe `rackX`/`rackY`/
 `viewShiftX` (proyeksi world point (0, 0.72, 0) lewat kamera) dan shim CSS harness-only yang memberi
 `#control-panel` ukuran 320px karena Tailwind tidak dimuat di harness.
+
+
+### Dock preset kamera kini ikut diperhitungkan vertikal (2026-11-14, lanjutan)
+
+HIRO: "kurang naik, bottomnya ketutup control button". Basis rak memang jatuh di belakang dock
+tombol kamera di bawah. `applyViewport()` sekarang juga menghitung `shiftY`:
+`reserveY = dock.offsetHeight + 12` lalu `shiftY = Math.round(reserveY / 2)`, dikirim sebagai
+parameter keempat `setViewOffset(w, h, shiftX, shiftY, w, h)`. Dock diberi `id="cam-dock"` supaya
+tingginya bisa diukur langsung dari DOM (bukan angka hardcode), jadi kalau isi dock berubah tinggi
+offset-nya ikut menyesuaikan.
+
+ANGKA TERUKUR (harness 1200x720, dock 48px): `viewShiftY` 30, titik jangkar rak `rackY` 330 =
+`freeCentreY` 330, basis rak `rackBaseY` 586 sementara dock mulai di 660 (koordinat canvas) -
+jadi ada jarak 74px dan bottom rak tidak tertutup tombol lagi.

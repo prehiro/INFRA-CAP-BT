@@ -1816,8 +1816,15 @@ onMounted(async () => {
       const panel = $('control-panel')
       const panelShown = !!panel && getComputedStyle(panel).display !== 'none'
       const shiftX = panelShown ? Math.round((panel.offsetWidth + 12) / 2) : 0
+      // The camera preset dock sits over the bottom edge, so the rack base was hidden behind the
+      // buttons. Reserve the dock's height, then raise the scene by half of it to keep the rack
+      // centred in the space that is actually visible.
+      const dock = $('cam-dock')
+      const dockShown = !!dock && getComputedStyle(dock).display !== 'none'
+      const reserveY = dockShown ? dock.offsetHeight + 12 : 0
+      const shiftY = Math.round(reserveY / 2)
       camera.aspect = w / h
-      if (shiftX > 0) camera.setViewOffset(w, h, shiftX, 0, w, h)
+      if (shiftX > 0 || shiftY > 0) camera.setViewOffset(w, h, shiftX, shiftY, w, h)
       else camera.clearViewOffset()
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -2169,7 +2176,7 @@ onMounted(async () => {
     </div>
 
     <!-- Bottom Camera Presets Dock - centred in the area the right HUD leaves free -->
-    <div class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:right-[336px] sm:pl-0">
+    <div id="cam-dock" class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:right-[336px] sm:pl-0">
       <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-center gap-1.5 overflow-x-auto max-w-full">
         <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap">
           Angled View
