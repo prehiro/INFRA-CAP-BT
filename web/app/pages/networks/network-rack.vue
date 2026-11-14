@@ -510,7 +510,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         </template>
         <template #body>
           <div v-if="selectedRackDetail" class="space-y-4">
-            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[440px] overflow-hidden rounded-xl border border-default sm:h-[560px]" />
+            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
             <h4 class="text-sm font-semibold text-highlighted">Switches in this rack</h4>
             <div v-if="selectedRackDetail.switches.length === 0" class="text-sm text-muted text-center py-4">No switches yet</div>
             <ul v-else class="space-y-2">
