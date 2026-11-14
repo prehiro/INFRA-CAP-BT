@@ -3,6 +3,10 @@
 > File ini adalah **backup** dari holographic memory. Kalau memory agent hilang/reset, baca file ini untuk melanjutkan.
 > Terakhir diupdate: 2026-11-14
 
+### Networks / Network Rack — map rack marker glyph (2026-11-14)
+
+HIRO: "ubah ikon rack nya yang keren pada map floor network map". Marker rack di peta sebelumnya gambar CSS tangan (box w-10 h-14 + 6 dot LED + base). Diganti isi marker dengan glyph `game-icons:server-rack` (ikon yang sudah disetujui HIRO pagi ini) di atas plate rounded-xl border-primary bg-elevated size-12, glyph size-7 text-primary. Interaksi tidak berubah: button marker, ring pilih/hover, drag pointer, hover-scale `.ap-rack-body` (pola hover-scale access-point) tetap jalan. Dead code dihapus: CSS `.ap-rack-strip` (transition) + referensinya di reduced-motion, elemen `ap-rack-base`. Access Point page tidak disentuh. Verifikasi: nol referensi strip/base, compiled module NR membawa 4 pemakaian game-icons:server-rack termasuk marker, 0 ERROR, kedua route 200, 9/9 tes lulus.
+
 ### Networks / Network Rack — floor card shows rack count, not AP count (2026-11-14)
 
 HIRO: card lantai di page Network Rack ikut menampilkan jumlah AP ("3 AP"), harusnya hanya jumlah rack network. ROOT CAUSE: page itu di-clone dari access-point.vue sehingga card `ap-floor-tab` memakai `item.accessPointCount`, dan API list floor-maps hanya memproyeksikan `AccessPointCount`. FIX: (1) `NetworkFloorMapsController.List` tambah `RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id)` (correlated subquery; `NetworkFloorMap` tidak punya nav Racks dan FK sudah ada di NetworkRacks, jadi tidak perlu migration) + `RackCount = 0` di CreatedAtAction; (2) `FloorMapSummary` tambah `rackCount: number`, `FloorMapDetail` omit kedua count; (3) card NR jadi `{{ item.rackCount }} rack{{ item.rackCount === 1 ? '' : 's' }}`. Access Point page tidak berubah (tetap accessPointCount). Verifikasi: API list mengembalikan rackCount yang cocok dengan hitungan rak asli (BUILDING 1: 1, BUILDING 2: 0), compiled module NR menampilkan rackCount + plural, kedua route 200, 0 ERROR, 9/9 tes lulus.

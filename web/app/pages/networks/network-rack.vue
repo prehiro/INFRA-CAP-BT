@@ -398,15 +398,9 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
                   :style="{ left: `${rack.x * 100}%`, top: `${rack.y * 100}%` }"
                   :aria-label="`Rack ${rack.name}${rack.description ? `, ${rack.description}` : ''}, ${rack.switchCount} switches`"
                   :title="rack.name" @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
-                  <div class="ap-rack-body relative grid w-10 h-14 place-items-center rounded-t-lg border-2 border-primary bg-elevated shadow-md">
-                    <div class="ap-rack-strip absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    <div class="ap-rack-strip absolute top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    <div class="ap-rack-strip absolute top-5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    <div class="ap-rack-strip absolute top-7 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    <div class="ap-rack-strip absolute top-9 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                    <div class="ap-rack-strip absolute top-11 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
-                  </div>
-                  <div class="ap-rack-base absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-b-lg border-2 border-primary bg-elevated shadow-inner" />
+                  <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
+                    <UIcon name="game-icons:server-rack" class="size-7 text-primary" />
+                  </span>
                 </button>
               </div>
             </div>
@@ -621,7 +615,6 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
 
 /* Rack marker visual */
 .ap-rack-body { transition: transform 200ms ease-out; }
-.ap-rack-strip { transition: background-color 180ms ease; }
 @media (hover: hover) and (pointer: fine) {
   .ap-rack-marker:hover:not(:active) .ap-rack-body { transform: scale(1.1); }
 }
@@ -649,7 +642,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
   95%, 100% { opacity: .12; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ap-rack-body, .ap-rack-strip, .nr-rack-line { transition: none; transform: none !important; animation: none; opacity: 1; }
+  .ap-rack-body, .nr-rack-line { transition: none; transform: none !important; animation: none; opacity: 1; }
 }
 
 /* Page load: the whole body eases in once (fade + 10px rise) instead of popping. */
