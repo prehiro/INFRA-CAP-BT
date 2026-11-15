@@ -5180,12 +5180,16 @@ di-scale dimatikan di browser harness ini (prefers-reduced-motion: reduce), jadi
 HIRO: "saya mau secara default tiap u atas ada 1 unit OTB netviel seperti ini" (foto plate 1U hitam
 dengan garis oranye bergelombang dan tulisan NETVEL di kanan).
 
+UPDATE (koreksi HIRO): "maksud saya 1 buah aja OTB nya dan letaknya paling atas. tulisan nya bukan
+NETVEL tapi NETVIEL" -> hanya SATU panel per rak, diletakkan di U paling atas yang kosong (biasanya
+U42), dan wordmark diganti NETVIEL. Versi pertama (satu panel per U) terlalu ramai dan salah arti.
+
 IMPLEMENTASI (Rack3DView.vue)
 - `createOtbFaceTexture()` menggambar plate 1U: gradient hitam, garis highlight di tepi atas,
   gelombang oranye (naik di ~47% lalu rata ke kanan), wordmark NETVEL miring di kanan, dua sekrup.
-- `buildOtbPanels()` dipanggil dari `rebuildRackEquipment()` setelah brush cable bar: satu panel per
-  U KOSONG. Panel dilewati kalau U-nya dipakai UPS/switch, atau kalau U itu ditempati brush cable
-  bar di bawah sebuah switch (biar tidak bertumpuk).
+- `buildOtbPanels()` dipanggil dari `rebuildRackEquipment()` setelah brush cable bar: SATU panel di
+  U tertinggi yang kosong (dilewati kalau U-nya dipakai UPS/switch atau brush cable bar; kalau rak
+  penuh, tidak ada panel).
 - Panel = isi visual saja: tidak masuk switchesData, tidak muncul di Rack Inventory, dan TIDAK
   mengurangi/menambah angka free-U. Tidak ada hitbox, jadi tidak ikut hover tooltip.
 - Material pakai array per sisi BoxGeometry (px,nx,py,ny,pz,nz) supaya tekstur NETVEL hanya di muka
@@ -5196,5 +5200,6 @@ shadow/bloom dan plate dibuat lebih terang dari interior kabinet. Alasannya: pan
 puluhan U, jadi glow membuat seluruh rak tampak seperti garis lampu oranye berulang - jauh lebih
 ramai daripada plate aslinya.
 
-VERIFIKASI: RACK A 42U (12 switch) -> panel OTB mengisi U kosong, switch tetap terlihat di U03..U25,
-badge tetap 28U Free, buka-tutup modal panel tetap ada. Build exit 0.
+VERIFIKASI: RACK A 42U (12 switch) -> probe sementara pada dynamicEquipmentGroup melaporkan tepat
+satu group ber-kind 'otb' di U42 (lalu probe dihapus); switch tetap di U03..U25; badge tetap
+28U Free. Build exit 0.

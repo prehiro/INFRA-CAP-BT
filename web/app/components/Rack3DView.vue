@@ -325,9 +325,9 @@ onMounted(async () => {
       return tex
     }
 
-    // NETVEL OTB (optical termination box) faceplate: matte black plate with the brand's orange
-    // wave and the NETVEL wordmark. These are the rack's default filler panels - one per free U,
-    // so an "empty" rack reads as a patched fibre rack instead of an empty frame.
+    // NETVIEL OTB (optical termination box) faceplate: matte black plate with the brand's orange
+    // wave and the NETVIEL wordmark. Exactly one of these sits at the TOP of every rack - it is the
+    // default first unit, not a filler for the whole cabinet.
     function createOtbFaceTexture() {
       const canvas = document.createElement('canvas')
       canvas.width = 1024
@@ -369,10 +369,10 @@ onMounted(async () => {
 
       // Wordmark
       ctx.fillStyle = '#ee6a12'
-      ctx.font = 'italic 700 30px "Segoe UI", Arial, sans-serif'
+      ctx.font = 'italic 700 28px "Segoe UI", Arial, sans-serif'
       ctx.textAlign = 'right'
       ctx.textBaseline = 'middle'
-      ctx.fillText('NETVEL', canvas.width - 26, canvas.height * 0.50)
+      ctx.fillText('NETVIEL', canvas.width - 26, canvas.height * 0.50)
 
       // Mounting screws at both ends
       ;[0.022, 0.978].forEach(fx => {
@@ -964,9 +964,9 @@ onMounted(async () => {
     }
 
     // Rebuild Entire Dynamic Rack Contents (Switches, Cable Bars, UPS, Instanced LEDs)
-    // One NETVEL OTB panel for every U the register does not fill. The panel is filler, not a
-    // device: it never enters switchesData, the inventory list or the free-U count, and it is
-    // skipped in the U that carries the brush cable bar under a switch so the two never overlap.
+    // A single NETVIEL OTB panel, mounted in the TOP-most free unit of the cabinet. It is the
+    // rack's default first unit - not a filler for every slot - so it never repeats down the rack.
+    // Skipped only when the whole cabinet is full.
     function buildOtbPanels() {
       const occupied = getOccupiedSet()
       const cableBarSlots = new Set()
@@ -975,6 +975,12 @@ onMounted(async () => {
         if (belowU >= 1 && !occupied.has(belowU)) cableBarSlots.add(belowU)
       })
 
+      let targetU = 0
+      for (let u = TOTAL_U; u >= 1; u--) {
+        if (!occupied.has(u) && !cableBarSlots.has(u)) { targetU = u; break }
+      }
+      if (!targetU) return
+
       const matBody = new THREE.MeshStandardMaterial({ color: 0x0b0e13, roughness: 0.52, metalness: 0.62 })
       const matFace = new THREE.MeshStandardMaterial({ map: createOtbFaceTexture(), roughness: 0.46, metalness: 0.28 })
       // BoxGeometry takes one material per side: px, nx, py, ny, pz(front), nz
@@ -982,33 +988,26 @@ onMounted(async () => {
 
       const panelH = U_HEIGHT - 0.0018
       const panelW = 0.442
-      const faceGeo = new THREE.BoxGeometry(panelW, panelH, 0.006)
-      const bodyGeo = new THREE.BoxGeometry(panelW, panelH, 0.150)
-      const earGeo = new THREE.BoxGeometry(0.021, panelH, 0.004)
 
-      for (let u = 1; u <= TOTAL_U; u++) {
-        if (occupied.has(u) || cableBarSlots.has(u)) continue
+      const group = new THREE.Group()
+      group.position.set(0, getUSlotY(targetU), frontRailZ + 0.010)
 
-        const group = new THREE.Group()
-        group.position.set(0, getUSlotY(u), frontRailZ + 0.010)
+      const body = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, 0.150), matBody)
+      body.position.set(0, 0, -0.076)
+      group.add(body)
 
-        const body = new THREE.Mesh(bodyGeo, matBody)
-        body.position.set(0, 0, -0.076)
-        group.add(body)
+      const face = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, 0.006), faceMats)
+      face.position.set(0, 0, 0.002)
+      group.add(face)
 
-        const face = new THREE.Mesh(faceGeo, faceMats)
-        face.position.set(0, 0, 0.002)
-        group.add(face)
+      ;[-1, 1].forEach(side => {
+        const ear = new THREE.Mesh(new THREE.BoxGeometry(0.021, panelH, 0.004), matBody)
+        ear.position.set(side * (panelW / 2 + 0.0105), 0, 0.003)
+        group.add(ear)
+      })
 
-        ;[-1, 1].forEach(side => {
-          const ear = new THREE.Mesh(earGeo, matBody)
-          ear.position.set(side * (panelW / 2 + 0.0105), 0, 0.003)
-          group.add(ear)
-        })
-
-        group.userData = { kind: 'otb', u }
-        dynamicEquipmentGroup.add(group)
-      }
+      group.userData = { kind: 'otb', u: targetU }
+      dynamicEquipmentGroup.add(group)
     }
 
     function rebuildRackEquipment() {
