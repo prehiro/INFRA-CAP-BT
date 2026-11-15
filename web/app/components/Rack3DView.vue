@@ -1708,9 +1708,10 @@ onMounted(async () => {
         showToast('Rack is 100% full! Remove a switch or UPS to free a U slot.')
         return
       }
-      // Lowest free U above the UPS: new hardware fills the rack from the bottom up, so it always
-      // lands BELOW the OTB plate at the top and never on top of an existing device.
-      const chosenU = Math.min(...freeSlots)
+      // Highest free U that is still free: the rack fills from the top downwards, and because
+      // getFreeSlots() already reserves the OTB slot, the new device always lands just BELOW the
+      // OTB plate and never on top of an existing device.
+      const chosenU = Math.max(...freeSlots)
 
       // A device invented here gets a NEGATIVE id while the POST is in flight. Register ids are
       // small positive numbers, and a local device that reused one made Remove delete the wrong row.

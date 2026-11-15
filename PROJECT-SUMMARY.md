@@ -5261,3 +5261,15 @@ intensity 40% -> GET detail berisi JSON tersebut -> tutup & buka modal -> UPS 50
 S/N masih TEST-SN-1234, pintu "Open (Click to Close)", traffic "Paused", intensity 40%.
 UPS "None" juga bertahan (badge jadi 30U Free). Default rak dikembalikan: 3000VA / AS2408190442 /
 pintu tertutup / traffic aktif / 75%.
+### Switch Baru Masuk ke U Kosong PALING BESAR (2026-11-15)
+
+HIRO: "setiap tambah switch baru assign ke nomor u yang paling besar dan kosong".
+
+Perubahan: alokasi di tombol "Add Cisco 1U Switch" dibalik dari `Math.min(...freeSlots)` menjadi
+`Math.max(...freeSlots)`. `getFreeSlots()` tetap mengecualikan U berisi UPS/switch DAN slot plate
+OTB, jadi rak terisi dari atas ke bawah dan switch baru selalu mendarat tepat DI BAWAH plate OTB
+(plate-nya tetap di U paling atas), tidak pernah menimpa U yang sudah berisi.
+
+VERIFIKASI (RACK A 42U, OTB di U42): Add #1 -> "Adding SW-EDGE-13 (10.10.10.11) at U41",
+Add #2 -> U40. Keduanya tersimpan di register (U41/U40) dan terlihat di 3D tepat di bawah plate OTB.
+Data uji dihapus lagi (204), register kembali 12 switch. Build exit 0.
