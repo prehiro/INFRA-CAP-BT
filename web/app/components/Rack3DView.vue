@@ -389,11 +389,13 @@ onMounted(async () => {
           // lines pure accent, so wherever the swell was in its trough the floor lost its grid
           // entirely. The breathing accent is now something laid ON TOP of that base, never a
           // replacement for it.
-          vec3 baseColor = mix(vec3(0.106, 0.153, 0.227), vec3(0.184, 0.259, 0.369), major);
-          float baseAlpha = (minor * 0.42 + major * 0.62) * fade;
+          // White lines (HIRO): the resting grid is a plain white, only the breathing accent above it
+          // carries colour.
+          vec3 baseColor = mix(vec3(0.34, 0.35, 0.37), vec3(0.70, 0.72, 0.75), major);
+          float baseAlpha = (minor * 0.40 + major * 0.60) * fade;
 
-          vec3 glowColor = uAccent * (0.36 + breathe * 0.42);
-          float glowAlpha = lineMask * (0.05 + breathe * 0.40) * energy * fade;
+          vec3 glowColor = uAccent * (0.55 + breathe * 0.55);
+          float glowAlpha = lineMask * (0.08 + breathe * 0.58) * energy * fade;
 
           float alpha = clamp(baseAlpha + glowAlpha, 0.0, 0.85);
           vec3 color = (baseColor * baseAlpha + glowColor * glowAlpha) / max(alpha, 1e-4);

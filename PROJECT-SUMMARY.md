@@ -5735,3 +5735,17 @@ lalu saya mau warna original floor tetap visible jangan hilangkan ketika breathe
 VERIFIKASI (Angled View, drawer di-collapse): dua frame berjarak 1.6 s berbeda 11.879 px di area
 lantai (napas tetap jalan); garis grid biru-baja terlihat di seluruh lantai termasuk di area paling
 redup; pantulan/sheen lantai dan tepi kabinet putih, tidak hijau. Build exit 0.
+### Grid Dasar Putih + Breath Lebih Terang (2026-11-15)
+
+HIRO: "line original nya bisa buat warna putih? lalu warna breathe nya terangkan".
+
+- `baseColor` grid istirahat sekarang PUTIH: `mix(vec3(0.34,0.35,0.37), vec3(0.70,0.72,0.75), major)`
+  (sebelumnya biru-baja 0.106/0.153/0.227 -> 0.184/0.259/0.369), alpha dasar tidak berubah
+  `(minor*0.40 + major*0.60) * fade`.
+- Breath diperkuat: `glowColor = uAccent * (0.55 + breathe * 0.55)` (dari 0.36+0.42) dan
+  `glowAlpha = lineMask * (0.08 + breathe * 0.58) * energy * fade` (dari 0.05+0.40).
+
+VERIFIKASI (Angled View, 1400x900): dua frame berjarak 1.8 s berbeda 6.612 px di area lantai;
+pixel paling terang di lantai jauh = (198,206,217) putih netral (garis dasar), pixel paling hijau di
+dekat rack = (0,220,130) aksen penuh (breath). Screenshot memperlihatkan garis putih menyambung di
+seluruh lantai dengan pita aksen hijau yang jelas di sekitarnya. Build exit 0.
