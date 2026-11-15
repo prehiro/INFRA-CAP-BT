@@ -5518,3 +5518,18 @@ tersebut. hapus saja 4 led vertikal yang paling pinggir kanan".
 
 VERIFIKASI: build exit 0; zoom 2x pada baris switch menunjukkan 4 titik LED di bawah cage SFP dan
 tepi kanan faceplate bersih tanpa kolom LED.
+### LED SFP Tepat di Bawah Tiap Cage, Blink Port 1 & 3 (2026-11-15)
+
+HIRO: "perbaiki posisi nya, 2 led tepat di bawah 2 port sfp. yang blink port 1 dan 3" -> dikonfirmasi
+lewat pertanyaan: 4 LED, masing-masing tepat di bawah 1 cage SFP (2x2), yang blink hanya port 1 dan 3.
+
+- Cage SFP dibuat sedikit lebih pendek (0.0110) dan barisnya dipisah sendiri (`sfpY =
+  [chassisHeight * 0.19, -chassisHeight * 0.14]`) supaya tiap cage punya ruang untuk LED di bawahnya.
+- LED ditempatkan DI DALAM loop cage pada `sy - 0.0068`, x = sx (persis di tengah cage di atasnya).
+  Nomor port row-major: 1 = kiri-atas, 2 = kanan-atas, 3 = kiri-bawah, 4 = kanan-bawah.
+  `blinks = portNo === 1 || portNo === 3` -> hanya LED kolom kiri yang berkedip biru.
+- Baris 4 LED horizontal yang dibuat pada ronde sebelumnya DIHAPUS (digantikan penempatan per cage).
+- Jumlah LED tetap 57.
+
+VERIFIKASI: zoom ekstrem menunjukkan 2x2 cage dengan satu segitiga LED tepat di bawah tiap cage;
+diff dua frame pada area SFP (x 800-900) berubah 48 px -> LED port 1 & 3 memang berkedip.

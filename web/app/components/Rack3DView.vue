@@ -1376,17 +1376,19 @@ onMounted(async () => {
 
         // ---- right block: 2 x 2 SFP+ cages + a column of status LEDs ----
         const sfpCols = [halfW - 0.040, halfW - 0.020]
+        // Port numbering is row-major: 1 = top-left, 2 = top-right, 3 = bottom-left, 4 = bottom-right.
+        const sfpY = [chassisHeight * 0.19, -chassisHeight * 0.14]
         let sfpSeq = 0
         for (let row = 0; row < 2; row++) {
           for (let c = 0; c < 2; c++) {
             const sx = sfpCols[c]
-            const sy = rowY[row]
+            const sy = sfpY[row]
 
-            const cage = new THREE.Mesh(new THREE.BoxGeometry(0.0105, 0.0125, 0.005), matPortMetal)
+            const cage = new THREE.Mesh(new THREE.BoxGeometry(0.0105, 0.0110, 0.005), matPortMetal)
             cage.position.set(sx, sy, 0.0048)
             switchGroup.add(cage)
 
-            const sfpHole = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.0098, 0.0055), matPortCavity)
+            const sfpHole = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.0086, 0.0055), matPortCavity)
             sfpHole.position.set(sx, sy, 0.005)
             switchGroup.add(sfpHole)
 
@@ -1418,31 +1420,26 @@ onMounted(async () => {
               switchGroup.add(tubeMesh)
             }
 
+            // One LED per uplink port, sitting exactly under its own cage. Only ports 1 and 3 blink.
+            const portNo = sfpSeq + 1
+            const blinks = portNo === 1 || portNo === 3
+            dummyObj.rotation.z = 0
+            dummyObj.position.set(sx, yPos + sy - 0.0068, zFront + 0.0052)
+            dummyObj.updateMatrix()
+            ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
+            ledInstancedMesh.setColorAt(ledIndex, blinks ? COLOR_CYAN_ON : COLOR_OFF)
+            ledStates.push({
+              type: 'sfp',
+              active: blinks,
+              isAmber: false,
+              phase: Math.random() * Math.PI * 2,
+              speed: 14.0 + Math.random() * 10.0,
+              burstFreq: 1.8 + Math.random() * 2.0,
+              burstOffset: Math.random() * 5.0
+            })
+            ledIndex++
             sfpSeq++
           }
-        }
-
-        // One LED per uplink port, in a row UNDER the four SFP+ cages (no vertical column on the edge).
-        const uplinkLedSpan = 0.036
-        for (let k = 0; k < 4; k++) {
-          const lx = halfW - 0.044 + (uplinkLedSpan / 3) * k
-          dummyObj.rotation.z = 0
-          dummyObj.position.set(lx, yPos + bandY, zFront + 0.0048)
-          dummyObj.updateMatrix()
-          ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
-
-          const linked = k < 2
-          ledInstancedMesh.setColorAt(ledIndex, linked ? COLOR_CYAN_ON : COLOR_OFF)
-          ledStates.push({
-            type: 'sfp',
-            active: linked,
-            isAmber: false,
-            phase: Math.random() * Math.PI * 2,
-            speed: 14.0 + Math.random() * 10.0,
-            burstFreq: 1.8 + Math.random() * 2.0,
-            burstOffset: Math.random() * 5.0
-          })
-          ledIndex++
         }
 
         // 7. Rear Chassis PSUs & Power Cord to Vertical PDU
