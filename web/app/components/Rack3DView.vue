@@ -395,18 +395,18 @@ onMounted(async () => {
       ctx.fillStyle = grad
       ctx.fillRect(0, 0, 512, 192)
 
-      ctx.strokeStyle = accentCss
+      ctx.strokeStyle = '#3b82f6'
       ctx.lineWidth = 6
       ctx.strokeRect(4, 4, 504, 184)
 
       // Top status header
-      ctx.fillStyle = accentCss
+      ctx.fillStyle = '#93c5fd'
       ctx.font = 'bold 24px "JetBrains Mono", monospace'
       ctx.fillText(`APC Smart-UPS ${vaRating}VA`, 22, 40)
 
-      ctx.fillStyle = '#34d399'
+      ctx.fillStyle = '#a5f3fc'
       ctx.font = 'bold 22px "JetBrains Mono", monospace'
-      ctx.fillText('ONLINE // GREEN MODE', 22, 74)
+      ctx.fillText('ONLINE // NORMAL', 22, 74)
 
       // Metrics bar
       ctx.fillStyle = '#e0f2fe'
@@ -834,7 +834,8 @@ onMounted(async () => {
     const matFiberOrange = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35, metalness: 0.1 })
     const matPowerCord = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.75 })
     const matUpsBlack = new THREE.MeshStandardMaterial({ color: 0x12151c, roughness: 0.42, metalness: 0.78 })
-    const matApcRed = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.35, metalness: 0.3, emissive: 0x7f1d1d, emissiveIntensity: 0.25 })
+    // UPS front badge/screen accent: blue, not the red APC brand colour (HIRO asked for blue).
+    const matUpsBadge = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.35, metalness: 0.3, emissive: 0x1e3a8a, emissiveIntensity: 0.28 })
 
     function showToast(msg) {
       const toast = $('hud-toast')
@@ -1027,7 +1028,7 @@ onMounted(async () => {
       })
 
       // APC Red Brand Badge on Left
-      const apcBadge = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.018, 0.004), matApcRed)
+      const apcBadge = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.018, 0.004), matUpsBadge)
       apcBadge.position.set(-0.185, totalH / 2 - 0.016, 0.013)
       upsGroup.add(apcBadge)
 

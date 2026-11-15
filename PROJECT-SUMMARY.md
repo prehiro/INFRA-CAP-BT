@@ -5533,3 +5533,17 @@ lewat pertanyaan: 4 LED, masing-masing tepat di bawah 1 cage SFP (2x2), yang bli
 
 VERIFIKASI: zoom ekstrem menunjukkan 2x2 cage dengan satu segitiga LED tepat di bawah tiap cage;
 diff dua frame pada area SFP (x 800-900) berubah 48 px -> LED port 1 & 3 memang berkedip.
+### UPS: Badge & Layar Merah -> Biru (2026-11-15)
+
+HIRO: "screen ups merah ganti biru".
+
+Yang merah di UPS ternyata BUKAN layar LCD-nya (LCD-nya memang sudah biru-gelap) melainkan BADGE
+persegi di kiri layar, `matApcRed` 0xdc2626 (warna brand APC).
+
+- `matApcRed` diganti nama jadi `matUpsBadge` dengan warna biru 0x1d4ed8, emissive 0x1e3a8a @0.28.
+- Palet layar LCD dibuat biru penuh dan TIDAK lagi mengikuti warna accent tema:
+  border '#3b82f6', header '#93c5fd', baris status '#a5f3fc', teks "ONLINE // GREEN MODE" diganti
+  "ONLINE // NORMAL" (label lama menyebut GREEN padahal layarnya biru).
+- Bar hijau di bawah LCD dibiarkan (indikator online), bukan bagian dari layar.
+
+VERIFIKASI: screenshot Bottom UPS - badge kiri dan seluruh layar biru, tidak ada merah tersisa.
