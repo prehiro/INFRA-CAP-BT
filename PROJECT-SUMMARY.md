@@ -5175,3 +5175,26 @@ UKUR (browser 1200x760): rect badge sebelum hover [462,377,31,16] dan sesudah [4
 identik; parent badge sekarang `ap-rack-marker`, bukan `ap-rack-body`. Catatan: animasi hover
 di-scale dimatikan di browser harness ini (prefers-reduced-motion: reduce), jadi buktinya struktural
 - transform pada body tidak mungkin lagi mengenai badge. Build exit 0.
+### Panel OTB NETVEL Sebagai Isi Default Tiap U (2026-11-15)
+
+HIRO: "saya mau secara default tiap u atas ada 1 unit OTB netviel seperti ini" (foto plate 1U hitam
+dengan garis oranye bergelombang dan tulisan NETVEL di kanan).
+
+IMPLEMENTASI (Rack3DView.vue)
+- `createOtbFaceTexture()` menggambar plate 1U: gradient hitam, garis highlight di tepi atas,
+  gelombang oranye (naik di ~47% lalu rata ke kanan), wordmark NETVEL miring di kanan, dua sekrup.
+- `buildOtbPanels()` dipanggil dari `rebuildRackEquipment()` setelah brush cable bar: satu panel per
+  U KOSONG. Panel dilewati kalau U-nya dipakai UPS/switch, atau kalau U itu ditempati brush cable
+  bar di bawah sebuah switch (biar tidak bertumpuk).
+- Panel = isi visual saja: tidak masuk switchesData, tidak muncul di Rack Inventory, dan TIDAK
+  mengurangi/menambah angka free-U. Tidak ada hitbox, jadi tidak ikut hover tooltip.
+- Material pakai array per sisi BoxGeometry (px,nx,py,ny,pz,nz) supaya tekstur NETVEL hanya di muka
+  depan; sisi lain tetap logam gelap.
+
+PENYESUAIAN TAMPILAN setelah lihat hasilnya di browser: oranye dibuat "printed" (#e2600c) tanpa
+shadow/bloom dan plate dibuat lebih terang dari interior kabinet. Alasannya: panel ini diulang di
+puluhan U, jadi glow membuat seluruh rak tampak seperti garis lampu oranye berulang - jauh lebih
+ramai daripada plate aslinya.
+
+VERIFIKASI: RACK A 42U (12 switch) -> panel OTB mengisi U kosong, switch tetap terlihat di U03..U25,
+badge tetap 28U Free, buka-tutup modal panel tetap ada. Build exit 0.

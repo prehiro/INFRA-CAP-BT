@@ -325,6 +325,69 @@ onMounted(async () => {
       return tex
     }
 
+    // NETVEL OTB (optical termination box) faceplate: matte black plate with the brand's orange
+    // wave and the NETVEL wordmark. These are the rack's default filler panels - one per free U,
+    // so an "empty" rack reads as a patched fibre rack instead of an empty frame.
+    function createOtbFaceTexture() {
+      const canvas = document.createElement('canvas')
+      canvas.width = 1024
+      canvas.height = 96
+      const ctx = canvas.getContext('2d')
+
+      // Plate - deliberately a shade lighter than the cabinet interior so each 1U panel reads as
+      // its own object instead of merging into one striped column.
+      const plate = ctx.createLinearGradient(0, 0, 0, canvas.height)
+      plate.addColorStop(0, '#1b2129')
+      plate.addColorStop(0.42, '#11161c')
+      plate.addColorStop(1, '#0a0d11')
+      ctx.fillStyle = plate
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Top edge highlight: gives the eye a boundary between neighbouring panels
+      ctx.fillStyle = 'rgba(255,255,255,0.07)'
+      ctx.fillRect(0, 0, canvas.width, 2)
+
+      // Fine brushed texture
+      for (let i = 0; i < 220; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.012})`
+        ctx.fillRect(Math.random() * canvas.width, 0, 1, canvas.height)
+      }
+
+      // Orange wave, traced from the NETVEL plate: low on the left, kink, then a long run right
+      // Printed orange, not glowing: with one panel per U a bloom reads as a light bar repeating
+      // down the whole rack, which is far louder than the reference plate.
+      ctx.strokeStyle = '#e2600c'
+      ctx.lineWidth = 8
+      ctx.lineJoin = 'round'
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      ctx.moveTo(canvas.width * 0.055, canvas.height * 0.70)
+      ctx.lineTo(canvas.width * 0.40, canvas.height * 0.62)
+      ctx.lineTo(canvas.width * 0.47, canvas.height * 0.42)
+      ctx.lineTo(canvas.width * 0.78, canvas.height * 0.40)
+      ctx.stroke()
+
+      // Wordmark
+      ctx.fillStyle = '#ee6a12'
+      ctx.font = 'italic 700 30px "Segoe UI", Arial, sans-serif'
+      ctx.textAlign = 'right'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('NETVEL', canvas.width - 26, canvas.height * 0.50)
+
+      // Mounting screws at both ends
+      ;[0.022, 0.978].forEach(fx => {
+        ctx.beginPath()
+        ctx.fillStyle = '#242a33'
+        ctx.arc(canvas.width * fx, canvas.height * 0.5, 6, 0, Math.PI * 2)
+        ctx.fill()
+      })
+
+      const texture = new THREE.CanvasTexture(canvas)
+      texture.colorSpace = THREE.SRGBColorSpace
+      texture.anisotropy = 4
+      return texture
+    }
+
     function createUpsLcdTexture(vaRating, loadPct, runtimeMins) {
       const canvas = document.createElement('canvas')
       canvas.width = 512
@@ -901,6 +964,53 @@ onMounted(async () => {
     }
 
     // Rebuild Entire Dynamic Rack Contents (Switches, Cable Bars, UPS, Instanced LEDs)
+    // One NETVEL OTB panel for every U the register does not fill. The panel is filler, not a
+    // device: it never enters switchesData, the inventory list or the free-U count, and it is
+    // skipped in the U that carries the brush cable bar under a switch so the two never overlap.
+    function buildOtbPanels() {
+      const occupied = getOccupiedSet()
+      const cableBarSlots = new Set()
+      switchesData.forEach(sw => {
+        const belowU = sw.u - 1
+        if (belowU >= 1 && !occupied.has(belowU)) cableBarSlots.add(belowU)
+      })
+
+      const matBody = new THREE.MeshStandardMaterial({ color: 0x0b0e13, roughness: 0.52, metalness: 0.62 })
+      const matFace = new THREE.MeshStandardMaterial({ map: createOtbFaceTexture(), roughness: 0.46, metalness: 0.28 })
+      // BoxGeometry takes one material per side: px, nx, py, ny, pz(front), nz
+      const faceMats = [matBody, matBody, matBody, matBody, matFace, matBody]
+
+      const panelH = U_HEIGHT - 0.0018
+      const panelW = 0.442
+      const faceGeo = new THREE.BoxGeometry(panelW, panelH, 0.006)
+      const bodyGeo = new THREE.BoxGeometry(panelW, panelH, 0.150)
+      const earGeo = new THREE.BoxGeometry(0.021, panelH, 0.004)
+
+      for (let u = 1; u <= TOTAL_U; u++) {
+        if (occupied.has(u) || cableBarSlots.has(u)) continue
+
+        const group = new THREE.Group()
+        group.position.set(0, getUSlotY(u), frontRailZ + 0.010)
+
+        const body = new THREE.Mesh(bodyGeo, matBody)
+        body.position.set(0, 0, -0.076)
+        group.add(body)
+
+        const face = new THREE.Mesh(faceGeo, faceMats)
+        face.position.set(0, 0, 0.002)
+        group.add(face)
+
+        ;[-1, 1].forEach(side => {
+          const ear = new THREE.Mesh(earGeo, matBody)
+          ear.position.set(side * (panelW / 2 + 0.0105), 0, 0.003)
+          group.add(ear)
+        })
+
+        group.userData = { kind: 'otb', u }
+        dynamicEquipmentGroup.add(group)
+      }
+    }
+
     function rebuildRackEquipment() {
       enforceBottomUpsRule()
 
@@ -946,6 +1056,8 @@ onMounted(async () => {
           dynamicEquipmentGroup.add(cmGroup)
         }
       })
+
+      buildOtbPanels()
 
       // Allocate InstancedMesh for all switches' LEDs
       const totalLeds = Math.max(1, switchesData.length * LED_COUNT_PER_SWITCH)
