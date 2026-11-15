@@ -5332,3 +5332,24 @@ rim 0.6).
 VERIFIKASI (browser): Close-Up Ports - permukaan switch dan plate OTB tajam, celah antar U gelap
 bersih, tidak ada lagi selubung abu-abu; Angled view tetap seterang versi yang HIRO setujui.
 Build exit 0. State HUD RACK A dikembalikan ke default.
+### Highlight Wash-Out Saat Zoom ke Switch/OTB (2026-11-15)
+
+HIRO: "lighting terlalu terang ketika saya zoom switch dan otb nya, jadi warna nya pudar".
+
+Sebabnya BUKAN intensitas lampu ruangan, tapi REFLEKSI ENVIRONMENT pada material perangkat:
+chassis switch metalness 0.82/roughness 0.36 dan port metal metalness 0.92/roughness 0.25. Dengan
+environment map, metal sehalus itu jadi cermin; saat kamera zoom, pantulan ruangan memenuhi chassis
+dan warnanya pudar ke abu-abu terang. Ditambah `frontFillLight` (PointLight) yang dekat hardware,
+yang jatuh 1/r^2 - makin dekat makin panas.
+
+Yang diubah:
+- `matSwitchChassis` envMapIntensity 0.42, `matPortMetal` 0.35, `matScrewChrome` 0.4 (kaca pintu
+  sudah 0.22 dari perbaikan sebelumnya).
+- `frontFillLight`: 1.35 -> 0.55, distance 5.2 -> 6.5, posisi z 1.45 -> 1.6, decay 1.2.
+- `faceWash` 1.0 -> 0.7, `toneMappingExposure` 1.32 -> 1.18 (ACES sudah aktif).
+- Body kabinet (matRackSteel/matRackTrim) SENGAJA dibiarkan env penuh: sempat dicoba 0.7 dan
+  body langsung hitam lagi - kecerahan yang HIRO setujui bergantung pada env di material itu.
+
+VERIFIKASI (browser): Close-Up Ports - chassis gelap kebiruan, LED hijau tetap pekat, port strip
+tidak lagi melebur jadi pita putih, celah antar U bersih. Angled view tetap terang.
+Build exit 0.
