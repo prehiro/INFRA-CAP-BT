@@ -5273,3 +5273,21 @@ OTB, jadi rak terisi dari atas ke bawah dan switch baru selalu mendarat tepat DI
 VERIFIKASI (RACK A 42U, OTB di U42): Add #1 -> "Adding SW-EDGE-13 (10.10.10.11) at U41",
 Add #2 -> U40. Keduanya tersimpan di register (U41/U40) dan terlihat di 3D tepat di bawah plate OTB.
 Data uji dihapus lagi (204), register kembali 12 switch. Build exit 0.
+### Add Switch Tidak Lagi Menimpa U Cable Management (2026-11-15)
+
+HIRO: "ketika add switch baru jangan menimpa u cable menagement".
+
+Sebab: brush cable bar digambar di U tepat DI BAWAH setiap switch, tapi `getFreeSlots()` hanya
+mengecualikan U yang berisi device + slot OTB. Jadi U yang sedang dipakai bar dianggap kosong dan
+switch baru bisa ditaruh di situ (bar hilang, device menimpa).
+
+Fix: helper baru `getCableBarSlots()` (U di bawah tiap switch yang tidak terisi device) dipakai oleh
+DUA tempat sekaligus - `getFreeSlots()` dan `buildOtbPanels()` - supaya alokasi dan rendering tidak
+mungkin berbeda pendapat. Slot bar kini ikut "terpesan".
+
+Konsekuensi yang wajar: switch baru otomatis dapat jarak 1U di bawahnya (bar-nya), sama seperti pola
+11 dummy switch yang sudah ada.
+
+VERIFIKASI (RACK A, OTB U42): Add #1 -> U41, #2 -> U39 (U40 = bar milik U41, dilewati),
+#3 -> U37. Tidak ada bar yang tertimpa. Data uji dihapus (204), register kembali 12 switch.
+Build exit 0.

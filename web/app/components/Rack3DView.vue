@@ -839,11 +839,26 @@ onMounted(async () => {
       return occ
     }
 
+    // A U that carries a brush cable-management bar (the slot directly below an installed switch)
+    // is physically taken even though no device sits in it. Shared by the panel builder and the
+    // allocator so the two can never disagree.
+    function getCableBarSlots(): Set<number> {
+      const occ = getOccupiedSet()
+      const slots = new Set<number>()
+      switchesData.forEach(sw => {
+        const belowU = sw.u - 1
+        if (belowU >= 1 && !occ.has(belowU)) slots.add(belowU)
+      })
+      return slots
+    }
+
     function getFreeSlots() {
       const occ = getOccupiedSet()
+      const cableBars = getCableBarSlots()
       const free = []
       for (let u = TOTAL_U; u >= 1; u--) {
-        if (!occ.has(u) && u !== otbSlotU) free.push(u)
+        // Reserved: occupied by the UPS/switch, the OTB plate, or a cable-management bar
+        if (!occ.has(u) && u !== otbSlotU && !cableBars.has(u)) free.push(u)
       }
       return free
     }
@@ -999,11 +1014,7 @@ onMounted(async () => {
     // Skipped only when the whole cabinet is full.
     function buildOtbPanels() {
       const occupied = getOccupiedSet()
-      const cableBarSlots = new Set()
-      switchesData.forEach(sw => {
-        const belowU = sw.u - 1
-        if (belowU >= 1 && !occupied.has(belowU)) cableBarSlots.add(belowU)
-      })
+      const cableBarSlots = getCableBarSlots()
 
       let targetU = 0
       for (let u = TOTAL_U; u >= 1; u--) {
