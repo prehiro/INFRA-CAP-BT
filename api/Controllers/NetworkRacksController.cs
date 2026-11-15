@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
-public record RackInput(string? Name, string? Description, double X, double Y);
+public record RackInput(string? Name, string? Description, double X, double Y, int? SizeU = null);
 public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position);
 public record SwitchPosition(string? IpAddress, string? Hostname, string? Position);
 
@@ -21,6 +21,11 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     private const int MaxIpLength = 45;
     private const int MaxHostnameLength = 160;
     private const int MaxPositionLength = 100;
+
+    // The sizes the UI offers. Kept server-side too so a hand-made request cannot store a 3U cabinet
+    // that the 3D model would then have to render.
+    private static readonly int[] AllowedSizes = [19, 22, 27, 42];
+    private const int DefaultSizeU = 42;
 
     [HttpGet]
     public async Task<IActionResult> List(int floorId, CancellationToken ct)
@@ -38,6 +43,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                 x.Description,
                 x.X,
                 x.Y,
+                x.SizeU,
                 x.CreatedAt,
                 SwitchCount = x.Switches.Count,
                 Switches = x.Switches.OrderBy(s => s.Hostname).Select(s => new
@@ -67,6 +73,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                 x.Description,
                 x.X,
                 x.Y,
+                x.SizeU,
                 x.CreatedAt,
                 Switches = x.Switches.OrderBy(s => s.Hostname).Select(s => new
                 {
@@ -98,7 +105,8 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
             Name = input.Name!.Trim(),
             Description = input.Description?.Trim() ?? string.Empty,
             X = input.X,
-            Y = input.Y
+            Y = input.Y,
+            SizeU = input.SizeU ?? DefaultSizeU
         };
         db.NetworkRacks.Add(rack);
         await db.SaveChangesAsync(ct);
@@ -119,6 +127,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         rack.Description = input.Description?.Trim() ?? string.Empty;
         rack.X = input.X;
         rack.Y = input.Y;
+        if (input.SizeU is not null) rack.SizeU = input.SizeU.Value;
         await db.SaveChangesAsync(ct);
         return Ok(ToDto(rack));
     }
@@ -214,6 +223,8 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
             return $"Description is too long (maximum {MaxDescriptionLength} characters).";
         if (!ValidCoordinate(input.X) || !ValidCoordinate(input.Y))
             return "Rack position must be within the floor plan.";
+        if (input.SizeU is not null && !AllowedSizes.Contains(input.SizeU.Value))
+            return $"Rack size must be one of {string.Join(", ", AllowedSizes)}U.";
         return null;
     }
 
@@ -229,6 +240,6 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         return null;
     }
 
-    private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.CreatedAt, SwitchCount = r.Switches.Count };
+    private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.SizeU, r.CreatedAt, SwitchCount = r.Switches.Count };
     private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.CreatedAt };
 }

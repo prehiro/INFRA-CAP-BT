@@ -27,6 +27,7 @@ export interface NetworkRack {
   description: string
   x: number
   y: number
+  sizeU: number
   createdAt: string
   switchCount: number
   switches: NetworkSwitch[]
@@ -37,6 +38,7 @@ export interface NetworkRackSummary {
   description: string
   x: number
   y: number
+  sizeU: number
   createdAt: string
   switchCount: number
 }

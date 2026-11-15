@@ -19,7 +19,12 @@ const rackError = ref('')
 const switchError = ref('')
 const editingRackId = ref<number | null>(null)
 const editingSwitchId = ref<number | null>(null)
-const rackDraft = reactive<NetworkRackInput>({ name: '', description: '', x: 0.5, y: 0.5 })
+// Cabinet heights the add-rack form offers. U_HEIGHT matches the 3D model (1.75 in per U) and
+// the plinth + roof add 0.16 m, so the shown metre value is the height the user will actually see.
+const RACK_SIZES = [19, 22, 27, 42] as const
+const U_HEIGHT_M = 0.04445
+const rackSizeHeight = (u: number) => `${(u * U_HEIGHT_M + 0.16).toFixed(2)} m`
+const rackDraft = reactive<NetworkRackInput>({ name: '', description: '', x: 0.5, y: 0.5, sizeU: 42 })
 const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '' })
 const mapEl = ref<HTMLElement | null>(null)
 const mapStageEl = ref<HTMLElement | null>(null)
@@ -234,14 +239,14 @@ function openAddRack(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
   showRackDetails.value = false
   editingRackId.value = null
-  Object.assign(rackDraft, { name: '', description: '', x, y })
+  Object.assign(rackDraft, { name: '', description: '', x, y, sizeU: 42 })
   rackError.value = ''; showRackEditor.value = true
 }
 function openEditRack(rack: NetworkRackSummary) {
   if (!isAdmin.value || busy.value) return
   showRackDetails.value = false
   editingRackId.value = rack.id
-  Object.assign(rackDraft, { name: rack.name, description: rack.description, x: rack.x, y: rack.y })
+  Object.assign(rackDraft, { name: rack.name, description: rack.description, x: rack.x, y: rack.y, sizeU: rack.sizeU ?? 42 })
   rackError.value = ''; showRackEditor.value = true
 }
 async function saveRack() {
@@ -492,6 +497,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
                   :title="rack.name" @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
                   <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
                     <UIcon name="game-icons:server-rack" class="size-7 text-primary" />
+                    <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-elevated px-1.5 py-px text-[9px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/40">{{ rack.sizeU }}U</span>
                   </span>
                 </button>
               </div>
@@ -549,6 +555,34 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
               <UInput v-model="rackDraft.name" class="w-full" maxlength="60" placeholder="e.g. Rack-A1" :disabled="busy" />
             </fieldset>
             <fieldset :disabled="busy">
+              <legend class="mb-2 flex w-full items-baseline justify-between gap-3">
+                <span class="text-sm font-medium text-highlighted">Rack size</span>
+                <span class="text-xs text-muted">{{ rackDraft.sizeU }}U cabinet · {{ rackSizeHeight(rackDraft.sizeU) }}</span>
+              </legend>
+              <div class="grid grid-cols-4 gap-2">
+                <button v-for="opt in RACK_SIZES" :key="opt" type="button"
+                  class="group relative flex flex-col items-center gap-1.5 overflow-hidden rounded-xl border px-1 pb-2 pt-2.5 transition-colors"
+                  :class="rackDraft.sizeU === opt ? 'border-primary/60 bg-primary/10 ring-1 ring-primary/40' : 'border-default bg-elevated/40 hover:border-primary/35 hover:bg-primary/5'"
+                  :aria-pressed="rackDraft.sizeU === opt"
+                  :title="`${opt}U cabinet, ${rackSizeHeight(opt)} tall`"
+                  @click="rackDraft.sizeU = opt">
+                  <span class="flex h-14 w-full items-end justify-center">
+                    <span class="relative w-6 rounded-[3px] border transition-colors"
+                      :class="rackDraft.sizeU === opt ? 'border-primary/70 bg-primary/15 text-primary' : 'border-default bg-elevated text-muted'"
+                      :style="{ height: `${Math.round((opt / 42) * 100)}%` }">
+                      <span class="absolute inset-x-[3px] inset-y-[3px] rounded-[1px] opacity-60"
+                        style="background-image: repeating-linear-gradient(to bottom, currentColor 0 1px, transparent 1px 4px)" />
+                    </span>
+                  </span>
+                  <span class="text-xs font-semibold leading-none" :class="rackDraft.sizeU === opt ? 'text-primary' : 'text-highlighted'">{{ opt }}U</span>
+                  <span class="text-[10px] leading-none text-muted">{{ rackSizeHeight(opt) }}</span>
+                </button>
+              </div>
+              <p class="mt-2 text-[11px] leading-relaxed text-muted">
+                The 3D cabinet, its U numbering and the free-U count all follow this size. Existing racks keep their own size when edited.
+              </p>
+            </fieldset>
+            <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Description (optional)</legend>
               <UInput v-model="rackDraft.description" class="w-full" maxlength="300" placeholder="e.g. Core switch rack, 42U" :disabled="busy" />
             </fieldset>
@@ -596,7 +630,13 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         <template #header="{ close }">
           <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
-            <div class="min-w-0 flex-1"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3>
+                <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/25">{{ selectedRackDetail.sizeU }}U</span>
+              </div>
+              <p class="truncate text-xs text-muted">{{ floor?.name }} · {{ rackSizeHeight(selectedRackDetail.sizeU) }} cabinet</p>
+            </div>
             <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" variant="ghost" color="error" size="sm"
               :disabled="busy" :aria-label="`Delete ${selectedRackDetail.name}`" :title="`Delete ${selectedRackDetail.name}`"
               @click="deleteRack(selectedRackDetail)" />
@@ -605,7 +645,9 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         </template>
         <template #body>
           <div v-if="selectedRackDetail">
-            <LazyRack3DView :switches="selectedRackDetail.switches" @delete-switch="deleteSwitchFromRack3D" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
+            <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"
+              :total-u="selectedRackDetail.sizeU" @delete-switch="deleteSwitchFromRack3D"
+              class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
           </div>
         </template>
       </UModal>

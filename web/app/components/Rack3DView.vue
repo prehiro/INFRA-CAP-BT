@@ -17,8 +17,10 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { NetworkSwitch } from '~/types'
 
-// The rack's real switches are the only source of hardware in this scene.
-const props = defineProps<{ switches: NetworkSwitch[] }>()
+// The rack's real switches are the only source of hardware in this scene. `totalU` is the cabinet
+// height in rack units, stored per rack by the register: 19U/22U/27U/42U all render from the same
+// geometry spec, so a smaller cabinet is simply a shorter one with fewer numbered slots.
+const props = withDefaults(defineProps<{ switches: NetworkSwitch[]; totalU?: number }>(), { totalU: 42 })
 
 // Deleting a switch is not a local edit: it has to reach the register, or the next load of the
 // rack detail simply re-reads the row and the device reappears. The parent page owns that API
@@ -41,7 +43,16 @@ watch(() => props.switches, list => applySwitches?.(list ?? []), { deep: true })
 // as the geometry spec inside onMounted - when this was hardcoded to 24 a stored "U30" in the
 // register was silently treated as unparseable and the switch got repacked into the lowest free
 // slot instead of the slot the user chose.
-const RACK_TOTAL_U = 42
+const DEFAULT_TOTAL_U = 42
+const ALLOWED_TOTALS = [19, 22, 27, 42]
+// Written once per mount from the `totalU` prop before any geometry is built, and read by the
+// helpers below, so every rail, slot option and free-U count agrees with the same cabinet height.
+let RACK_TOTAL_U: number = DEFAULT_TOTAL_U
+
+function normalizeTotalU(value: number | undefined): number {
+  const n = Math.round(Number(value))
+  return ALLOWED_TOTALS.includes(n) ? n : DEFAULT_TOTAL_U
+}
 
 // "U6", "U6-U7", "u 6 - u 7" -> { start, end }; anything unparseable returns null.
 function parseUnitRange(raw: string): { start: number; end: number } | null {
@@ -59,6 +70,10 @@ function parseUnitRange(raw: string): { start: number; end: number } | null {
 onMounted(async () => {
   const container = $('canvas-container')
   if (!container) return
+
+  // Resolve the cabinet height before anything reads it: rails, U numbering, slot options,
+  // free-U badge and the camera ratios all derive from RACK_TOTAL_U.
+  RACK_TOTAL_U = normalizeTotalU(props.totalU)
 
   try {
     // The scene's colour tone follows the app's accent (--ui-primary), which the user can switch
@@ -2052,13 +2067,13 @@ onMounted(async () => {
     <div
       id="canvas-container"
       role="img"
-      :aria-label="`3D view of a 42U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"
+      :aria-label="`3D view of a ${totalU}U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"
     ></div>
 
     <!-- Loading Overlay -->
     <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#06090f] transition-opacity duration-700">
       <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-      <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing 42U Rack & Switch Telemetry...</div>
+      <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing {{ totalU }}U Rack &amp; Switch Telemetry...</div>
     </div>
 
     <!-- Hover Inspection Tooltip -->

@@ -382,6 +382,9 @@ namespace Api.Data.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("nvarchar(60)");
 
+                    b.Property<int>("SizeU")
+                        .HasColumnType("int");
+
                     b.Property<double>("X")
                         .HasColumnType("float");
 

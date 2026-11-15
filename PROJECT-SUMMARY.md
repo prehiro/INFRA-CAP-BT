@@ -5119,3 +5119,39 @@ UKUR (probe sementara camera.target, lalu probe dihapus lagi; build bersih):
 
 Catatan pola: setiap perubahan tinggi rak harus menyapu SEMUA angka y/limit yang ditulis tangan -
 pan, wheel, preset kamera. Yang ini lolos karena clamp-nya ada di fungsi terpisah dari spec rak.
+### Ukuran Rak Bisa Dipilih: 19U / 22U / 27U / 42U (2026-11-15)
+
+HIRO minta saat add rack bisa memilih size dan 3D-nya mengikuti.
+
+BACKEND
+- `NetworkRack.SizeU` (int) + migrasi `20261115055200_AddRackSizeU`.
+  PENTING: defaultValue migrasi harus 42, bukan 0 - rack lama kalau dapat 0 akan jadi kabinet
+  setinggi nol di 3D. Sudah diubah manual sebelum migrasi dijalankan.
+- `RackInput` dapat `int? SizeU`; `ValidateRack` hanya menerima 19/22/27/42 (`AllowedSizes`).
+- List/Get/ToDto sama-sama mengirim `sizeU`, create/update menyimpannya.
+- API harus di-restart karena Api.exe terkunci (MSB3027): Stop-Process PID 23080 dulu, build,
+  `dotnet ef migrations add`, lalu jalankan lagi di :5099 (MigrateAsync menerapkan migrasi).
+
+FRONTEND
+- `rackDraft` membawa `sizeU`; modal add/edit rack punya pemilih 4 kartu: tiap kartu menggambar
+  glyph kabinet dengan tinggi proporsional (19/42 ... 42/42) + garis ventilasi, angka U, dan tinggi
+  nyata dalam meter (1.00 / 1.14 / 1.36 / 2.03 m). Kartu terpilih: border + ring + glow primary.
+- Chip `42U` di header modal detail + subtitle "2.03 m cabinet"; badge `42U` di marker peta.
+- Rack3DView menerima prop `totalU` (default 42, dinormalisasi ke daftar yang diizinkan) dan
+  mengeset `RACK_TOTAL_U` di baris pertama onMounted. Semua geometri, nomor rail, opsi slot,
+  free-U, aria-label, dan teks loading memakai nilai itu. Parent memberi `:key` berisi id+sizeU
+  supaya scene dibangun ulang saat ukuran berubah.
+
+DUA JEBAKAN YANG KETEMU SAAT KERJA INI
+1. `const RACK_TOTAL_U = 42` di module scope TIDAK bisa di-assign ulang - compiler Vue menolak
+   (ILLEGAL_REASSIGNMENT). Harus `let`.
+2. Sebuah patch script saya gagal menulis deklarasi prop (`defineProps` masih versi lama) padahal
+   build sukses. Akibatnya `props.totalU` undefined -> 42 -> badge "40U Free" pada rack 19U.
+   Yang membongkarnya adalah aria-label "3D view of a undefinedU network rack". Pelajaran: setelah
+   patching blok deklarasi, grep deklarasinya - build hijau tidak membuktikan patch tertulis.
+
+UJI (browser 1200x760, rack uji dibuat lalu dihapus lagi)
+- TEST-19U: aria 19U, badge 17U Free (19-2), kabinet pendek; header "19U · 1.00 m cabinet".
+- TEST-27U: aria 27U, badge 25U Free, kabinet lebih tinggi.
+- RACK A (42U, 12 switch): aria 42U, badge 28U Free (42-12-2), 12 baris inventory - tidak regresi.
+- Data akhir: RACK A (42U, 12 switch) + Rack D (42U, 0 switch). Build exit 0.

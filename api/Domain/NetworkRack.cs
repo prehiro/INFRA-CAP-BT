@@ -8,6 +8,9 @@ public class NetworkRack
     public NetworkFloorMap FloorMap { get; set; } = null!;
     public string Name { get; set; } = string.Empty;        // Rack identifier (e.g., "Rack-A1")
     public string Description { get; set; } = string.Empty; // Optional description
+    // Cabinet height in rack units. Drives the 3D cabinet and the free-U maths, so it is stored
+    // per rack instead of being a constant of the viewer.
+    public int SizeU { get; set; } = 42;
     // Fraction of image width/height (0..1), independent of screen size.
     public double X { get; set; }
     public double Y { get; set; }
