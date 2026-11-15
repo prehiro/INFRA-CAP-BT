@@ -73,8 +73,28 @@ onMounted(async () => {
     scene.background = new THREE.Color(0x06090f)
     scene.fog = new THREE.FogExp2(0x06090f, 0.055)
 
+    // ---- Rack geometry spec (1 unit = 1 metre, real cabinet dimensions) ----------
+    // 42U floor-standing cabinet: 42 * 0.04445 = 1.8669 m of usable interior, plus a
+    // 0.085 m plinth and a 0.075 m roof, so the enclosure stands 2.027 m tall.
+    // Everything below derives from these numbers: rails, U numbering, doors, side
+    // panels and the camera framing all follow TOTAL_U.
+    const U_HEIGHT = 0.04445
+    const TOTAL_U = 42
+    const RACK_W = 0.60
+    const RACK_D = 0.80
+    const BASE_H = 0.085
+    const TOP_H = 0.075
+    const RACK_INNER_H = TOTAL_U * U_HEIGHT
+    const TOTAL_RACK_H = BASE_H + RACK_INNER_H + TOP_H
+
+    // Camera framing is expressed as a ratio of the enclosure height (the multipliers are
+    // the angles that were tuned for the original shorter cabinet), so a taller rack is not cropped and
+    // needs no retuning when the U count changes.
+    const CAM_TARGET_Y = TOTAL_RACK_H * 0.587
+    const CAM_PAN_Y_MAX = TOTAL_RACK_H * 1.18
+
     const camera = new THREE.PerspectiveCamera(42, 1, 0.05, 60)
-    camera.position.set(1.45, 1.15, 1.95)
+    camera.position.set(TOTAL_RACK_H * 1.182, TOTAL_RACK_H * 0.937, TOTAL_RACK_H * 1.589)
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' })
     renderer.setSize(container.clientWidth, container.clientHeight)
@@ -104,12 +124,12 @@ onMounted(async () => {
     controls.minDistance = 0.35
     controls.maxDistance = 6.5
     controls.maxPolarAngle = Math.PI * 0.495
-    controls.target.set(0, 0.72, 0)
+    controls.target.set(0, CAM_TARGET_Y, 0)
 
     // Batasi area geser (pan) agar kamera tidak terlalu jauh keluar dari area rack
     controls.addEventListener('change', () => {
       const minTarget = new THREE.Vector3(-0.85, 0.05, -0.85)
-      const maxTarget = new THREE.Vector3(0.85, 1.45, 0.85)
+      const maxTarget = new THREE.Vector3(0.85, CAM_PAN_Y_MAX, 0.85)
       const prevTarget = controls.target.clone()
       controls.target.clamp(minTarget, maxTarget)
       camera.position.add(controls.target.clone().sub(prevTarget))
@@ -194,14 +214,15 @@ onMounted(async () => {
     function createRailNumberTexture() {
       const canvas = document.createElement('canvas')
       canvas.width = 64
-      canvas.height = 1536
+      canvas.height = 64 * TOTAL_U
       const ctx = canvas.getContext('2d')
       ctx.fillStyle = '#1e293b'
-      ctx.fillRect(0, 0, 64, 1536)
+      ctx.fillRect(0, 0, 64, canvas.height)
 
-      const step = 1536 / 24
-      for (let i = 0; i < 24; i++) {
-        const uNum = 24 - i
+      // One band per U, numbered from the top of the cabinet down, as on a real rack rail.
+      const step = canvas.height / TOTAL_U
+      for (let i = 0; i < TOTAL_U; i++) {
+        const uNum = TOTAL_U - i
         const yTop = i * step
 
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)'
@@ -367,19 +388,10 @@ onMounted(async () => {
     })
 
     // =====================================================================
-    // 4. BUILD THE 24U SERVER / NETWORK RACK ENCLOSURE
+    // 4. BUILD THE 42U SERVER / NETWORK RACK ENCLOSURE
     // =====================================================================
-    // Real-world dimensions (1 unit = 1 meter):
-    // Width: 0.60m, Depth: 0.80m, 1U height = 0.04445m (1.75 in)
-    // 24U interior height = 24 * 0.04445 = 1.0668m
-    const U_HEIGHT = 0.04445
-    const TOTAL_U = 24
-    const RACK_INNER_H = TOTAL_U * U_HEIGHT // ~1.067m
-    const RACK_W = 0.60
-    const RACK_D = 0.80
-    const BASE_H = 0.085
-    const TOP_H = 0.075
-    const TOTAL_RACK_H = BASE_H + RACK_INNER_H + TOP_H // ~1.227m
+    // Dimensions come from the rack spec at the top of this script: 0.60 m wide, 0.80 m deep,
+    // 1U = 0.04445 m (1.75 in), 42U interior = 1.8669 m, overall 2.027 m with plinth and roof.
 
     const rackGroup = new THREE.Group()
     scene.add(rackGroup)
@@ -638,7 +650,7 @@ onMounted(async () => {
             if (!occ.has(cand)) { u = cand; break }
           }
         }
-        if (!u) continue // rack full: 24U cannot hold another 1U switch
+        if (!u) continue // rack full: 42U cannot hold another 1U switch
         occ.add(u)
 
         out.push({
@@ -1617,9 +1629,11 @@ onMounted(async () => {
 
     // Smooth Camera Transition Presets
     let camTween = null
+    // Wide shots scale with the cabinet; the two close-ups stay absolute because the UPS and
+    // the switches are still mounted at the bottom of the rack (UPS at U01, switches above it).
     const presets = {
-      angled: { pos: new THREE.Vector3(1.45, 1.15, 1.95), target: new THREE.Vector3(0, 0.72, 0) },
-      front:  { pos: new THREE.Vector3(0, 0.78, 2.05),    target: new THREE.Vector3(0, 0.72, 0) },
+      angled: { pos: new THREE.Vector3(TOTAL_RACK_H * 1.182, TOTAL_RACK_H * 0.937, TOTAL_RACK_H * 1.589), target: new THREE.Vector3(0, CAM_TARGET_Y, 0) },
+      front:  { pos: new THREE.Vector3(0, TOTAL_RACK_H * 0.636, TOTAL_RACK_H * 1.900),                      target: new THREE.Vector3(0, CAM_TARGET_Y, 0) },
       ports:  { pos: new THREE.Vector3(0.18, 0.92, 0.92), target: new THREE.Vector3(0, 0.88, 0.32) },
       ups:    { pos: new THREE.Vector3(0.45, 0.32, 1.15), target: new THREE.Vector3(0, 0.16, 0.25) }
     }
@@ -1999,13 +2013,13 @@ onMounted(async () => {
     <div
       id="canvas-container"
       role="img"
-      :aria-label="`3D view of a 24U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"
+      :aria-label="`3D view of a 42U network rack with ${switches.length} switch${switches.length === 1 ? '' : 'es'}`"
     ></div>
 
     <!-- Loading Overlay -->
     <div id="loading-screen" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#06090f] transition-opacity duration-700">
       <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-      <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing 24U Rack & Switch Telemetry...</div>
+      <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing 42U Rack & Switch Telemetry...</div>
     </div>
 
     <!-- Hover Inspection Tooltip -->

@@ -5031,3 +5031,27 @@ konten naik tepat 40px, jadi `perUnit` bukan sumber masalah.
 ANGKA TERUKUR (harness 1200x720, panel 322px, dock 48px): shiftX 167, shiftY 60, enclosure
 top 103 / bottom 556 / centre 330, freeCentreY 330 (tepat tengah), dockTop 660 sehingga base rak
 punya jarak 104px dari tombol kamera. `npx nuxt build` lulus (exit 0).
+### Rack 3D jadi kabinet 42U (2026-11-15)
+
+Permintaan HIRO: "ubah rack nya jadi model 42u". Bukan sekadar ganti angka - tiga hal ikut berubah:
+
+1. SPEC RAK JADI SATU SUMBER DI ATAS SKRIP. U_HEIGHT 0.04445, TOTAL_U = 42, RACK_W 0.60,
+   RACK_D 0.80, BASE_H 0.085, TOP_H 0.075 -> interior 42 x 0.04445 = 1.8669 m, total 2.027 m
+   (kabinet 42U sungguhan). Deklarasi lama 24U di section 4 dihapus, bukan ditinggal dobel.
+   Rel depan/belakang, side panel, pintu kaca, dan jumlah baris nomor U di tekstur rel
+   (sekarang 42 baris, 64px per U seperti sebelumnya) semuanya turunan TOTAL_U.
+
+2. KAMERA TIDAK LAGI ANGKA MATI. Posisi (1.45/1.15/1.95) dan target y 0.72 dikonversi jadi rasio
+   terhadap TOTAL_RACK_H: CAM_TARGET_Y = H*0.587, CAM_PAN_Y_MAX = H*1.18, posisi H*1.182/0.937/1.589.
+   Preset "Angled" dan "Front" ikut skala; "Close-Up Ports" dan "Bottom UPS" sengaja tetap absolut
+   karena perangkat masih di U01 ke atas. Tanpa ini rak 2 m terpotong di frame.
+
+3. Preset Front harus digeser: di H*1.671 dasar rak ketutup dock tombol kamera, dinaikkan ke H*1.900.
+
+VERIFIKASI BROWSER (1200x720, login admin): rak tidak terpotong atas/bawah di Angled maupun Front,
+pintu bisa dibuka, perangkat di bawah (UPS U01-U02 + switch U03) sesuai posisi fisik. HUD "36U Free"
+dan dropdown Rack Slot sampai U42 (37 opsi, U42/U41/U40 di paling atas) - bukti turunan TOTAL_U,
+bukan angka sisa. `npx nuxt build` exit 0 setelah edit terakhir.
+
+Catatan rasa: proporsi 0.6 m x 2.03 m membuat kabinet tampak lebih ramping dan interiornya lebih
+gelap/kosong dibanding 24U - konsekuensi fisik rak 42U berisi 6U, bukan bug render.
