@@ -379,8 +379,8 @@ onMounted(async () => {
           // ONE ROLE PER ELEMENT. The grid is a still, plain white reference surface and carries no
           // colour at all - tinting the lines is what made the floor look like a highlighter smear.
           // The accent appears exactly once, as a halo leaving the feet of the cabinet.
-          float lineAlpha = (minor * 0.34 + major * 0.58) * fade;
-          vec3 lineColor = mix(vec3(0.36, 0.37, 0.39), vec3(0.82, 0.84, 0.87), major);
+          float lineAlpha = (minor * 0.22 + major * 0.42) * fade;
+          vec3 lineColor = mix(vec3(0.30, 0.31, 0.33), vec3(0.70, 0.72, 0.75), major);
 
           // A constant, very soft pool under the cabinet so the accent is present even between
           // pulses, plus one halo that swells outward from the feet and dissolves as it widens.

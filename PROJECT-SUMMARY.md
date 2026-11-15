@@ -5773,3 +5773,13 @@ VERIFIKASI (Angled View 1400x900): 3 frame berjarak 2 s - profil hijau per pita 
 (95 -> 95 -> 107, 89 -> 89 -> 99) menandakan halo merambat keluar; total pixel lantai berubah 8.721
 dan 100.920 px. Screenshot: grid putih bersih tanpa warna, satu lingkaran aksen lembut di kaki rack.
 Build exit 0.
+### Grid Putih Diredupkan Sedikit (2026-11-15)
+
+HIRO: "ya redupkan sedikit grid putih nya".
+
+- `lineAlpha` turun dari `(minor*0.34 + major*0.58)` -> `(minor*0.22 + major*0.42)`.
+- `lineColor` turun dari `mix(0.36,0.37,0.39 -> 0.82,0.84,0.87)` -> `mix(0.30,0.31,0.33 -> 0.70,0.72,0.75)`.
+- Halo aksen TIDAK disentuh (pool 0.16, ring peak 0.34) - permintaan hanya soal grid.
+
+VERIFIKASI: screenshot angled view 1400x900 - grid putih tetap jelas terbaca tapi tidak lagi
+mendominasi lantai, halo aksen di kaki rack tetap terlihat. Build exit 0.
