@@ -272,9 +272,83 @@ onMounted(async () => {
     floor.receiveShadow = true
     scene.add(floor)
 
-    const gridHelper = new THREE.GridHelper(16, 32, 0x2f425e, 0x1b2739)
-    gridHelper.position.y = 0.001
-    scene.add(gridHelper)
+    // Floor grid, drawn in a shader instead of a GridHelper so the lines can carry a running light.
+    // Two very slow accent sweeps travel across the floor (one diagonal, one perpendicular) and only
+    // the grid lines light up where they pass, so it reads as current travelling along the cabling
+    // grid rather than a glowing blob. Everything is deliberately low-contrast: the lines sit near
+    // the old GridHelper colour and the sweep adds at most a fraction of the accent on top.
+    const FLOOR_GRID_SIZE = 16
+    const floorLightUniforms = {
+      uTime: { value: 0 },
+      uAccent: { value: accentColor.clone() },
+      uTraffic: { value: 0.75 },
+      uSize: { value: FLOOR_GRID_SIZE }
+    }
+
+    const gridFloorMat = new THREE.ShaderMaterial({
+      uniforms: floorLightUniforms,
+      transparent: true,
+      depthWrite: false,
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform float uTime;
+        uniform vec3 uAccent;
+        uniform float uTraffic;
+        uniform float uSize;
+        varying vec2 vUv;
+
+        // Anti-aliased grid lines: 1px wide regardless of how far the camera is.
+        float gridMask(vec2 p, float cell, float thickness) {
+          vec2 coord = p / cell;
+          vec2 grid = abs(fract(coord - 0.5) - 0.5) / max(fwidth(coord), vec2(1e-5));
+          float line = 1.0 - min(min(grid.x, grid.y) / thickness, 1.0);
+          return clamp(line, 0.0, 1.0);
+        }
+
+        // A head with a long tail: exp() decay behind a hard front edge, repeating every 'period'.
+        float runningHead(float coord, float period, float tailLength) {
+          float phase = mod(coord, period);
+          return exp(-phase * tailLength);
+        }
+
+        void main() {
+          vec2 p = (vUv - 0.5) * uSize;
+
+          float minor = gridMask(p, 0.5, 1.0);
+          float major = gridMask(p, 2.0, 1.4);
+
+          // Two sweeps: diagonal (faster) and its perpendicular (slower), offset so they cross.
+          float d1 = dot(p, normalize(vec2(1.0, 0.55))) - uTime * 0.85 * (0.4 + uTraffic);
+          float d2 = dot(p, normalize(vec2(-0.5, 1.0))) - uTime * 0.55 * (0.4 + uTraffic);
+          float sweep = runningHead(d1, 7.5, 1.45) * 0.95
+                      + runningHead(d2 + 3.0, 9.5, 1.15) * 0.55;
+
+          float lineMask = max(minor * 0.55, major * 0.85);
+          float glow = lineMask * (0.12 + sweep * 1.15);
+
+          // The plane must not show an edge: fade it out well inside the geometry.
+          float fade = 1.0 - smoothstep(uSize * 0.30, uSize * 0.48, length(p));
+
+          vec3 baseLine = mix(vec3(0.098, 0.137, 0.192), vec3(0.184, 0.259, 0.369), major);
+          vec3 color = baseLine + uAccent * glow * 1.05;
+          float alpha = ((minor * 0.55 + major * 0.75) * 0.55 + glow * 0.62) * fade;
+
+          gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.85));
+        }
+      `
+    })
+
+    const gridFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_GRID_SIZE, FLOOR_GRID_SIZE), gridFloorMat)
+    gridFloor.rotation.x = -Math.PI / 2
+    gridFloor.position.y = 0.0015
+    gridFloor.renderOrder = 1
+    scene.add(gridFloor)
 
     // Subtle accent-coloured under-rack glow strip
     const glowPlane = new THREE.Mesh(
@@ -2338,6 +2412,11 @@ onMounted(async () => {
           ledInstancedMesh.instanceColor.needsUpdate = true
         }
       }
+
+      // Running light on the floor grid: driven here so it reacts to the traffic slider like the
+      // switch LEDs do, and never advances while the tab is throttled.
+      floorLightUniforms.uTime.value += delta
+      floorLightUniforms.uTraffic.value = trafficIntensity
 
       controls.update()
       renderer.render(scene, camera)

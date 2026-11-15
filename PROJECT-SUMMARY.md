@@ -5583,3 +5583,27 @@ VERIFIKASI di browser 1400x900: collapse -> dua drawer display:none, dua handle 
 penuh, localStorage terisi {"left":true,"right":true}; klik handle -> kembali flex dan localStorage
 {"left":false,"right":false}; reload halaman -> state tetap; `#inventory-list` masih berisi 13 kartu
 setelah drawer dibuka kembali. Build exit 0.
+### Running Light di Grid Lantai 3D (2026-11-15)
+
+HIRO: "animasi seperti running light pada garis-garis lantai nya, warnanya mengikuti aksen theme,
+tapi jangan terlalu mencolok, buat yang kreatif".
+
+`GridHelper(16, 32)` diganti dengan plane 16x16 ber-`ShaderMaterial` (`gridFloor`, y=0.0015,
+transparent, depthWrite:false, renderOrder 1). Semua di Rack3DView.vue:
+
+- Garis grid digambar di fragment shader dengan `fwidth` -> tebal konstan 1px berapa pun jarak kamera.
+  Minor 0.5 m, major 2 m (major lebih terang), warna dasar tetap biru-gelap seperti GridHelper lama.
+- DUA sweep bergerak: diagonal (dot(p, normalize(1,0.55))) lebih cepat dan tegak lurusnya
+  (dot(p, normalize(-0.5,1))) lebih lambat, saling bersilangan. Bentuk pulsa `exp(-phase*tail)`:
+  kepala tajam + ekor panjang, period 7.5 m dan 9.5 m.
+- HANYA garis yang menyala saat sweep lewat (glow = lineMask * (0.12 + sweep*1.15)), jadi terbaca
+  seperti arus mengalir di jalur kabel lantai, bukan blob cahaya.
+- Warna memakai `uAccent` = accentColor theme. Intensitas rendah: kontribusi aksen max ~1.05x pada
+  garis, alpha puncak ~0.62, ditambah fade radial (1 - smoothstep(30%,48% ukuran)) supaya tepi plane
+  tidak terlihat.
+- `uTime` dan `uTraffic` di-update di animate(): kecepatan = 0.4 + trafficIntensity, jadi sweep ikut
+  melambat/memudar saat slider Traffic Burst Intensity diturunkan.
+
+VERIFIKASI: dua frame berjarak 1.5 s pada area lantai berbeda 1524 px; screenshot dengan drawer
+di-collapse memperlihatkan dua pita diagonal garis aksen yang bergerak, sisa grid tetap redup.
+Build exit 0.
