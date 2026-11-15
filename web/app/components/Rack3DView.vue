@@ -139,9 +139,33 @@ onMounted(async () => {
       probe.remove()
       return css
     })()
-    const accentColor = new THREE.Color(accentCss)
-    const accentRgb = (accentCss.match(/\d+/g) || ['0', '193', '106']).slice(0, 3).map(Number)
-    const accentRgba = (alpha) => `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, ${alpha})`
+    // MEASURED PITFALL: `--ui-primary` is an oklch() colour (oklch(0.702 0.183 293.541) for violet).
+    // THREE.Color cannot parse oklch/color-mix, and does not throw - it leaves the colour at its
+    // default, which is pure white. That is why every accent-tinted surface in here once rendered
+    // white no matter what the user picked. Painting the value into a 1x1 canvas lets the browser do
+    // the conversion and hands back plain sRGB bytes that THREE.Color can consume.
+    const accentCanvas = document.createElement('canvas')
+    accentCanvas.width = 1
+    accentCanvas.height = 1
+    const accentCtx = accentCanvas.getContext('2d', { willReadFrequently: true })
+    const resolveAccentBytes = (css: string) => {
+      if (!accentCtx || !css) return null
+      accentCtx.clearRect(0, 0, 1, 1)
+      accentCtx.fillStyle = '#000000'
+      accentCtx.fillStyle = css
+      if (accentCtx.fillStyle === '#000000' && !css.startsWith('rgb(0, 0, 0')) return null
+      accentCtx.fillRect(0, 0, 1, 1)
+      const [r, g, b] = accentCtx.getImageData(0, 0, 1, 1).data
+      return { r, g, b }
+    }
+
+    const initialAccentBytes = resolveAccentBytes(accentCss) || { r: 0, g: 193, b: 106 }
+    const accentColor = new THREE.Color().setRGB(
+      initialAccentBytes.r / 255,
+      initialAccentBytes.g / 255,
+      initialAccentBytes.b / 255,
+      THREE.SRGBColorSpace
+    )
 
     // Every accent-tinted surface registers here, and the accent is re-read a couple of times per
     // second while the scene runs. Without this the modal keeps the accent it was opened with and a
@@ -164,8 +188,10 @@ onMounted(async () => {
     const refreshAccent = () => {
       const css = readAccentCss()
       if (!css || css === lastAccentCss) return
+      const bytes = resolveAccentBytes(css)
+      if (!bytes) return
       lastAccentCss = css
-      accentColor.set(css)
+      accentColor.setRGB(bytes.r / 255, bytes.g / 255, bytes.b / 255, THREE.SRGBColorSpace)
       accentFollowers.forEach((fn) => fn(accentColor))
     }
 

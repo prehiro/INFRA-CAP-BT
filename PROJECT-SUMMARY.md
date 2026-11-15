@@ -5683,3 +5683,32 @@ VERIFIKASI: 3 frame berjarak 1 s di area lantai berubah ~9.900 dan ~8.900 px; pr
 per cincin berubah bergantian (mis. cincin ke-6: 92 -> 83 -> 83, cincin ke-8: 106 -> 92 -> 84) yang
 menunjukkan pita brightness merambat keluar. Screenshot: garis lantai paling terang di sekitar kaki
 rack dan meredup ke tepi. Build exit 0.
+### Kenapa Garis Lantai Putih: THREE.Color Tidak Bisa Baca oklch() (2026-11-15)
+
+HIRO: "kok line nya tetap warna putih tidak mengikuti warna aksen?"
+
+AKAR MASALAH (diukur, bukan dugaan): `--ui-primary` di aplikasi ini BUKAN rgb, tapi oklch, mis.
+`oklch(0.702 0.183 293.541)` untuk violet dan `oklch(70.2% 0.183 293.541)` dari getPropertyValue.
+`new THREE.Color('oklch(...)')` tidak mengerti format itu, TIDAK melempar error, dan meninggalkan
+warna default = PUTIH. Jadi seluruh permukaan ber-aksen di Rack3DView (garis lantai, rim light, glow
+bawah rack, pita aksen switch, pinstripe pintu) render putih; mengubah aksen pun tidak mengubah apa
+pun karena nilainya gagal diparse, bukan karena polling-nya rusak.
+
+KENAPA TES SEBELUMNYA LOLOS: waktu memverifikasi "ikut aksen live", `--ui-primary` saya set manual
+ke `rgb(168,85,247)` - string yang bisa diparse THREE.Color. Jalur asli aplikasi (cookie tema ->
+appConfig -> oklch) tidak pernah diuji. Pelajarannya: uji lewat jalur yang dipakai user.
+
+PERBAIKAN: resolver 1x1 canvas. `resolveAccentBytes(css)` menuliskan string CSS ke `fillStyle`,
+menggambar 1 px, lalu membaca balik byte sRGB lewat getImageData - browser yang mengonversi oklch /
+color-mix. Dipakai saat mount dan di `refreshAccent()`:
+`accentColor.setRGB(r/255, g/255, b/255, THREE.SRGBColorSpace)`.
+`accentRgb`/`accentRgba` yang lama (parse digit dari string oklch -> rgba(0,702,0)) dihapus karena
+sudah tidak dipakai di mana pun (0 pemanggil) - HIRO tidak mau dead code.
+
+VERIFIKASI:
+- Cookie tema violet + reload (jalur asli user): garis lantai jadi (167,134,254), 291/300 pixel
+  lantai paling terang violet-dominan; screenshot memperlihatkan lantai dan glow violet, tidak ada
+  garis putih.
+- `--ui-primary` diganti ke `oklch(0.72 0.19 150)` saat modal terbuka -> dalam 1.5 s garis jadi
+  (44,192,103), 269/300 hijau-dominan (polling live + resolver oklch dua-duanya jalan).
+- Cookie dikembalikan ke green default: garis hijau, tampilan konsisten. Build exit 0.
