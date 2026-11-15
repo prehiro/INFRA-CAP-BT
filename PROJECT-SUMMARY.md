@@ -5712,3 +5712,26 @@ VERIFIKASI:
 - `--ui-primary` diganti ke `oklch(0.72 0.19 150)` saat modal terbuka -> dalam 1.5 s garis jadi
   (44,192,103), 269/300 hijau-dominan (polling live + resolver oklch dua-duanya jalan).
 - Cookie dikembalikan ke green default: garis hijau, tampilan konsisten. Build exit 0.
+### Rim Light Putih + Grid Original Selalu Terlihat (2026-11-15)
+
+HIRO: "efek pantulan cahaya pada posisi angled view biarkan tetap putih bro jangan ikut warna aksen.
+lalu saya mau warna original floor tetap visible jangan hilangkan ketika breathe berjalan ke arah lain".
+
+1. PANTULAN TETAP PUTIH. `rimLight` (DirectionalLight 0.6) yang tampil sebagai sheen/pantulan pada
+   angled view TIDAK LAGI ikut aksen: warnanya sekarang tetap `0xdfe9ff` dan `followAccent()`-nya
+   dihapus. Catatan penting: sebelum bug oklch diperbaiki, aksen tak terbaca sehingga lampu ini
+   praktis putih - jadi permintaan ini mengembalikan tampilan yang dia sudah setujui, bukan ide baru.
+   Glow bawah rack, aksen switch dan pinstripe pintu tetap ikut aksen.
+
+2. GRID ORIGINAL TIDAK HILANG SAAT NAPAS. Sebelumnya garis lantai 100% warna aksen dengan alpha
+   `glow`, sehingga di lembah gelombang (breathe ~0) garisnya hilang sama sekali dan lantai jadi
+   polos. Sekarang dua lapisan dikomposisi terpisah:
+   - lapisan dasar netral, selalu terlihat: `baseColor = mix(0x1b2739, 0x2f425e, major)` (warna
+     GridHelper lama) dengan `baseAlpha = (minor*0.42 + major*0.62) * fade`;
+   - lapisan aksen bernapas di atasnya: `glowAlpha = lineMask * (0.05 + breathe*0.40) * energy * fade`.
+   `alpha = baseAlpha + glowAlpha` (clamp 0.85) dan `color = (baseColor*baseAlpha +
+   glowColor*glowAlpha) / alpha` (premultiplied blend), jadi warna asli lantai tetap ada di semua fase.
+
+VERIFIKASI (Angled View, drawer di-collapse): dua frame berjarak 1.6 s berbeda 11.879 px di area
+lantai (napas tetap jalan); garis grid biru-baja terlihat di seluruh lantai termasuk di area paling
+redup; pantulan/sheen lantai dan tepi kabinet putih, tidak hijau. Build exit 0.

@@ -292,8 +292,9 @@ onMounted(async () => {
     scene.add(keyLight)
 
     // Cool cyan rim light & subtle warm back fill for metallic edge definition
-    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.6)
-    followAccent((c) => rimLight.color.copy(c))
+    // Deliberately NOT accent-coloured: this is the light that shows up as a reflection on the floor
+    // and cabinet edges at the angled view, and HIRO wants that sheen to stay white.
+    const rimLight = new THREE.DirectionalLight(0xdfe9ff, 0.6)
     rimLight.position.set(-2.5, 2.2, -2.5)
     scene.add(rimLight)
 
@@ -380,19 +381,24 @@ onMounted(async () => {
           float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 1.6);
           float energy = mix(1.0, 0.42, smoothstep(0.5, 18.0, radius));
 
-          // The lines themselves are the accent colour and their brightness is what breathes; the
-          // resting state stays dim so the effect reads as a glow, never as a lamp.
-          vec3 lineColor = uAccent * (0.32 + breathe * 0.46);
-          float glow = lineMask * (0.08 + breathe * 0.46) * energy;
-
           // The plane must not show an edge: the grid keeps running far past the rack and only
           // dissolves near the horizon, so no line ever appears to stop in mid-air.
           float fade = 1.0 - smoothstep(uSize * 0.31, uSize * 0.47, radius);
 
-          vec3 color = lineColor * (0.62 + breathe * 0.38) + uAccent * glow * 0.3;
-          float alpha = glow * fade;
+          // The original steel-blue grid stays on screen the whole time - an earlier version made the
+          // lines pure accent, so wherever the swell was in its trough the floor lost its grid
+          // entirely. The breathing accent is now something laid ON TOP of that base, never a
+          // replacement for it.
+          vec3 baseColor = mix(vec3(0.106, 0.153, 0.227), vec3(0.184, 0.259, 0.369), major);
+          float baseAlpha = (minor * 0.42 + major * 0.62) * fade;
 
-          gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.6));
+          vec3 glowColor = uAccent * (0.36 + breathe * 0.42);
+          float glowAlpha = lineMask * (0.05 + breathe * 0.40) * energy * fade;
+
+          float alpha = clamp(baseAlpha + glowAlpha, 0.0, 0.85);
+          vec3 color = (baseColor * baseAlpha + glowColor * glowAlpha) / max(alpha, 1e-4);
+
+          gl_FragColor = vec4(color, alpha);
         }
       `
     })
