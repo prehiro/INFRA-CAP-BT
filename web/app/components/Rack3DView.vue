@@ -1733,10 +1733,13 @@ onMounted(async () => {
       const shiftFactor = 1 - actualScale
       const targetDelta = focusPoint.clone().sub(controls.target).multiplyScalar(shiftFactor)
 
-      // Keep target bounded near the rack so user doesn't drift off into empty space
+      // Keep target bounded near the rack so user doesn't drift off into empty space. The vertical
+      // limit is derived from the cabinet height (CAM_PAN_Y_MAX): a hardcoded 1.35 was left over
+      // from the 24U model, so on the 42U rack - 2.03 m tall - the target could never follow the
+      // cursor above 1.35 m and zooming near the top of the rack appeared to ignore the pointer.
       const newTarget = controls.target.clone().add(targetDelta)
       newTarget.x = THREE.MathUtils.clamp(newTarget.x, -0.75, 0.75)
-      newTarget.y = THREE.MathUtils.clamp(newTarget.y, 0.05, 1.35)
+      newTarget.y = THREE.MathUtils.clamp(newTarget.y, 0.05, CAM_PAN_Y_MAX)
       newTarget.z = THREE.MathUtils.clamp(newTarget.z, -0.75, 0.75)
 
       const appliedDelta = newTarget.clone().sub(controls.target)

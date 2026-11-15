@@ -5093,3 +5093,29 @@ dihapus dari HUD -> dialog muncul dengan data benar, Cancel menutup tanpa API ca
 menghapus di DB dan hilang setelah modal close-buka; rack TEST-RACK-DEL dibuat via API, dihapus dari
 header modal -> dialog "Delete this rack?" (Switches 0), konfirmasi -> marker hilang dan API hanya
 mengembalikan RACK A. Data akhir: 4 switch asli (BTCAP001/003/004/005), 2 floor plan. Build exit 0.
+### Zoom Ikut Kursor Diperbaiki untuk Rak 2 m (2026-11-15)
+
+Laporan HIRO: "saat saya zoom pada bagian atas rak, camera tidak mengikuti posisi pointer mouse".
+
+AKAR MASALAH: fungsi onWheel (cursor-targeted zoom) punya clamp target vertikal sendiri yang
+ditulis tangan pada era rak 24U:
+
+    newTarget.y = THREE.MathUtils.clamp(newTarget.y, 0.05, 1.35)
+
+Rak sekarang 2.027 m tinggi (42U), jadi titik di atas 1.35 m tidak bisa dijadikan target. Saat
+kursor berada di bagian atas kabinet, focusPoint memang ter-raycast dengan benar, tetapi target
+tertahan di 1.35 sehingga kamera hanya bergeser sedikit ke samping/depan - terlihat seperti zoom
+mengabaikan pointer. Clamp pan milik OrbitControls sudah memakai CAM_PAN_Y_MAX (H*1.18), hanya
+clamp di jalur wheel ini yang tertinggal.
+
+FIX: newTarget.y memakai CAM_PAN_Y_MAX yang sama dengan jalur pan, jadi batas vertikal sekarang
+turun dari tinggi kabinet, bukan angka mati dari model lama.
+
+UKUR (probe sementara camera.target, lalu probe dihapus lagi; build bersih):
+- Zoom 4 notch dengan kursor di bagian atas (y canvas 22%): target (0, 1.19, 0) -> (0.074, 1.442, 0.177)
+  - y melewati 1.35, artinya batas lama sudah tidak mengikat lagi.
+- Zoom 4 notch dengan kursor di bagian bawah (y canvas 80%): target -> (0.113, 0.805, 0.278), ikut turun.
+- `npx nuxt build` exit 0.
+
+Catatan pola: setiap perubahan tinggi rak harus menyapu SEMUA angka y/limit yang ditulis tangan -
+pan, wheel, preset kamera. Yang ini lolos karena clamp-nya ada di fungsi terpisah dari spec rak.
