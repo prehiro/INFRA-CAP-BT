@@ -5504,3 +5504,17 @@ ke 2, begitu seterusnya sampai urutan led ke 48".
 VERIFIKASI: build exit 0; 6 frame berturut-turut pada area faceplate -> hijau ~4.3-4.6k px dan amber
 ~4.4-4.7k px (seimbang, jadi kedua warna benar-benar berkedip acak). Screenshot close menunjukkan
 port bujur sangkar dan pita LED berbentuk zigzag segitiga atas-bawah.
+### LED Uplink di Bawah Port + Kolom LED Kanan Dihapus (2026-11-15)
+
+HIRO: "4 port paling kanan buat led nya dibawah port. ada 4 led yang merepresentasikan ke 4 port
+tersebut. hapus saja 4 led vertikal yang paling pinggir kanan".
+
+- LED tiap SFP+ cage yang tadinya MENEMPEL DI ATAS cage dihapus dari loop cage.
+- Kolom 4 LED vertikal di tepi paling kanan (status column) DIHAPUS TOTAL.
+- Gantinya: 4 LED dalam satu BARIS HORIZONTAL di bawah blok cage SFP (`uplinkLedSpan = 0.036`,
+  x mulai halfW - 0.044, y = bandY selevel pita kuning), satu LED mewakili satu port uplink.
+  Dua pertama menyala biru (link aktif), dua sisanya off.
+- `LED_COUNT_PER_SWITCH` turun 61 -> 57 (48 pita + 4 uplink + 5 status).
+
+VERIFIKASI: build exit 0; zoom 2x pada baris switch menunjukkan 4 titik LED di bawah cage SFP dan
+tepi kanan faceplate bersih tanpa kolom LED.

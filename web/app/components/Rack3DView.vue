@@ -800,7 +800,7 @@ onMounted(async () => {
     selectedSwitchId = switchesData[0]?.id ?? null
 
     // LED InstancedMesh State (Rebuilt cleanly whenever switches are added/removed/moved)
-    const LED_COUNT_PER_SWITCH = 48 + 4 + 5 + 4 // 61: 48 port-band + 4 SFP + 5 status + 4 uplink status
+    const LED_COUNT_PER_SWITCH = 48 + 4 + 5 // 57: 48 port-band + 4 uplink + 5 status
     // LEDs are triangles: apex-up for odd port order (1,3,5...), flipped by PI for the even ones.
     const LED_TRI = 0.0034
     const ledShape = new THREE.Shape()
@@ -1418,41 +1418,29 @@ onMounted(async () => {
               switchGroup.add(tubeMesh)
             }
 
-            dummyObj.rotation.z = 0
-            dummyObj.position.set(sx, yPos + sy + 0.0072, zFront + 0.0054)
-            dummyObj.updateMatrix()
-            ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
-            ledInstancedMesh.setColorAt(ledIndex, hasTransceiver ? COLOR_CYAN_ON : COLOR_OFF)
-            ledStates.push({
-              type: 'sfp',
-              active: hasTransceiver,
-              isAmber: false,
-              phase: Math.random() * Math.PI * 2,
-              speed: 14.0 + Math.random() * 10.0,
-              burstFreq: 1.8 + Math.random() * 2.0,
-              burstOffset: Math.random() * 5.0
-            })
-            ledIndex++
             sfpSeq++
           }
         }
 
-        // Status LED column beside the uplinks
+        // One LED per uplink port, in a row UNDER the four SFP+ cages (no vertical column on the edge).
+        const uplinkLedSpan = 0.036
         for (let k = 0; k < 4; k++) {
+          const lx = halfW - 0.044 + (uplinkLedSpan / 3) * k
           dummyObj.rotation.z = 0
-          dummyObj.position.set(halfW - 0.007, yPos + rowY[0] + 0.001 - k * 0.0042, zFront + 0.0054)
+          dummyObj.position.set(lx, yPos + bandY, zFront + 0.0048)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
-          // Two of the uplink status LEDs blink blue like the SYST/LINK lamps on the real faceplate.
-          ledInstancedMesh.setColorAt(ledIndex, k < 2 ? COLOR_CYAN_ON : COLOR_OFF)
+
+          const linked = k < 2
+          ledInstancedMesh.setColorAt(ledIndex, linked ? COLOR_CYAN_ON : COLOR_OFF)
           ledStates.push({
             type: 'sfp',
-            active: k < 2,
+            active: linked,
             isAmber: false,
             phase: Math.random() * Math.PI * 2,
-            speed: 1.0,
-            burstFreq: 1.0,
-            burstOffset: 0
+            speed: 14.0 + Math.random() * 10.0,
+            burstFreq: 1.8 + Math.random() * 2.0,
+            burstOffset: Math.random() * 5.0
           })
           ledIndex++
         }
