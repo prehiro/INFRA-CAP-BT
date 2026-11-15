@@ -5547,3 +5547,13 @@ persegi di kiri layar, `matApcRed` 0xdc2626 (warna brand APC).
 - Bar hijau di bawah LCD dibiarkan (indikator online), bukan bagian dari layar.
 
 VERIFIKASI: screenshot Bottom UPS - badge kiri dan seluruh layar biru, tidak ada merah tersisa.
+### LED SFP yang Berkedip: Port 1 & 2 (2026-11-15)
+
+HIRO: "ganti led sfp yang kedip no 1 dan 2".
+
+- `blinks = portNo === 1 || portNo === 2` (sebelumnya 1 dan 3). Nomor port row-major: 1 = kiri-atas,
+  2 = kanan-atas, 3 = kiri-bawah, 4 = kanan-bawah. Jadi sekarang LED di bawah dua cage BARIS ATAS
+  yang berkedip biru, dua baris bawah tetap mati.
+
+VERIFIKASI: diff 3 frame pada area SFP (x 800-900) berubah 44 px; zoom ekstrem memperlihatkan LED di
+bawah dua cage baris atas menyala/mati bergantian sedangkan dua LED baris bawah gelap.

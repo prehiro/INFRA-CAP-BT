@@ -1423,7 +1423,7 @@ onMounted(async () => {
 
             // One LED per uplink port, sitting exactly under its own cage. Only ports 1 and 3 blink.
             const portNo = sfpSeq + 1
-            const blinks = portNo === 1 || portNo === 3
+            const blinks = portNo === 1 || portNo === 2
             dummyObj.rotation.z = 0
             dummyObj.position.set(sx, yPos + sy - 0.0068, zFront + 0.0052)
             dummyObj.updateMatrix()
