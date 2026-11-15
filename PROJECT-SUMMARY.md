@@ -5607,3 +5607,35 @@ transparent, depthWrite:false, renderOrder 1). Semua di Rack3DView.vue:
 VERIFIKASI: dua frame berjarak 1.5 s pada area lantai berbeda 1524 px; screenshot dengan drawer
 di-collapse memperlihatkan dua pita diagonal garis aksen yang bergerak, sisa grid tetap redup.
 Build exit 0.
+### Running Light Grid: Pulse Menyusur Garis + Ikut Aksen Live (2026-11-15)
+
+HIRO: "terlalu nampak terpotong line nya, juga warnanya tidak follow color accent user".
+
+DUA AKAR MASALAH YANG DIPERBAIKI:
+
+1. GARIS TERPOTONG. Sweep sebelumnya melintasi lantai secara diagonal, jadi ia menyalakan potongan
+   pendek di titik perpotongan dengan tiap garis -> terlihat seperti garis terpotong. Sekarang pulsa
+   berjalan MENYUSUR garis (bukan menyeberanginya):
+   - `g = abs(fract(p/0.5 - 0.5) - 0.5) / fwidth(...)` menentukan pixel ini ada di garis mana;
+     keluarga garis (vertikal x-konstan vs horizontal z-konstan) dipilih dengan `g.x < g.y`, lalu
+     koordinat sepanjang garis itulah yang dipakai untuk fase pulsa.
+   - `linePulse()`: gaussian sempit `exp(-t*t*55)` dengan baseline dikurangi (`-0.01`) lalu di-clamp,
+     period 6.5 m, offset `hash11(seed)` per garis supaya antar garis tidak seirama. Karena gaussiannya
+     turun ke nol di dalam garis, ujung pulsa memudar halus - tidak ada potongan mendadak.
+   - Ditambah keluarga kedua yang lebih lambat ke arah berlawanan (bobot 0.28) supaya tidak monoton.
+   - Plane grid diperbesar 16 -> 44 m dan lantai dasar 24 -> 64 m; fade horizon `1 - smoothstep(31%..47%)`
+     (sekitar 13.6..20.7 m) dan garis minor 0.5 m diredupkan lebih awal (`1 - smoothstep(7,16,r)`)
+     supaya tidak moire di kejauhan -> garis sekarang mengalir sampai ujung pandangan, tanpa tepi.
+
+2. WARNA TIDAK IKUT AKSEN. Sebelumnya `--ui-primary` dibaca SEKALI saat mount, jadi ganti warna di
+   menu user tidak pernah sampai ke scene 3D. Sekarang ada registry `accentFollowers` +
+   `followAccent(fn)`: rim light, glowPlaneMat, `floorLightUniforms.uAccent`, matCiscoTeal
+   (color 0.38x + emissive 0.12x) dan glassStripeMat semuanya terdaftar. `refreshAccent()` membaca
+   `--ui-primary` lewat probe span dan dipanggil tiap 0.5 s dari animate() (`accentPoll`); kalau nilai
+   berubah, semua follower di-repaint.
+
+VERIFIKASI di browser (1400x900, drawer di-collapse):
+- Screenshot: grid netral + pulsa aksen menyusur garis dan memudar halus, garis sampai tepi viewport.
+- Set `--ui-primary` = rgb(168,85,247) saat modal terbuka -> dalam ~1 detik pulsa lantai, glow bawah
+  rack, rim light, mark ikon dan tombol jadi violet, tidak ada sisa hijau di lantai.
+Build exit 0.

@@ -143,6 +143,32 @@ onMounted(async () => {
     const accentRgb = (accentCss.match(/\d+/g) || ['0', '193', '106']).slice(0, 3).map(Number)
     const accentRgba = (alpha) => `rgba(${accentRgb[0]}, ${accentRgb[1]}, ${accentRgb[2]}, ${alpha})`
 
+    // Every accent-tinted surface registers here, and the accent is re-read a couple of times per
+    // second while the scene runs. Without this the modal keeps the accent it was opened with and a
+    // colour picked from the user menu never reaches the 3D view.
+    const readAccentCss = () => {
+      const probe = document.createElement('span')
+      probe.style.color = 'var(--ui-primary, #00c16a)'
+      probe.style.display = 'none'
+      document.body.appendChild(probe)
+      const css = getComputedStyle(probe).color
+      probe.remove()
+      return css
+    }
+    let lastAccentCss = accentCss
+    const accentFollowers: Array<(c: THREE.Color) => void> = []
+    const followAccent = (fn: (c: THREE.Color) => void) => {
+      accentFollowers.push(fn)
+      fn(accentColor)
+    }
+    const refreshAccent = () => {
+      const css = readAccentCss()
+      if (!css || css === lastAccentCss) return
+      lastAccentCss = css
+      accentColor.set(css)
+      accentFollowers.forEach((fn) => fn(accentColor))
+    }
+
     // =====================================================================
     // 1. SCENE, RENDERER, CAMERA & CURSOR-TARGETED ZOOM CONTROLS
     // =====================================================================
@@ -241,6 +267,7 @@ onMounted(async () => {
 
     // Cool cyan rim light & subtle warm back fill for metallic edge definition
     const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.6)
+    followAccent((c) => rimLight.color.copy(c))
     rimLight.position.set(-2.5, 2.2, -2.5)
     scene.add(rimLight)
 
@@ -261,7 +288,7 @@ onMounted(async () => {
     // =====================================================================
     // 2. DATA CENTER FLOOR & SUBTLE REFLECTIVE GRID
     // =====================================================================
-    const floorGeo = new THREE.PlaneGeometry(24, 24)
+    const floorGeo = new THREE.PlaneGeometry(64, 64)
     const floorMat = new THREE.MeshStandardMaterial({
       color: 0x131c29,
       roughness: 0.55,
@@ -277,7 +304,7 @@ onMounted(async () => {
     // the grid lines light up where they pass, so it reads as current travelling along the cabling
     // grid rather than a glowing blob. Everything is deliberately low-contrast: the lines sit near
     // the old GridHelper colour and the sweep adds at most a fraction of the accent on top.
-    const FLOOR_GRID_SIZE = 16
+    const FLOOR_GRID_SIZE = 44
     const floorLightUniforms = {
       uTime: { value: 0 },
       uAccent: { value: accentColor.clone() },
@@ -311,10 +338,22 @@ onMounted(async () => {
           return clamp(line, 0.0, 1.0);
         }
 
-        // A head with a long tail: exp() decay behind a hard front edge, repeating every 'period'.
-        float runningHead(float coord, float period, float tailLength) {
-          float phase = mod(coord, period);
-          return exp(-phase * tailLength);
+        float hash11(float n) {
+          return fract(sin(n * 12.9898) * 43758.5453);
+        }
+
+        // A soft pulse travelling ALONG a grid line, never across it: 'along' is the coordinate down
+        // the line and 'seed' picks a per-line phase offset so neighbouring lines are not in step.
+        // The gaussian fades to nothing well inside the line, so a lit stretch never ends abruptly
+        // the way a crossing sweep does.
+        float linePulse(float along, float seed) {
+          float period = 6.5;
+          float phase = along * 0.5 - uTime * 0.62 * (0.45 + uTraffic) + hash11(seed) * period;
+          float t = fract(phase / period) - 0.5;
+          // Narrow and baseline-subtracted: the resting value of the gaussian is subtracted so a line
+          // is completely unlit unless the pulse is actually on it. Without this every line picks up
+          // a permanent accent wash and the floor reads green all over.
+          return max(exp(-t * t * 55.0) - 0.01, 0.0) / 0.99;
         }
 
         void main() {
@@ -323,17 +362,30 @@ onMounted(async () => {
           float minor = gridMask(p, 0.5, 1.0);
           float major = gridMask(p, 2.0, 1.4);
 
-          // Two sweeps: diagonal (faster) and its perpendicular (slower), offset so they cross.
-          float d1 = dot(p, normalize(vec2(1.0, 0.55))) - uTime * 0.85 * (0.4 + uTraffic);
-          float d2 = dot(p, normalize(vec2(-0.5, 1.0))) - uTime * 0.55 * (0.4 + uTraffic);
-          float sweep = runningHead(d1, 7.5, 1.45) * 0.95
-                      + runningHead(d2 + 3.0, 9.5, 1.15) * 0.55;
+          // Which family of line is this pixel on? gMinor.x is the distance to the nearest line of
+          // constant x (a line running along z), gMinor.y the other way round. The pulse then runs
+          // down the line the pixel actually sits on.
+          vec2 gc = p / 0.5;
+          vec2 g = abs(fract(gc - 0.5) - 0.5) / max(fwidth(gc), vec2(1e-5));
+          bool alongZ = g.x < g.y;
+          float along = alongZ ? p.y : p.x;
+          float seed = alongZ ? p.x : p.y;
+
+          float pulse = linePulse(along, seed);
+          // Second, slower family travelling the other way so the floor never looks metronomic.
+          float pulse2 = linePulse(alongZ ? p.x : p.y, seed + 11.0);
 
           float lineMask = max(minor * 0.55, major * 0.85);
-          float glow = lineMask * (0.12 + sweep * 1.15);
+          float sweep = pulse + pulse2 * 0.28;
+          float glow = lineMask * (0.015 + sweep * 0.95);
 
-          // The plane must not show an edge: fade it out well inside the geometry.
-          float fade = 1.0 - smoothstep(uSize * 0.30, uSize * 0.48, length(p));
+          // The plane must not show an edge: the grid keeps running far past the rack and only
+          // dissolves near the horizon, so no line ever appears to stop in mid-air.
+          float radius = length(p);
+          float fade = 1.0 - smoothstep(uSize * 0.31, uSize * 0.47, radius);
+          // Fade the fine 0.5 m lines out sooner than the 2 m ones: past that distance they are
+          // thinner than a pixel and would shimmer into moire.
+          minor *= 1.0 - smoothstep(7.0, 16.0, radius);
 
           vec3 baseLine = mix(vec3(0.098, 0.137, 0.192), vec3(0.184, 0.259, 0.369), major);
           vec3 color = baseLine + uAccent * glow * 1.05;
@@ -344,6 +396,8 @@ onMounted(async () => {
       `
     })
 
+    followAccent((c) => floorLightUniforms.uAccent.value.copy(c))
+
     const gridFloor = new THREE.Mesh(new THREE.PlaneGeometry(FLOOR_GRID_SIZE, FLOOR_GRID_SIZE), gridFloorMat)
     gridFloor.rotation.x = -Math.PI / 2
     gridFloor.position.y = 0.0015
@@ -351,10 +405,9 @@ onMounted(async () => {
     scene.add(gridFloor)
 
     // Subtle accent-coloured under-rack glow strip
-    const glowPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.68, 0.86),
-      new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.14 })
-    )
+    const glowPlaneMat = new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.14 })
+    followAccent((c) => glowPlaneMat.color.copy(c))
+    const glowPlane = new THREE.Mesh(new THREE.PlaneGeometry(0.68, 0.86), glowPlaneMat)
     glowPlane.rotation.x = -Math.PI / 2
     glowPlane.position.y = 0.002
     scene.add(glowPlane)
@@ -573,11 +626,16 @@ onMounted(async () => {
     })
     const matCiscoTeal = new THREE.MeshStandardMaterial({
       color: accentColor.clone().multiplyScalar(0.38),
+      // Recoloured from the followAccent() call right after this block.
       roughness: 0.7,
       metalness: 0.15,
       emissive: accentColor.clone().multiplyScalar(0.12),
       emissiveIntensity: 0.04,
       envMapIntensity: 0.1
+    })
+    followAccent((c) => {
+      matCiscoTeal.color.copy(c).multiplyScalar(0.38)
+      matCiscoTeal.emissive.copy(c).multiplyScalar(0.12)
     })
     // 48 of these per switch sit side by side, so their collective brightness is what reads as a
     // glaring band across the switch body. Dark steel, almost no reflectivity.
@@ -811,10 +869,9 @@ onMounted(async () => {
     doorPivot.add(glassPane)
 
     // Subtle accent-coloured vertical pinstripes on glass edge
-    const glassStripe = new THREE.Mesh(
-      new THREE.BoxGeometry(0.004, doorH - frameThickness * 2, 0.007),
-      new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.45 })
-    )
+    const glassStripeMat = new THREE.MeshBasicMaterial({ color: accentColor.clone(), transparent: true, opacity: 0.45 })
+    followAccent((c) => glassStripeMat.color.copy(c))
+    const glassStripe = new THREE.Mesh(new THREE.BoxGeometry(0.004, doorH - frameThickness * 2, 0.007), glassStripeMat)
     glassStripe.position.set(doorW - frameThickness - 0.012, 0, 0)
     doorPivot.add(glassStripe)
 
@@ -2358,6 +2415,7 @@ onMounted(async () => {
     // =========================================================================
     const clock = new THREE.Clock()
     let simTime = 0
+let accentPoll = 0
     let rafId = 0
 
     function animate() {
@@ -2417,6 +2475,12 @@ onMounted(async () => {
       // switch LEDs do, and never advances while the tab is throttled.
       floorLightUniforms.uTime.value += delta
       floorLightUniforms.uTraffic.value = trafficIntensity
+
+      accentPoll += delta
+      if (accentPoll > 0.5) {
+        accentPoll = 0
+        refreshAccent()
+      }
 
       controls.update()
       renderer.render(scene, camera)
