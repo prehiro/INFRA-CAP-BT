@@ -5003,3 +5003,31 @@ offset-nya ikut menyesuaikan.
 ANGKA TERUKUR (harness 1200x720, dock 48px): `viewShiftY` 30, titik jangkar rak `rackY` 330 =
 `freeCentreY` 330, basis rak `rackBaseY` 586 sementara dock mulai di 660 (koordinat canvas) -
 jadi ada jarak 74px dan bottom rak tidak tertutup tombol lagi.
+
+
+### Framing rak: center enclosure, dan fit baru setelah frame pertama (2026-11-14, revisi)
+
+Permintaan HIRO "naik lagi" ternyata menutup dua bug nyata, keduanya ketemu lewat pengukuran:
+
+1. CAMERA TARGET BUKAN UKURAN YANG BENAR. Kamera mengarah ke y=0.72 sementara enclosure rak
+   membentang y=0..TOTAL_RACK_H (1.227). Selama yang di-center adalah titik target, rak tetap
+   terbaca rendah walau targetnya pas di tengah. Sekarang yang di-center adalah enclosure-nya:
+   proyeksikan y=0 dan y=TOTAL_RACK_H, ambil titik tengahnya.
+   Box3.setFromObject TIDAK dipakai - bbox rackGroup ikut memuat pintu belakang dan kabel yang
+   memproyeksi di bawah base, sehingga centre-nya meleset ~112px ke bawah (terukur: bbox bottom 728
+   vs base 616).
+
+2. PENGUKURAN DIAMBIL DARI KAMERA YANG BELUM SIAP. `Vector3.project()` membaca
+   `camera.matrixWorldInverse`, yang baru benar setelah satu frame dirender. Panggilan fit saat
+   mount / observer pertama / push data dieksekusi sebelum itu, sehingga hasilnya ngawur (sempat
+   shiftY 288 - rak terdorong ke atas sampai terpotong, dan sempat juga 0 - tidak ada offset sama
+   sekali). Fix: `fitViewport()` + wrapper `applyViewport()` dengan flag `frameRendered`; permintaan
+   fit sebelum frame pertama ditahan di `fitPending` dan dijalankan sekali tepat setelah
+   `renderer.render()` pertama. Ditambah `camera.updateMatrixWorld()` sebelum proyeksi.
+
+Alasan teknis offset 1:1 sudah diverifikasi terpisah (halaman debug_offset.html): view offset 40 ->
+konten naik tepat 40px, jadi `perUnit` bukan sumber masalah.
+
+ANGKA TERUKUR (harness 1200x720, panel 322px, dock 48px): shiftX 167, shiftY 60, enclosure
+top 103 / bottom 556 / centre 330, freeCentreY 330 (tepat tengah), dockTop 660 sehingga base rak
+punya jarak 104px dari tombol kamera. `npx nuxt build` lulus (exit 0).

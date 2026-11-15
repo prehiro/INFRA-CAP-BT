@@ -1809,7 +1809,7 @@ onMounted(async () => {
     // pan the projection by half the panel's width, which puts the rack in the middle of the area
     // that is actually visible. setViewOffset(width, height, x, 0, width, height) only shifts the
     // frustum, so the framing and field of view stay exactly as before.
-    const applyViewport = () => {
+    const fitViewport = () => {
       const w = container.clientWidth
       const h = container.clientHeight
       if (!w || !h) return
@@ -1817,17 +1817,53 @@ onMounted(async () => {
       const panelShown = !!panel && getComputedStyle(panel).display !== 'none'
       const shiftX = panelShown ? Math.round((panel.offsetWidth + 12) / 2) : 0
       // The camera preset dock sits over the bottom edge, so the rack base was hidden behind the
-      // buttons. Reserve the dock's height, then raise the scene by half of it to keep the rack
-      // centred in the space that is actually visible.
+      // buttons. Reserve the dock's height, then centre the rack's own projected bounding box in
+      // what is left - centring the camera TARGET was not enough, because the target sits above the
+      // middle of the enclosure and the rack still read as low.
       const dock = $('cam-dock')
       const dockShown = !!dock && getComputedStyle(dock).display !== 'none'
       const reserveY = dockShown ? dock.offsetHeight + 12 : 0
-      const shiftY = Math.round(reserveY / 2)
+      const freeCentreY = (h - reserveY) / 2
+
+      // Centre the enclosure itself (front face 0..TOTAL_RACK_H), not the camera target: the target
+      // sits above the middle of the rack, which is what made the whole thing read as low. Using
+      // the rack's Box3 is wrong here - it also contains rear-door and cabling geometry that
+      // projects below the base - so the two ends of the enclosure are projected directly.
+      const screenYOf = (worldY: number) => {
+        const p = new THREE.Vector3(0, worldY, 0).project(camera)
+        return (-p.y * 0.5 + 0.5) * h
+      }
+      const centreAt = (offsetY: number) => {
+        camera.setViewOffset(w, h, shiftX, offsetY, w, h)
+        camera.updateProjectionMatrix()
+        camera.updateMatrixWorld()
+        return (screenYOf(0) + screenYOf(TOTAL_RACK_H)) / 2
+      }
+
       camera.aspect = w / h
+      camera.updateProjectionMatrix()
+      const centreAtZero = centreAt(0)
+      const perUnit = (centreAtZero - centreAt(40)) / 40 || 1
+      const shiftY = Math.max(0, Math.round((centreAtZero - freeCentreY) / perUnit))
+
       if (shiftX > 0 || shiftY > 0) camera.setViewOffset(w, h, shiftX, shiftY, w, h)
       else camera.clearViewOffset()
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
+    }
+
+    // Fitting needs one rendered frame: project() reads camera.matrixWorldInverse, which only
+    // reflects the controls' camera placement after the first render. Calls that arrive earlier
+    // (mount, the observer's initial fire, a data push) are held until that frame has happened,
+    // otherwise the measurement is taken from a camera that is not where it will be.
+    let frameRendered = false
+    let fitPending = false
+    const applyViewport = () => {
+      if (!frameRendered) {
+        fitPending = true
+        return
+      }
+      fitViewport()
     }
     const resizeObserver = new ResizeObserver(() => applyViewport())
     resizeObserver.observe(container)
@@ -1895,6 +1931,10 @@ onMounted(async () => {
 
       controls.update()
       renderer.render(scene, camera)
+      if (!frameRendered) {
+        frameRendered = true
+        if (fitPending) fitViewport()
+      }
     }
 
     // Wait for the vendored fonts so the canvas badges render Inter / JetBrains Mono
@@ -1906,6 +1946,8 @@ onMounted(async () => {
 
     // Build Initial Rack Equipment
     rebuildRackEquipment()
+    // the rack's bounding box only exists once it is built, so fit the viewport again here
+    applyViewport()
     animate()
 
     // Live data: Add / Edit / Delete in the register rebuilds the rack in place
@@ -1915,6 +1957,7 @@ onMounted(async () => {
         selectedSwitchId = switchesData[0]?.id ?? null
       }
       rebuildRackEquipment()
+      applyViewport()
       syncHudUI()
     }
 
