@@ -5167,6 +5167,10 @@ Fix: badge dipindah keluar dari `.ap-rack-body`, jadi sibling di dalam `<button>
 `position: absolute` sehingga tetap jadi containing block, dan posisinya persis sama). Scale hover
 hanya menyentuh body, jadi badge tidak bisa bergeser lagi.
 
+UPDATE (permintaan HIRO): isi badge di marker diganti dari ukuran (`42U`) menjadi NAMA rack
+(`RACK A`, `Rack D`), dipotong dengan `max-w-[7rem] truncate` supaya marker bertetangga tidak
+saling tumpuk. Chip ukuran tetap ada di header modal detail rak.
+
 UKUR (browser 1200x760): rect badge sebelum hover [462,377,31,16] dan sesudah [462,377,31,16] -
 identik; parent badge sekarang `ap-rack-marker`, bukan `ap-rack-body`. Catatan: animasi hover
 di-scale dimatikan di browser harness ini (prefers-reduced-motion: reduce), jadi buktinya struktural

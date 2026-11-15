@@ -499,8 +499,10 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
                     <UIcon name="game-icons:server-rack" class="size-7 text-primary" />
                   </span>
                   <!-- Sits OUTSIDE .ap-rack-body: that element scales to 1.1 on hover, and a chip
-                       anchored to its bottom edge would be carried downwards by the scale. -->
-                  <span class="pointer-events-none absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-elevated px-1.5 py-px text-[9px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/40">{{ rack.sizeU }}U</span>
+                       anchored to its bottom edge would be carried downwards by the scale.
+                       Shows the rack NAME (not its size) so the plan reads without opening each
+                       rack; long names are clipped to keep neighbouring markers apart. -->
+                  <span class="pointer-events-none absolute -bottom-2 left-1/2 max-w-[7rem] -translate-x-1/2 truncate whitespace-nowrap rounded-full bg-elevated px-1.5 py-px text-[9px] font-semibold text-primary ring-1 ring-inset ring-primary/40">{{ rack.name }}</span>
                 </button>
               </div>
             </div>
