@@ -5312,3 +5312,23 @@ Yang diubah (Rack3DView.vue):
 VERIFIKASI (browser, RACK A, 1200x820): Angled dan Front view - lantai + grid ruangan terlihat,
 body kabinet biru-abu bukan hitam, baris switch & plate OTB terbaca, tidak ada lagi genangan hijau.
 Build exit 0. State HUD rak dikembalikan ke default (pintu tertutup, 3000VA, traffic aktif, 75%).
+### Haze di Depan Switch/OTB Setelah Env Map (2026-11-15)
+
+HIRO: "sepertinya fog lighting terlalu kuat saat zoom ke area switch / otb". Tidak ada `scene.fog`
+di komponen - yang terlihat sebagai kabut adalah PANE KACA PINTU.
+
+Sebab: kaca `MeshPhysicalMaterial` memakai reflectivity 0.9 + clearcoat 1.0, dan setelah scene
+dapat environment map ia memantulkan seluruh ruangan yang terang. Saat kamera zoom ke switch/OTB,
+pantulan itu menutupi hampir seluruh viewport dan terbaca sebagai kabut.
+
+Fix (hanya kaca, tidak menyentuh lampu ruangan):
+`envMapIntensity: 0.22`, `reflectivity: 0.9 -> 0.55`, `clearcoat: 1.0 -> 0.6`.
+
+Catatan tuning: `scene.environmentIntensity` SEMPAT diturunkan ke 0.72 dan hasilnya body kabinet
+kembali hitam (metal memang hampir 100% bergantung pada environment). Nilai itu dibatalkan - env
+tetap 1.0, dan lampu dinaikkan sedikit sebagai kompensasi (hemi 0.85, key 2.15, faceWash 1.0,
+rim 0.6).
+
+VERIFIKASI (browser): Close-Up Ports - permukaan switch dan plate OTB tajam, celah antar U gelap
+bersih, tidak ada lagi selubung abu-abu; Angled view tetap seterang versi yang HIRO setujui.
+Build exit 0. State HUD RACK A dikembalikan ke default.

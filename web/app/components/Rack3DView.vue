@@ -199,10 +199,10 @@ onMounted(async () => {
     })
 
     // Studio / Data Center Lighting
-    const hemiLight = new THREE.HemisphereLight(0xe4f0ff, 0x16243a, 0.55)
+    const hemiLight = new THREE.HemisphereLight(0xe4f0ff, 0x16243a, 0.85)
     scene.add(hemiLight)
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.9)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.15)
     keyLight.position.set(2.8, 4.2, 3.2)
     keyLight.castShadow = true
     keyLight.shadow.mapSize.set(2048, 2048)
@@ -217,7 +217,7 @@ onMounted(async () => {
     scene.add(keyLight)
 
     // Cool cyan rim light & subtle warm back fill for metallic edge definition
-    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.5)
+    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.6)
     rimLight.position.set(-2.5, 2.2, -2.5)
     scene.add(rimLight)
 
@@ -227,7 +227,7 @@ onMounted(async () => {
 
     // Broad white wash from the viewer's side. The key light comes from above/right, which left the
     // cabinet face and the equipment inside it reading almost black.
-    const faceWash = new THREE.DirectionalLight(0xf2f7ff, 0.55)
+    const faceWash = new THREE.DirectionalLight(0xf2f7ff, 1.0)
     faceWash.position.set(0.8, 1.8, 4.2)
     scene.add(faceWash)
 
@@ -713,9 +713,13 @@ onMounted(async () => {
       opacity: 0.28,
       roughness: 0.08,
       metalness: 0.1,
-      reflectivity: 0.9,
-      clearcoat: 1.0,
+      reflectivity: 0.55,
+      clearcoat: 0.6,
       clearcoatRoughness: 0.06,
+      // The scene now has an environment map. At full strength the pane mirrored the whole bright
+      // room, and when the camera zoomed onto the switches that reflection covered the screen as a
+      // grey veil - it read as fog sitting in front of the hardware.
+      envMapIntensity: 0.22,
       depthWrite: false
     })
     const glassPane = new THREE.Mesh(
