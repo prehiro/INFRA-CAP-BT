@@ -5420,3 +5420,25 @@ warna emisif/LED. Semua di `Rack3DView.vue`:
 
 VERIFIKASI UKUR (Close-Up Ports, pintu terbuka, crop baris switch): p95 luminance 162 -> 125,
 pixel >200 dari 2.57% -> 0.31%, tidak ada pixel clip. Build exit 0.
+### Tampilan Switch Cisco: LED Kuning & Biru (2026-11-15)
+
+HIRO minta tampilan switch mengikuti foto Catalyst 2960-X asli: "led yang berkedip-kedip ada di
+bagian kuning dan biru".
+
+Perubahan di `Rack3DView.vue`:
+- PALET LED diganti total: `COLOR_GREEN_ON` sekarang KUNING 0xffc21a (aktivitas port), `COLOR_AMBER_ON`
+  orange 0xff8a00 (port PoE), `COLOR_CYAN_ON` BIRU 0x3d8bff (LED status kiri + uplink SFP+), plus
+  `COLOR_CYAN_DIM` untuk keadaan mati/berkedip. Nama konstantanya sengaja dipertahankan supaya
+  animate loop tidak perlu diubah besar-besaran.
+- POSISI LED PORT dipindah: dulu satu LED di atas/bawah tiap port, sekarang jadi STRIP 12 LED kuning
+  di bawah setiap grup 12 port (persis pola faceplate asli), plus base plate gelap 0x1d1708.
+  Jumlah instance tetap 57 per switch (5 status + 48 port + 4 SFP) sehingga alokasi InstancedMesh
+  dan `ledStates` tidak berubah.
+- LED status kiri (5 buah) jadi biru, satu orange (sys===4).
+- Warna faceplate: bezel 0x1b2129 -> 0x2c333b, chassis 0x2d3540 -> 0x39424c (abu graphite seperti asli).
+- Strip aksen hijau di tepi atas tiap switch DIHAPUS (sekarang metal biasa); hanya switch yang
+  sedang dipilih yang diberi warna amber 0xfbbf24.
+
+VERIFIKASI: dua frame berjarak 0.4 s di area canvas berbeda 8440 px (3.45%) - LED benar-benar
+berkedip. Crop satu switch menunjukkan 4 grup port dengan strip kuning di bawahnya + LED biru di
+kiri. Mint-green stripe sudah tidak ada lagi. Build exit 0.

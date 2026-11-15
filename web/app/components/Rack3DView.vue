@@ -494,13 +494,13 @@ onMounted(async () => {
     // camera - the glare HIRO kept seeing. Roughness this high keeps only diffuse shading.
     const matSwitchChassis = new THREE.MeshStandardMaterial({
       map: brushedTex,
-      color: 0x2d3540,
+      color: 0x39424c,
       roughness: 0.88,
       metalness: 0.12,
       envMapIntensity: 0.12
     })
     const matSwitchBezel = new THREE.MeshStandardMaterial({
-      color: 0x1b2129,
+      color: 0x2c333b,
       roughness: 0.8,
       metalness: 0.2,
       envMapIntensity: 0.15
@@ -842,13 +842,15 @@ onMounted(async () => {
     let ledStates = []
 
     const dummyObj = new THREE.Object3D()
-    // The unlit LED instances are drawn at their literal colour, so neon values (#10ff70) are the
-    // brightest pixels on screen at close zoom - that was the remaining glare on the switch bodies.
-    const COLOR_GREEN_ON  = new THREE.Color(0x0a9c45)
-    const COLOR_GREEN_DIM = new THREE.Color(0x064e24)
-    const COLOR_AMBER_ON  = new THREE.Color(0xa06a00)
-    const COLOR_AMBER_DIM = new THREE.Color(0x523400)
-    const COLOR_CYAN_ON   = new THREE.Color(0x008fa0)
+    // Palette follows a real Catalyst faceplate: port activity blinks YELLOW, the status block and
+    // the SFP+ uplinks blink BLUE, PoE ports sit slightly hotter (orange). Values are muted on
+    // purpose - the unlit instances are drawn at their literal colour, so neon read as glare.
+    const COLOR_GREEN_ON  = new THREE.Color(0xffc21a) // yellow: normal port activity
+    const COLOR_GREEN_DIM = new THREE.Color(0x2b2000)
+    const COLOR_AMBER_ON  = new THREE.Color(0xff8a00) // orange: PoE port activity
+    const COLOR_AMBER_DIM = new THREE.Color(0x2e1800)
+    const COLOR_CYAN_ON   = new THREE.Color(0x3d8bff) // blue: status LEDs and SFP+ uplinks
+    const COLOR_CYAN_DIM  = new THREE.Color(0x0a1c3d)
     const COLOR_OFF       = new THREE.Color(0x0a0e14)
 
     let interactiveHitboxes = [] // Switch & UPS hitboxes for Raycaster
@@ -1201,10 +1203,12 @@ onMounted(async () => {
         faceplate.position.set(0, 0, 0.001)
         switchGroup.add(faceplate)
 
-        // Top Accent Stripe (Highlighted Amber/Cyan if currently selected for editing)
+        // Top edge strip. On the real faceplate this is plain brushed metal, not a coloured bar - the
+        // accent version also read as a bright green line at close zoom. Only the selected switch is
+        // tinted, so the edit target stays obvious.
         const accentMat = isSelected
           ? new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
-          : matCiscoTeal
+          : matSwitchChassis
         const accentStripe = new THREE.Mesh(
           new THREE.BoxGeometry(chassisWidth - 0.004, 0.0034, 0.0072),
           accentMat
@@ -1261,7 +1265,7 @@ onMounted(async () => {
           dummyObj.position.set(lx, yPos + ly, zFront + 0.0046)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
-          ledInstancedMesh.setColorAt(ledIndex, sys === 4 ? COLOR_AMBER_ON : COLOR_GREEN_ON)
+          ledInstancedMesh.setColorAt(ledIndex, sys === 4 ? COLOR_AMBER_ON : COLOR_CYAN_ON)
 
           ledStates.push({
             type: 'system',
@@ -1285,7 +1289,6 @@ onMounted(async () => {
 
           for (let row = 0; row < 2; row++) {
             const py = rowYOffsets[row]
-            const portNum = col * 2 + row
 
             const housing = new THREE.Mesh(
               new THREE.BoxGeometry(0.0094, 0.0086, 0.003),
@@ -1301,11 +1304,32 @@ onMounted(async () => {
             cavity.position.set(px, py - 0.0004, 0.0044)
             switchGroup.add(cavity)
 
-            const ledY = row === 0 ? py + 0.0062 : py - 0.0062
-            dummyObj.position.set(px, yPos + ledY, zFront + 0.0052)
+            // (port LEDs are placed below, as one yellow strip per 12-port group)
+          }
+        }
+
+        // Port activity LEDs. On the real faceplate these are not one dot above every port: they form
+        // a yellow strip of 12 LEDs running under each 12-port group. Same 48 LEDs, same instancing,
+        // just laid out the way the actual hardware shows them.
+        const ledStripY = -0.0128
+        const ledStripSpacing = colSpacing / 2
+        for (let group = 0; group < 4; group++) {
+          const groupX = startPortX + group * 6 * colSpacing + group * blockGap
+
+          const stripBase = new THREE.Mesh(
+            new THREE.BoxGeometry(5.75 * colSpacing, 0.0032, 0.0009),
+            new THREE.MeshStandardMaterial({ color: 0x1d1708, roughness: 0.95, metalness: 0 })
+          )
+          stripBase.position.set(groupX + 2.75 * colSpacing, ledStripY, 0.0042)
+          switchGroup.add(stripBase)
+
+          for (let i = 0; i < 12; i++) {
+            const lx = groupX + i * ledStripSpacing
+            dummyObj.position.set(lx, yPos + ledStripY + 0.0004, zFront + 0.0052)
             dummyObj.updateMatrix()
             ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
 
+            const portNum = (group * 6 + (i % 6)) * 2 + Math.floor(i / 6)
             const isPortActive = portNum < cfg.activePorts
             const isPoEPort = isPortActive && (portNum % 5 === 0)
 
@@ -2237,12 +2261,12 @@ onMounted(async () => {
           if (state.type === 'system') {
             if (state.speed > 2.0) {
               const pulse = Math.sin(simTime * state.speed + state.phase) > 0
-              ledInstancedMesh.setColorAt(i, pulse ? COLOR_GREEN_ON : COLOR_GREEN_DIM)
+              ledInstancedMesh.setColorAt(i, pulse ? COLOR_CYAN_ON : COLOR_CYAN_DIM)
             }
           } else if (state.type === 'sfp') {
             const burst = Math.sin(simTime * state.burstFreq + state.burstOffset) > -0.3
             const flicker = Math.sin(simTime * state.speed + state.phase) > 0
-            ledInstancedMesh.setColorAt(i, (burst && flicker) ? COLOR_CYAN_ON : COLOR_GREEN_DIM)
+            ledInstancedMesh.setColorAt(i, (burst && flicker) ? COLOR_CYAN_ON : COLOR_CYAN_DIM)
           } else {
             const burstWindow = Math.sin(simTime * state.burstFreq + state.burstOffset)
             const threshold = 0.75 - trafficIntensity * 1.35
