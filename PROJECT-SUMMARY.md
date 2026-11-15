@@ -5203,3 +5203,34 @@ ramai daripada plate aslinya.
 VERIFIKASI: RACK A 42U (12 switch) -> probe sementara pada dynamicEquipmentGroup melaporkan tepat
 satu group ber-kind 'otb' di U42 (lalu probe dihapus); switch tetap di U03..U25; badge tetap
 28U Free. Build exit 0.
+### Add Switch: Auto-Assign ke U Kosong di Bawah OTB + Benar-Benar Tersimpan (2026-11-15)
+
+Dua permintaan HIRO: "saat user tambah switch pastikan add nya dibawah OTB jangan ke atas, pokoknya
+ketika add auto assign ke U yang kosong jangan menimpa U yang sudah ada isi" dan "perbaiki juga
+ketika switch yang saya tambahkan menghilang semua ketika modal ditutup-buka".
+
+1. ALOKASI SLOT. `buildOtbPanels()` menyimpan `otbSlotU` (U tempat plate NETVIEL dipasang) dan
+   `getFreeSlots()` mengecualikan slot itu di samping slot yang sudah terisi UPS/switch. Tombol
+   "Add Cisco 1U Switch" sekarang memilih `Math.min(...freeSlots)` = U kosong PALING BAWAH di atas
+   UPS, jadi perangkat baru selalu masuk di bawah plate OTB dan tidak pernah menimpa U berisi.
+   Aturan pemilihan lama ("cari U yang punya jarak 1U") dibuang karena bisa melompat ke atas OTB.
+
+2. HILANG SETELAH MODAL DITUTUP-BUKA. Penyebabnya: switch yang ditambahkan hanya hidup di
+   `switchesData` komponen, sedangkan isi rak dibaca ulang dari register setiap modal dibuka.
+   Sekarang komponen meng-emit `save-switch` (id null = create) dan halaman yang memanggil
+   `apiAddNetworkSwitch`, lalu me-refresh detail rak sehingga daftar di canvas = isi database.
+   Edit hostname/IP (debounce 700 ms) dan pindah slot (langsung) juga di-emit dengan id register,
+   jadi perubahan nama tidak lagi hilang. Kalau API menolak, halaman mengembalikan canvas ke isi
+   register dan menampilkan toast error.
+
+3. SELEKSI TIDAK MELOMPAT. Setelah create, baris lokal ber-id negatif diganti baris register
+   ber-id positif. `applySwitches()` dulu jatuh ke baris pertama; sekarang ia mengikuti HOSTNAME
+   perangkat yang sedang dipilih, jadi editor tetap menunjuk switch yang baru ditambahkan.
+
+VERIFIKASI (browser, RACK A 42U, 12 switch awal, OTB di U42):
+- Add #1 -> "Adding SW-EDGE-13 (10.10.10.11) at U04", POST tersimpan (id 22, posisi U04).
+- Tutup modal lalu buka lagi -> baris "U04 SW-EDGE-13 10.10.10.11" masih ada.
+- Add #2 -> U06 (melewati U04/U05 yang terisi), Add #3 -> U08. Tidak pernah menimpa.
+- Rename lewat input hostname -> PUT tersimpan di register (terbukti dari GET).
+- Setelah add, editor tetap menampilkan switch baru (SW-EDGE-15), bukan baris pertama.
+- Data uji sudah dihapus; register kembali 12 switch (BTCAP004 + DUMMY-SW-01..11).

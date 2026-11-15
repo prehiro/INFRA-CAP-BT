@@ -25,7 +25,12 @@ const props = withDefaults(defineProps<{ switches: NetworkSwitch[]; totalU?: num
 // Deleting a switch is not a local edit: it has to reach the register, or the next load of the
 // rack detail simply re-reads the row and the device reappears. The parent page owns that API
 // call, the confirmation and its error toast, so the panel asks it instead of dropping the row.
-const emit = defineEmits<{ (e: 'delete-switch', id: number): void }>()
+const emit = defineEmits<{
+  (e: 'delete-switch', id: number): void
+  // Anything invented or edited inside this panel is a REGISTER row: the page owns the API call,
+  // otherwise the change only lives in this component and vanishes when the modal is reopened.
+  (e: 'save-switch', payload: { id: number | null; ipAddress: string; hostname: string; position: string }): void
+}>()
 
 const root = ref<HTMLElement | null>(null)
 const $ = (id: string) => root.value?.querySelector(`#${id}`)
@@ -722,6 +727,9 @@ onMounted(async () => {
     // already taken by another switch is packed into the lowest free U above the UPS, so every
     // real switch still shows up exactly once.
     let nextSwitchSeq = 1
+    // U reserved for the default NETVIEL OTB plate. New switches must land BELOW it and never on
+    // top of another device, so the allocator skips this slot.
+    let otbSlotU = 0
     let switchesData: any[] = []
     let selectedSwitchId: number | null = null
 
@@ -813,7 +821,7 @@ onMounted(async () => {
       const occ = getOccupiedSet()
       const free = []
       for (let u = TOTAL_U; u >= 1; u--) {
-        if (!occ.has(u)) free.push(u)
+        if (!occ.has(u) && u !== otbSlotU) free.push(u)
       }
       return free
     }
@@ -979,6 +987,7 @@ onMounted(async () => {
       for (let u = TOTAL_U; u >= 1; u--) {
         if (!occupied.has(u) && !cableBarSlots.has(u)) { targetU = u; break }
       }
+      otbSlotU = targetU
       if (!targetU) return
 
       const matBody = new THREE.MeshStandardMaterial({ color: 0x0b0e13, roughness: 0.52, metalness: 0.62 })
@@ -1575,6 +1584,22 @@ onMounted(async () => {
       }
     }
 
+    // Mirror an edit into the register. Typing debounces; slot moves go out immediately.
+    let persistTimer: ReturnType<typeof setTimeout> | null = null
+    function persistSwitch(sw: any, immediate = false) {
+      if (!sw || typeof sw.id !== 'number' || sw.id < 0) return // creation still in flight
+      const payload = {
+        id: sw.id as number,
+        ipAddress: sw.ip,
+        hostname: sw.hostname,
+        position: `U${String(sw.u).padStart(2, '0')}`
+      }
+      const send = () => emit('save-switch', payload)
+      if (persistTimer) clearTimeout(persistTimer)
+      if (immediate) { send(); return }
+      persistTimer = setTimeout(send, 700)
+    }
+
     function removeSwitchById(id) {
       const target = switchesData.find(s => s.id === id)
       if (!target) return
@@ -1604,6 +1629,7 @@ onMounted(async () => {
       sw.hostname = e.target.value.trim() || 'SW-UNNAMED'
       updateSingleSwitch3DLabel(sw)
       syncHudUI()
+      persistSwitch(sw)
     })
 
     inputIp.addEventListener('input', (e) => {
@@ -1612,6 +1638,7 @@ onMounted(async () => {
       sw.ip = e.target.value.trim() || '0.0.0.0'
       updateSingleSwitch3DLabel(sw)
       syncHudUI()
+      persistSwitch(sw)
     })
 
     inputSwitchSn.addEventListener('input', (e) => {
@@ -1643,6 +1670,7 @@ onMounted(async () => {
       if (!sw) return
       sw.u = Number(e.target.value)
       rebuildRackEquipment()
+      persistSwitch(sw, true)
     })
 
     $('btn-delete-selected').addEventListener('click', () => {
@@ -1656,33 +1684,38 @@ onMounted(async () => {
         showToast('Rack is 100% full! Remove a switch or UPS to free a U slot.')
         return
       }
-      // Prefer a slot with 1U gap if available, otherwise highest free U slot
-      let chosenU = freeSlots[0]
-      for (const u of freeSlots) {
-        if (!getOccupiedSet().has(u + 1) && !getOccupiedSet().has(u - 1)) {
-          chosenU = u
-          break
-        }
-      }
+      // Lowest free U above the UPS: new hardware fills the rack from the bottom up, so it always
+      // lands BELOW the OTB plate at the top and never on top of an existing device.
+      const chosenU = Math.min(...freeSlots)
 
-      // A device invented here gets a NEGATIVE id. Register ids are small positive numbers, and a
-      // local device that reused one of them made Remove resolve to the register row and delete the
-      // wrong switch from the database.
+      // A device invented here gets a NEGATIVE id while the POST is in flight. Register ids are
+      // small positive numbers, and a local device that reused one made Remove delete the wrong row.
       const seq = nextSwitchSeq++
       const newId = -seq
+      const usedIps = new Set(switchesData.map(s => s.ip))
+      let hostOctet = 11
+      while (hostOctet < 250 && usedIps.has(`10.10.10.${hostOctet}`)) hostOctet++
       const newSwitch = {
         id: newId,
         u: chosenU,
         model: 'Catalyst 9300-48P',
         hostname: `SW-EDGE-${String(seq).padStart(2, '0')}`,
-        ip: `10.10.10.${10 + seq}`,
+        ip: `10.10.10.${hostOctet}`,
         sn: `FCW26${String(10 + seq).padStart(2, '0')}X${String(seq).padStart(2, '0')}Z`,
         activePorts: 36 + (seq % 11)
       }
       switchesData.push(newSwitch)
       selectedSwitchId = newId
-      showToast(`Added ${newSwitch.hostname} (${newSwitch.ip}) at U${String(chosenU).padStart(2, '0')}.`)
+      showToast(`Adding ${newSwitch.hostname} (${newSwitch.ip}) at U${String(chosenU).padStart(2, '0')}…`)
       rebuildRackEquipment()
+      // Persist through the page: a switch that only lives in this list disappears as soon as the
+      // modal is closed and the rack detail is re-read.
+      emit('save-switch', {
+        id: null,
+        ipAddress: newSwitch.ip,
+        hostname: newSwitch.hostname,
+        position: `U${String(chosenU).padStart(2, '0')}`
+      })
     })
 
     // UPS Model Selection Buttons (None / 3000VA / 5000VA)
@@ -2131,9 +2164,14 @@ onMounted(async () => {
 
     // Live data: Add / Edit / Delete in the register rebuilds the rack in place
     applySwitches = (list: NetworkSwitch[]) => {
+      const prevHost = switchesData.find(sw => sw.id === selectedSwitchId)?.hostname
       switchesData = seedSwitches(list)
       if (!switchesData.some(sw => sw.id === selectedSwitchId)) {
-        selectedSwitchId = switchesData[0]?.id ?? null
+        // A switch added here is persisted by the page and comes back with a register id, so the
+        // negative local id disappears. Follow the hostname instead of snapping the editor back to
+        // the first device in the rack.
+        const sameHost = prevHost ? switchesData.find(sw => sw.hostname === prevHost) : undefined
+        selectedSwitchId = sameHost?.id ?? switchesData[0]?.id ?? null
       }
       rebuildRackEquipment()
       applyViewport()

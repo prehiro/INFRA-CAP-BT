@@ -375,6 +375,30 @@ async function performDeleteSwitch(sw: NetworkSwitch) {
 
 // The 3D HUD mirrors the rack detail, so a delete it starts has to go through the same API path
 // as the register's own delete button - otherwise the row survives the modal being closed.
+// The 3D panel never writes to the database itself: it asks the page, which owns the API call and
+// the refreshed rack detail. Without this the added/edited switch only existed in the canvas and
+// disappeared on the next modal open.
+async function saveSwitchFromRack3D(payload: { id: number | null; ipAddress: string; hostname: string; position: string }) {
+  if (!isAdmin.value || !floor.value || !selectedRackDetail.value) return
+  if (busy.value) return
+  const floorId = floor.value.id
+  const rackId = selectedRackDetail.value.id
+  busy.value = true
+  try {
+    const body = { ipAddress: payload.ipAddress, hostname: payload.hostname, position: payload.position }
+    if (payload.id === null) await apiAddNetworkSwitch(floorId, rackId, body)
+    else await apiUpdateNetworkSwitch(floorId, rackId, payload.id, body)
+    const detail = await apiGetNetworkRack(floorId, rackId)
+    selectedRackDetail.value = detail
+    const idx = racks.value.findIndex(r => r.id === rackId)
+    if (idx >= 0) racks.value[idx].switchCount = detail.switches.length
+  } catch (e) {
+    toast.add({ title: message(e), color: 'error' })
+    // Roll the canvas back to what the register actually holds
+    try { selectedRackDetail.value = await apiGetNetworkRack(floorId, rackId) } catch {}
+  } finally { busy.value = false }
+}
+
 function deleteSwitchFromRack3D(id: number) {
   const sw = selectedRackDetail.value?.switches.find(s => s.id === id)
   if (!sw) return
@@ -651,6 +675,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
           <div v-if="selectedRackDetail">
             <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"
               :total-u="selectedRackDetail.sizeU" @delete-switch="deleteSwitchFromRack3D"
+              @save-switch="saveSwitchFromRack3D"
               class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
           </div>
         </template>
