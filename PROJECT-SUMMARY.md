@@ -5394,3 +5394,29 @@ HASIL UKUR (Close-Up Ports, pintu terbuka, crop area canvas): mean 59.2 -> 57.1,
 
 Tuas yang tersisa kalau masih silau: warna `ledMat` (LED strip, masih putih murni 0xffffff) dan
 `toneMappingExposure` (global).
+### Hilangkan Efek Silau di Body Switch & OTB (2026-11-15)
+
+HIRO: "masih silau, bisa coba hilangkan efek silau nya? ketika pintu dibuka".
+
+Akar masalahnya bukan lampu ruangan, tapi TIGA permukaan yang saling menumpuk terang di depan
+kamera saat pintu terbuka:
+1. Deretan 48 port metal per switch - 48 bidang abu-abu terang berjajar, itulah yang terbaca sebagai
+   pita menyilaukan melintang di body switch (dibuktikan dengan crop + vision: yang terang memang
+   port, bukan LED).
+2. LED instanced (MeshBasicMaterial, unlit) memakai warna neon apa adanya: 0x10ff70 / 0xffaa00 /
+   0x00f0ff - jadi pixel paling terang di layar.
+3. Strip aksen atas tiap switch memakai warna accent penuh.
+
+Keputusan: buat permukaan perangkat praktis MATTE (tidak ada specular untuk dipantulkan), dan turunkan
+warna emisif/LED. Semua di `Rack3DView.vue`:
+- matSwitchChassis roughness 0.36 -> 0.88, metalness 0.82 -> 0.12, env 0.12
+- matSwitchBezel 0.8 / 0.2 / env 0.15
+- matPortMetal color 0x94a3b8 -> 0x39424e, roughness 0.9, metalness 0.15, env 0.05
+- matCiscoTeal color accent*0.38, emissive accent*0.12 @0.04, roughness 0.7
+- OTB matBody roughness 0.9 / metalness 0.08 / env 0.12 ; matFace 0.82 / 0.05 / env 0.12
+- ledMat 0xffffff -> 0xc9d6e8 ; COLOR_GREEN_ON 0x10ff70 -> 0x0a9c45, AMBER 0xffaa00 -> 0xa06a00,
+  CYAN 0x00f0ff -> 0x008fa0
+- keyLight 2.15 -> 1.7, exposure 1.05, frontFillLight 0.2, faceWash 0.55
+
+VERIFIKASI UKUR (Close-Up Ports, pintu terbuka, crop baris switch): p95 luminance 162 -> 125,
+pixel >200 dari 2.57% -> 0.31%, tidak ada pixel clip. Build exit 0.

@@ -489,34 +489,39 @@ onMounted(async () => {
       roughness: 0.35,
       metalness: 0.85
     })
+    // Practically matte on purpose. Any polished value here lets the key light and the env map draw
+    // a specular band across the chassis, and with the glass door open that lands straight in the
+    // camera - the glare HIRO kept seeing. Roughness this high keeps only diffuse shading.
     const matSwitchChassis = new THREE.MeshStandardMaterial({
       map: brushedTex,
       color: 0x2d3540,
-      // Rough AND less metallic. At 0.36 roughness / 0.82 metalness the key light drew a broad
-      // specular streak across the chassis (the "silau") and the env map mirrored the room into it.
-      roughness: 0.6,
-      metalness: 0.5,
-      envMapIntensity: 0.32
+      roughness: 0.88,
+      metalness: 0.12,
+      envMapIntensity: 0.12
     })
     const matSwitchBezel = new THREE.MeshStandardMaterial({
       color: 0x1b2129,
-      roughness: 0.45,
-      metalness: 0.7
+      roughness: 0.8,
+      metalness: 0.2,
+      envMapIntensity: 0.15
     })
+    // A muted accent, not a neon strip. This face is the brightest thing on screen at close zoom, and
+    // at full accent colour it read as a glaring green bar along every switch.
     const matCiscoTeal = new THREE.MeshStandardMaterial({
-      color: accentColor.clone(),
-      roughness: 0.45,
-      metalness: 0.3,
-      // The accent strip is a large flat face right where the camera zooms in; with emissive 0.25 it
-      // was the brightest thing on screen and read as glare. Barely glowing now, still accent-tinted.
-      emissive: accentColor.clone().multiplyScalar(0.18),
-      emissiveIntensity: 0.08
+      color: accentColor.clone().multiplyScalar(0.38),
+      roughness: 0.7,
+      metalness: 0.15,
+      emissive: accentColor.clone().multiplyScalar(0.12),
+      emissiveIntensity: 0.04,
+      envMapIntensity: 0.1
     })
+    // 48 of these per switch sit side by side, so their collective brightness is what reads as a
+    // glaring band across the switch body. Dark steel, almost no reflectivity.
     const matPortMetal = new THREE.MeshStandardMaterial({
-      color: 0x64748b,
-      roughness: 0.45,
-      metalness: 0.7,
-      envMapIntensity: 0.25
+      color: 0x39424e,
+      roughness: 0.9,
+      metalness: 0.15,
+      envMapIntensity: 0.05
     })
     const matPortCavity = new THREE.MeshStandardMaterial({
       color: 0x05070b,
@@ -830,16 +835,20 @@ onMounted(async () => {
     // LED InstancedMesh State (Rebuilt cleanly whenever switches are added/removed/moved)
     const LED_COUNT_PER_SWITCH = 48 + 4 + 5 // 57 LEDs per 1U switch
     const ledGeo = new THREE.BoxGeometry(0.0024, 0.0018, 0.0015)
-    const ledMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+    // Unlit and therefore unaffected by exposure: pure white made these the brightest pixels on screen
+    // once the door was open. A soft blue-white keeps them reading as LEDs without the glare.
+    const ledMat = new THREE.MeshBasicMaterial({ color: 0xc9d6e8 })
     let ledInstancedMesh = null
     let ledStates = []
 
     const dummyObj = new THREE.Object3D()
-    const COLOR_GREEN_ON  = new THREE.Color(0x10ff70)
+    // The unlit LED instances are drawn at their literal colour, so neon values (#10ff70) are the
+    // brightest pixels on screen at close zoom - that was the remaining glare on the switch bodies.
+    const COLOR_GREEN_ON  = new THREE.Color(0x0a9c45)
     const COLOR_GREEN_DIM = new THREE.Color(0x064e24)
-    const COLOR_AMBER_ON  = new THREE.Color(0xffaa00)
+    const COLOR_AMBER_ON  = new THREE.Color(0xa06a00)
     const COLOR_AMBER_DIM = new THREE.Color(0x523400)
-    const COLOR_CYAN_ON   = new THREE.Color(0x00f0ff)
+    const COLOR_CYAN_ON   = new THREE.Color(0x008fa0)
     const COLOR_OFF       = new THREE.Color(0x0a0e14)
 
     let interactiveHitboxes = [] // Switch & UPS hitboxes for Raycaster
@@ -1055,10 +1064,10 @@ onMounted(async () => {
       if (!targetU) return
 
       const matBody = new THREE.MeshStandardMaterial({
-        color: 0x0b0e13, roughness: 0.68, metalness: 0.35, envMapIntensity: 0.3
+        color: 0x0b0e13, roughness: 0.9, metalness: 0.08, envMapIntensity: 0.12
       })
       const matFace = new THREE.MeshStandardMaterial({
-        map: createOtbFaceTexture(), roughness: 0.62, metalness: 0.18, envMapIntensity: 0.3
+        map: createOtbFaceTexture(), roughness: 0.82, metalness: 0.05, envMapIntensity: 0.12
       })
       // BoxGeometry takes one material per side: px, nx, py, ny, pz(front), nz
       const faceMats = [matBody, matBody, matBody, matBody, matFace, matBody]
