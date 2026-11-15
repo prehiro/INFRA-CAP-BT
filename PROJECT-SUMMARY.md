@@ -5291,3 +5291,24 @@ Konsekuensi yang wajar: switch baru otomatis dapat jarak 1U di bawahnya (bar-nya
 VERIFIKASI (RACK A, OTB U42): Add #1 -> U41, #2 -> U39 (U40 = bar milik U41, dilewati),
 #3 -> U37. Tidak ada bar yang tertimpa. Data uji dihapus (204), register kembali 12 switch.
 Build exit 0.
+### Environment 3D Diterangkan (2026-11-15)
+
+HIRO: "bisa terangkan lagi environtment nya agar tidak gelap banget".
+
+Root cause kenapa sebelumnya gelap: material kabinet metalik (metalness tinggi) hampir tidak punya
+respons difus, jadi tanpa environment map ia hanya menangkap dua directional light dan selalu tampil
+hitam - menaikkan intensitas lampu tidak menolong, malah lantai yang jadi banjir hijau.
+
+Yang diubah (Rack3DView.vue):
+- Image-based lighting: `PMREMGenerator` + `RoomEnvironment` -> `scene.environment`. Ini yang benar-
+  benar menerangkan body kabinet karena metal memantulkan environment.
+- `scene.background` 0x06090f -> 0x0c121c (dan CSS backplate ikut), exposure 1.18 -> 1.32.
+- Lampu di-rebalance supaya tidak dobel terang: hemi 0.75 -> 0.55, key 1.85 -> 1.9,
+  rim aksen 0.9 -> 0.5 (ini yang dulu membanjiri lantai dengan hijau), plus `faceWash` directional
+  putih dari sisi kamera 0.55 supaya muka kabinet kena cahaya.
+- Lantai 0x090d16/roughness 0.25/metalness 0.75 -> 0x131c29/0.55/0.35 (tidak lagi seperti cermin
+  hitam); warna grid 0x2f425e/0x1b2739 supaya ruangan terbaca.
+
+VERIFIKASI (browser, RACK A, 1200x820): Angled dan Front view - lantai + grid ruangan terlihat,
+body kabinet biru-abu bukan hitam, baris switch & plate OTB terbaca, tidak ada lagi genangan hijau.
+Build exit 0. State HUD rak dikembalikan ke default (pintu tertutup, 3000VA, traffic aktif, 75%).

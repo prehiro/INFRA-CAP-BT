@@ -14,6 +14,7 @@ import '@fontsource/jetbrains-mono/600.css'
 // renderer -> container-sized + ResizeObserver, pointer/tooltip math relative to the container,
 // and full dispose on unmount so the modal can open/close repeatedly without leaks.
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import type { NetworkSwitch } from '~/types'
 
@@ -123,7 +124,8 @@ onMounted(async () => {
     // 1. SCENE, RENDERER, CAMERA & CURSOR-TARGETED ZOOM CONTROLS
     // =====================================================================
     const scene = new THREE.Scene()
-    scene.background = new THREE.Color(0x06090f)
+    scene.background = new THREE.Color(0x0c121c) // lifted off pure black: the cabinet edges read as
+      // silhouettes when the room is this dark, so the whole viewer looked dim.
     scene.fog = new THREE.FogExp2(0x06090f, 0.055)
 
     // ---- Rack geometry spec (1 unit = 1 metre, real cabinet dimensions) ----------
@@ -155,7 +157,15 @@ onMounted(async () => {
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.18
+    renderer.toneMappingExposure = 1.32
+
+    // Image-based lighting: a small procedural "room" baked into an env map. Metallic cabinet parts
+    // have almost no diffuse response, so without an environment they only ever showed the two
+    // directional lights and read as black shapes no matter how much those were cranked up.
+    const pmrem = new THREE.PMREMGenerator(renderer)
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04)
+    scene.environment = envRT.texture
+    pmrem.dispose()
     container.appendChild(renderer.domElement)
 
     const controls = new OrbitControls(camera, renderer.domElement)
@@ -189,10 +199,10 @@ onMounted(async () => {
     })
 
     // Studio / Data Center Lighting
-    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x0f172a, 0.75)
+    const hemiLight = new THREE.HemisphereLight(0xe4f0ff, 0x16243a, 0.55)
     scene.add(hemiLight)
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.85)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.9)
     keyLight.position.set(2.8, 4.2, 3.2)
     keyLight.castShadow = true
     keyLight.shadow.mapSize.set(2048, 2048)
@@ -207,29 +217,35 @@ onMounted(async () => {
     scene.add(keyLight)
 
     // Cool cyan rim light & subtle warm back fill for metallic edge definition
-    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.9)
+    const rimLight = new THREE.DirectionalLight(accentColor.clone(), 0.5)
     rimLight.position.set(-2.5, 2.2, -2.5)
     scene.add(rimLight)
 
-    const frontFillLight = new THREE.PointLight(0xe0f2fe, 0.85, 4.0)
+    const frontFillLight = new THREE.PointLight(0xe8f4ff, 1.35, 5.2)
     frontFillLight.position.set(0, 1.1, 1.45)
     scene.add(frontFillLight)
+
+    // Broad white wash from the viewer's side. The key light comes from above/right, which left the
+    // cabinet face and the equipment inside it reading almost black.
+    const faceWash = new THREE.DirectionalLight(0xf2f7ff, 0.55)
+    faceWash.position.set(0.8, 1.8, 4.2)
+    scene.add(faceWash)
 
     // =====================================================================
     // 2. DATA CENTER FLOOR & SUBTLE REFLECTIVE GRID
     // =====================================================================
     const floorGeo = new THREE.PlaneGeometry(24, 24)
     const floorMat = new THREE.MeshStandardMaterial({
-      color: 0x090d16,
-      roughness: 0.25,
-      metalness: 0.75
+      color: 0x131c29,
+      roughness: 0.55,
+      metalness: 0.35
     })
     const floor = new THREE.Mesh(floorGeo, floorMat)
     floor.rotation.x = -Math.PI / 2
     floor.receiveShadow = true
     scene.add(floor)
 
-    const gridHelper = new THREE.GridHelper(16, 32, 0x1e293b, 0x0f172a)
+    const gridHelper = new THREE.GridHelper(16, 32, 0x2f425e, 0x1b2739)
     gridHelper.position.y = 0.001
     scene.add(gridHelper)
 
@@ -2544,7 +2560,7 @@ onMounted(async () => {
 .rack3d-host {
   position: relative;
   overflow: hidden;
-  background-color: #06090f;
+  background-color: #0c121c;
   color: #e2e8f0;
   user-select: none;
   font-family: 'Inter', sans-serif;
