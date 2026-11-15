@@ -5749,3 +5749,27 @@ VERIFIKASI (Angled View, 1400x900): dua frame berjarak 1.8 s berbeda 6.612 px di
 pixel paling terang di lantai jauh = (198,206,217) putih netral (garis dasar), pixel paling hijau di
 dekat rack = (0,220,130) aksen penuh (breath). Screenshot memperlihatkan garis putih menyambung di
 seluruh lantai dengan pita aksen hijau yang jelas di sekitarnya. Build exit 0.
+### Redesign Lantai (opsi A): Grid Putih Statis + Satu Halo Aksen (2026-11-15)
+
+HIRO: "hmm jelek bro ada saran yang keren?" -> memilih opsi A: "Grid putih tipis statis, aksen hanya
+sebagai SATU halo lembut yang mengembang dari kaki rack (bukan menyentuh garis)".
+
+DIAGNOSIS "jelek"-nya: dua sistem warna di elemen yang sama (garis putih + sapuan aksen pada garis
+yang sama) = seperti stabilo di atas garis putih, dan napasnya hanya menyalakan potongan garis
+sehingga terbaca sebagai bercak. Aturannya sekarang: SATU PERAN PER ELEMEN.
+
+Shadem lantai ditulis ulang (fragment `gridFloor`):
+- Grid: putih, statis, tanpa animasi. `lineAlpha = (minor*0.34 + major*0.58) * fade`,
+  `lineColor = mix(vec3(0.36,0.37,0.39), vec3(0.82,0.84,0.87), major)`.
+- Aksen hanya dua lapis lembut di lantai, TIDAK dikalikan lineMask:
+  - kolam tetap di kaki rack: `pool = exp(-radius*radius*1.1) * 0.16`;
+  - satu halo mengembang: `phase = fract(uTime/7.0)`, `ringRadius = phase*3.6`,
+    `ringWidth = 0.30 + phase*0.75`, `ring = exp(-((radius-ringRadius)/ringWidth)^2) * (1-phase)^2 * 0.34`.
+- Komposisi: putih garis DI ATAS halo (`outAlpha = lineAlpha + accentAlpha*(1-lineAlpha)`), jadi halo
+  tidak pernah mewarnai garis.
+- `breathe`/`energy` pada garis dihapus seluruhnya.
+
+VERIFIKASI (Angled View 1400x900): 3 frame berjarak 2 s - profil hijau per pita jarak berubah
+(95 -> 95 -> 107, 89 -> 89 -> 99) menandakan halo merambat keluar; total pixel lantai berubah 8.721
+dan 100.920 px. Screenshot: grid putih bersih tanpa warna, satu lingkaran aksen lembut di kaki rack.
+Build exit 0.

@@ -326,10 +326,10 @@ onMounted(async () => {
     floor.receiveShadow = true
     scene.add(floor)
 
-    // Floor grid, drawn in a shader instead of a GridHelper so the lines can breathe. Every line is
-    // tinted with the live theme accent and its brightness swells and settles on a slow five-second
-    // cycle, with a small radial delay so the floor reads as one slow inhale rather than a blink.
-    // Kept deliberately low-contrast: resting lines are dim, the swell never washes out the rack.
+    // Floor grid, drawn in a shader instead of a GridHelper. Two jobs, kept strictly apart: the grid
+    // itself is a still white reference surface, and the theme accent shows up only as a soft halo
+    // that swells out from the rack's feet. Tinting the lines as well made the floor read like a
+    // highlighter smear, which is what this replaces.
     const FLOOR_GRID_SIZE = 44
     const floorLightUniforms = {
       uTime: { value: 0 },
@@ -372,35 +372,32 @@ onMounted(async () => {
           // Past a few metres the 0.5 m lines are thinner than a pixel and would shimmer into moire.
           minor *= 1.0 - smoothstep(7.0, 16.0, radius);
 
-          float lineMask = max(minor * 0.55, major * 0.85);
-
-          // Breathing glow, emitted from the middle of the rack: the phase is retarded strongly with
-          // distance (1.6 rad/m, so crests about 4 m apart) which makes concentric swells travel
-          // outward from the cabinet instead of the whole floor pulsing in place. Each swell loses
-          // energy as it travels, so the floor near the rack breathes hardest.
-          float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 1.6);
-          float energy = mix(1.0, 0.42, smoothstep(0.5, 18.0, radius));
-
           // The plane must not show an edge: the grid keeps running far past the rack and only
           // dissolves near the horizon, so no line ever appears to stop in mid-air.
           float fade = 1.0 - smoothstep(uSize * 0.31, uSize * 0.47, radius);
 
-          // The original steel-blue grid stays on screen the whole time - an earlier version made the
-          // lines pure accent, so wherever the swell was in its trough the floor lost its grid
-          // entirely. The breathing accent is now something laid ON TOP of that base, never a
-          // replacement for it.
-          // White lines (HIRO): the resting grid is a plain white, only the breathing accent above it
-          // carries colour.
-          vec3 baseColor = mix(vec3(0.34, 0.35, 0.37), vec3(0.70, 0.72, 0.75), major);
-          float baseAlpha = (minor * 0.40 + major * 0.60) * fade;
+          // ONE ROLE PER ELEMENT. The grid is a still, plain white reference surface and carries no
+          // colour at all - tinting the lines is what made the floor look like a highlighter smear.
+          // The accent appears exactly once, as a halo leaving the feet of the cabinet.
+          float lineAlpha = (minor * 0.34 + major * 0.58) * fade;
+          vec3 lineColor = mix(vec3(0.36, 0.37, 0.39), vec3(0.82, 0.84, 0.87), major);
 
-          vec3 glowColor = uAccent * (0.55 + breathe * 0.55);
-          float glowAlpha = lineMask * (0.08 + breathe * 0.58) * energy * fade;
+          // A constant, very soft pool under the cabinet so the accent is present even between
+          // pulses, plus one halo that swells outward from the feet and dissolves as it widens.
+          float pool = exp(-radius * radius * 1.1) * 0.16;
 
-          float alpha = clamp(baseAlpha + glowAlpha, 0.0, 0.85);
-          vec3 color = (baseColor * baseAlpha + glowColor * glowAlpha) / max(alpha, 1e-4);
+          float phase = fract(uTime / 7.0);
+          float ringRadius = phase * 3.6;
+          float ringWidth = 0.30 + phase * 0.75;
+          float ring = exp(-pow((radius - ringRadius) / ringWidth, 2.0)) * (1.0 - phase) * (1.0 - phase) * 0.34;
 
-          gl_FragColor = vec4(color, alpha);
+          float accentAlpha = clamp(pool + ring, 0.0, 0.55) * fade;
+
+          // White lines sit ON TOP of the halo; the halo never tints them.
+          float outAlpha = lineAlpha + accentAlpha * (1.0 - lineAlpha);
+          vec3 color = (lineColor * lineAlpha + uAccent * accentAlpha * (1.0 - lineAlpha)) / max(outAlpha, 1e-4);
+
+          gl_FragColor = vec4(color, clamp(outAlpha, 0.0, 0.85));
         }
       `
     })
@@ -2480,7 +2477,7 @@ let accentPoll = 0
         }
       }
 
-      // Floor grid breathing: advanced per frame so it never runs while the tab is throttled.
+      // Floor halo animation: advanced per frame so it never runs while the tab is throttled.
       floorLightUniforms.uTime.value += delta
 
       accentPoll += delta
