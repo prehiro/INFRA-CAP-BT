@@ -5353,3 +5353,23 @@ Yang diubah:
 VERIFIKASI (browser): Close-Up Ports - chassis gelap kebiruan, LED hijau tetap pekat, port strip
 tidak lagi melebur jadi pita putih, celah antar U bersih. Angled view tetap terang.
 Build exit 0.
+### Redupkan Saat Zoom dengan Pintu Terbuka (2026-11-15)
+
+HIRO: "ya terlalu terang saat di zoom posisi pintu terbuka".
+
+Pintu terbuka = kamera melihat langsung ke interior yang disinari `frontFillLight` (PointLight di
+depan rak, z 1.6) + environment map. Kombinasi itu yang membuat baris switch menyala berlebihan
+justru pada zoom dekat.
+
+Setelan akhir (Rack3DView.vue):
+- `renderer.toneMappingExposure` 1.32 -> 1.05 (ACES tetap aktif, jadi highlight roll-off).
+- `frontFillLight` intensitas 1.35 -> 0.2, distance 6.5, decay 1.2 (sebelumnya 1/r^2 penuh).
+- `faceWash` 1.0 -> 0.55.
+- envMapIntensity perangkat: chassis 0.42, port metal 0.35, sekrup 0.4, kaca pintu 0.22.
+- Body kabinet tetap env penuh supaya tidak balik hitam.
+
+Dua tuas yang tersisa kalau masih perlu disetel: `toneMappingExposure` (global, 1.05 sekarang) dan
+warna `ledMat` (LED strip, sekarang putih murni 0xffffff).
+
+VERIFIKASI (browser, RACK A, pintu Open + preset Close-Up Ports): chassis navy gelap, LED cyan
+terlihat tapi tidak menyilaukan, port strip tidak melebur, celah antar U hitam bersih. Build exit 0.

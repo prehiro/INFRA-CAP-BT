@@ -157,7 +157,7 @@ onMounted(async () => {
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     renderer.toneMapping = THREE.ACESFilmicToneMapping
-    renderer.toneMappingExposure = 1.18
+    renderer.toneMappingExposure = 1.05
 
     // Image-based lighting: a small procedural "room" baked into an env map. Metallic cabinet parts
     // have almost no diffuse response, so without an environment they only ever showed the two
@@ -224,14 +224,14 @@ onMounted(async () => {
     // A point light this close to the hardware obeys inverse-square falloff, so at close-up zoom the
     // nearest switch rows were getting ten times the light they need and their colours washed out to
     // white. Gentler intensity, longer decay and a wider radius keep the fill even instead.
-    const frontFillLight = new THREE.PointLight(0xe8f4ff, 0.55, 6.5)
+    const frontFillLight = new THREE.PointLight(0xe8f4ff, 0.2, 6.5)
     frontFillLight.position.set(0, 1.1, 1.6)
     frontFillLight.decay = 1.2
     scene.add(frontFillLight)
 
     // Broad white wash from the viewer's side. The key light comes from above/right, which left the
     // cabinet face and the equipment inside it reading almost black.
-    const faceWash = new THREE.DirectionalLight(0xf2f7ff, 0.7)
+    const faceWash = new THREE.DirectionalLight(0xf2f7ff, 0.55)
     faceWash.position.set(0.8, 1.8, 4.2)
     scene.add(faceWash)
 
