@@ -36,6 +36,29 @@ const emit = defineEmits<{
 const root = ref<HTMLElement | null>(null)
 const $ = (id: string) => root.value?.querySelector(`#${id}`)
 
+// Both drawers can fold down to a narrow rail so the 3D rack gets the whole canvas. The panels are
+// only hidden with v-show, never unmounted: the scene script drives them by id (hud-toast, tab-*,
+// view-*, the inputs), so removing them from the DOM would break every one of those lookups.
+const leftCollapsed = ref(false)
+const rightCollapsed = ref(false)
+const DRAWER_KEY = 'rack3d.drawers'
+onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRAWER_KEY) || '{}')
+    leftCollapsed.value = !!saved.left
+    rightCollapsed.value = !!saved.right
+  } catch {
+    /* a corrupt value just means both drawers start expanded */
+  }
+})
+watch([leftCollapsed, rightCollapsed], ([l, r]) => {
+  try {
+    localStorage.setItem(DRAWER_KEY, JSON.stringify({ left: l, right: r }))
+  } catch {
+    /* private mode: the fold still works for this session */
+  }
+})
+
 // Teardown and live-data hooks are registered synchronously HERE, at setup level. The scene is
 // built inside an async onMounted that awaits the vendored fonts first, and a lifecycle hook
 // registered after that await is no longer bound to the component instance, so it would be
@@ -2427,13 +2450,32 @@ onMounted(async () => {
     </button>
 
     <!-- LEFT DRAWER: switch asset, bottom UPS and enclosure telemetry -->
-    <div id="control-panel" class="absolute top-3 bottom-3 left-3 z-20 w-80 max-w-[calc(100%-1.5rem)] flex flex-col glass-panel rounded-2xl p-4 transition-all duration-300 hidden sm:flex">
+    <!-- Collapsing hides the drawer outright: an absolutely positioned box here keeps its laid-out
+         width no matter what width utility is applied (only display changes take effect), so folding
+         it into a narrow rail is not possible and it is folded away completely instead. -->
+    <button v-if="leftCollapsed" type="button" @click="leftCollapsed = false" title="Show rack hardware panel"
+      class="absolute left-2 top-1/2 -translate-y-1/2 z-30 glass-panel rounded-r-xl rounded-l-md py-3 px-1.5 text-slate-300 hover:text-primary transition hidden sm:block">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+      </svg>
+    </button>
+
+    <div id="control-panel" v-show="!leftCollapsed" class="absolute top-3 bottom-3 left-3 z-20 w-80 max-w-[calc(100%-1.5rem)] flex flex-col glass-panel rounded-2xl p-4 transition-all duration-300 hidden sm:flex">
       <!-- Panel header -->
-      <div class="mb-2.5 shrink-0">
-        <div class="text-[10px] uppercase tracking-widest text-slate-500">Rack hardware</div>
-        <div class="text-sm font-semibold text-slate-100 leading-tight">Controls &amp; telemetry</div>
+      <div class="flex items-start justify-between gap-2 mb-2.5 shrink-0">
+        <div class="min-w-0">
+          <div class="text-[10px] uppercase tracking-widest text-slate-500">Rack hardware</div>
+          <div class="text-sm font-semibold text-slate-100 leading-tight">Controls &amp; telemetry</div>
+        </div>
+        <button type="button" class="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-800/70 transition"
+          title="Collapse panel" @click="leftCollapsed = true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+          </svg>
+        </button>
       </div>
 
+      <div class="flex-1 min-h-0 flex flex-col">
       <!-- Drawer Tabs -->
       <div class="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 mb-3 shrink-0">
         <button id="tab-hardware" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-primary/20 text-primary border border-primary/30 transition">
@@ -2602,23 +2644,38 @@ onMounted(async () => {
           <p>• <strong class="text-slate-300">Edit &amp; glass door:</strong> Click a switch or the glass door in the 3D view to interact.</p>
         </div>
       </div>
+      </div>
     </div>
 
     <!-- RIGHT DRAWER: installed equipment, kept apart from the editing controls -->
-    <aside id="inventory-panel" class="absolute top-3 bottom-3 right-3 z-20 w-72 max-w-[calc(100%-1.5rem)] flex-col glass-panel rounded-2xl p-4 hidden sm:flex">
+    <button v-if="rightCollapsed" type="button" @click="rightCollapsed = false" title="Show rack inventory panel"
+      class="absolute right-2 top-1/2 -translate-y-1/2 z-30 glass-panel rounded-l-xl rounded-r-md py-3 px-1.5 text-slate-300 hover:text-primary transition hidden sm:block">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+      </svg>
+    </button>
+
+    <aside id="inventory-panel" v-show="!rightCollapsed" class="absolute top-3 bottom-3 right-3 z-20 w-72 max-w-[calc(100%-1.5rem)] flex-col glass-panel rounded-2xl p-4 hidden sm:flex">
       <div class="flex items-start justify-between gap-2 mb-1 shrink-0">
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1">
           <div class="text-[10px] uppercase tracking-widest text-slate-500">Installed equipment</div>
           <div class="text-sm font-semibold text-slate-100 leading-tight truncate">Rack Inventory</div>
         </div>
         <span id="free-u-count" class="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">36U Free</span>
+        <button type="button" class="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-primary hover:bg-slate-800/70 transition"
+          title="Collapse panel" @click="rightCollapsed = true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
       <p class="text-[10px] text-slate-500 mb-2.5 shrink-0">Drag a card onto another to swap its U slot.</p>
       <div id="inventory-list" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-1.5"></div>
     </aside>
 
     <!-- Bottom Camera Presets Dock - centred in the band the two drawers leave free -->
-    <div id="cam-dock" class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:left-[336px] sm:right-[304px] sm:px-0">
+    <div id="cam-dock" class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:px-0 transition-all duration-300"
+      :class="[leftCollapsed ? 'sm:left-0' : 'sm:left-[336px]', rightCollapsed ? 'sm:right-0' : 'sm:right-[304px]']">
       <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-center gap-1.5 overflow-x-auto max-w-full">
         <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap">
           Angled View

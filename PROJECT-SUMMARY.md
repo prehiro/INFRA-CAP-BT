@@ -5557,3 +5557,29 @@ HIRO: "ganti led sfp yang kedip no 1 dan 2".
 
 VERIFIKASI: diff 3 frame pada area SFP (x 800-900) berubah 44 px; zoom ekstrem memperlihatkan LED di
 bawah dua cage baris atas menyala/mati bergantian sedangkan dua LED baris bawah gelap.
+### Drawer Rack Hardware & Rack Inventory Bisa Di-Collapse (2026-11-15)
+
+HIRO: "saya mau sidebar rack hardware dan rack inventory memiliki fitur collapsible".
+
+Kedua drawer di Rack3DView (kiri `#control-panel`, kanan `#inventory-panel`) sekarang punya tombol
+chevron di header untuk menutup, dan tombol handle kecil di tepi canvas untuk membuka lagi. State
+disimpan di localStorage `rack3d.drawers` = {"left":bool,"right":bool}, dipulihkan saat mount.
+
+CATATAN PENTING (kenapa drawer DISEMBUNYIKAN, bukan mengecil jadi rail sempit):
+Kotak drawer ini position:absolute; percobaan mengecilkan lebar lewat `w-[68px]`, `w-16`, bahkan
+`style="width:68px !important"` TIDAK berpengaruh - computed width tetap 320px (hanya `display` dan
+properti non-layout seperti background yang berubah). Yang berhasil: `v-show` (display:none) dan
+tombol handle. Jangan buang waktu mengulang percobaan lebar itu.
+
+- Tombol collapse: chevron di header tiap drawer (`title="Collapse panel"`).
+- Saat collapsed: drawer display:none, muncul `<button title="Show rack hardware panel">` (kiri) dan
+  "Show rack inventory panel" (kanan) yang menempel di tepi tengah canvas (z-30, glass-panel).
+- `#cam-dock` ikut menyesuaikan: `sm:left-0` / `sm:right-0` saat drawer disembunyikan, kembali ke
+  `sm:left-[336px]` / `sm:right-[304px]` saat tampil.
+- Elemen dengan id (hud-toast, tab-*, view-*, input-*) tetap ada di DOM walau drawer ditutup, jadi
+  seluruh script scene yang memakai $('id') tetap bekerja.
+
+VERIFIKASI di browser 1400x900: collapse -> dua drawer display:none, dua handle muncul, dock melebar
+penuh, localStorage terisi {"left":true,"right":true}; klik handle -> kembali flex dan localStorage
+{"left":false,"right":false}; reload halaman -> state tetap; `#inventory-list` masih berisi 13 kartu
+setelah drawer dibuka kembali. Build exit 0.
