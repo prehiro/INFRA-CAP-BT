@@ -801,7 +801,14 @@ onMounted(async () => {
 
     // LED InstancedMesh State (Rebuilt cleanly whenever switches are added/removed/moved)
     const LED_COUNT_PER_SWITCH = 48 + 4 + 5 + 4 // 61: 48 port-band + 4 SFP + 5 status + 4 uplink status
-    const ledGeo = new THREE.BoxGeometry(0.0024, 0.0018, 0.0015)
+    // LEDs are triangles: apex-up for odd port order (1,3,5...), flipped by PI for the even ones.
+    const LED_TRI = 0.0034
+    const ledShape = new THREE.Shape()
+    ledShape.moveTo(0, LED_TRI * 0.58)
+    ledShape.lineTo(-LED_TRI * 0.5, -LED_TRI * 0.42)
+    ledShape.lineTo(LED_TRI * 0.5, -LED_TRI * 0.42)
+    ledShape.closePath()
+    const ledGeo = new THREE.ShapeGeometry(ledShape)
     // Unlit and therefore unaffected by exposure: pure white made these the brightest pixels on screen
     // once the door was open. A soft blue-white keeps them reading as LEDs without the glare.
     const ledMat = new THREE.MeshBasicMaterial({ color: 0xc9d6e8 })
@@ -812,10 +819,10 @@ onMounted(async () => {
     // Palette follows a real Catalyst faceplate: port activity blinks YELLOW, the status block and
     // the SFP+ uplinks blink BLUE, PoE ports sit slightly hotter (orange). Values are muted on
     // purpose - the unlit instances are drawn at their literal colour, so neon read as glare.
-    const COLOR_GREEN_ON  = new THREE.Color(0xffc21a) // yellow: normal port activity
-    const COLOR_GREEN_DIM = new THREE.Color(0x2b2000)
-    const COLOR_AMBER_ON  = new THREE.Color(0xff8a00) // orange: PoE port activity
-    const COLOR_AMBER_DIM = new THREE.Color(0x2e1800)
+    const COLOR_GREEN_ON  = new THREE.Color(0x35e05f) // green: port activity
+    const COLOR_GREEN_DIM = new THREE.Color(0x0b3a1c)
+    const COLOR_AMBER_ON  = new THREE.Color(0xffb020) // amber: the other half of the random blink
+    const COLOR_AMBER_DIM = new THREE.Color(0x3d2600)
     const COLOR_CYAN_ON   = new THREE.Color(0x3d8bff) // blue: status LEDs and SFP+ uplinks
     const COLOR_CYAN_DIM  = new THREE.Color(0x0a1c3d)
     const COLOR_OFF       = new THREE.Color(0x0a0e14)
@@ -1232,9 +1239,11 @@ onMounted(async () => {
         const portAreaX = -halfW + leftBlockW
         const groupW = (chassisWidth - leftBlockW - rightBlockW - groupGap * 3) / 4
         const colPitch = groupW / 6
-        const portW = colPitch * 0.80
-        const portH = chassisHeight * 0.30
-        const rowY = [chassisHeight * 0.155, -chassisHeight * 0.115]
+        // Square RJ45 openings, as on the real faceplate
+        const portSide = colPitch * 0.78
+        const portW = portSide
+        const portH = portSide
+        const rowY = [chassisHeight * 0.17, -chassisHeight * 0.13]
         const bandY = -chassisHeight * 0.40
 
         // Group range labels (1x/12x/13x/24x ...) are printed over each group on the top rail.
@@ -1282,6 +1291,7 @@ onMounted(async () => {
         for (let sys = 0; sys < 5; sys++) {
           const lx = -halfW + 0.012 + sys * 0.0078
           const ly = bandY
+          dummyObj.rotation.z = 0
           dummyObj.position.set(lx, yPos + ly, zFront + 0.0048)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
@@ -1302,7 +1312,7 @@ onMounted(async () => {
           const gx = portAreaX + g * (groupW + groupGap)
 
           const frame = new THREE.Mesh(
-            new THREE.BoxGeometry(groupW + 0.0012, portH * 2 + 0.009, 0.0012),
+            new THREE.BoxGeometry(groupW + 0.0012, (rowY[0] - rowY[1]) + portSide + 0.005, 0.0012),
             matSwitchGroupFrame
           )
           frame.position.set(gx + groupW / 2, (rowY[0] + rowY[1]) / 2, 0.0035)
@@ -1335,13 +1345,16 @@ onMounted(async () => {
 
           for (let i = 0; i < 12; i++) {
             const lx = gx + (i + 0.5) * (colPitch / 2)
+            const portOrder = g * 12 + i
+            // Triangle apex-up for order 1, apex-down for order 2, alternating through to 48.
+            dummyObj.rotation.z = portOrder % 2 === 0 ? 0 : Math.PI
             dummyObj.position.set(lx, yPos + bandY, zFront + 0.0048)
             dummyObj.updateMatrix()
             ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
 
             const portNum = g * 12 + Math.floor(i / 6) * 6 + (i % 6)
             const isPortActive = portNum < cfg.activePorts
-            const isPoEPort = isPortActive && (portNum % 5 === 0)
+            const isPoEPort = isPortActive && Math.random() < 0.45
 
             ledInstancedMesh.setColorAt(
               ledIndex,
@@ -1405,6 +1418,7 @@ onMounted(async () => {
               switchGroup.add(tubeMesh)
             }
 
+            dummyObj.rotation.z = 0
             dummyObj.position.set(sx, yPos + sy + 0.0072, zFront + 0.0054)
             dummyObj.updateMatrix()
             ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
@@ -1425,6 +1439,7 @@ onMounted(async () => {
 
         // Status LED column beside the uplinks
         for (let k = 0; k < 4; k++) {
+          dummyObj.rotation.z = 0
           dummyObj.position.set(halfW - 0.007, yPos + rowY[0] + 0.001 - k * 0.0042, zFront + 0.0054)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
@@ -2298,13 +2313,13 @@ onMounted(async () => {
           } else {
             const burstWindow = Math.sin(simTime * state.burstFreq + state.burstOffset)
             const threshold = 0.75 - trafficIntensity * 1.35
-            if (burstWindow > threshold) {
-              const frameBlink = Math.sin(simTime * state.speed + state.phase) > -0.15
-              if (state.isAmber) {
-                ledInstancedMesh.setColorAt(i, frameBlink ? COLOR_AMBER_ON : COLOR_AMBER_DIM)
-              } else {
-                ledInstancedMesh.setColorAt(i, frameBlink ? COLOR_GREEN_ON : COLOR_GREEN_DIM)
-              }
+            const isOn = burstWindow > threshold && Math.sin(simTime * state.speed + state.phase) > -0.15
+            // Each time the LED lights up it picks green or amber again, so the blink pattern is random
+            // in colour as well as in rhythm.
+            if (isOn && !state.isOn) state.isAmber = Math.random() < 0.45
+            state.isOn = isOn
+            if (isOn) {
+              ledInstancedMesh.setColorAt(i, state.isAmber ? COLOR_AMBER_ON : COLOR_GREEN_ON)
             } else {
               ledInstancedMesh.setColorAt(i, state.isAmber ? COLOR_AMBER_DIM : COLOR_GREEN_DIM)
             }

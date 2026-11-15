@@ -5480,3 +5480,27 @@ ke bagian bawah port".
 
 VERIFIKASI: build exit 0; browser - canvas render normal (tanpa error), crop satu switch menunjukkan
 kiri bawah bersih tanpa label dan LED biru/orange sejajar pita kuning.
+### Port Square + LED Segitiga Hijau/Amber Acak (2026-11-15)
+
+HIRO: "port buat bentuk square. lalu led pada bagian blok kuning buat random blink warna hijau dan
+amber. bentuk lednya adalah segitiga sudut keatas untuk urutan 1, segitiga sudut kebawah untuk urutan
+ke 2, begitu seterusnya sampai urutan led ke 48".
+
+- GEOMETRI LED diganti dari box kecil menjadi SEGITIGA: `ledGeo` sekarang `THREE.ShapeGeometry` dari
+  Shape 3 titik (`LED_TRI = 0.0034`). Satu geometry dipakai semua instance; orientasi dibalik lewat
+  `dummyObj.rotation.z` = 0 (apex atas) atau Math.PI (apex bawah).
+- URUTAN: di loop pita kuning, `portOrder = g * 12 + i` (0..47) -> rotation.z = portOrder % 2 === 0 ?
+  0 : Math.PI. Jadi LED order 1 menghadap atas, order 2 ke bawah, bergantian sampai 48.
+  PENTING: `dummyObj` dipakai bersama, jadi setiap penempatan LED lain (status/SFP) WAJIB reset
+  rotation.z = 0, kalau tidak orientasinya ikut segitiga terakhir.
+- WARNA: palet port jadi HIJAU 0x35e05f / AMBER 0xffb020 (dim 0x0b3a1c / 0x3d2600). Initial acak:
+  `isPoEPort = isActive && Math.random() < 0.45`. Di animate, warna DIUNDI ULANG setiap kali LED
+  menyala (`if (isOn && !state.isOn) state.isAmber = Math.random() < 0.45`), jadi blink acak baik
+  ritme maupun warna. Status ditandai `state.isOn`.
+- PORT SQUARE: `portSide = colPitch * 0.78` dipakai untuk lebar DAN tinggi housing/cavity; baris port
+  jadi `rowY = [chassisHeight * 0.17, -chassisHeight * 0.13]` supaya dua bujur sangkar tetap muat;
+  tinggi frame grup dihitung dari `(rowY[0] - rowY[1]) + portSide + 0.005`.
+
+VERIFIKASI: build exit 0; 6 frame berturut-turut pada area faceplate -> hijau ~4.3-4.6k px dan amber
+~4.4-4.7k px (seimbang, jadi kedua warna benar-benar berkedip acak). Screenshot close menunjukkan
+port bujur sangkar dan pita LED berbentuk zigzag segitiga atas-bawah.
