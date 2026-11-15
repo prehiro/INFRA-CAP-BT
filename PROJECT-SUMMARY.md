@@ -5466,3 +5466,17 @@ Tata letak baru di dalam `buildSwitch` (Rack3DView.vue):
 
 VERIFIKASI: dua frame 0.4 s berbeda 1201 px (0.49%) - LED masih berkedip; terukur 2871 px kuning
 (pita) di area switch. Build exit 0.
+### Label Faceplate Dihapus + LED Status Pindah ke Bawah Port (2026-11-15)
+
+HIRO: "hapus saja label cisco yang di kiri bawah ... led biru dan orange yang di atas kiri, pindahkan
+ke bagian bawah port".
+
+- Badge (model + hostname + IP) yang menempel di kiri bawah faceplate DIHAPUS TOTAL, termasuk sisa
+  dead code-nya: `switchBadgeRefs` (Map + clear + set + blok refresh di `updateSingleSwitch3DLabel`)
+  dan fungsi `createCiscoBadgeTexture` (53 baris). Grep akhir: 0 referensi untuk keduanya.
+  `updateSingleSwitch3DLabel` tetap hidup karena masih memperbarui userData hitbox.
+- 5 LED status (4 biru + 1 orange) dipindah dari tepi atas kiri ke baris pita port: `ly = bandY`,
+  x mulai -halfW + 0.012 dengan pitch 0.0078.
+
+VERIFIKASI: build exit 0; browser - canvas render normal (tanpa error), crop satu switch menunjukkan
+kiri bawah bersih tanpa label dan LED biru/orange sejajar pita kuning.

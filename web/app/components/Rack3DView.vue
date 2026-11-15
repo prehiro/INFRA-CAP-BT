@@ -322,59 +322,6 @@ onMounted(async () => {
       return tex
     }
 
-    function createCiscoBadgeTexture(modelLabel, hostname = 'SW-CORE-01', ipAddress = '10.10.1.11') {
-      const canvas = document.createElement('canvas')
-      canvas.width = 512
-      canvas.height = 128
-      const ctx = canvas.getContext('2d')
-      ctx.clearRect(0, 0, 512, 128)
-
-      // Subtle dark OLED label plate background
-      ctx.fillStyle = 'rgba(7, 13, 24, 0.92)'
-      ctx.beginPath()
-      ctx.roundRect(4, 6, 504, 116, 14)
-      ctx.fill()
-      ctx.strokeStyle = accentRgba(0.45)
-      ctx.lineWidth = 3
-      ctx.stroke()
-
-      // Cisco signature bridge icon bars (cyan/teal)
-      ctx.fillStyle = accentCss
-      const bars = [16, 28, 44, 28, 16, 28, 44, 28, 16]
-      bars.forEach((h, idx) => {
-        ctx.fillRect(22 + idx * 11, 64 - h, 6, h)
-      })
-
-      // "CISCO" wordmark + Model
-      ctx.fillStyle = '#f1f5f9'
-      ctx.font = 'bold 24px "Inter", sans-serif'
-      ctx.fillText('CISCO', 22, 98)
-
-      ctx.fillStyle = accentCss
-      ctx.font = '600 18px "JetBrains Mono", monospace'
-      ctx.fillText(modelLabel, 112, 98)
-
-      // Divider line
-      ctx.fillStyle = 'rgba(148, 163, 184, 0.25)'
-      ctx.fillRect(194, 18, 2, 92)
-
-      // Dynamic Hostname & IP Address Readout
-      ctx.fillStyle = '#ffffff'
-      ctx.font = 'bold 28px "JetBrains Mono", monospace'
-      ctx.fillText(hostname.slice(0, 16), 210, 56)
-
-      ctx.fillStyle = '#fbbf24'
-      ctx.font = '600 25px "JetBrains Mono", monospace'
-      ctx.fillText(ipAddress.slice(0, 18), 210, 96)
-
-      const tex = new THREE.CanvasTexture(canvas)
-      tex.anisotropy = 4
-      return tex
-    }
-
-    // NETVIEL OTB (optical termination box) faceplate: matte black plate with the brand's orange
-    // wave and the NETVIEL wordmark. Exactly one of these sits at the TOP of every rack - it is the
-    // default first unit, not a filler for the whole cabinet.
     function createOtbFaceTexture() {
       const canvas = document.createElement('canvas')
       canvas.width = 1024
@@ -874,7 +821,6 @@ onMounted(async () => {
     const COLOR_OFF       = new THREE.Color(0x0a0e14)
 
     let interactiveHitboxes = [] // Switch & UPS hitboxes for Raycaster
-    const switchBadgeRefs = new Map() // switchId -> { mesh, model } for live texture updates
 
     // Fiber & Power Cord Materials
     const matFiberAqua = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.35, metalness: 0.1 })
@@ -1177,7 +1123,6 @@ onMounted(async () => {
         ledInstancedMesh = null
       }
       interactiveHitboxes = []
-      switchBadgeRefs.clear()
       ledStates = []
 
       // Build Bottom UPS if enabled
@@ -1327,27 +1272,16 @@ onMounted(async () => {
           switchGroup.add(con)
         }
 
-        // Badge (model + hostname + IP) tucked into the lower left, where the PoE marker sits on the
-        // real faceplate, so the port area stays clean.
-        const shortModel = cfg.model.replace('Catalyst ', 'C')
-        const badgeTex = createCiscoBadgeTexture(shortModel, cfg.hostname, cfg.ip)
-        const badgeMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(0.070, 0.0183),
-          new THREE.MeshBasicMaterial({ map: badgeTex, transparent: true })
-        )
-        badgeMesh.position.set(-halfW + 0.040, bandY, 0.0046)
-        switchGroup.add(badgeMesh)
-        switchBadgeRefs.set(cfg.id, { mesh: badgeMesh, model: shortModel })
-
         // Mode button + 5 system LEDs above the services block
         const modeBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 12), matPortMetal)
         modeBtn.rotation.x = Math.PI / 2
         modeBtn.position.set(-halfW + 0.056, chassisHeight * 0.30, 0.0045)
         switchGroup.add(modeBtn)
 
+        // Status LEDs sit level with the yellow port bands (bottom of the ports), not at the top edge.
         for (let sys = 0; sys < 5; sys++) {
-          const lx = -halfW + 0.008 + sys * 0.0068
-          const ly = chassisHeight * 0.30
+          const lx = -halfW + 0.012 + sys * 0.0078
+          const ly = bandY
           dummyObj.position.set(lx, yPos + ly, zFront + 0.0048)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
@@ -1542,13 +1476,6 @@ onMounted(async () => {
 
     // Fast live update of a single switch's 3D faceplate label without rebuilding geometry
     function updateSingleSwitch3DLabel(sw) {
-      const ref = switchBadgeRefs.get(sw.id)
-      if (ref && ref.mesh) {
-        const oldTex = ref.mesh.material.map
-        ref.mesh.material.map = createCiscoBadgeTexture(ref.model, sw.hostname, sw.ip)
-        ref.mesh.material.needsUpdate = true
-        if (oldTex) oldTex.dispose()
-      }
       const hb = interactiveHitboxes.find(h => h.userData.switchId === sw.id)
       if (hb) {
         hb.userData.ip = sw.ip
