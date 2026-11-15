@@ -20,7 +20,7 @@ import type { NetworkSwitch } from '~/types'
 // The rack's real switches are the only source of hardware in this scene. `totalU` is the cabinet
 // height in rack units, stored per rack by the register: 19U/22U/27U/42U all render from the same
 // geometry spec, so a smaller cabinet is simply a shorter one with fewer numbered slots.
-const props = withDefaults(defineProps<{ switches: NetworkSwitch[]; totalU?: number }>(), { totalU: 42 })
+const props = withDefaults(defineProps<{ switches: NetworkSwitch[]; totalU?: number; hudSettings?: string }>(), { totalU: 42, hudSettings: '' })
 
 // Deleting a switch is not a local edit: it has to reach the register, or the next load of the
 // rack detail simply re-reads the row and the device reappears. The parent page owns that API
@@ -53,6 +53,28 @@ const ALLOWED_TOTALS = [19, 22, 27, 42]
 // Written once per mount from the `totalU` prop before any geometry is built, and read by the
 // helpers below, so every rail, slot option and free-U count agrees with the same cabinet height.
 let RACK_TOTAL_U: number = DEFAULT_TOTAL_U
+
+// The panel's own settings, read from the rack record. Parsed once per mount: these used to be plain
+// component variables, so every close/reopen of the modal reset the UPS, the door and the toggles.
+type HudSettings = {
+  upsModel?: string
+  upsSerial?: string
+  doorOpen?: boolean
+  sidesVisible?: boolean
+  traffic?: boolean
+  autoRotate?: boolean
+  intensity?: number
+}
+function parseHudSettings(raw?: string): HudSettings {
+  if (!raw) return {}
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed as HudSettings : {}
+  } catch {
+    return {}
+  }
+}
+const initialHud = parseHudSettings(props.hudSettings)
 
 function normalizeTotalU(value: number | undefined): number {
   const n = Math.round(Number(value))
@@ -714,8 +736,8 @@ onMounted(async () => {
     rackGroup.add(dynamicEquipmentGroup)
 
     // UPS State: 'none' | '3000' (2U: U01-U02) | '5000' (3U: U01-U03)
-    let upsModel = '3000'
-    let upsSerial = 'AS2408190442'
+    let upsModel = ['none', '3000', '5000'].includes(initialHud.upsModel ?? '') ? initialHud.upsModel! : '3000'
+    let upsSerial = typeof initialHud.upsSerial === 'string' ? initialHud.upsSerial : 'AS2408190442'
     function getUpsHeightU() {
       if (upsModel === '3000') return 2 // U01..U02
       if (upsModel === '5000') return 3 // U01..U03
@@ -1579,6 +1601,7 @@ onMounted(async () => {
       if (btnRemoveUpsInv) {
         btnRemoveUpsInv.addEventListener('click', () => {
           upsModel = 'none'
+          queueHudSettings()
           rebuildRackEquipment()
         })
       }
@@ -1654,6 +1677,7 @@ onMounted(async () => {
       const upsHb = interactiveHitboxes.find(h => h.userData.kind === 'ups')
       if (upsHb) upsHb.userData.sn = upsSerial || 'UNASSIGNED'
       syncHudUI()
+      queueHudSettings()
     })
 
     $('btn-copy-sw-sn').addEventListener('click', () => {
@@ -1725,6 +1749,7 @@ onMounted(async () => {
         if (chosen === upsModel) return
         upsModel = chosen
         rebuildRackEquipment()
+        queueHudSettings()
       })
     })
 
@@ -1771,6 +1796,7 @@ onMounted(async () => {
       btnDoor.className = isDoorOpen
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition'
         : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
+      queueHudSettings()
     }
 
     btnDoor.addEventListener('click', toggleDoor)
@@ -1782,6 +1808,7 @@ onMounted(async () => {
       btnSides.className = areSidesVisible
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition'
         : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
+      queueHudSettings()
     })
 
     btnTraffic.addEventListener('click', () => {
@@ -1790,6 +1817,7 @@ onMounted(async () => {
       btnTraffic.className = isTrafficRunning
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 transition'
         : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 transition'
+      queueHudSettings()
     })
 
     btnAutoRotate.addEventListener('click', () => {
@@ -1799,12 +1827,50 @@ onMounted(async () => {
       btnAutoRotate.className = controls.autoRotate
         ? 'px-3 py-1.5 rounded-xl text-xs font-medium bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition'
         : 'px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition'
+      queueHudSettings()
     })
 
     sliderIntensity.addEventListener('input', (e) => {
       trafficIntensity = Number(e.target.value) / 100
       intensityVal.textContent = `${e.target.value}%`
+      queueHudSettings()
     })
+
+    // Persist the panel's own state per rack. Without this the UPS, the door/side-panel toggles and
+    // the traffic settings were plain variables and every close/reopen reset them.
+    let hudTimer: ReturnType<typeof setTimeout> | null = null
+    function hudSnapshot(): string {
+      return JSON.stringify({
+        upsModel,
+        upsSerial,
+        doorOpen: isDoorOpen,
+        sidesVisible: areSidesVisible,
+        traffic: isTrafficRunning,
+        autoRotate: !!controls?.autoRotate,
+        intensity: Math.round(trafficIntensity * 100)
+      })
+    }
+    function queueHudSettings() {
+      if (hudTimer) clearTimeout(hudTimer)
+      hudTimer = setTimeout(() => emit('save-settings', hudSnapshot()), 400)
+    }
+
+    // Replay the stored settings onto the already-built scene, reusing the same handlers so the
+    // button labels and colours stay in sync with the state.
+    function applyStoredHudSettings() {
+      if (initialHud.doorOpen === true && !isDoorOpen) toggleDoor()
+      if (initialHud.sidesVisible === false && areSidesVisible) btnSides.click()
+      if (initialHud.traffic === false && isTrafficRunning) btnTraffic.click()
+      if (initialHud.autoRotate === true && !controls.autoRotate) btnAutoRotate.click()
+      if (typeof initialHud.intensity === 'number' && initialHud.intensity >= 5 && initialHud.intensity <= 100) {
+        sliderIntensity.value = String(initialHud.intensity)
+        trafficIntensity = initialHud.intensity / 100
+        intensityVal.textContent = `${initialHud.intensity}%`
+      }
+      inputUpsSn.value = upsSerial
+    }
+
+    applyStoredHudSettings()
 
     // Mobile HUD toggle
     const toggleHudBtn = $('toggle-hud-btn')
@@ -2421,10 +2487,10 @@ onMounted(async () => {
 
         <!-- Helper Hint -->
         <div class="pt-2.5 border-t border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
-          <p>• <strong class="text-slate-300">Geser Kamera (Pan):</strong> Klik kiri + drag mouse untuk menggeser posisi kamera.</p>
-          <p>• <strong class="text-slate-300">Putar 3D (Orbit):</strong> Klik kanan + drag (atau Shift + drag) untuk memutar sudut pandang.</p>
-          <p>• <strong class="text-slate-300">Cursor Zoom:</strong> Scroll wheel memperbesar tepat ke arah kursor mouse.</p>
-          <p>• <strong class="text-slate-300">Edit & Pintu Kaca:</strong> Klik switch atau pintu kaca di 3D untuk berinteraksi.</p>
+          <p>• <strong class="text-slate-300">Pan camera:</strong> Left click + drag to slide the camera across the rack.</p>
+          <p>• <strong class="text-slate-300">Orbit:</strong> Right click + drag (or Shift + drag) to rotate the viewpoint.</p>
+          <p>• <strong class="text-slate-300">Cursor zoom:</strong> Scroll wheel zooms straight toward the pointer.</p>
+          <p>• <strong class="text-slate-300">Edit &amp; glass door:</strong> Click a switch or the glass door in the 3D view to interact.</p>
         </div>
       </div>
     </div>

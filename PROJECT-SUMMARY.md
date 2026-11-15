@@ -5234,3 +5234,30 @@ VERIFIKASI (browser, RACK A 42U, 12 switch awal, OTB di U42):
 - Rename lewat input hostname -> PUT tersimpan di register (terbukti dari GET).
 - Setelah add, editor tetap menampilkan switch baru (SW-EDGE-15), bukan baris pertama.
 - Data uji sudah dihapus; register kembali 12 switch (BTCAP004 + DUMMY-SW-01..11).
+### Setting HUD (UPS + Telemetry) Tersimpan Per Rak (2026-11-15)
+
+Laporan HIRO: UPS yang ditambah/dihapus dan setting telemetry reset setiap modal ditutup-buka, di
+semua rak. Penyebabnya: `upsModel`, `upsSerial`, `isDoorOpen`, `areSidesVisible`, `isTrafficRunning`,
+`trafficIntensity` dan auto-orbit hanya variabel lokal komponen, jadi hilang setiap remount.
+
+Solusi: simpan per rak di database, sebagai satu kolom JSON.
+- API: `NetworkRack.HudSettings` (nvarchar(max), default '') + migrasi `20261115070305_AddRackHudSettings`;
+  endpoint baru `PUT /api/network/floor-maps/{floorId}/racks/{rackId}/hud-settings` body `{ settings }`
+  (max 4000 karakter); `hudSettings` ikut di GET detail dan ToDto.
+  Blob JSON sengaja opaque: menambah toggle di HUD tidak perlu migrasi lagi.
+- Web: prop `hudSettings` + emit `save-settings` (debounce 400 ms) dari Rack3DView; halaman memanggil
+  `apiSaveRackHudSettings` lalu memperbarui `selectedRackDetail.hudSettings` supaya buka-ulang tidak
+  perlu GET tambahan. Saat mount, `parseHudSettings` membekukan nilai SEBELUM geometri dibangun
+  (upsModel menentukan tinggi UPS), lalu `applyStoredHudSettings` memutar ulang door/sides/traffic/
+  orbit/intensity lewat handler tombol yang sama supaya label + warnanya ikut benar.
+- `types/index.ts`: `hudSettings?` di `NetworkRack` + alias `NetworkRackDetail = NetworkRack`
+  (alias ini sebelumnya TIDAK ADA padahal diimpor halaman - typecheck lolos karena build Nuxt tidak
+  menjalankan tsc).
+
+Hint di tab Telemetry juga diterjemahkan ke bahasa Inggris (`#view-rack` hint block).
+
+VERIFIKASI (browser, RACK A): set UPS 5000VA + S/N TEST-SN-1234, buka pintu, pause traffic,
+intensity 40% -> GET detail berisi JSON tersebut -> tutup & buka modal -> UPS 5000 masih aktif,
+S/N masih TEST-SN-1234, pintu "Open (Click to Close)", traffic "Paused", intensity 40%.
+UPS "None" juga bertahan (badge jadi 30U Free). Default rak dikembalikan: 3000VA / AS2408190442 /
+pintu tertutup / traffic aktif / 75%.

@@ -377,6 +377,10 @@ namespace Api.Data.Migrations
                     b.Property<int>("FloorMapId")
                         .HasColumnType("int");
 
+                    b.Property<string>("HudSettings")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(60)

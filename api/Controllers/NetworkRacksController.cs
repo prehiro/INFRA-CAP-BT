@@ -10,6 +10,7 @@ namespace Api.Controllers;
 public record RackInput(string? Name, string? Description, double X, double Y, int? SizeU = null);
 public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position);
 public record SwitchPosition(string? IpAddress, string? Hostname, string? Position);
+public record RackHudSettingsInput(string? Settings);
 
 [ApiController]
 [Route("api/network/floor-maps/{floorId:int}/racks")]
@@ -21,6 +22,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     private const int MaxIpLength = 45;
     private const int MaxHostnameLength = 160;
     private const int MaxPositionLength = 100;
+    private const int MaxHudSettingsLength = 4000;
 
     // The sizes the UI offers. Kept server-side too so a hand-made request cannot store a 3U cabinet
     // that the 3D model would then have to render.
@@ -75,6 +77,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                 x.Y,
                 x.SizeU,
                 x.CreatedAt,
+                x.HudSettings,
                 Switches = x.Switches.OrderBy(s => s.Hostname).Select(s => new
                 {
                     s.Id,
@@ -146,6 +149,24 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         rack.Y = input.Y;
         await db.SaveChangesAsync(ct);
         return Ok(ToDto(rack));
+    }
+
+    // The 3D panel's own settings, stored per rack. Kept as an opaque JSON string: the panel owns the
+    // shape, so adding a toggle there does not need another migration.
+    [HttpPut("{id:int}/hud-settings")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SaveHudSettings(int floorId, int id, RackHudSettingsInput input, CancellationToken ct)
+    {
+        var rack = await db.NetworkRacks.SingleOrDefaultAsync(x => x.Id == id && x.FloorMapId == floorId, ct);
+        if (rack is null) return NotFound();
+
+        var settings = input.Settings?.Trim() ?? string.Empty;
+        if (settings.Length > MaxHudSettingsLength)
+            return BadRequest(new { message = $"HUD settings must be at most {MaxHudSettingsLength} characters." });
+
+        rack.HudSettings = settings;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     [HttpDelete("{id:int}")]
@@ -240,6 +261,6 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         return null;
     }
 
-    private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.SizeU, r.CreatedAt, SwitchCount = r.Switches.Count };
+    private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.SizeU, r.HudSettings, r.CreatedAt, SwitchCount = r.Switches.Count };
     private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.CreatedAt };
 }

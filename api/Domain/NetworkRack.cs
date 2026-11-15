@@ -11,6 +11,11 @@ public class NetworkRack
     // Cabinet height in rack units. Drives the 3D cabinet and the free-U maths, so it is stored
     // per rack instead of being a constant of the viewer.
     public int SizeU { get; set; } = 42;
+
+    // Free-form JSON blob holding the 3D panel's own per-rack settings (UPS model + serial, door and
+    // side-panel state, traffic simulation, orbit, intensity). The HUD settings used to live only in
+    // the component, so every close/reopen of the modal silently reset them.
+    public string HudSettings { get; set; } = string.Empty;
     // Fraction of image width/height (0..1), independent of screen size.
     public double X { get; set; }
     public double Y { get; set; }

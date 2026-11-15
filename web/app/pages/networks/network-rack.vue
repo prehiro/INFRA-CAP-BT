@@ -375,6 +375,22 @@ async function performDeleteSwitch(sw: NetworkSwitch) {
 
 // The 3D HUD mirrors the rack detail, so a delete it starts has to go through the same API path
 // as the register's own delete button - otherwise the row survives the modal being closed.
+// The 3D panel's own settings (UPS, door, toggles) are stored on the rack so reopening the modal
+// does not reset them. Kept silent on purpose: these are small background saves, not user actions
+// that deserve a toast.
+async function saveHudSettingsFromRack3D(settings: string) {
+  if (!isAdmin.value || !floor.value || !selectedRackDetail.value) return
+  const floorId = floor.value.id
+  const rackId = selectedRackDetail.value.id
+  try {
+    await apiSaveRackHudSettings(floorId, rackId, settings)
+    // Keep the local copy in step so a reopen reads what was just saved without another GET
+    selectedRackDetail.value = { ...selectedRackDetail.value, hudSettings: settings }
+  } catch (e) {
+    toast.add({ title: message(e), color: 'error' })
+  }
+}
+
 // The 3D panel never writes to the database itself: it asks the page, which owns the API call and
 // the refreshed rack detail. Without this the added/edited switch only existed in the canvas and
 // disappeared on the next modal open.
@@ -674,8 +690,9 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         <template #body>
           <div v-if="selectedRackDetail">
             <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"
-              :total-u="selectedRackDetail.sizeU" @delete-switch="deleteSwitchFromRack3D"
-              @save-switch="saveSwitchFromRack3D"
+              :total-u="selectedRackDetail.sizeU" :hud-settings="selectedRackDetail.hudSettings || ''"
+              @delete-switch="deleteSwitchFromRack3D" @save-switch="saveSwitchFromRack3D"
+              @save-settings="saveHudSettingsFromRack3D"
               class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
           </div>
         </template>

@@ -94,6 +94,9 @@ export const apiMoveNetworkRack = (floorId: number, id: number, x: number, y: nu
 export const apiDeleteNetworkRack = (floorId: number, id: number) =>
   request<void>(`/network/floor-maps/${floorId}/racks/${id}`, { method: 'DELETE' })
 
+export const apiSaveRackHudSettings = (floorId: number, rackId: number, settings: string) =>
+  request<void>(`/network/floor-maps/${floorId}/racks/${rackId}/hud-settings`, { method: 'PUT', body: { settings } })
+
 export const apiAddNetworkSwitch = (floorId: number, rackId: number, sw: NetworkSwitchInput) =>
   request<NetworkSwitch>(`/network/floor-maps/${floorId}/racks/${rackId}/switches`, { method: 'POST', body: sw })
 export const apiUpdateNetworkSwitch = (floorId: number, rackId: number, switchId: number, sw: NetworkSwitchInput) =>

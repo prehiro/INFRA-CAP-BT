@@ -31,7 +31,12 @@ export interface NetworkRack {
   createdAt: string
   switchCount: number
   switches: NetworkSwitch[]
+  /** Opaque JSON the 3D panel owns: UPS model + S/N, door, side panels, traffic, orbit. */
+  hudSettings?: string
 }
+// The detail payload IS the rack with its switches; it has no switchCount (only the list endpoint
+// does), so it is spelled out instead of being left as an unresolved import name.
+export type NetworkRackDetail = NetworkRack
 export interface NetworkRackSummary {
   id: number
   name: string
