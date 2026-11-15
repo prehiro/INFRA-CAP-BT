@@ -299,16 +299,14 @@ onMounted(async () => {
     floor.receiveShadow = true
     scene.add(floor)
 
-    // Floor grid, drawn in a shader instead of a GridHelper so the lines can carry a running light.
-    // Two very slow accent sweeps travel across the floor (one diagonal, one perpendicular) and only
-    // the grid lines light up where they pass, so it reads as current travelling along the cabling
-    // grid rather than a glowing blob. Everything is deliberately low-contrast: the lines sit near
-    // the old GridHelper colour and the sweep adds at most a fraction of the accent on top.
+    // Floor grid, drawn in a shader instead of a GridHelper so the lines can breathe. Every line is
+    // tinted with the live theme accent and its brightness swells and settles on a slow five-second
+    // cycle, with a small radial delay so the floor reads as one slow inhale rather than a blink.
+    // Kept deliberately low-contrast: resting lines are dim, the swell never washes out the rack.
     const FLOOR_GRID_SIZE = 44
     const floorLightUniforms = {
       uTime: { value: 0 },
       uAccent: { value: accentColor.clone() },
-      uTraffic: { value: 0.75 },
       uSize: { value: FLOOR_GRID_SIZE }
     }
 
@@ -326,7 +324,6 @@ onMounted(async () => {
       fragmentShader: `
         uniform float uTime;
         uniform vec3 uAccent;
-        uniform float uTraffic;
         uniform float uSize;
         varying vec2 vUv;
 
@@ -338,60 +335,35 @@ onMounted(async () => {
           return clamp(line, 0.0, 1.0);
         }
 
-        float hash11(float n) {
-          return fract(sin(n * 12.9898) * 43758.5453);
-        }
-
-        // A soft pulse travelling ALONG a grid line, never across it: 'along' is the coordinate down
-        // the line and 'seed' picks a per-line phase offset so neighbouring lines are not in step.
-        // The gaussian fades to nothing well inside the line, so a lit stretch never ends abruptly
-        // the way a crossing sweep does.
-        float linePulse(float along, float seed) {
-          float period = 6.5;
-          float phase = along * 0.5 - uTime * 0.62 * (0.45 + uTraffic) + hash11(seed) * period;
-          float t = fract(phase / period) - 0.5;
-          // Narrow and baseline-subtracted: the resting value of the gaussian is subtracted so a line
-          // is completely unlit unless the pulse is actually on it. Without this every line picks up
-          // a permanent accent wash and the floor reads green all over.
-          return max(exp(-t * t * 55.0) - 0.01, 0.0) / 0.99;
-        }
-
         void main() {
           vec2 p = (vUv - 0.5) * uSize;
+          float radius = length(p);
 
           float minor = gridMask(p, 0.5, 1.0);
           float major = gridMask(p, 2.0, 1.4);
 
-          // Which family of line is this pixel on? gMinor.x is the distance to the nearest line of
-          // constant x (a line running along z), gMinor.y the other way round. The pulse then runs
-          // down the line the pixel actually sits on.
-          vec2 gc = p / 0.5;
-          vec2 g = abs(fract(gc - 0.5) - 0.5) / max(fwidth(gc), vec2(1e-5));
-          bool alongZ = g.x < g.y;
-          float along = alongZ ? p.y : p.x;
-          float seed = alongZ ? p.x : p.y;
-
-          float pulse = linePulse(along, seed);
-          // Second, slower family travelling the other way so the floor never looks metronomic.
-          float pulse2 = linePulse(alongZ ? p.x : p.y, seed + 11.0);
+          // Past a few metres the 0.5 m lines are thinner than a pixel and would shimmer into moire.
+          minor *= 1.0 - smoothstep(7.0, 16.0, radius);
 
           float lineMask = max(minor * 0.55, major * 0.85);
-          float sweep = pulse + pulse2 * 0.28;
-          float glow = lineMask * (0.015 + sweep * 0.95);
+
+          // Breathing glow: one slow swell (about five seconds) that runs slightly later the further
+          // out you look, so the whole floor inhales instead of blinking in place.
+          float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 0.16);
+
+          // The lines themselves are the accent colour and their brightness is what breathes; the
+          // resting state stays dim so the effect reads as a glow, never as a lamp.
+          vec3 lineColor = uAccent * (0.32 + breathe * 0.46);
+          float glow = lineMask * (0.11 + breathe * 0.44);
 
           // The plane must not show an edge: the grid keeps running far past the rack and only
           // dissolves near the horizon, so no line ever appears to stop in mid-air.
-          float radius = length(p);
           float fade = 1.0 - smoothstep(uSize * 0.31, uSize * 0.47, radius);
-          // Fade the fine 0.5 m lines out sooner than the 2 m ones: past that distance they are
-          // thinner than a pixel and would shimmer into moire.
-          minor *= 1.0 - smoothstep(7.0, 16.0, radius);
 
-          vec3 baseLine = mix(vec3(0.098, 0.137, 0.192), vec3(0.184, 0.259, 0.369), major);
-          vec3 color = baseLine + uAccent * glow * 1.05;
-          float alpha = ((minor * 0.55 + major * 0.75) * 0.55 + glow * 0.62) * fade;
+          vec3 color = lineColor * (0.62 + breathe * 0.38) + uAccent * glow * 0.3;
+          float alpha = glow * fade;
 
-          gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.85));
+          gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.6));
         }
       `
     })
@@ -2471,10 +2443,8 @@ let accentPoll = 0
         }
       }
 
-      // Running light on the floor grid: driven here so it reacts to the traffic slider like the
-      // switch LEDs do, and never advances while the tab is throttled.
+      // Floor grid breathing: advanced per frame so it never runs while the tab is throttled.
       floorLightUniforms.uTime.value += delta
-      floorLightUniforms.uTraffic.value = trafficIntensity
 
       accentPoll += delta
       if (accentPoll > 0.5) {

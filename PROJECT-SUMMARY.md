@@ -5639,3 +5639,30 @@ VERIFIKASI di browser (1400x900, drawer di-collapse):
 - Set `--ui-primary` = rgb(168,85,247) saat modal terbuka -> dalam ~1 detik pulsa lantai, glow bawah
   rack, rim light, mark ikon dan tombol jadi violet, tidak ada sisa hijau di lantai.
 Build exit 0.
+### Grid Lantai: Breathing Glow (menggantikan running light) (2026-11-15)
+
+HIRO: "hapus saja efeknya floor nya ganti dengan line nya breathing glow dan warnanya mengikuti warna
+aksen color yang sedang dipakai user".
+
+- SELURUH kode running light DIHAPUS, bukan disembunyikan: `hash11()`, `linePulse()`, logika
+  `alongZ`/`along`/`seed`, dua keluarga pulsa, dan uniform `uTraffic` (tidak dipakai lagi).
+  Grep membuktikan 0 sisa referensi `linePulse` / `hash11` / `uTraffic`.
+- GANTINYA satu napas global di fragment shader:
+  `float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 0.16);` -> siklus ~5 detik, dengan
+  `- radius * 0.16` sebagai delay radial kecil supaya lantai terasa "menarik napas" dari dalam ke
+  luar, bukan berkedip serentak.
+- Garisnya sendiri yang diberi warna aksen: `lineColor = uAccent * (0.32 + breathe * 0.46)`,
+  brightness `color = lineColor * (0.62 + breathe * 0.38) + uAccent * glow * 0.3`, alpha
+  `glow * fade` di-clamp 0.6. Minor 0.5 m tetap diredupkan di kejauhan (`1 - smoothstep(7,16,r)`)
+  supaya tidak moire; fade horizon `1 - smoothstep(31%..47%)` dari plane 44 m tetap ada, jadi garis
+  tidak terpotong.
+- Warna tetap LIVE: `uAccent` ada di registry `accentFollowers`, `refreshAccent()` membaca
+  `--ui-primary` tiap 0.5 s dari animate().
+
+VERIFIKASI (browser 1400x900, drawer di-collapse, tab di Page.bringToFront - tab background membekukan
+rAF dan membuat efek tampak mati):
+- Dua frame berjarak 2.4 s: 20.254 px area lantai berubah, p99 kanal hijau garis 93 -> 103 (swell),
+  dan tidak ada lagi pulsa yang berjalan.
+- `--ui-primary` diubah ke rgb(168,85,247) saat modal terbuka: seluruh garis lantai, glow bawah rack,
+  rim light dan tombol jadi violet dalam ~1 detik, tanpa sisa hijau.
+Build exit 0.
