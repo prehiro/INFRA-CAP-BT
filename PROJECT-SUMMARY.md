@@ -5442,3 +5442,27 @@ Perubahan di `Rack3DView.vue`:
 VERIFIKASI: dua frame berjarak 0.4 s di area canvas berbeda 8440 px (3.45%) - LED benar-benar
 berkedip. Crop satu switch menunjukkan 4 grup port dengan strip kuning di bawahnya + LED biru di
 kiri. Mint-green stripe sudah tidak ada lagi. Build exit 0.
+### Faceplate Cisco 2960-X: Layout Ulang Sesuai Foto HD (2026-11-15)
+
+HIRO: "masih kurang mirip, ini gambar yang lebih hd". Faceplate switch dibangun ulang mengikuti
+referensi foto Catalyst 2960-X 48 port:
+
+Tata letak baru di dalam `buildSwitch` (Rack3DView.vue):
+- Lebar faceplate dibagi: blok kiri 0.072 m (services), area port, blok kanan 0.052 m (uplink).
+- 4 GRUP x 12 PORT (2 baris x 6 kolom) dengan jarak antar grup 0.0072 m, tiap grup punya frame
+  terangkat sendiri (matSwitchGroupFrame).
+- PITA LED KUNING di bawah tiap grup (matLedBand) - LED port yang berkedip ditempatkan di dalam pita
+  ini, 12 per grup, jadi terbaca sebagai strip seperti aslinya.
+- Blok kiri: 2 RJ45 terisolasi + 2 port console + tombol mode + 5 LED status biru + badge hostname/IP
+  kecil di sudut bawah.
+- Blok kanan: 4 SFP+ cage dalam susunan 2x2 + kolom 4 LED status (2 berkedip biru) + kabel fiber
+  untuk dua cage teratas.
+- Top rail lebih terang (matSwitchTopRail) dengan TEKSTUR CETAK `createSwitchTopLabelTexture`:
+  wordmark CISCO, "LAN BASE", label rentang port (1x/12x/13x/24x/25x/36x/37x/48x) di atas tiap grup,
+  dan "Catalyst 2960-X Series" di kanan. Transparan supaya metalnya tetap terlihat.
+- Tone: bezel 0x2a3340, rail 0x3f4a56, frame grup 0x232b34 (lebih gelap dari plate, seperti recess
+  asli), pita LED 0x8a7420.
+- `LED_COUNT_PER_SWITCH` naik 57 -> 61 (48 pita + 4 SFP + 5 status kiri + 4 status uplink).
+
+VERIFIKASI: dua frame 0.4 s berbeda 1201 px (0.49%) - LED masih berkedip; terukur 2871 px kuning
+(pita) di area switch. Build exit 0.

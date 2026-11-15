@@ -500,13 +500,33 @@ onMounted(async () => {
       envMapIntensity: 0.12
     })
     const matSwitchBezel = new THREE.MeshStandardMaterial({
-      color: 0x2c333b,
+      color: 0x2a3340,
       roughness: 0.8,
       metalness: 0.2,
       envMapIntensity: 0.15
     })
     // A muted accent, not a neon strip. This face is the brightest thing on screen at close zoom, and
     // at full accent colour it read as a glaring green bar along every switch.
+    // Catalyst faceplate furniture: a lighter brushed rail along the top edge, a slightly raised
+    // frame around each 12-port group, and the painted yellow LED band under the groups.
+    const matSwitchTopRail = new THREE.MeshStandardMaterial({
+      color: 0x3f4a56,
+      roughness: 0.62,
+      metalness: 0.45,
+      envMapIntensity: 0.15
+    })
+    const matSwitchGroupFrame = new THREE.MeshStandardMaterial({
+      color: 0x232b34,
+      roughness: 0.8,
+      metalness: 0.2,
+      envMapIntensity: 0.1
+    })
+    const matLedBand = new THREE.MeshStandardMaterial({
+      color: 0x8a7420,
+      roughness: 0.95,
+      metalness: 0.05,
+      envMapIntensity: 0.05
+    })
     const matCiscoTeal = new THREE.MeshStandardMaterial({
       color: accentColor.clone().multiplyScalar(0.38),
       roughness: 0.7,
@@ -833,7 +853,7 @@ onMounted(async () => {
     selectedSwitchId = switchesData[0]?.id ?? null
 
     // LED InstancedMesh State (Rebuilt cleanly whenever switches are added/removed/moved)
-    const LED_COUNT_PER_SWITCH = 48 + 4 + 5 // 57 LEDs per 1U switch
+    const LED_COUNT_PER_SWITCH = 48 + 4 + 5 + 4 // 61: 48 port-band + 4 SFP + 5 status + 4 uplink status
     const ledGeo = new THREE.BoxGeometry(0.0024, 0.0018, 0.0015)
     // Unlit and therefore unaffected by exposure: pure white made these the brightest pixels on screen
     // once the door was open. A soft blue-white keeps them reading as LEDs without the glare.
@@ -948,6 +968,52 @@ onMounted(async () => {
     }
 
     // Build Bottom APC Smart-UPS 3D Mesh (Always U01..U02 for 3000VA, U01..U03 for 5000VA)
+    // Printed legend across the top rail: the Cisco wordmark on the left, the port-group ranges
+    // (1x/12x/13x/24x ...) over each group, and the series name on the right. Drawn as a transparent
+    // texture so the brushed rail shows through, exactly like the silk-screen on the real faceplate.
+    function createSwitchTopLabelTexture(groupT: number[], groupB: number[]) {
+      const canvas = document.createElement('canvas')
+      canvas.width = 2048
+      canvas.height = 96
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return null as unknown as THREE.Texture
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      ctx.textBaseline = 'middle'
+      ctx.fillStyle = 'rgba(226, 235, 244, 0.86)'
+
+      // Cisco wordmark, left end
+      ctx.font = '600 40px Inter, sans-serif'
+      ctx.textAlign = 'left'
+      ctx.fillText('CISCO', 26, 44)
+
+      // "LAN BASE" block between the services block and the first port group
+      ctx.font = '600 20px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(200, 212, 224, 0.55)'
+      ctx.fillText('LAN BASE', 250, 46)
+
+      // Port-range labels sitting on the group edges
+      ctx.font = '600 22px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(226, 235, 244, 0.72)'
+      for (let g = 0; g < groupT.length; g++) {
+        ctx.textAlign = 'left'
+        ctx.fillText(`${g * 12 + 1}x`, groupT[g] * canvas.width + 4, 44)
+        ctx.textAlign = 'right'
+        ctx.fillText(`${g * 12 + 12}x`, groupB[g] * canvas.width - 4, 44)
+      }
+
+      // Series name, right end
+      ctx.textAlign = 'right'
+      ctx.font = '500 20px Inter, sans-serif'
+      ctx.fillStyle = 'rgba(200, 212, 224, 0.6)'
+      ctx.fillText('Catalyst 2960-X Series', canvas.width - 24, 46)
+
+      const tex = new THREE.CanvasTexture(canvas)
+      tex.colorSpace = THREE.SRGBColorSpace
+      tex.anisotropy = 4
+      return tex
+    }
+
     function buildUpsMesh() {
       const upsU = getUpsHeightU()
       if (upsU === 0) return
@@ -1195,7 +1261,9 @@ onMounted(async () => {
         switchGroup.add(hitbox)
         interactiveHitboxes.push(hitbox)
 
-        // 2. Front Faceplate Bezel
+        // 2. Front Faceplate: graphite plate with a lighter brushed rail along the top edge, the way
+        //    a Catalyst 2960-X is laid out. Left: services block. Middle: 4 groups of 12 ports, each
+        //    with its own raised frame and a painted yellow LED band underneath. Right: uplinks.
         const faceplate = new THREE.Mesh(
           new THREE.BoxGeometry(chassisWidth, chassisHeight, 0.006),
           matSwitchBezel
@@ -1203,66 +1271,84 @@ onMounted(async () => {
         faceplate.position.set(0, 0, 0.001)
         switchGroup.add(faceplate)
 
-        // Top edge strip. On the real faceplate this is plain brushed metal, not a coloured bar - the
-        // accent version also read as a bright green line at close zoom. Only the selected switch is
-        // tinted, so the edit target stays obvious.
-        const accentMat = isSelected
-          ? new THREE.MeshBasicMaterial({ color: 0xfbbf24 })
-          : matSwitchChassis
-        const accentStripe = new THREE.Mesh(
-          new THREE.BoxGeometry(chassisWidth - 0.004, 0.0034, 0.0072),
-          accentMat
+        const railH = chassisHeight * 0.18
+        const topRail = new THREE.Mesh(
+          new THREE.BoxGeometry(chassisWidth, railH, 0.0064),
+          isSelected ? new THREE.MeshBasicMaterial({ color: 0xfbbf24 }) : matSwitchTopRail
         )
-        accentStripe.position.set(0, chassisHeight / 2 - 0.0022, 0.0016)
-        switchGroup.add(accentStripe)
+        topRail.position.set(0, chassisHeight / 2 - railH / 2, 0.0013)
+        switchGroup.add(topRail)
 
-        // 3. Left & Right Rack-Mounting Ears with Chrome Screws
-        const switchEarSides = [-1, 1]
-        switchEarSides.forEach(side => {
-          const ear = new THREE.Mesh(
-            new THREE.BoxGeometry(0.021, chassisHeight, 0.004),
-            matSwitchChassis
+        // ---- layout -------------------------------------------------------
+        const halfW = chassisWidth / 2
+        const leftBlockW = 0.072
+        const rightBlockW = 0.052
+        const groupGap = 0.0072
+        const portAreaX = -halfW + leftBlockW
+        const groupW = (chassisWidth - leftBlockW - rightBlockW - groupGap * 3) / 4
+        const colPitch = groupW / 6
+        const portW = colPitch * 0.80
+        const portH = chassisHeight * 0.30
+        const rowY = [chassisHeight * 0.155, -chassisHeight * 0.115]
+        const bandY = -chassisHeight * 0.40
+
+        // Group range labels (1x/12x/13x/24x ...) are printed over each group on the top rail.
+        const groupT: number[] = []
+        const groupB: number[] = []
+        for (let g = 0; g < 4; g++) {
+          const gx = portAreaX + g * (groupW + groupGap)
+          groupT.push((gx + halfW) / chassisWidth)
+          groupB.push((gx + groupW + halfW) / chassisWidth)
+        }
+        const labelTex = createSwitchTopLabelTexture(groupT, groupB)
+        if (labelTex) {
+          const labelMesh = new THREE.Mesh(
+            new THREE.PlaneGeometry(chassisWidth, railH),
+            new THREE.MeshBasicMaterial({ map: labelTex, transparent: true })
           )
-          ear.position.set(side * (chassisWidth / 2 + 0.0105), 0, 0.002)
-          switchGroup.add(ear)
+          labelMesh.position.set(0, chassisHeight / 2 - railH / 2, 0.0047)
+          switchGroup.add(labelMesh)
+        }
 
-          const earScrewOffsets = [-0.013, 0.013]
-          earScrewOffsets.forEach(sy => {
-            const screw = new THREE.Mesh(
-              new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 10),
-              matScrewChrome
-            )
-            screw.rotation.x = Math.PI / 2
-            screw.position.set(side * (chassisWidth / 2 + 0.0105), sy, 0.0045)
-            switchGroup.add(screw)
-          })
-        })
+        // ---- left services block: 2 isolated RJ45 + 2 console ports ----
+        const svcX = -halfW + 0.021
+        const conX = -halfW + 0.040
+        for (let row = 0; row < 2; row++) {
+          const svcHousing = new THREE.Mesh(new THREE.BoxGeometry(portW, portH, 0.003), matPortMetal)
+          svcHousing.position.set(svcX, rowY[row], 0.0042)
+          switchGroup.add(svcHousing)
 
-        // 4. Left Section: Dynamic Cisco + Hostname + IP Badge + System LEDs
+          const svcCavity = new THREE.Mesh(new THREE.BoxGeometry(portW * 0.76, portH * 0.72, 0.0034), matPortCavity)
+          svcCavity.position.set(svcX, rowY[row] - 0.0004, 0.0044)
+          switchGroup.add(svcCavity)
+
+          const con = new THREE.Mesh(new THREE.BoxGeometry(0.0072, 0.0056, 0.003), matPortMetal)
+          con.position.set(conX, rowY[row], 0.0042)
+          switchGroup.add(con)
+        }
+
+        // Badge (model + hostname + IP) tucked into the lower left, where the PoE marker sits on the
+        // real faceplate, so the port area stays clean.
         const shortModel = cfg.model.replace('Catalyst ', 'C')
         const badgeTex = createCiscoBadgeTexture(shortModel, cfg.hostname, cfg.ip)
         const badgeMesh = new THREE.Mesh(
-          new THREE.PlaneGeometry(0.088, 0.023),
+          new THREE.PlaneGeometry(0.070, 0.0183),
           new THREE.MeshBasicMaterial({ map: badgeTex, transparent: true })
         )
-        badgeMesh.position.set(-0.172, 0.0055, 0.0046)
+        badgeMesh.position.set(-halfW + 0.040, bandY, 0.0046)
         switchGroup.add(badgeMesh)
         switchBadgeRefs.set(cfg.id, { mesh: badgeMesh, model: shortModel })
 
-        // Mode Button
-        const modeBtn = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.0034, 0.0034, 0.004, 12),
-          matPortMetal
-        )
+        // Mode button + 5 system LEDs above the services block
+        const modeBtn = new THREE.Mesh(new THREE.CylinderGeometry(0.0032, 0.0032, 0.004, 12), matPortMetal)
         modeBtn.rotation.x = Math.PI / 2
-        modeBtn.position.set(-0.207, -0.0115, 0.0045)
+        modeBtn.position.set(-halfW + 0.056, chassisHeight * 0.30, 0.0045)
         switchGroup.add(modeBtn)
 
-        // 5 System Status LEDs
         for (let sys = 0; sys < 5; sys++) {
-          const lx = -0.194 + sys * 0.011
-          const ly = -0.0115
-          dummyObj.position.set(lx, yPos + ly, zFront + 0.0046)
+          const lx = -halfW + 0.008 + sys * 0.0068
+          const ly = chassisHeight * 0.30
+          dummyObj.position.set(lx, yPos + ly, zFront + 0.0048)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
           ledInstancedMesh.setColorAt(ledIndex, sys === 4 ? COLOR_AMBER_ON : COLOR_CYAN_ON)
@@ -1277,59 +1363,49 @@ onMounted(async () => {
           ledIndex++
         }
 
-        // 5. Center Section: 48 RJ45 Ports (24 Columns x 2 Rows)
-        const startPortX = -0.120
-        const colSpacing = 0.0109
-        const blockGap = 0.005
-        const rowYOffsets = [0.0068, -0.0072]
+        // ---- 4 x 12 ports, each group framed with a yellow LED band underneath ----
+        for (let g = 0; g < 4; g++) {
+          const gx = portAreaX + g * (groupW + groupGap)
 
-        for (let col = 0; col < 24; col++) {
-          const blockIndex = Math.floor(col / 6)
-          const px = startPortX + col * colSpacing + blockIndex * blockGap
-
-          for (let row = 0; row < 2; row++) {
-            const py = rowYOffsets[row]
-
-            const housing = new THREE.Mesh(
-              new THREE.BoxGeometry(0.0094, 0.0086, 0.003),
-              matPortMetal
-            )
-            housing.position.set(px, py, 0.0042)
-            switchGroup.add(housing)
-
-            const cavity = new THREE.Mesh(
-              new THREE.BoxGeometry(0.0072, 0.0062, 0.0034),
-              matPortCavity
-            )
-            cavity.position.set(px, py - 0.0004, 0.0044)
-            switchGroup.add(cavity)
-
-            // (port LEDs are placed below, as one yellow strip per 12-port group)
-          }
-        }
-
-        // Port activity LEDs. On the real faceplate these are not one dot above every port: they form
-        // a yellow strip of 12 LEDs running under each 12-port group. Same 48 LEDs, same instancing,
-        // just laid out the way the actual hardware shows them.
-        const ledStripY = -0.0128
-        const ledStripSpacing = colSpacing / 2
-        for (let group = 0; group < 4; group++) {
-          const groupX = startPortX + group * 6 * colSpacing + group * blockGap
-
-          const stripBase = new THREE.Mesh(
-            new THREE.BoxGeometry(5.75 * colSpacing, 0.0032, 0.0009),
-            new THREE.MeshStandardMaterial({ color: 0x1d1708, roughness: 0.95, metalness: 0 })
+          const frame = new THREE.Mesh(
+            new THREE.BoxGeometry(groupW + 0.0012, portH * 2 + 0.009, 0.0012),
+            matSwitchGroupFrame
           )
-          stripBase.position.set(groupX + 2.75 * colSpacing, ledStripY, 0.0042)
-          switchGroup.add(stripBase)
+          frame.position.set(gx + groupW / 2, (rowY[0] + rowY[1]) / 2, 0.0035)
+          switchGroup.add(frame)
+
+          for (let col = 0; col < 6; col++) {
+            const px = gx + colPitch * (col + 0.5)
+
+            for (let row = 0; row < 2; row++) {
+              const housing = new THREE.Mesh(new THREE.BoxGeometry(portW, portH, 0.003), matPortMetal)
+              housing.position.set(px, rowY[row], 0.0044)
+              switchGroup.add(housing)
+
+              const cavity = new THREE.Mesh(
+                new THREE.BoxGeometry(portW * 0.76, portH * 0.72, 0.0034),
+                matPortCavity
+              )
+              cavity.position.set(px, rowY[row] - 0.0004, 0.0046)
+              switchGroup.add(cavity)
+            }
+          }
+
+          // Painted yellow band; the blinking LEDs sit inside it, 12 per group.
+          const band = new THREE.Mesh(
+            new THREE.BoxGeometry(groupW, chassisHeight * 0.085, 0.0009),
+            matLedBand
+          )
+          band.position.set(gx + groupW / 2, bandY, 0.0040)
+          switchGroup.add(band)
 
           for (let i = 0; i < 12; i++) {
-            const lx = groupX + i * ledStripSpacing
-            dummyObj.position.set(lx, yPos + ledStripY + 0.0004, zFront + 0.0052)
+            const lx = gx + (i + 0.5) * (colPitch / 2)
+            dummyObj.position.set(lx, yPos + bandY, zFront + 0.0048)
             dummyObj.updateMatrix()
             ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
 
-            const portNum = (group * 6 + (i % 6)) * 2 + Math.floor(i / 6)
+            const portNum = g * 12 + Math.floor(i / 6) * 6 + (i % 6)
             const isPortActive = portNum < cfg.activePorts
             const isPoEPort = isPortActive && (portNum % 5 === 0)
 
@@ -1351,58 +1427,83 @@ onMounted(async () => {
           }
         }
 
-        // 6. Right Section: 4x 10G SFP+ Uplink Cages + Fiber Patch Cords
-        const sfpStartX = 0.168
-        for (let sfp = 0; sfp < 4; sfp++) {
-          const sx = sfpStartX + sfp * 0.0135
-          const sy = -0.001
+        // ---- right block: 2 x 2 SFP+ cages + a column of status LEDs ----
+        const sfpCols = [halfW - 0.040, halfW - 0.020]
+        let sfpSeq = 0
+        for (let row = 0; row < 2; row++) {
+          for (let c = 0; c < 2; c++) {
+            const sx = sfpCols[c]
+            const sy = rowY[row]
 
-          const cage = new THREE.Mesh(new THREE.BoxGeometry(0.011, 0.013, 0.005), matPortMetal)
-          cage.position.set(sx, sy, 0.0048)
-          switchGroup.add(cage)
+            const cage = new THREE.Mesh(new THREE.BoxGeometry(0.0105, 0.0125, 0.005), matPortMetal)
+            cage.position.set(sx, sy, 0.0048)
+            switchGroup.add(cage)
 
-          const sfpHole = new THREE.Mesh(new THREE.BoxGeometry(0.0085, 0.0095, 0.0055), matPortCavity)
-          sfpHole.position.set(sx, sy, 0.005)
-          switchGroup.add(sfpHole)
+            const sfpHole = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.0098, 0.0055), matPortCavity)
+            sfpHole.position.set(sx, sy, 0.005)
+            switchGroup.add(sfpHole)
 
-          const hasTransceiver = sfp < 2
-          if (hasTransceiver) {
-            const transceiver = new THREE.Mesh(new THREE.BoxGeometry(0.0082, 0.0088, 0.016), matScrewChrome)
-            transceiver.position.set(sx, sy, 0.011)
-            switchGroup.add(transceiver)
+            const hasTransceiver = sfpSeq < 2
+            if (hasTransceiver) {
+              const transceiver = new THREE.Mesh(
+                new THREE.BoxGeometry(0.0078, 0.0092, 0.015), matScrewChrome
+              )
+              transceiver.position.set(sx, sy, 0.011)
+              switchGroup.add(transceiver)
 
-            const latch = new THREE.Mesh(
-              new THREE.BoxGeometry(0.0086, 0.0025, 0.004),
-              sfp === 0 ? matFiberAqua : matFiberOrange
-            )
-            latch.position.set(sx, sy - 0.0035, 0.018)
-            switchGroup.add(latch)
+              const latch = new THREE.Mesh(
+                new THREE.BoxGeometry(0.0082, 0.0024, 0.004),
+                sfpSeq === 0 ? matFiberAqua : matFiberOrange
+              )
+              latch.position.set(sx, sy - 0.0035, 0.017)
+              switchGroup.add(latch)
 
-            const curve = new THREE.CatmullRomCurve3([
-              new THREE.Vector3(sx, sy, 0.018),
-              new THREE.Vector3(sx + 0.012, sy - 0.004, 0.042),
-              new THREE.Vector3(0.245, sy - 0.012, 0.032),
-              new THREE.Vector3(0.252, -0.22, -0.04)
-            ])
-            const tubeMesh = new THREE.Mesh(
-              new THREE.TubeGeometry(curve, 16, 0.0016, 6, false),
-              sfp === 0 ? matFiberAqua : matFiberOrange
-            )
-            switchGroup.add(tubeMesh)
+              const curve = new THREE.CatmullRomCurve3([
+                new THREE.Vector3(sx, sy, 0.017),
+                new THREE.Vector3(sx + 0.010, sy - 0.004, 0.040),
+                new THREE.Vector3(0.246, sy - 0.012, 0.030),
+                new THREE.Vector3(0.252, -0.22, -0.04)
+              ])
+              const tubeMesh = new THREE.Mesh(
+                new THREE.TubeGeometry(curve, 16, 0.0015, 6, false),
+                sfpSeq === 0 ? matFiberAqua : matFiberOrange
+              )
+              switchGroup.add(tubeMesh)
+            }
+
+            dummyObj.position.set(sx, yPos + sy + 0.0072, zFront + 0.0054)
+            dummyObj.updateMatrix()
+            ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
+            ledInstancedMesh.setColorAt(ledIndex, hasTransceiver ? COLOR_CYAN_ON : COLOR_OFF)
+            ledStates.push({
+              type: 'sfp',
+              active: hasTransceiver,
+              isAmber: false,
+              phase: Math.random() * Math.PI * 2,
+              speed: 14.0 + Math.random() * 10.0,
+              burstFreq: 1.8 + Math.random() * 2.0,
+              burstOffset: Math.random() * 5.0
+            })
+            ledIndex++
+            sfpSeq++
           }
+        }
 
-          dummyObj.position.set(sx, yPos + 0.0095, zFront + 0.0054)
+        // Status LED column beside the uplinks
+        for (let k = 0; k < 4; k++) {
+          dummyObj.position.set(halfW - 0.007, yPos + rowY[0] + 0.001 - k * 0.0042, zFront + 0.0054)
           dummyObj.updateMatrix()
           ledInstancedMesh.setMatrixAt(ledIndex, dummyObj.matrix)
-          ledInstancedMesh.setColorAt(ledIndex, hasTransceiver ? COLOR_CYAN_ON : COLOR_OFF)
+          // Two of the uplink status LEDs blink blue like the SYST/LINK lamps on the real faceplate.
+          ledInstancedMesh.setColorAt(ledIndex, k < 2 ? COLOR_CYAN_ON : COLOR_OFF)
           ledStates.push({
             type: 'sfp',
-            active: hasTransceiver,
+            active: k < 2,
             isAmber: false,
             phase: Math.random() * Math.PI * 2,
-            speed: 14.0 + Math.random() * 10.0,
-            burstFreq: 1.8 + Math.random() * 2.0,
-            burstOffset: Math.random() * 5.0
+            speed: 1.0,
+            burstFreq: 1.0,
+            burstOffset: 0
           })
           ledIndex++
         }
