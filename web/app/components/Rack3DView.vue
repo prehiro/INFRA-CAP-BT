@@ -202,7 +202,7 @@ onMounted(async () => {
     const hemiLight = new THREE.HemisphereLight(0xe4f0ff, 0x16243a, 0.85)
     scene.add(hemiLight)
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.15)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 1.7)
     keyLight.position.set(2.8, 4.2, 3.2)
     keyLight.castShadow = true
     keyLight.shadow.mapSize.set(2048, 2048)
@@ -492,11 +492,11 @@ onMounted(async () => {
     const matSwitchChassis = new THREE.MeshStandardMaterial({
       map: brushedTex,
       color: 0x2d3540,
-      roughness: 0.36,
-      metalness: 0.82,
-      // Metal this polished turns the environment map into a mirror; at close range the reflection
-      // fills the chassis and its colour washes out to pale grey. Kept to a fraction of the room.
-      envMapIntensity: 0.42
+      // Rough AND less metallic. At 0.36 roughness / 0.82 metalness the key light drew a broad
+      // specular streak across the chassis (the "silau") and the env map mirrored the room into it.
+      roughness: 0.6,
+      metalness: 0.5,
+      envMapIntensity: 0.32
     })
     const matSwitchBezel = new THREE.MeshStandardMaterial({
       color: 0x1b2129,
@@ -505,16 +505,18 @@ onMounted(async () => {
     })
     const matCiscoTeal = new THREE.MeshStandardMaterial({
       color: accentColor.clone(),
-      roughness: 0.3,
-      metalness: 0.4,
-      emissive: accentColor.clone().multiplyScalar(0.32),
-      emissiveIntensity: 0.25
+      roughness: 0.45,
+      metalness: 0.3,
+      // The accent strip is a large flat face right where the camera zooms in; with emissive 0.25 it
+      // was the brightest thing on screen and read as glare. Barely glowing now, still accent-tinted.
+      emissive: accentColor.clone().multiplyScalar(0.18),
+      emissiveIntensity: 0.08
     })
     const matPortMetal = new THREE.MeshStandardMaterial({
-      color: 0x94a3b8,
-      roughness: 0.25,
-      metalness: 0.92,
-      envMapIntensity: 0.35
+      color: 0x64748b,
+      roughness: 0.45,
+      metalness: 0.7,
+      envMapIntensity: 0.25
     })
     const matPortCavity = new THREE.MeshStandardMaterial({
       color: 0x05070b,
@@ -1052,8 +1054,12 @@ onMounted(async () => {
       otbSlotU = targetU
       if (!targetU) return
 
-      const matBody = new THREE.MeshStandardMaterial({ color: 0x0b0e13, roughness: 0.52, metalness: 0.62 })
-      const matFace = new THREE.MeshStandardMaterial({ map: createOtbFaceTexture(), roughness: 0.46, metalness: 0.28 })
+      const matBody = new THREE.MeshStandardMaterial({
+        color: 0x0b0e13, roughness: 0.68, metalness: 0.35, envMapIntensity: 0.3
+      })
+      const matFace = new THREE.MeshStandardMaterial({
+        map: createOtbFaceTexture(), roughness: 0.62, metalness: 0.18, envMapIntensity: 0.3
+      })
       // BoxGeometry takes one material per side: px, nx, py, ny, pz(front), nz
       const faceMats = [matBody, matBody, matBody, matBody, matFace, matBody]
 

@@ -5373,3 +5373,24 @@ warna `ledMat` (LED strip, sekarang putih murni 0xffffff).
 
 VERIFIKASI (browser, RACK A, pintu Open + preset Close-Up Ports): chassis navy gelap, LED cyan
 terlihat tapi tidak menyilaukan, port strip tidak melebur, celah antar U hitam bersih. Build exit 0.
+### Silau di Body Switch & OTB: Material Jadi Biang Keladi (2026-11-15)
+
+HIRO: "masih silau dibagian body switch dan otb".
+
+Setelah diukur, TIDAK ada pixel yang clip (max luminance: OTB 156, baris switch 192, frame 98 dari
+255). Jadi kesilauannya bukan over-exposure, tapi HIGHLIGHT SPECULAR di permukaan metal + strip aksen
+yang menyala.
+
+Setelan akhir:
+- `matSwitchChassis`: roughness 0.36 -> 0.6, metalness 0.82 -> 0.5, envMapIntensity 0.32
+  (sebelumnya kilau key light menggambar pita terang di seluruh chassis).
+- `matPortMetal`: warna 0x94a3b8 -> 0x64748b, roughness 0.45, metalness 0.7, env 0.25.
+- `matCiscoTeal` (strip aksen): emissive 0.25 -> 0.08, roughness 0.45.
+- OTB: matBody roughness 0.68/metalness 0.35/env 0.3; matFace roughness 0.62/metalness 0.18/env 0.3.
+- `keyLight` 2.15 -> 1.7 ; exposure 1.05 ; frontFillLight 0.2 ; faceWash 0.55.
+
+HASIL UKUR (Close-Up Ports, pintu terbuka, crop area canvas): mean 59.2 -> 57.1, p95 180 -> 162,
+0 pixel > 230. Build exit 0.
+
+Tuas yang tersisa kalau masih silau: warna `ledMat` (LED strip, masih putih murni 0xffffff) dan
+`toneMappingExposure` (global).
