@@ -497,8 +497,10 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
                   :title="rack.name" @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
                   <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
                     <UIcon name="game-icons:server-rack" class="size-7 text-primary" />
-                    <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-elevated px-1.5 py-px text-[9px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/40">{{ rack.sizeU }}U</span>
                   </span>
+                  <!-- Sits OUTSIDE .ap-rack-body: that element scales to 1.1 on hover, and a chip
+                       anchored to its bottom edge would be carried downwards by the scale. -->
+                  <span class="pointer-events-none absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-elevated px-1.5 py-px text-[9px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/40">{{ rack.sizeU }}U</span>
                 </button>
               </div>
             </div>

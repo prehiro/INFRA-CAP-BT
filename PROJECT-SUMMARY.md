@@ -5155,3 +5155,19 @@ UJI (browser 1200x760, rack uji dibuat lalu dihapus lagi)
 - TEST-27U: aria 27U, badge 25U Free, kabinet lebih tinggi.
 - RACK A (42U, 12 switch): aria 42U, badge 28U Free (42-12-2), 12 baris inventory - tidak regresi.
 - Data akhir: RACK A (42U, 12 switch) + Rack D (42U, 0 switch). Build exit 0.
+### Badge Ukuran di Marker Tidak Lagi Ikut Bergeser Saat Hover (2026-11-15)
+
+Laporan HIRO: "pada mark icon di map ketika hover tulisan 42u nya bergeser ke bawah".
+
+Sebab: badge `42U` diletakkan di DALAM `.ap-rack-body`, dan elemen itu yang di-scale 1.1 saat
+hover (`.ap-rack-marker:hover .ap-rack-body { transform: scale(1.1) }`). Karena badge di-anchor ke
+-bottom, pembesaran itu mendorongnya turun ~2 px.
+
+Fix: badge dipindah keluar dari `.ap-rack-body`, jadi sibling di dalam `<button>` (button sudah
+`position: absolute` sehingga tetap jadi containing block, dan posisinya persis sama). Scale hover
+hanya menyentuh body, jadi badge tidak bisa bergeser lagi.
+
+UKUR (browser 1200x760): rect badge sebelum hover [462,377,31,16] dan sesudah [462,377,31,16] -
+identik; parent badge sekarang `ap-rack-marker`, bukan `ap-rack-body`. Catatan: animasi hover
+di-scale dimatikan di browser harness ini (prefers-reduced-motion: reduce), jadi buktinya struktural
+- transform pada body tidak mungkin lagi mengenai badge. Build exit 0.
