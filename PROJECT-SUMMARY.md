@@ -5666,3 +5666,20 @@ rAF dan membuat efek tampak mati):
 - `--ui-primary` diubah ke rgb(168,85,247) saat modal terbuka: seluruh garis lantai, glow bawah rack,
   rim light dan tombol jadi violet dalam ~1 detik, tanpa sisa hijau.
 Build exit 0.
+### Breathing Glow Dipancarkan dari Titik Tengah Rack (2026-11-15)
+
+HIRO: "bisa buat breathe nya dimulai dari titik center rack?"
+
+- Fase napas sekarang di-retard kuat terhadap jarak: `breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 1.6)`.
+  1.6 rad/m -> jarak antar crest sekitar 3.9 m, kecepatan rambat 1.25/1.6 = 0.78 m/s, jadi swell
+  konsentris benar-benar terlihat bergerak keluar dari kabinet (sebelumnya hanya 0.16 rad/m, praktis
+  seluruh lantai bernapas serentak).
+- Energi swell diredam saat menjauh: `energy = mix(1.0, 0.42, smoothstep(0.5, 18.0, radius))` dan
+  dipakai pada glow, sehingga lantai di sekitar rack bernapas paling kuat.
+- `radius` diukur dari pusat plane; `rackGroup` ada di world origin (tidak pernah di-set position-nya)
+  dan plane grid juga berpusat di origin, jadi otomatis titik tengah rack.
+
+VERIFIKASI: 3 frame berjarak 1 s di area lantai berubah ~9.900 dan ~8.900 px; profil p99 kanal hijau
+per cincin berubah bergantian (mis. cincin ke-6: 92 -> 83 -> 83, cincin ke-8: 106 -> 92 -> 84) yang
+menunjukkan pita brightness merambat keluar. Screenshot: garis lantai paling terang di sekitar kaki
+rack dan meredup ke tepi. Build exit 0.

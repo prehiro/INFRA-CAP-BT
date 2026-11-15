@@ -347,14 +347,17 @@ onMounted(async () => {
 
           float lineMask = max(minor * 0.55, major * 0.85);
 
-          // Breathing glow: one slow swell (about five seconds) that runs slightly later the further
-          // out you look, so the whole floor inhales instead of blinking in place.
-          float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 0.16);
+          // Breathing glow, emitted from the middle of the rack: the phase is retarded strongly with
+          // distance (1.6 rad/m, so crests about 4 m apart) which makes concentric swells travel
+          // outward from the cabinet instead of the whole floor pulsing in place. Each swell loses
+          // energy as it travels, so the floor near the rack breathes hardest.
+          float breathe = 0.5 + 0.5 * sin(uTime * 1.25 - radius * 1.6);
+          float energy = mix(1.0, 0.42, smoothstep(0.5, 18.0, radius));
 
           // The lines themselves are the accent colour and their brightness is what breathes; the
           // resting state stays dim so the effect reads as a glow, never as a lamp.
           vec3 lineColor = uAccent * (0.32 + breathe * 0.46);
-          float glow = lineMask * (0.11 + breathe * 0.44);
+          float glow = lineMask * (0.08 + breathe * 0.46) * energy;
 
           // The plane must not show an edge: the grid keeps running far past the rack and only
           // dissolves near the horizon, so no line ever appears to stop in mid-air.
