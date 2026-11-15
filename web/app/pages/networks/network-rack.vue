@@ -86,6 +86,59 @@ watch(mapStageEl, el => {
 
 const selectedRack = computed(() => racks.value.find(r => r.id === selectedRackId.value) ?? null)
 const selectedRackDetail = ref<NetworkRackDetail | null>(null)
+
+// One delete dialog for every destructive action on this page (a switch, a floor plan). It is a
+// request object rather than a boolean so the dialog can name the row that is about to vanish
+// before any API call happens - a destructive confirmation that cannot show WHICH record it is
+// about to destroy is just a speed bump.
+type DeleteRequest =
+  | { kind: 'switch'; sw: NetworkSwitch }
+  | { kind: 'floor'; plan: FloorMapSummary }
+  | { kind: 'rack'; rack: NetworkRackSummary }
+const deleteRequest = ref<DeleteRequest | null>(null)
+const showDeleteDialog = ref(false)
+const deleting = ref(false)
+
+const deleteDialog = computed(() => {
+  const req = deleteRequest.value
+  if (!req) {
+    return { title: '', description: '', action: 'Delete', rows: [] as { label: string; value: string; mono?: boolean }[] }
+  }
+  if (req.kind === 'switch') {
+    return {
+      title: 'Delete this switch?',
+      description: 'The switch leaves the rack register and is removed from the 3D view. This cannot be undone from the UI.',
+      action: 'Delete switch',
+      rows: [
+        { label: 'Hostname', value: req.sw.hostname || '-', mono: true },
+        { label: 'IP address', value: req.sw.ipAddress || '-', mono: true },
+        { label: 'Rack', value: selectedRackDetail.value?.name ?? '-' },
+        { label: 'U slot', value: req.sw.position?.trim() || 'Auto', mono: true }
+      ] as { label: string; value: string; mono?: boolean }[]
+    }
+  }
+  if (req.kind === 'rack') {
+    return {
+      title: 'Delete this rack?',
+      description: 'The rack and every switch mounted in it are removed from this floor plan. This cannot be undone from the UI.',
+      action: 'Delete rack',
+      rows: [
+        { label: 'Rack', value: req.rack.name },
+        { label: 'Floor plan', value: floor.value?.name ?? '-' },
+        { label: 'Switches', value: String(req.rack.switchCount) }
+      ] as { label: string; value: string; mono?: boolean }[]
+    }
+  }
+  return {
+    title: 'Delete this floor plan?',
+    description: 'The plan, every rack mapped on it and every switch inside those racks are removed together. This cannot be undone from the UI.',
+    action: 'Delete floor plan',
+    rows: [
+      { label: 'Floor plan', value: req.plan.name },
+      { label: 'Racks on it', value: String(req.plan.rackCount) }
+    ] as { label: string; value: string; mono?: boolean }[]
+  }
+})
 let loadVersion = 0
 let suppressRackClickId: number | null = null
 let suppressRackClickUntil = 0
@@ -160,9 +213,12 @@ async function createFloor() {
   } catch (e) { uploadError.value = message(e) }
   finally { busy.value = false }
 }
-async function deleteFloor(item: FloorMapSummary) {
+function deleteFloor(item: FloorMapSummary) {
   if (!isAdmin.value || busy.value) return
-  if (!window.confirm(`Delete "${item.name}" and all its racks?`)) return
+  deleteRequest.value = { kind: 'floor', plan: item }
+  showDeleteDialog.value = true
+}
+async function performDeleteFloor(item: FloorMapSummary) {
   busy.value = true; error.value = ''
   try {
     await apiDeleteNetworkFloor(item.id)
@@ -209,14 +265,24 @@ async function saveRack() {
   } catch (e) { rackError.value = message(e) }
   finally { busy.value = false }
 }
-async function deleteRack(rack: NetworkRackSummary) {
+function deleteRack(rack: NetworkRackSummary) {
   if (!isAdmin.value || busy.value) return
-  if (!window.confirm(`Delete rack “${rack.name}” and all its switches?`)) return
+  // The rack DETAIL payload carries `switches` but no `switchCount` (the list endpoint is the one
+  // that sends the count), so the dialog would otherwise print "undefined" for the switch row.
+  const count = (rack as NetworkRackDetail).switches?.length ?? rack.switchCount ?? 0
+  deleteRequest.value = { kind: 'rack', rack: { ...rack, switchCount: count } }
+  showDeleteDialog.value = true
+}
+async function performDeleteRack(rack: NetworkRackSummary) {
   busy.value = true; error.value = ''
   try {
     await apiDeleteNetworkRack(floor.value!.id, rack.id)
     racks.value = racks.value.filter(r => r.id !== rack.id)
-    if (selectedRackId.value === rack.id) selectedRackId.value = null
+    if (selectedRackId.value === rack.id) {
+      selectedRackId.value = null
+      selectedRackDetail.value = null
+      showRackDetails.value = false
+    }
     toast.add({ title: 'Rack deleted', color: 'primary' })
   } catch (e) { error.value = message(e) }
   finally { busy.value = false }
@@ -281,9 +347,13 @@ async function saveSwitch() {
   } catch (e) { switchError.value = message(e) }
   finally { busy.value = false }
 }
-async function deleteSwitch(sw: NetworkSwitch) {
+function deleteSwitch(sw: NetworkSwitch) {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
-  if (!window.confirm(`Delete switch ${sw.ipAddress}?`)) return
+  deleteRequest.value = { kind: 'switch', sw }
+  showDeleteDialog.value = true
+}
+async function performDeleteSwitch(sw: NetworkSwitch) {
+  if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
   busy.value = true
   try {
     await apiDeleteNetworkSwitch(floor.value!.id, selectedRackDetail.value.id, sw.id)
@@ -296,6 +366,30 @@ async function deleteSwitch(sw: NetworkSwitch) {
     toast.add({ title: 'Switch deleted', color: 'primary' })
   } catch (e) { toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' }) }
   finally { busy.value = false }
+}
+
+// The 3D HUD mirrors the rack detail, so a delete it starts has to go through the same API path
+// as the register's own delete button - otherwise the row survives the modal being closed.
+function deleteSwitchFromRack3D(id: number) {
+  const sw = selectedRackDetail.value?.switches.find(s => s.id === id)
+  if (!sw) return
+  return deleteSwitch(sw)
+}
+
+// Confirm button of the shared delete dialog.
+async function confirmDelete() {
+  const req = deleteRequest.value
+  if (!req || deleting.value) return
+  deleting.value = true
+  try {
+    if (req.kind === 'switch') await performDeleteSwitch(req.sw)
+    else if (req.kind === 'rack') await performDeleteRack(req.rack)
+    else await performDeleteFloor(req.plan)
+    showDeleteDialog.value = false
+    deleteRequest.value = null
+  } finally {
+    deleting.value = false
+  }
 }
 
 function placeOnMap(event: MouseEvent) {
@@ -503,12 +597,53 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
           <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
             <div class="min-w-0 flex-1"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
+            <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" variant="ghost" color="error" size="sm"
+              :disabled="busy" :aria-label="`Delete ${selectedRackDetail.name}`" :title="`Delete ${selectedRackDetail.name}`"
+              @click="deleteRack(selectedRackDetail)" />
             <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" class="ap-close-action" :disabled="busy" :aria-label="`Close ${selectedRackDetail.name}`" @click="close" />
           </div>
         </template>
         <template #body>
           <div v-if="selectedRackDetail">
-            <LazyRack3DView :switches="selectedRackDetail.switches" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
+            <LazyRack3DView :switches="selectedRackDetail.switches" @delete-switch="deleteSwitchFromRack3D" class="h-[min(680px,calc(100dvh_-_18rem))] overflow-hidden rounded-xl border border-default" />
+          </div>
+        </template>
+      </UModal>
+
+      <!-- Shared delete confirmation, built like the PC Ledger / CCTV row-delete dialogs: a wrapper
+           that clips, a soft danger wash bleeding in from the top-right corner, the identity of the
+           record on a raised box above that wash, and a footer band on the elevated surface. -->
+      <UModal v-model:open="showDeleteDialog" :dismissible="!deleting" :close="!deleting" :ui="{ content: 'max-w-md' }">
+        <template #content>
+          <div class="overflow-hidden rounded-xl">
+            <div class="relative overflow-hidden px-5 pb-5 pt-5">
+              <div aria-hidden="true" class="pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl" />
+              <div class="relative flex items-start gap-3">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
+                  <UIcon name="i-lucide-trash-2" class="size-5" />
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-semibold text-highlighted">{{ deleteDialog.title }}</h2>
+                  <p class="mt-1 text-xs leading-relaxed text-muted">{{ deleteDialog.description }}</p>
+                </div>
+              </div>
+
+              <dl class="relative mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
+                <template v-for="row in deleteDialog.rows" :key="row.label">
+                  <dt class="text-muted">{{ row.label }}</dt>
+                  <dd class="truncate font-medium text-highlighted" :class="row.mono ? 'font-mono tabular-nums' : ''">{{ row.value }}</dd>
+                </template>
+              </dl>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
+              <UButton color="neutral" variant="ghost" label="Cancel" :disabled="deleting" @click="showDeleteDialog = false" />
+              <UButton color="error" class="trash-bin-hover" :label="deleteDialog.action" :loading="deleting" @click="confirmDelete">
+                <template #leading>
+                  <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+                </template>
+              </UButton>
+            </div>
           </div>
         </template>
       </UModal>

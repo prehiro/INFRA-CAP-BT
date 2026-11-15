@@ -20,6 +20,11 @@ import type { NetworkSwitch } from '~/types'
 // The rack's real switches are the only source of hardware in this scene.
 const props = defineProps<{ switches: NetworkSwitch[] }>()
 
+// Deleting a switch is not a local edit: it has to reach the register, or the next load of the
+// rack detail simply re-reads the row and the device reappears. The parent page owns that API
+// call, the confirmation and its error toast, so the panel asks it instead of dropping the row.
+const emit = defineEmits<{ (e: 'delete-switch', id: number): void }>()
+
 const root = ref<HTMLElement | null>(null)
 const $ = (id: string) => root.value?.querySelector(`#${id}`)
 
@@ -32,6 +37,12 @@ let applySwitches: ((list: NetworkSwitch[]) => void) | null = null
 onUnmounted(() => disposeScene?.())
 watch(() => props.switches, list => applySwitches?.(list ?? []), { deep: true })
 
+// Height of the cabinet in U. Module level because the slot parser below needs the same ceiling
+// as the geometry spec inside onMounted - when this was hardcoded to 24 a stored "U30" in the
+// register was silently treated as unparseable and the switch got repacked into the lowest free
+// slot instead of the slot the user chose.
+const RACK_TOTAL_U = 42
+
 // "U6", "U6-U7", "u 6 - u 7" -> { start, end }; anything unparseable returns null.
 function parseUnitRange(raw: string): { start: number; end: number } | null {
   const m = /u\s*(\d+)\s*(?:[-\u2013]\s*(?:u\s*)?(\d+))?/i.exec((raw || '').trim())
@@ -41,7 +52,7 @@ function parseUnitRange(raw: string): { start: number; end: number } | null {
   if (!Number.isFinite(a) || !Number.isFinite(b)) return null
   const lo = Math.min(a, b)
   const hi = Math.max(a, b)
-  if (lo < 1 || hi > 24) return null
+  if (lo < 1 || hi > RACK_TOTAL_U) return null
   return { start: lo, end: hi }
 }
 
@@ -79,7 +90,7 @@ onMounted(async () => {
     // Everything below derives from these numbers: rails, U numbering, doors, side
     // panels and the camera framing all follow TOTAL_U.
     const U_HEIGHT = 0.04445
-    const TOTAL_U = 42
+    const TOTAL_U = RACK_TOTAL_U
     const RACK_W = 0.60
     const RACK_D = 0.80
     const BASE_H = 0.085
@@ -655,6 +666,8 @@ onMounted(async () => {
 
         out.push({
           id: sw.id,
+          // Distinguishes a real register row from a device invented by the Add button below.
+          fromRegister: true,
           u,
           // The register has no model or serial column: the faceplate badge shows the series,
           // the tooltip prints UNASSIGNED, and the port-count line is omitted rather than
@@ -1439,6 +1452,17 @@ onMounted(async () => {
     function removeSwitchById(id) {
       const target = switchesData.find(s => s.id === id)
       if (!target) return
+
+      // A register row cannot be deleted here: this list is only a mirror of the rack detail, so
+      // closing and reopening the modal re-reads it and the switch came back. Ask the page to
+      // delete it in the database; the row leaves this list when the refreshed props arrive.
+      if ((target as any).fromRegister) {
+        // No toast here: the page answers with a confirmation dialog that names the switch, so a
+        // "removing…" banner in this panel would announce a delete that has not been confirmed yet.
+        emit('delete-switch', target.id)
+        return
+      }
+
       switchesData = switchesData.filter(s => s.id !== id)
       if (selectedSwitchId === id) {
         selectedSwitchId = switchesData.length > 0 ? switchesData[0].id : null
@@ -1515,15 +1539,19 @@ onMounted(async () => {
         }
       }
 
-      const newId = nextSwitchSeq++
+      // A device invented here gets a NEGATIVE id. Register ids are small positive numbers, and a
+      // local device that reused one of them made Remove resolve to the register row and delete the
+      // wrong switch from the database.
+      const seq = nextSwitchSeq++
+      const newId = -seq
       const newSwitch = {
         id: newId,
         u: chosenU,
         model: 'Catalyst 9300-48P',
-        hostname: `SW-EDGE-${String(newId).padStart(2, '0')}`,
-        ip: `10.10.10.${10 + newId}`,
-        sn: `FCW26${String(10 + newId).padStart(2, '0')}X${String(newId).padStart(2, '0')}Z`,
-        activePorts: 36 + (newId % 11)
+        hostname: `SW-EDGE-${String(seq).padStart(2, '0')}`,
+        ip: `10.10.10.${10 + seq}`,
+        sn: `FCW26${String(10 + seq).padStart(2, '0')}X${String(seq).padStart(2, '0')}Z`,
+        activePorts: 36 + (seq % 11)
       }
       switchesData.push(newSwitch)
       selectedSwitchId = newId
@@ -1827,9 +1855,17 @@ onMounted(async () => {
       const w = container.clientWidth
       const h = container.clientHeight
       if (!w || !h) return
+      // Two drawers now flank the canvas - hardware on the left, inventory on the right - so the
+      // rack has to sit in the band BETWEEN them. setViewOffset pans the frustum: a positive x
+      // moves the projected content LEFT, hence (right inset - left inset) / 2 rather than half of
+      // any single panel.
       const panel = $('control-panel')
       const panelShown = !!panel && getComputedStyle(panel).display !== 'none'
-      const shiftX = panelShown ? Math.round((panel.offsetWidth + 12) / 2) : 0
+      const invPanel = $('inventory-panel')
+      const invShown = !!invPanel && getComputedStyle(invPanel).display !== 'none'
+      const leftInset = panelShown ? panel.offsetWidth + 12 : 0
+      const rightInset = invShown ? invPanel.offsetWidth + 12 : 0
+      const shiftX = Math.round((rightInset - leftInset) / 2)
       // The camera preset dock sits over the bottom edge, so the rack base was hidden behind the
       // buttons. Reserve the dock's height, then centre the rack's own projected bounding box in
       // what is left - centring the camera TARGET was not enough, because the target sits above the
@@ -1860,7 +1896,7 @@ onMounted(async () => {
       const perUnit = (centreAtZero - centreAt(40)) / 40 || 1
       const shiftY = Math.max(0, Math.round((centreAtZero - freeCentreY) / perUnit))
 
-      if (shiftX > 0 || shiftY > 0) camera.setViewOffset(w, h, shiftX, shiftY, w, h)
+      if (shiftX !== 0 || shiftY > 0) camera.setViewOffset(w, h, shiftX, shiftY, w, h)
       else camera.clearViewOffset()
       camera.updateProjectionMatrix()
       renderer.setSize(w, h)
@@ -2048,15 +2084,21 @@ onMounted(async () => {
       </svg>
     </button>
 
-    <!-- Right-Side Interactive Control & Hardware Management Drawer -->
-    <div id="control-panel" class="absolute top-3 right-3 z-20 w-80 max-w-[calc(100%-1.5rem)] max-h-full flex flex-col glass-panel rounded-2xl p-4 transition-all duration-300 hidden sm:flex">
+    <!-- LEFT DRAWER: switch asset, bottom UPS and enclosure telemetry -->
+    <div id="control-panel" class="absolute top-3 bottom-3 left-3 z-20 w-80 max-w-[calc(100%-1.5rem)] flex flex-col glass-panel rounded-2xl p-4 transition-all duration-300 hidden sm:flex">
+      <!-- Panel header -->
+      <div class="mb-2.5 shrink-0">
+        <div class="text-[10px] uppercase tracking-widest text-slate-500">Rack hardware</div>
+        <div class="text-sm font-semibold text-slate-100 leading-tight">Controls &amp; telemetry</div>
+      </div>
+
       <!-- Drawer Tabs -->
       <div class="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 mb-3 shrink-0">
         <button id="tab-hardware" class="flex-1 py-1.5 text-xs font-semibold rounded-lg bg-primary/20 text-primary border border-primary/30 transition">
-          Hardware & Inventory
+          Hardware
         </button>
         <button id="tab-rack" class="flex-1 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-slate-200 transition">
-          Rack & Telemetry
+          Telemetry
         </button>
       </div>
 
@@ -2165,20 +2207,8 @@ onMounted(async () => {
               <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">UPS S/N</span>
             </div>
           </div>
-
-          <p class="text-[10px] text-slate-400 leading-tight">
-            UPS always mounts at bottom U01+. Adding/upgrading automatically shifts lower switches upward.
-          </p>
         </div>
 
-        <!-- Installed Equipment Inventory List (U24 -> U01) -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Rack Inventory (Drag to Sort)</span>
-            <span id="free-u-count" class="text-[10px] font-mono text-slate-400">12U Free</span>
-          </div>
-          <div id="inventory-list" class="space-y-1.5"></div>
-        </div>
       </div>
 
       <!-- TAB 2: RACK ENCLOSURE & TELEMETRY CONTROLS -->
@@ -2232,8 +2262,21 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Bottom Camera Presets Dock - centred in the area the right HUD leaves free -->
-    <div id="cam-dock" class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:right-[336px] sm:pl-0">
+    <!-- RIGHT DRAWER: installed equipment, kept apart from the editing controls -->
+    <aside id="inventory-panel" class="absolute top-3 bottom-3 right-3 z-20 w-72 max-w-[calc(100%-1.5rem)] flex-col glass-panel rounded-2xl p-4 hidden sm:flex">
+      <div class="flex items-start justify-between gap-2 mb-1 shrink-0">
+        <div class="min-w-0">
+          <div class="text-[10px] uppercase tracking-widest text-slate-500">Installed equipment</div>
+          <div class="text-sm font-semibold text-slate-100 leading-tight truncate">Rack Inventory</div>
+        </div>
+        <span id="free-u-count" class="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/30">36U Free</span>
+      </div>
+      <p class="text-[10px] text-slate-500 mb-2.5 shrink-0">Drag a card onto another to swap its U slot.</p>
+      <div id="inventory-list" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-1.5"></div>
+    </aside>
+
+    <!-- Bottom Camera Presets Dock - centred in the band the two drawers leave free -->
+    <div id="cam-dock" class="absolute bottom-3 left-0 right-0 z-20 flex justify-center px-3 sm:left-[336px] sm:right-[304px] sm:px-0">
       <div class="glass-panel rounded-2xl p-1.5 flex items-center justify-center gap-1.5 overflow-x-auto max-w-full">
         <button data-cam="angled" class="cam-btn active px-3.5 py-2 rounded-xl text-xs font-medium bg-primary text-slate-950 font-semibold shadow-lg shadow-primary/25 transition whitespace-nowrap">
           Angled View

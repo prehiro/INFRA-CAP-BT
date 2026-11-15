@@ -5055,3 +5055,41 @@ bukan angka sisa. `npx nuxt build` exit 0 setelah edit terakhir.
 
 Catatan rasa: proporsi 0.6 m x 2.03 m membuat kabinet tampak lebih ramping dan interiornya lebih
 gelap/kosong dibanding 24U - konsekuensi fisik rak 42U berisi 6U, bukan bug render.
+### HUD 3D dibelah dua, delete switch persisten, dialog delete baru (2026-11-15)
+
+1. SIDEBAR DIBAGI DUA. Panel kiri (top-3 bottom-3 left-3, w-80) = "Rack hardware / Controls &
+   telemetry" dengan tab Hardware (Switch Asset, Add Switch, Bottom UPS) dan Telemetry (door, side
+   panel, LED, auto-orbit, slider). Panel kanan (#inventory-panel, w-72) = "Rack Inventory" dengan
+   badge free-U dan daftar kartu yang tetap drag-to-sort. fitViewport sekarang menghitung dua inset
+   dan menggeser proyeksi (rightInset - leftInset)/2 supaya rak center di BAND antara dua drawer;
+   cam-dock memakai sm:left-[336px] sm:right-[304px]. Di bawah breakpoint sm drawer inventory tidak
+   tampil (inventory hanya terjangkau di desktop).
+
+2. BUG: HAPUS SWITCH TIDAK TERSIMPAN. Tombol Remove di HUD hanya memotong array lokal, jadi modal
+   ditutup-buka switch-nya kembali. Sekarang tiap switch register ditandai fromRegister dan
+   penghapusannya di-emit ke halaman (delete-switch), yang menjalankan jalur API yang sama dengan
+   tombol delete register. Switch hasil tombol Add tetap lokal. Id switch lokal dibuat NEGATIF:
+   sebelumnya nextSwitchSeq bisa bentrok dengan id register sehingga Remove bisa menghapus baris
+   yang salah di database.
+
+3. DIALOG DELETE BARU (menggantikan window.confirm). Satu komponen UModal di network-rack.vue
+   melayani tiga aksi: switch, rack, floor plan. Isinya ikon trash + wash error, judul, penjelasan,
+   kotak identitas record (Hostname/IP/Rack/U slot untuk switch; Rack/Floor/Switches untuk rack;
+   Floor plan/Racks untuk floor), peringatan tidak bisa dibatalkan, footer Cancel + tombol aksi
+   dengan TrashBinIcon (animasi trash-bin-hover global). State-nya `deleteRequest` berisi record,
+   bukan boolean, supaya dialog bisa menyebut SIAPA yang akan dihapus.
+
+4. TOMBOL DELETE RACK dipasang di header modal detail rak (ikon trash merah, kiri tombol X,
+   aria-label "Delete <nama>"). Menghapus rack menutup modal detail dan membuang markernya.
+
+5. Teks "UPS always mounts at bottom U01+..." di panel HUD dihapus atas permintaan HIRO.
+
+GOTCHA: GET /network/floor-maps/{f}/racks/{r} TIDAK mengirim switchCount (hanya `switches`); angka
+itu cuma ada di endpoint LIST. Dialog rack harus menghitung count = switches.length, kalau tidak
+baris "Switches" tercetak undefined.
+
+UJI (browser 1200x720, data uji dibuat lalu dihapus lagi): switch TEST-DEL/TEST-CAN dibuat via API,
+dihapus dari HUD -> dialog muncul dengan data benar, Cancel menutup tanpa API call, Delete switch
+menghapus di DB dan hilang setelah modal close-buka; rack TEST-RACK-DEL dibuat via API, dihapus dari
+header modal -> dialog "Delete this rack?" (Switches 0), konfirmasi -> marker hilang dan API hanya
+mengembalikan RACK A. Data akhir: 4 switch asli (BTCAP001/003/004/005), 2 floor plan. Build exit 0.
