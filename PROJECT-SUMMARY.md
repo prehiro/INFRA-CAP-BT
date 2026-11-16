@@ -5947,3 +5947,30 @@ variable shadow sendiri, computed box-shadow tetap transparan), jadi bayangan di
 VERIFIKASI: computed bg `rgb(0, 220, 130)` (aksen user), teks gelap, box-shadow nyata
 `rgba(0,0,0,0.35) 0px 6px 16px`. Kebaca baik saat tombol jatuh di area gelap kartu maupun di atas
 gambar denah putih.
+### Kartu Floor Plan ke-3 Kepotong: Strip Jadi Selebar Header (2026-11-16)
+
+HIRO: "ada issue lagi kalau ada lebih dari 2 floor map, card ke tiga dan seterusnya jadi tidak terlihat /
+kepotong ada saran?"
+
+AKAR MASALAH (diukur, bukan diduga): `.ap-header-row` memakai
+`grid-template-columns: minmax(0,1fr) minmax(0,405px) minmax(0,1fr)` - strip tab lantai dikunci 405px
+sementara 3 tab butuh 544px. Strip memang `overflow-x:auto`, TAPI scrollbar-nya disembunyikan
+(`scrollbar-width:none`, `::-webkit-scrollbar{display:none}`) dan tidak ada petunjuk apa pun, jadi tab
+ketiga tampak terpotong tanpa cara untuk menggeser.
+
+PERBAIKAN (dua halaman: network-rack.vue + access-point.vue):
+- `.ap-header-row` jadi 2 kolom; strip dipindah ke barisnya sendiri (`.ap-floor-strip { grid-column:1/-1;
+  grid-row:2 }`) sehingga lebarnya penuh (968px di rack, 862px di access-point) dan 3-5 tab muat.
+- Kalau masih lebih banyak: tombol panah bulat kiri/kanan (`.ap-floor-nav`, native button, aria-label
+  "Show earlier/later floor plans") hanya muncul saat memang overflow, plus fade 44px di tepi
+  (`.ap-floor-strip::before/::after`, kelas `ap-strip-fade-left/right`) supaya tab yang terpotong
+  memudar di bawah panah, bukan terpotong tajam.
+- `syncFloorNav()` menghitung flag dari scrollLeft/scrollWidth (dipanggil saat @scroll, watch
+  floors+activeFloorId+ref, dan resize); `scrollFloors()` geser 70% lebar; `revealActiveFloor()`
+  menggeser tab aktif ke dalam pandangan (tab diberi `data-active`).
+- Panah TIDAK memakai UButton (base class-nya memaksa position:relative sehingga `absolute` diabaikan);
+  dipakai button biasa + CSS `.ap-floor-nav`.
+
+VERIFIKASI: 3 lantai -> semua tab utuh, tanpa panah. 7 lantai (4 lantai uji sementara) -> panah kanan
+muncul; klik menggeser 312px dan lantai terakhir terlihat; panah kiri muncul; fade tepi aktif;
+scrollLeft 418 terbaca setelah animasi. Lantai uji dihapus (sisa BUILDING 1-3).
