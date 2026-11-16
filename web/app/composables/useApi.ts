@@ -58,16 +58,20 @@ export const apiLogin = (username: string, password: string) =>
 
 export const apiMe = () => request<User>('/auth/me')
 
-export const apiListNetworkFloors = () => request<FloorMapSummary[]>('/network/floor-maps')
+// Each network page owns its plans: 'ap' and 'rack' lists are separate.
+export type FloorScope = 'ap' | 'rack'
+export const apiListNetworkFloors = (scope?: FloorScope) =>
+  request<FloorMapSummary[]>(`/network/floor-maps${scope ? `?scope=${scope}` : ''}`)
 export const apiGetNetworkFloor = (id: number) => request<FloorMapDetail>(`/network/floor-maps/${id}`)
 export const apiGetNetworkFloorImage = (id: number) => $fetch<Blob>(`/network/floor-maps/${id}/image`, {
   baseURL: useRuntimeConfig().public.apiBase,
   responseType: 'blob', headers: authHeaders()
 })
-export const apiCreateNetworkFloor = (name: string, image: File) => {
+export const apiCreateNetworkFloor = (name: string, image: File, scope?: FloorScope) => {
   const body = new FormData()
   body.set('name', name)
   body.set('image', image)
+  if (scope) body.set('scope', scope)
   return request<FloorMapSummary>('/network/floor-maps', { method: 'POST', body })
 }
 export const apiUpdateNetworkFloor = (id: number, name: string | null, image: File | null) => {
@@ -76,7 +80,8 @@ export const apiUpdateNetworkFloor = (id: number, name: string | null, image: Fi
   if (image) body.set('image', image)
   return request<FloorMapSummary>(`/network/floor-maps/${id}`, { method: 'PUT', body })
 }
-export const apiDeleteNetworkFloor = (id: number) => request<void>(`/network/floor-maps/${id}`, { method: 'DELETE' })
+export const apiDeleteNetworkFloor = (id: number, scope?: FloorScope) =>
+  request<void>(`/network/floor-maps/${id}${scope ? `?scope=${scope}` : ''}`, { method: 'DELETE' })
 export const apiCreateAccessPoint = (floorId: number, point: AccessPointInput) =>
   request<AccessPoint>(`/network/floor-maps/${floorId}/access-points`, { method: 'POST', body: point })
 export const apiUpdateAccessPoint = (floorId: number, id: number, point: AccessPointInput) =>

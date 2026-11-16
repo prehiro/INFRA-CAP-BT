@@ -353,6 +353,13 @@ namespace Api.Data.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
 
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)")
+                        .HasDefaultValue("both");
+
                     b.HasKey("Id");
 
                     b.ToTable("NetworkFloorMaps");

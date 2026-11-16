@@ -137,7 +137,9 @@ const deleteDialog = computed(() => {
   }
   return {
     title: 'Delete this floor plan?',
-    description: 'The plan, every rack mapped on it and every switch inside those racks are removed together. This cannot be undone from the UI.',
+    description: req.plan.scope === 'both'
+      ? 'This removes the plan from Network Rack together with every rack and switch on it. The Access Point page keeps the same plan and its markers.'
+      : 'The plan, every rack mapped on it and every switch inside those racks are removed together. This cannot be undone from the UI.',
     action: 'Delete floor plan',
     rows: [
       { label: 'Floor plan', value: req.plan.name },
@@ -186,7 +188,7 @@ async function refresh(preferFloorId?: number) {
   loading.value = true
   error.value = ''
   try {
-    floors.value = await apiListNetworkFloors()
+    floors.value = await apiListNetworkFloors('rack')
     const next = preferFloorId && floors.value.some(f => f.id === preferFloorId) ? preferFloorId
       : floors.value.some(f => f.id === activeFloorId.value) ? activeFloorId.value! : floors.value[0]?.id
     if (next) await loadFloor(next)
@@ -247,7 +249,7 @@ async function createFloor() {
         duration: 6000
       })
     } else {
-      const created = await apiCreateNetworkFloor(uploadedName, uploadedFile!)
+      const created = await apiCreateNetworkFloor(uploadedName, uploadedFile!, 'rack')
       floorImages.set(created.id, uploadedFile!)
       if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
       showUpload.value = false
@@ -265,7 +267,7 @@ function deleteFloor(item: FloorMapSummary) {
 async function performDeleteFloor(item: FloorMapSummary) {
   busy.value = true; error.value = ''
   try {
-    await apiDeleteNetworkFloor(item.id)
+    await apiDeleteNetworkFloor(item.id, 'rack')
     floorImages.delete(item.id)
     if (activeFloorId.value === item.id) activeFloorId.value = null
     await refresh()

@@ -5,6 +5,9 @@ public class NetworkFloorMap
 {
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
+    // Which page owns this plan: "ap", "rack", or "both" for plans that predate the split.
+    // Deleting a shared plan from one page only detaches it from that page.
+    public string Scope { get; set; } = "both";
     public string ImageContentType { get; set; } = string.Empty;
     public byte[] ImageBytes { get; set; } = [];
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -6022,3 +6022,43 @@ CATATAN: patch pertama menaruh blok penutup + panah kanan di dalam footer dialog
 `</UButton></div></div>` juga ada di sana) sehingga template kehilangan end tag dan halaman 500.
 Deteksi: `Element is missing end tag` di dev.out. Pelajaran: anchor penutup JSX harus menyertakan
 konteks unik (mis. `@click.stop="deleteFloor(item)" />` atau baris `ap-header-actions` berikutnya).
+### Pisahkan Floor Plan Access Point dan Network Rack (2026-11-16)
+
+HIRO: "ketika saya hapus floor network rack, floor AP juga ikutan delete bro, saya tidak mau seperti itu.
+kedua page tidak saling terhubung".
+
+AKAR MASALAH: kedua halaman memakai tabel yang SAMA (`NetworkFloorMaps`) tanpa pembeda. DELETE
+`/api/network/floor-maps/{id}` menghapus barisnya dan cascade ke marker AP DAN rack, jadi menghapus
+lantai di Network Rack ikut menghapus peta di Access Point.
+
+PERBAIKAN (kepemilikan per halaman, tanpa menghancurkan data yang masih dipakai halaman lain):
+- Kolom baru `NetworkFloorMaps.Scope` nvarchar(16) NOT NULL default 'both' - migration EF
+  `20261116142130_AddNetworkFloorMapScope` (bukan DDL manual; repo ini memakai `MigrateAsync`).
+  Baris lama otomatis 'both' sehingga tetap tampil di kedua halaman.
+- `GET /network/floor-maps?scope=ap|rack` memfilter `Scope == wanted || 'both'`.
+- `POST /network/floor-maps` menerima field `scope`; lantai baru hanya muncul di halaman pembuatnya.
+- `DELETE /network/floor-maps/{id}?scope=ap|rack`: kalau pemiliknya 'both', lantai hanya DILEPAS dari
+  halaman pemanggil - `Scope` dipersempit ke halaman lain dan HANYA isi halaman pemanggil yang dihapus
+  (rack + switch untuk rack, marker untuk ap); gambar tidak dibuang dari cache. Baris baru dihapus
+  total kalau tidak ada lagi yang memakainya.
+- Frontend: `apiListNetworkFloors(scope)`, `apiCreateNetworkFloor(name, file, scope)`,
+  `apiDeleteNetworkFloor(id, scope)`; network-rack.vue pakai 'rack', access-point.vue pakai 'ap'.
+  `FloorMapSummary.scope` ikut dikirim supaya dialog konfirmasi jujur: untuk lantai 'both' bunyinya
+  "This removes the plan from Network Rack ... The Access Point page keeps the same plan and its markers."
+
+VERIFIKASI RUNTIME:
+- API: lantai 'ap' tidak muncul di list 'rack' dan sebaliknya.
+- Hapus lantai rack-only dari halaman rack -> 204, list AP tidak berubah.
+- Hapus lantai 'both' dari halaman rack -> hilang dari list rack, rack di dalamnya hilang, tapi
+  `GET /floor-maps/{id}` 200, marker AP-SHARED-1 masih ada, gambar 200, list AP masih memuatnya.
+- UI: buat "UI RACK PLAN" (rack) + "UI AP PLAN" (ap); hapus UI RACK PLAN lewat tombol trash di halaman
+  rack -> hilang dari rack, "UI AP PLAN" utuh di halaman AP.
+- UI skenario HIRO: "SHARED TEST" (both, 1 marker + 1 rack) dihapus dari halaman rack -> tab hilang di
+  rack, di halaman AP tetap ada, marker AP-SHARED-1 masih terbaca lewat API.
+- Dialog konfirmasi untuk lantai 'both' menampilkan kalimat baru (BUILDING 2, lalu Cancel - tidak
+  dihapus). Data uji semua dibersihkan; sisa lantai: BUILDING 1, BUILDING 2, P.
+- `npx nuxt build` exit 0; API dibangun ulang (bin/RackMap4) dan migration diterapkan saat start.
+
+CATATAN OPERASIONAL: API dev sekarang jalan dari `api/bin/RackMap4/Api.dll` di :5099. Menghentikan
+proses lama pakai PID dari `netstat -ano | grep :5099` (PowerShell `.Where()` di Get-CimInstance tidak
+tersedia di mesin ini; kalau port masih dipegang proses lama, build baru diam-diam gagal bind).

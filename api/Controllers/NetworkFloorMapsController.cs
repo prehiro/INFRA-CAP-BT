@@ -18,11 +18,28 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
 {
     private const int MaxImageBytes = 8 * 1024 * 1024;
 
+    /// <summary>
+    /// The two network pages keep their own plans. A plan created on one page is not listed on the
+    /// other; legacy plans stored as "both" show on both until one side deletes them.
+    /// </summary>
     [HttpGet]
-    public async Task<IActionResult> List(CancellationToken ct) => Ok(await db.NetworkFloorMaps
-        .AsNoTracking().OrderBy(x => x.Name).ThenBy(x => x.Id)
-        .Select(x => new { x.Id, x.Name, x.CreatedAt, AccessPointCount = x.AccessPoints.Count, RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id) })
-        .ToListAsync(ct));
+    public async Task<IActionResult> List([FromQuery] string? scope, CancellationToken ct)
+    {
+        var query = db.NetworkFloorMaps.AsNoTracking();
+        if (ScopeFilter(scope) is { } wanted)
+            query = query.Where(x => x.Scope == wanted || x.Scope == "both");
+        return Ok(await query.OrderBy(x => x.Name).ThenBy(x => x.Id)
+            .Select(x => new { x.Id, x.Name, x.CreatedAt, x.Scope, AccessPointCount = x.AccessPoints.Count, RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id) })
+            .ToListAsync(ct));
+    }
+
+    // Only the two page scopes are addressable; anything else means "no filter".
+    private static string? ScopeFilter(string? scope) => scope?.Trim().ToLowerInvariant() switch
+    {
+        "ap" => "ap",
+        "rack" => "rack",
+        _ => null
+    };
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> Get(int id, CancellationToken ct)
@@ -69,7 +86,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [RequestSizeLimit(MaxImageBytes + 65536)]
-    public async Task<IActionResult> Create([FromForm] string? name, [FromForm] IFormFile? image, CancellationToken ct)
+    public async Task<IActionResult> Create([FromForm] string? name, [FromForm] IFormFile? image, [FromForm] string? scope, CancellationToken ct)
     {
         name = name?.Trim();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 120)
@@ -83,7 +100,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         var contentType = ImageType(bytes);
         if (contentType is null) return BadRequest(new { message = "Only PNG, JPEG or WebP floor-plan images are supported." });
         var cacheGeneration = imageCache.Generation;
-        var floor = new NetworkFloorMap { Name = name, ImageBytes = bytes, ImageContentType = contentType };
+        var floor = new NetworkFloorMap { Name = name, ImageBytes = bytes, ImageContentType = contentType, Scope = ScopeFilter(scope) ?? "both" };
         db.NetworkFloorMaps.Add(floor);
         await db.SaveChangesAsync(ct);
         // The uploaded bytes are already here; avoid a needless SQL round-trip on first view.
@@ -135,12 +152,30 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         return Ok(new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = accessPointCount });
     }
 
+    /// <summary>
+    /// Deleting from a page removes the plan from THAT page only. A shared ("both") plan keeps
+    /// serving the other page: it is detached from the caller's scope and only the caller's own
+    /// contents (markers or racks) are dropped. The row itself goes away once nothing claims it.
+    /// </summary>
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    public async Task<IActionResult> Delete(int id, [FromQuery] string? scope, CancellationToken ct)
     {
         var floor = await db.NetworkFloorMaps.FindAsync([id], ct);
         if (floor is null) return NotFound();
+
+        var callerScope = ScopeFilter(scope);
+        if (callerScope is not null && floor.Scope == "both")
+        {
+            floor.Scope = callerScope == "ap" ? "rack" : "ap";
+            if (callerScope == "rack")
+                db.NetworkRacks.RemoveRange(db.NetworkRacks.Where(r => r.FloorMapId == id));
+            else
+                db.NetworkAccessPoints.RemoveRange(db.NetworkAccessPoints.Where(p => p.FloorMapId == id));
+            await db.SaveChangesAsync(ct);
+            return NoContent();
+        }
+
         db.NetworkFloorMaps.Remove(floor); // cascades to its markers
         await db.SaveChangesAsync(ct);
         imageCache.Remove(id);

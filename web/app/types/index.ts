@@ -15,6 +15,8 @@ export interface FloorMapSummary {
   createdAt: string
   accessPointCount: number
   rackCount: number
+  // 'ap' | 'rack' for plans created on one page, 'both' for plans that predate the split.
+  scope?: 'ap' | 'rack' | 'both'
 }
 export interface FloorMapDetail extends Omit<FloorMapSummary, 'accessPointCount' | 'rackCount'> {
   accessPoints: AccessPoint[]

@@ -86,6 +86,7 @@ public class AppDbContext : DbContext
         b.Entity<NetworkFloorMap>(e =>
         {
             e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.Property(x => x.Scope).HasMaxLength(16).IsRequired().HasDefaultValue("both");
             e.Property(x => x.ImageContentType).HasMaxLength(30).IsRequired();
             e.Property(x => x.ImageBytes).HasColumnType("varbinary(max)").IsRequired();
         });

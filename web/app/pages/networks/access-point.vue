@@ -179,7 +179,7 @@ async function refresh(preferId?: number) {
   loading.value = true
   error.value = ''
   try {
-    floors.value = await apiListNetworkFloors()
+    floors.value = await apiListNetworkFloors('ap')
     const next = preferId && floors.value.some(f => f.id === preferId) ? preferId
       : floors.value.some(f => f.id === activeId.value) ? activeId.value! : floors.value[0]?.id
     if (next) await loadFloor(next)
@@ -242,7 +242,7 @@ async function createFloor() {
         duration: 6000
       })
     } else {
-      const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile!)
+      const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile!, 'ap')
       // The browser already has these bytes; the first view needs no image request.
       floorImages.set(created.id, uploadedFile!)
       if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
@@ -258,7 +258,7 @@ async function deleteFloor(item: FloorMapSummary) {
   if (!window.confirm(`Delete “${item.name}” and all its access points?`)) return
   busy.value = true; error.value = ''
   try {
-    await apiDeleteNetworkFloor(item.id)
+    await apiDeleteNetworkFloor(item.id, 'ap')
     floorImages.delete(item.id)
     if (activeId.value === item.id) activeId.value = null
     await refresh()
