@@ -867,18 +867,3 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 </style>
-
-<style>
-/* UModal teleports to body; this unique class limits the wash to the upload popup. */
-.ap-upload-modal[data-slot='content']::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: min(70%, 300px);
-  height: 170px;
-  background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--ui-primary) 17%, transparent), transparent 72%);
-  pointer-events: none;
-  z-index: 0;
-}
-</style>

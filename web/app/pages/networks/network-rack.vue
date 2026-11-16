@@ -996,17 +996,3 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
   .ap-page-enter { animation: none; }
 }
 </style>
-
-<style>
-.ap-upload-modal[data-slot='content']::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: min(70%, 300px);
-  height: 170px;
-  background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--ui-primary) 17%, transparent), transparent 72%);
-  pointer-events: none;
-  z-index: 0;
-}
-</style>

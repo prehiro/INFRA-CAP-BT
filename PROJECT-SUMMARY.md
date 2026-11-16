@@ -6165,3 +6165,24 @@ VERIFIKASI ANGKA (computedStyle dari browser):
 - Modal Add Record PC Ledger: nilai identik (top -110px, right -90px, 250px, color sama, .14, blur 60px).
 - Light mode: opacity turun otomatis ke .09 (diuji dengan melepas/menempel kelas `dark` pada <html>).
 `npx nuxt build` exit 0.
+### Glow Modal Add Floor Plan / Update Map Ikut Resep Rumah (2026-11-16)
+
+HIRO: "add floor dan update map model juga samakan".
+
+AKAR MASALAH: modal Add floor plan / Update map punya aturan glow SENDIRI di kedua halaman -
+`.ap-upload-modal[data-slot='content']::before` dengan `radial-gradient(ellipse at top right, …17%…)`,
+tinggi 170px menempel di pojok (0,0). Aturan itu lebih spesifik (`[data-slot='content']`) daripada
+`.network-modal-glow::before`, jadi glow lama itulah yang terlihat - elips dengan tepi terasa, beda
+dengan dialog PC Ledger. Modal ini memang satu modal dengan dua mode (`replacingId` null = Add,
+tidak null = Update map), jadi membereskan satu aturan memperbaiki keduanya.
+
+PERBAIKAN: blok `<style>` yang berisi `.ap-upload-modal[data-slot='content']::before` DIHAPUS dari
+access-point.vue dan network-rack.vue. Kelas `ap-upload-modal` tetap dipasang di `:ui` (tidak ada
+aturan lain yang memakainya sekarang), sehingga yang berlaku hanya resep rumah dari `.network-modal-glow`.
+
+VERIFIKASI (computedStyle):
+- Add floor plan (AP): top -110px, right -90px, 250px, `rgb(0, 220, 130)`, opacity .14, blur 60px,
+  `background-image: none` (tidak ada gradient elips lagi).
+- Update map (AP, mode replacingId): nilai identik.
+- Add floor plan (Rack): nilai identik; fokus otomatis ke `floor-name` tetap jalan.
+`npx nuxt build` exit 0.
