@@ -52,6 +52,20 @@ function endFloorPan() {
   // Let the flag survive the click that follows the pointerup, then clear it.
   setTimeout(() => { floorPan.moved = 0 }, 0)
 }
+const floorNav = reactive({ left: false, right: false })
+function syncFloorNav() {
+  const el = floorListEl.value
+  if (!el) return
+  floorNav.left = el.scrollLeft > 4
+  floorNav.right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+}
+function scrollFloors(dir: number) {
+  const el = floorListEl.value
+  if (!el) return
+  el.scrollBy({ left: dir * Math.max(176, el.clientWidth * 0.7), behavior: 'smooth' })
+}
+watch([floorListEl, floors, activeId], async () => { await nextTick(); syncFloorNav() }, { deep: false })
+if (typeof window !== 'undefined') window.addEventListener('resize', syncFloorNav)
 // A drag must not also select the floor it ended on.
 function selectFloor(id: number) {
   if (floorPan.moved > 3) return
@@ -403,8 +417,12 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <p class="text-xs text-muted">{{ isAdmin ? 'Click the plan to add AP, Click AP for details.' : 'Select a marker to see its network details.' }}</p>
             </div>
           </div>
-          <div v-if="floors.length" ref="floorListEl" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto"
-            :class="[floorPan.active ? 'ap-floor-dragging' : '']" aria-label="Floor plans" @pointerdown="startFloorPan">
+          <div class="ap-floor-strip">
+            <button v-if="floorNav.left" type="button" class="ap-floor-nav" aria-label="Show earlier floor plans" @click="scrollFloors(-1)">
+              <UIcon name="i-lucide-chevron-left" class="size-3.5" />
+            </button>
+            <div v-if="floors.length" ref="floorListEl" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto"
+              :class="[floorPan.active ? 'ap-floor-dragging' : '']" aria-label="Floor plans" @pointerdown="startFloorPan" @scroll="syncFloorNav">
             <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
               :class="activeId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -416,6 +434,10 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"
                 :disabled="busy" @click.stop="deleteFloor(item)" />
             </div>
+            </div>
+            <button v-if="floorNav.right" type="button" class="ap-floor-nav" aria-label="Show later floor plans" @click="scrollFloors(1)">
+              <UIcon name="i-lucide-chevron-right" class="size-3.5" />
+            </button>
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
             <UButton v-if="floors.length" type="button" size="sm" icon="i-lucide-image-up" variant="soft" class="ap-map-update-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" :title="floor ? `Update map - ${floor.name}` : 'Update map'" @click="openReplace(floor!)">Update map</UButton>
@@ -637,13 +659,29 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 /* Only actions on this map opt in; keep button hitboxes fixed during hover. */
 /* Equal side tracks align the floor-card strip with the centred map image, not the space between controls. */
 @media (min-width: 1280px) {
-  .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 405px) minmax(0, 1fr); }
+  /* Fits three 176px cards plus the arrow that says another floor is waiting. */
+  .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 588px) minmax(0, 1fr); }
   .ap-header-actions { grid-column: 3; }
 }
 /* Centre the floor cards when they fit; overflow falls back to start so every card stays reachable. */
 .ap-floor-list { justify-content: safe center; scrollbar-width: none; cursor: grab; }
-/* No scrollbar and no arrows: the strip is panned by dragging it. */
+/* No scrollbar: the strip is panned by dragging it. */
 .ap-floor-list.ap-floor-dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }
+.ap-floor-strip { display: flex; width: 100%; min-width: 0; align-items: center; gap: 4px; }
+/* A small chevron that only exists while another floor is off-screen. */
+.ap-floor-nav {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 20px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg-elevated) 88%, transparent);
+  color: var(--ui-text-muted);
+  transition: color 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+.ap-floor-nav:hover { color: var(--ui-primary); border-color: color-mix(in srgb, var(--ui-primary) 55%, transparent); background: color-mix(in srgb, var(--ui-primary) 12%, transparent); }
 .ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }

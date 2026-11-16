@@ -5999,3 +5999,26 @@ VERIFIKASI RUNTIME (7 lantai: 3 asli + 4 lantai uji sementara):
 
 CATATAN: patch pertama di access-point.vue salah sasaran dan menghapus blok refresh/loadFloor; file
 dipulihkan dengan `git checkout --` lalu patch diterapkan dengan anchor yang sempit.
+### Strip Floor Plan: Tiga Kartu Terlihat + Indikator Panah (2026-11-16)
+
+HIRO: "lebarkan lagi biar cardnya terlihat 3, tapi buat indikator panah kalau ada next floor".
+
+PERUBAHAN (network-rack.vue + access-point.vue):
+- Kolom tengah header dilebarkan 405px -> 588px pada `@media (min-width:1280px)`: 3 kartu 176px +
+  gap 8px = 544px, sisa 44px dipakai panah (20px) + gap sehingga panah TIDAK menutupi kartu.
+- Panah indikator: `floorNav.left/right` dihitung `syncFloorNav()` dari scrollLeft/scrollWidth
+  (dipanggil saat @scroll, watch floors+lantai aktif, dan resize). Tombol `.ap-floor-nav` 20x32px
+  chevron di kiri/kanan wrapper `.ap-floor-strip`, hanya dirender saat memang ada lantai di luar
+  layar; kliknya menggeser 70% lebar (`scrollFloors`). Inilah penanda "masih ada floor berikutnya".
+- Drag-pan tetap ada (tidak diganti).
+
+VERIFIKASI RUNTIME: 3 lantai -> 3 kartu penuh, 0 panah (tidak ada UI menganggur). 5 lantai (2 uji
+sementara) -> tepat 3 kartu terlihat penuh (ARROW TEST 1, ARROW TEST 2, BUILDING 1), 2 terpotong,
+panah kanan muncul di x=1128 (tepi list 1124) tanpa menimpa kartu; klik panah -> scrollLeft 348,
+BUILDING 2-3 terlihat, panah kiri ikut muncul. Kolom terbaca `294.5px 588px 294.5px` di 1500px
+viewport pada kedua halaman. Lantai uji dihapus. `npx nuxt build` exit 0.
+
+CATATAN: patch pertama menaruh blok penutup + panah kanan di dalam footer dialog delete (pola
+`</UButton></div></div>` juga ada di sana) sehingga template kehilangan end tag dan halaman 500.
+Deteksi: `Element is missing end tag` di dev.out. Pelajaran: anchor penutup JSX harus menyertakan
+konteks unik (mis. `@click.stop="deleteFloor(item)" />` atau baris `ap-header-actions` berikutnya).
