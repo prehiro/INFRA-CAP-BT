@@ -5798,3 +5798,16 @@ tanpa gradient".
 
 VERIFIKASI (Bottom UPS view, 1400x900): zoom panel - bidang orange rata tanpa gradient, teks hitam
 terbaca, badge orange senada. Build exit 0.
+### Halo Lantai: Lebih Cepat & Radius Lebih Luas (2026-11-16)
+
+HIRO: "animasi breathe dibawah rach percepat dong, perluas juga radiusnya".
+
+- Siklus halo: `phase = fract(uTime / 3.5)` (dari 7.0 s) - dua kali lebih cepat.
+- Jangkauan: `ringRadius = phase * 6.5` (dari 3.6 m), `ringWidth = 0.35 + phase * 1.05` (dari 0.30+0.75)
+  supaya lingkarannya tetap tipis secara proporsional saat melebar.
+- Kolam tetap di kaki rack juga dilebarkan: `exp(-radius*radius*0.55)` (dari 1.1), amplitudo tetap 0.16.
+
+VERIFIKASI (Angled View 1400x900): 4 frame berjarak 0.9 s - pixel lantai berubah 22.586 / 170.387 /
+144.291 px per langkah, jadi gerakan jelas terlihat dalam waktu di bawah satu detik. Screenshot:
+wash aksen hijau melebar sampai menutupi sebagian besar lantai yang terlihat, grid putih tetap
+terbaca. Build exit 0.

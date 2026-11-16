@@ -384,11 +384,13 @@ onMounted(async () => {
 
           // A constant, very soft pool under the cabinet so the accent is present even between
           // pulses, plus one halo that swells outward from the feet and dissolves as it widens.
-          float pool = exp(-radius * radius * 1.1) * 0.16;
+          float pool = exp(-radius * radius * 0.55) * 0.16;
 
-          float phase = fract(uTime / 7.0);
-          float ringRadius = phase * 3.6;
-          float ringWidth = 0.30 + phase * 0.75;
+          // 3.5 s per pulse instead of 7 s, and the swell now reaches ~6.5 m instead of 3.6 m, so the
+          // halo is clearly moving instead of just breathing in place.
+          float phase = fract(uTime / 3.5);
+          float ringRadius = phase * 6.5;
+          float ringWidth = 0.35 + phase * 1.05;
           float ring = exp(-pow((radius - ringRadius) / ringWidth, 2.0)) * (1.0 - phase) * (1.0 - phase) * 0.34;
 
           float accentAlpha = clamp(pool + ring, 0.0, 0.55) * fade;
