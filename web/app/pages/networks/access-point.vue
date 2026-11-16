@@ -368,19 +368,17 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
               :class="activeId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                :class="isAdmin ? 'pr-16' : 'pr-3'" :aria-pressed="activeId === item.id" :disabled="busy" @click="loadFloor(item.id)">
+                :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeId === item.id" :disabled="busy" @click="loadFloor(item.id)">
                 <span class="w-full truncate text-sm font-semibold leading-tight" :title="item.name">{{ item.name }}</span>
                 <span class="text-[11px] leading-tight opacity-70">{{ item.accessPointCount }} AP</span>
               </button>
-              <UButton v-if="isAdmin" type="button" icon="i-lucide-image-up" size="xs" color="neutral" variant="ghost"
-                class="ap-plan-replace absolute right-8 top-1" :aria-label="`Update map for ${item.name}`" :title="`Update map - ${item.name}`"
-                :disabled="busy" @click.stop="openReplace(item)" />
               <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost"
                 class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"
                 :disabled="busy" @click.stop="deleteFloor(item)" />
             </div>
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
+            <UButton v-if="floors.length" type="button" size="sm" icon="i-lucide-image-up" variant="soft" class="ap-map-update-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" :title="floor ? `Update map - ${floor.name}` : 'Update map'" @click="openReplace(floor!)">Update map</UButton>
             <UButton v-if="floors.length" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAdd()">Add AP</UButton>
             <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openUpload()">Add floor plan</UButton>
           </div>

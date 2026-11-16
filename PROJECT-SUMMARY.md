@@ -5878,3 +5878,18 @@ VERIFIKASI RUNTIME (bukan statis):
 CATATAN IKON (menghindari salah diagnosa): Nuxt Icon di app ini merender mode CSS mask, jadi span
 ikon TIDAK berisi <svg> - `querySelector('svg')` selalu kosong walau ikonnya tampil normal. Cek yang
 benar: `getComputedStyle(span).maskImage` berisi `url("data:image/svg+xml,...")`.
+### Tombol Update Map Dipindah ke Header (2026-11-16)
+
+HIRO: "mana bro icon updatenya tidak ada".
+
+PENYEBAB: tombolnya ada, tapi saya taruh sebagai ikon `size=xs` variant ghost 16px di pojok tab lantai
+(156-176px, latar gelap, tanpa label) - praktis tidak terlihat, jadi wajar dianggap tidak ada. Bukan
+masalah bundle ikon; Nuxt Icon di app ini render CSS mask sehingga span tidak pernah berisi <svg>.
+
+PERBAIKAN: ikon di tab DIHAPUS, diganti tombol berlabel "Update map" (icon i-lucide-image-up,
+variant soft) di baris header aksi, di kiri "Add AP"/"Add floor plan", aktif hanya kalau ada lantai
+terpilih. Padding teks tab kembali `pr-10` karena hanya tombol hapus yang tersisa di tab.
+
+VERIFIKASI: tombol "Update map" terukur di (1127,126) 110x28, enabled, ikon mask terisi; klik ->
+modal "Update floor plan" dengan nama "BUILDING 1" terisi otomatis; Cancel menutup modal dan daftar
+lantai tetap BUILDING 1 / BUILDING 2. Build exit 0.
