@@ -549,7 +549,6 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
             </div>
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
-            <UButton v-if="floors.length" type="button" size="sm" icon="i-lucide-image-up" variant="soft" class="ap-map-update-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" :title="floor ? `Update map - ${floor.name}` : 'Update map'" @click="openReplace(floor)">Update map</UButton>
             <UButton v-if="floors.length" type="button" size="sm" icon="game-icons:server-rack" class="ap-rack-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAddRack()">Add Rack</UButton>
             <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openUpload()">Add floor plan</UButton>
           </div>
@@ -565,7 +564,13 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
           <p class="mt-1 text-sm text-muted">{{ isAdmin ? 'Upload a plan to start mapping racks.' : 'An administrator can add the first floor plan.' }}</p>
         </UCard>
         <template v-else>
-          <UCard :ui="{ body: 'flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <UCard :ui="{ body: 'relative flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
+            <!-- UButton's own base class sets position: relative, so the anchor is this wrapper. -->
+            <div v-if="isAdmin && floor" class="absolute right-3 top-3 z-20">
+              <UButton type="button" size="sm" icon="i-lucide-image-up" variant="soft"
+                class="ap-map-update-action record-add-hover stable-hover-hitbox"
+                :disabled="busy" :title="`Update map - ${floor.name}`" @click="openReplace(floor)">Update map</UButton>
+            </div>
             <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
               <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />

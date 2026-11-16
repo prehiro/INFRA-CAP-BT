@@ -5918,3 +5918,17 @@ VERIFIKASI RUNTIME di /networks/network-rack:
   DOM.setFileInputFiles, Save -> modal tertutup, src blob <img> BERGANTI (gambar baru benar-benar
   diambil ulang), marker rack tetap di 40%/50%, md5 gambar di server == file yang diunggah.
 - Lantai uji dihapus; daftar lantai kembali BUILDING 1 / BUILDING 2.
+### Update Map Pindah ke Pojok Kanan Atas Kartu Peta (2026-11-16)
+
+HIRO minta tombolnya di pojok kanan atas section `#dashboard-panel-network-rack ... >
+div.rounded-lg.overflow-hidden.bg-default.ring.ring-default.divide-y.divide-default.flex...` - itu
+kartu peta (UCard dengan body 'flex min-h-0 flex-1 flex-col p-2 sm:p-3'), bukan baris header panel.
+
+PERUBAHAN: tombol "Update map" DIHAPUS dari baris aksi header (Add Rack / Add floor plan) dan dipasang
+mengambang di dalam kartu peta, `absolute right-3 top-3 z-20`, dengan memakai div anchor karena base
+class UButton sendiri menyetel `position: relative` sehingga class `absolute` pada UButton diabaikan
+(tombol sempat melebar 1219px penuh). Body UCard diberi `relative` supaya anchor-nya benar.
+
+VERIFIKASI: tombol 110x28 di (1353,214), offset 12px dari kanan dan atas kartu, di dalam kartu, hanya
+satu instance, ikon ter-render; klik -> modal "Update floor plan" nama lantai aktif terisi, Cancel
+menutup tanpa mengubah apa pun.
