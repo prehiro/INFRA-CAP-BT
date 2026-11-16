@@ -18,6 +18,18 @@ const uploadPreviewUrl = ref('')
 const uploadError = ref('')
 const showUpload = ref(false)
 const replacingId = ref<number | null>(null)
+// Opening an add/edit dialog should land the caret in the first text box, no extra click.
+function focusField(id: string) {
+  // The modal grabs focus while it mounts, so wait a frame and then claim it back.
+  requestAnimationFrame(() => {
+    const el = document.getElementById(id) as HTMLInputElement | null
+    if (!el) return
+    el.focus()
+    const end = el.value.length
+    el.setSelectionRange?.(end, end)
+  })
+}
+watch(showUpload, async (open) => { if (open) { await nextTick(); focusField('floor-name') } })
 const floorListEl = ref<HTMLElement | null>(null)
 // The strip is a hidden-scrollbar row; it is panned with the mouse like a filmstrip.
 const floorPan = reactive({ active: false, pointerId: -1, startX: 0, startLeft: 0, moved: 0 })
@@ -73,6 +85,7 @@ function selectFloor(id: number) {
 }
 const showEditor = ref(false)
 const showDetails = ref(false)
+watch(showEditor, async (open) => { if (open) { await nextTick(); focusField('ap-hostname') } })
 const detailError = ref('')
 const copiedIpId = ref<number | null>(null)
 let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null

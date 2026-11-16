@@ -6107,3 +6107,20 @@ SESUDAH (disamakan persis, diukur di browser pada viewport 1500x950):
 VERIFIKASI: posisi dan gaya IDENTIK dengan network-rack - kotak 110x28 di (1353,214), offset 12px dari
 kanan dan atas kartu, background `rgb(0, 220, 130)`, box-shadow `rgba(0,0,0,.35) 0 6px 16px`, hanya satu
 instance. Klik membuka modal "Update floor plan". `npx nuxt build` exit 0.
+### Modal Add/Edit Langsung Fokus ke Textbox Pertama (2026-11-16)
+
+HIRO: "pada modal add cursor auto langsung aktif ke textbox dong".
+
+SEBELUM: setelah modal add terbuka, caret masih di body - harus klik dulu ke field sebelum mengetik.
+
+SESUDAH: helper `focusField(id)` di kedua halaman network, dipanggil dari `watch` pada flag modal:
+`await nextTick()` lalu `requestAnimationFrame(() => el.focus(); setSelectionRange(end, end))`.
+Kenapa rAF: UModal menarik fokus saat mount, jadi fokus kita harus diambil SETELAH frame berikutnya.
+Target di access-point.vue: Add AP -> `#ap-hostname`, Add/Update floor plan -> `#floor-name`.
+Target di network-rack.vue: Add floor plan -> `#floor-name`, Add/Edit rack -> `#rack-name`
+(id baru ditambahkan pada UInput), Add/Edit switch -> `#switch-ip` (id baru; belum ada entry point UI
+karena footer modal rack sudah dihapus).
+
+VERIFIKASI (document.activeElement dibaca dari browser): Add AP -> activeId `ap-hostname`; Add floor
+plan (AP) -> `floor-name` dan ketikan keyboard benar-benar masuk ke field itu; Add floor plan (Rack) ->
+`floor-name`; Add Rack -> `rack-name`. `npx nuxt build` exit 0.

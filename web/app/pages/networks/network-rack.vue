@@ -567,6 +567,21 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
   if (!current.moved || current.floorId !== floor.value?.id) return
   await moveRack(current.id, rack.x, rack.y)
 }
+
+// Opening an add/edit dialog should land the caret in the first text box, no extra click.
+function focusField(id: string) {
+  // The modal grabs focus while it mounts, so wait a frame and then claim it back.
+  requestAnimationFrame(() => {
+    const el = document.getElementById(id) as HTMLInputElement | null
+    if (!el) return
+    el.focus()
+    const end = el.value.length
+    el.setSelectionRange?.(end, end)
+  })
+}
+watch(showUpload, async (open) => { if (open) { await nextTick(); focusField('floor-name') } })
+watch(showRackEditor, async (open) => { if (open) { await nextTick(); focusField('rack-name') } })
+watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusField('switch-ip') } })
 </script>
 
 <template>
@@ -708,7 +723,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
             </div>
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Rack name</legend>
-              <UInput v-model="rackDraft.name" class="w-full" maxlength="60" placeholder="e.g. A,B,B-B2,D-B1" :disabled="busy" />
+              <UInput id="rack-name" v-model="rackDraft.name" class="w-full" maxlength="60" placeholder="e.g. A,B,B-B2,D-B1" :disabled="busy" />
             </fieldset>
             <fieldset :disabled="busy">
               <legend class="mb-2 flex w-full items-baseline justify-between gap-3">
@@ -762,7 +777,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
             </div>
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">IP address</legend>
-              <UInput v-model="switchDraft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.1" :disabled="busy" />
+              <UInput id="switch-ip" v-model="switchDraft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.1" :disabled="busy" />
             </fieldset>
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Hostname (optional)</legend>
