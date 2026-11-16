@@ -6243,3 +6243,22 @@ sudah ada, jadi tidak ada duplikasi aturan animasi.
 VERIFIKASI: tile 48 px berisi 9 LED + 3 panel; 7 dari 9 LED berubah opasitas dalam 0,45 s (animasi
 jalan), LED pertama `rgb(56, 189, 248)` durasi 2,51 s; zoom 10x menunjukkan strip hitam duduk di dalam
 ketiga unit seperti pada marker. `npx nuxt build` exit 0.
+### LED Juga di Icon Rack Details (2026-11-16)
+
+HIRO: "pada icon rack details juga buat led nya".
+
+Icon di header modal rack details (network-rack.vue, `[role=dialog] .ap-modal-icon`) tadinya
+`<UIcon name="game-icons:server-rack" class="size-6">`. Sekarang SVG inline berisi path glyph yang SAMA
+dengan marker (`RACK_GLYPH_PATH`, diekstrak jadi satu konstanta supaya tidak ada tiga salinan path
+panjang) + tiga panel `.ap-rack-bay` + 9 `.ap-rack-led`.
+
+Seed ritme memakai `rackLeds(selectedRackDetail.id)`, jadi icon modal berkedip SELARAS dengan rack itu di
+peta (bukan irama acak baru) - dan berbeda antar rack.
+
+VERIFIKASI:
+- Modal rack "D-B1": 9 LED, 3 panel, path shell ada
+- Posisi relatif panel identik dengan marker: 0,1055 / 0,3867 / 0,668 dari tinggi SVG; baris LED
+  0,125 / 0,406 / 0,688 (icon judul berbeda angka karena ikut animasi `pc-add-tilt`, jadi bbox-nya miring)
+- Opasitas 9 LED modal SAMA PERSIS dengan 9 LED marker rack itu pada saat yang sama (seed sama), dan
+  berubah antar sampel 0,5 s (animasi jalan)
+- `npx nuxt build` exit 0; screenshot: details_icon_leds.png

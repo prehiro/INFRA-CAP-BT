@@ -574,6 +574,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
 // Measured from the glyph's own path: the three drive bars sit at y = 55/199/343 (18 tall,
 // 144 apart - NOT the 120 that the unit pitch suggests), so the dark panel tops are those minus 1
 // and the LEDs ride the bar centres at 64/208/352.
+const RACK_GLYPH_PATH = 'M41 25v78h430V25zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16M64 55h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm13 66v30h38v-30zM25 457v30h130.2l20-30zm171.8 0l-20 30h158.4l-20-30zm140 0l20 30H487v-30z'
 const RACK_BAYS = [54, 198, 342]
 function rackLeds(id: number) {
   const leds: { x: number; y: number; blue: boolean; dur: number; delay: number }[] = []
@@ -698,7 +699,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
                          panels can carry blinking LEDs. HIRO: "i prefer led nya di kotak-kotak hitam
                          pada server, blink random biru dan kuning". -->
                     <svg class="ap-rack-svg size-9 text-primary" viewBox="0 0 512 512" aria-hidden="true">
-                      <path class="ap-rack-shell" d="M41 25v78h430V25zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16M64 55h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm13 66v30h38v-30zM25 457v30h130.2l20-30zm171.8 0l-20 30h158.4l-20-30zm140 0l20 30H487v-30z" />
+                      <path class="ap-rack-shell" :d="RACK_GLYPH_PATH" />
                       <rect v-for="bay in RACK_BAYS" :key="`bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
                       <circle v-for="(led, i) in rackLeds(rack.id)" :key="`led-${i}`" class="ap-rack-led"
                         :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
@@ -842,7 +843,18 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #header="{ close }">
           <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
-            <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
+            <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+              <!-- Same rack glyph and LED bays as the map marker; seeded with THIS rack's id so the
+                   modal icon blinks in step with that rack on the plan. -->
+              <svg class="ap-rack-svg size-7" viewBox="0 0 512 512" aria-hidden="true">
+                <path class="ap-rack-shell" :d="RACK_GLYPH_PATH" />
+                <rect v-for="bay in RACK_BAYS" :key="`detail-bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
+                <circle v-for="(led, i) in rackLeds(selectedRackDetail.id)" :key="`detail-led-${i}`" class="ap-rack-led"
+                  :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
+                  :cx="led.x" :cy="led.y" r="12"
+                  :style="{ animationDuration: `${led.dur}s`, animationDelay: `${led.delay}s` }" />
+              </svg>
+            </span>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3>
