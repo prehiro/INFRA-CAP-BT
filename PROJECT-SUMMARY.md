@@ -5893,3 +5893,28 @@ terpilih. Padding teks tab kembali `pr-10` karena hanya tombol hapus yang tersis
 VERIFIKASI: tombol "Update map" terukur di (1127,126) 110x28, enabled, ikon mask terisi; klik ->
 modal "Update floor plan" dengan nama "BUILDING 1" terisi otomatis; Cancel menutup modal dan daftar
 lantai tetap BUILDING 1 / BUILDING 2. Build exit 0.
+### Tombol Update Map di Halaman Network Rack (2026-11-16)
+
+HIRO: "sudah hard refresh masih belum muncul, lalu saya mau tombol updatenya ada di pojok kanan atas
+section ini #dashboard-panel-network-rack ...". Tombol sebelumnya hanya ada di halaman Access Point;
+halaman yang dia maksud adalah Network Rack (network-rack.vue), yang punya kartu peta sendiri.
+
+PERUBAHAN `web/app/pages/networks/network-rack.vue`:
+- Tombol "Update map" (i-lucide-image-up, variant soft) ditambahkan ke baris aksi kanan-atas kartu peta,
+  berderet dengan "Add Rack" dan "Add floor plan".
+- `replacingId` + `openUpload()` / `openReplace(item)`; modal upload sekarang dua mode (Add / Update):
+  judul, deskripsi, ikon, catatan gambar ("Leave empty to keep the current image"), dan tombol
+  ("Upload plan" -> "Save changes") ikut berubah.
+- Saat replace: `floorImages.delete(id)` + `pendingFloorImages.delete(id)` SEBELUM `refresh(id)`, supaya
+  loadFloor benar-benar mengambil blob baru. Tanpa ini peta tetap menampilkan gambar lama dari cache
+  halaman (blob URL lama), walau server sudah punya gambar baru.
+- `openReplace` menerima bentuk struktural `{ id, name }` karena `floor` bertipe FloorMapDetail,
+  bukan FloorMapSummary.
+
+VERIFIKASI RUNTIME di /networks/network-rack:
+- Tombol "Update map" ada di baris aksi kanan-atas, enabled, ikon mask terisi.
+- Klik -> modal "Update floor plan", nama lantai aktif ("BUILDING 1") terisi, tombol "Save changes".
+- Uji penuh dengan lantai sementara + 1 rack: pilih tab, Update map, set gambar baru via CDP
+  DOM.setFileInputFiles, Save -> modal tertutup, src blob <img> BERGANTI (gambar baru benar-benar
+  diambil ulang), marker rack tetap di 40%/50%, md5 gambar di server == file yang diunggah.
+- Lantai uji dihapus; daftar lantai kembali BUILDING 1 / BUILDING 2.
