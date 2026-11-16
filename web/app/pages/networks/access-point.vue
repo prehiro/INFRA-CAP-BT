@@ -466,7 +466,6 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             </button>
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
-            <UButton v-if="floors.length" type="button" size="sm" icon="i-lucide-image-up" variant="soft" class="ap-map-update-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" :title="floor ? `Update map - ${floor.name}` : 'Update map'" @click="openReplace(floor!)">Update map</UButton>
             <UButton v-if="floors.length" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAdd()">Add AP</UButton>
             <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openUpload()">Add floor plan</UButton>
           </div>
@@ -482,7 +481,14 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           <p class="mt-1 text-sm text-muted">{{ isAdmin ? 'Upload a plan to start mapping access points.' : 'An administrator can add the first floor plan.' }}</p>
         </UCard>
         <template v-else>
-          <UCard :ui="{ body: 'flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
+          <UCard :ui="{ body: 'relative flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
+            <!-- Same corner action as Network Rack: UButton's base class forces position: relative,
+                 so the anchor is this wrapper. Solid accent + dark halo stays readable on a white plan. -->
+            <div v-if="isAdmin && floor" class="absolute right-3 top-3 z-20">
+              <UButton type="button" size="sm" icon="i-lucide-image-up" variant="solid" color="primary"
+                class="ap-map-update-action record-add-hover stable-hover-hitbox shadow-lg shadow-black/30 ring-1 ring-black/10"
+                :disabled="busy" :title="`Update map - ${floor.name}`" @click="openReplace(floor)">Update map</UButton>
+            </div>
             <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
                 <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
@@ -669,6 +675,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 </template>
 
 <style scoped>
+/* UButton ignores Tailwind shadow utilities, so the floating map action carries its own. */
+.ap-map-update-action { box-shadow: 0 6px 16px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.18) inset; }
 /* The dialog lands as one piece: head, rows, footer rise in sequence. */
 .ap-delete-head, .ap-delete-rows, .ap-delete-footer { animation: ap-delete-rise 320ms cubic-bezier(.22, 1, .36, 1) backwards; }
 .ap-delete-rows { animation-delay: 60ms; }

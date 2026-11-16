@@ -6089,3 +6089,21 @@ pun. `npx nuxt build` exit 0.
 
 CATATAN: `window.confirm` yang masih tersisa di access-point.vue adalah untuk menghapus SATU marker
 access point (fungsi `deletePoint`), bukan floor plan - belum diubah karena di luar permintaan.
+### Tombol Update Map Access Point Dipindah ke Pojok Kartu Peta (2026-11-16)
+
+HIRO: "tombol update map pada page accesspoint samakan posisinya dengan yang ada di network rack".
+
+SEBELUM: di access-point.vue tombol "Update map" duduk di baris aksi header (`variant="soft"`), beda
+tempat dan beda gaya dengan network-rack.vue yang menaruhnya melayang di pojok kanan atas kartu peta.
+
+SESUDAH (disamakan persis, diukur di browser pada viewport 1500x950):
+- Tombol dihapus dari `.ap-header-actions` (Add AP dan Add floor plan tetap di sana).
+- `UCard` body diberi `relative`, tombol dibungkus `<div v-if="isAdmin && floor" class="absolute
+  right-3 top-3 z-20">` - wrapper wajib karena base class UButton memaksa `position: relative`
+  sehingga `absolute` pada UButton sendiri diabaikan.
+- `variant="solid" color="primary"` + `shadow-lg shadow-black/30 ring-1 ring-black/10`, dan shadow
+  sesungguhnya dipatok di CSS scoped `.ap-map-update-action` (utility shadow Tailwind diabaikan UButton).
+
+VERIFIKASI: posisi dan gaya IDENTIK dengan network-rack - kotak 110x28 di (1353,214), offset 12px dari
+kanan dan atas kartu, background `rgb(0, 220, 130)`, box-shadow `rgba(0,0,0,.35) 0 6px 16px`, hanya satu
+instance. Klik membuka modal "Update floor plan". `npx nuxt build` exit 0.
