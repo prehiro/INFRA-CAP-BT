@@ -5932,3 +5932,18 @@ class UButton sendiri menyetel `position: relative` sehingga class `absolute` pa
 VERIFIKASI: tombol 110x28 di (1353,214), offset 12px dari kanan dan atas kartu, di dalam kartu, hanya
 satu instance, ikon ter-render; klik -> modal "Update floor plan" nama lantai aktif terisi, Cancel
 menutup tanpa mengubah apa pun.
+### Update Map: Warna Solid Biar Kebaca di Atas Denah Putih (2026-11-16)
+
+HIRO: "redesign dong coloring nya, kurang terlihat karena map sy bewarna putih".
+
+MASALAH: tombol memakai `variant="soft"` -> latar aksen transparan + teks aksen, jadi nyaris hilang
+kalau jatuh di area denah yang putih.
+
+PERBAIKAN: `variant="solid" color="primary"` (isi penuh warna aksen, teks kontras gelap otomatis dari
+Nuxt UI) + shadow. Class Tailwind `shadow-lg` TIDAK berpengaruh pada UButton (base-nya memakai CSS
+variable shadow sendiri, computed box-shadow tetap transparan), jadi bayangan dipatok di CSS scoped:
+`.ap-map-update-action { box-shadow: 0 6px 16px rgb(0 0 0 / .35), 0 1px 0 rgb(255 255 255 / .18) inset }`.
+
+VERIFIKASI: computed bg `rgb(0, 220, 130)` (aksen user), teks gelap, box-shadow nyata
+`rgba(0,0,0,0.35) 0px 6px 16px`. Kebaca baik saat tombol jatuh di area gelap kartu maupun di atas
+gambar denah putih.

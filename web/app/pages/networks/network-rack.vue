@@ -566,9 +566,10 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
         <template v-else>
           <UCard :ui="{ body: 'relative flex min-h-0 flex-1 flex-col p-2 sm:p-3' }" class="flex min-h-0 min-w-0 flex-1 flex-col">
             <!-- UButton's own base class sets position: relative, so the anchor is this wrapper. -->
+            <!-- Solid accent + dark halo: a soft/tinted button disappears on a white plan image. -->
             <div v-if="isAdmin && floor" class="absolute right-3 top-3 z-20">
-              <UButton type="button" size="sm" icon="i-lucide-image-up" variant="soft"
-                class="ap-map-update-action record-add-hover stable-hover-hitbox"
+              <UButton type="button" size="sm" icon="i-lucide-image-up" variant="solid" color="primary"
+                class="ap-map-update-action record-add-hover stable-hover-hitbox shadow-lg shadow-black/30 ring-1 ring-black/10"
                 :disabled="busy" :title="`Update map - ${floor.name}`" @click="openReplace(floor)">Update map</UButton>
             </div>
             <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
@@ -829,6 +830,7 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
   .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 405px) minmax(0, 1fr); }
   .ap-header-actions { grid-column: 3; }
 }
+.ap-map-update-action { box-shadow: 0 6px 16px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.18) inset; }
 .ap-floor-list { justify-content: safe center; scrollbar-width: none; }
 .ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
