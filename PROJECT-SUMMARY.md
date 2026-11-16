@@ -5974,3 +5974,28 @@ PERBAIKAN (dua halaman: network-rack.vue + access-point.vue):
 VERIFIKASI: 3 lantai -> semua tab utuh, tanpa panah. 7 lantai (4 lantai uji sementara) -> panah kanan
 muncul; klik menggeser 312px dan lantai terakhir terlihat; panah kiri muncul; fade tepi aktif;
 scrollLeft 418 terbaca setelah animasi. Lantai uji dihapus (sisa BUILDING 1-3).
+### Strip Floor Plan: Kembali ke Posisi Awal, Geser dengan Drag (2026-11-16)
+
+HIRO: "saya mau posisi strip nya tetap di posisi awal, hanya saja bisa drag untuk geser melihat card
+yang lain jika penuh".
+
+PERUBAHAN (network-rack.vue + access-point.vue):
+- Layout dikembalikan: `.ap-header-row` lagi 3 kolom `minmax(0,1fr) minmax(0,405px) minmax(0,1fr)`,
+  strip ada di kolom tengah seperti semula. Pembungkus `.ap-floor-strip`, tombol panah, dan fade tepi
+  DIHAPUS TOTAL (tidak ada dead code tersisa; grep membuktikan 0 referensi).
+- Ganti dengan pan-by-drag: `startFloorPan` (pointerdown, hanya mouse, hanya kalau memang overflow),
+  `moveFloorPan` (pointermove di window, `scrollLeft = startLeft - dx`, `preventDefault()` setelah
+  gerak > 3px), `endFloorPan` (lepas listener, `moved` dinolkan lewat setTimeout supaya click setelah
+  pointerup tetap terdeteksi sebagai drag). Cursor `grab` → `grabbing` (`.ap-floor-dragging`).
+- Klik tab dibungkus `selectFloor(id)` yang menolak klik kalau `floorPan.moved > 3`, jadi drag tidak
+  ikut memilih lantai.
+
+VERIFIKASI RUNTIME (7 lantai: 3 asli + 4 lantai uji sementara):
+- network-rack: strip 405px di kolom tengah, 0 panah, cursor grab; drag -260px -> scrollLeft 0→230,
+  kelas dragging lepas setelah pointerup, lantai aktif tidak berubah; klik tanpa gerak tetap memilih
+  (BUILDING 2 aktif).
+- access-point: sama, drag 0→230, klik memilih BUILDING 3.
+- Lantai uji dihapus (sisa BUILDING 1-3). `npx nuxt build` exit 0.
+
+CATATAN: patch pertama di access-point.vue salah sasaran dan menghapus blok refresh/loadFloor; file
+dipulihkan dengan `git checkout --` lalu patch diterapkan dengan anchor yang sempit.

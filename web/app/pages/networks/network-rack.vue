@@ -195,7 +195,7 @@ async function refresh(preferFloorId?: number) {
   finally { loading.value = false }
 }
 onMounted(() => { void refresh() })
-onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl(''); if (typeof window !== 'undefined') window.removeEventListener('resize', syncFloorNav) })
+onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl(''); })
 
 function pickImage(event: Event) {
   uploadFile.value = (event.target as HTMLInputElement).files?.[0] ?? null
@@ -274,30 +274,45 @@ async function performDeleteFloor(item: FloorMapSummary) {
   finally { busy.value = false }
 }
 const floorListEl = ref<HTMLElement | null>(null)
-const floorNav = reactive({ left: false, right: false })
-function syncFloorNav() {
+// The strip is a hidden-scrollbar row; it is panned with the mouse like a filmstrip.
+const floorPan = reactive({ active: false, pointerId: -1, startX: 0, startLeft: 0, moved: 0 })
+function startFloorPan(event: PointerEvent) {
   const el = floorListEl.value
-  if (!el) return
-  floorNav.left = el.scrollLeft > 4
-  floorNav.right = el.scrollLeft + el.clientWidth < el.scrollWidth - 4
+  if (!el || event.button !== 0 || event.pointerType === 'touch') return
+  if (el.scrollWidth <= el.clientWidth + 2) return
+  floorPan.active = true
+  floorPan.pointerId = event.pointerId
+  floorPan.startX = event.clientX
+  floorPan.startLeft = el.scrollLeft
+  floorPan.moved = 0
+  window.addEventListener('pointermove', moveFloorPan)
+  window.addEventListener('pointerup', endFloorPan)
+  window.addEventListener('pointercancel', endFloorPan)
 }
-function scrollFloors(dir: number) {
+function moveFloorPan(event: PointerEvent) {
   const el = floorListEl.value
-  if (!el) return
-  el.scrollBy({ left: dir * Math.max(180, el.clientWidth * 0.7), behavior: 'smooth' })
+  if (!floorPan.active || !el || event.pointerId !== floorPan.pointerId) return
+  const dx = event.clientX - floorPan.startX
+  if (Math.abs(dx) > floorPan.moved) floorPan.moved = Math.abs(dx)
+  if (floorPan.moved <= 3) return
+  // Stop the browser from starting its own drag on the tab contents.
+  event.preventDefault()
+  el.scrollLeft = floorPan.startLeft - dx
 }
-// A plan selected from outside the visible slice must not stay hidden.
-function revealActiveFloor() {
-  const el = floorListEl.value
-  if (!el) return
-  const tab = el.querySelector('.ap-floor-tab[data-active="true"]') as HTMLElement | null
-  if (!tab) return
-  const left = tab.offsetLeft, right = left + tab.offsetWidth
-  if (left < el.scrollLeft) el.scrollTo({ left: Math.max(0, left - 8), behavior: 'smooth' })
-  else if (right > el.scrollLeft + el.clientWidth) el.scrollTo({ left: right - el.clientWidth + 8, behavior: 'smooth' })
+function endFloorPan() {
+  if (!floorPan.active) return
+  floorPan.active = false
+  window.removeEventListener('pointermove', moveFloorPan)
+  window.removeEventListener('pointerup', endFloorPan)
+  window.removeEventListener('pointercancel', endFloorPan)
+  // Let the flag survive the click that follows the pointerup, then clear it.
+  setTimeout(() => { floorPan.moved = 0 }, 0)
 }
-watch([floorListEl, floors, activeFloorId], async () => { await nextTick(); syncFloorNav(); revealActiveFloor() }, { deep: false })
-if (typeof window !== 'undefined') window.addEventListener('resize', syncFloorNav)
+// A drag must not also select the floor it ended on.
+function selectFloor(id: number) {
+  if (floorPan.moved > 3) return
+  void loadFloor(id)
+}
 function setUploadPreviewUrl(url: string) { if (uploadPreviewUrl.value) URL.revokeObjectURL(uploadPreviewUrl.value); uploadPreviewUrl.value = url }
 function openAddRack(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
@@ -560,15 +575,12 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
               <p class="text-xs text-muted">{{ isAdmin ? 'Click Map to add rack, Click rack for details.' : 'Select a rack to see its switches.' }}</p>
             </div>
           </div>
-          <div class="ap-floor-strip relative flex w-full min-w-0 items-center" :class="[floorNav.left ? 'ap-strip-fade-left' : '', floorNav.right ? 'ap-strip-fade-right' : '']">
-            <button v-if="floorNav.left" type="button" class="ap-floor-nav ap-floor-nav-left" aria-label="Show earlier floor plans" @click="scrollFloors(-1)">
-              <UIcon name="i-lucide-chevron-left" class="size-4" />
-            </button>
-            <div v-if="floors.length" ref="floorListEl" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto" aria-label="Floor plans" @scroll="syncFloorNav">
-            <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]" :data-active="activeFloorId === item.id"
+          <div v-if="floors.length" ref="floorListEl" class="ap-floor-list flex w-full min-w-0 gap-2 overflow-x-auto"
+            :class="[floorPan.active ? 'ap-floor-dragging' : '']" aria-label="Floor plans" @pointerdown="startFloorPan">
+            <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
               :class="activeFloorId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeFloorId === item.id" :disabled="busy" @click="loadFloor(item.id)">
+                :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeFloorId === item.id" :disabled="busy" @click="selectFloor(item.id)">
                 <span class="w-full truncate text-sm font-semibold leading-tight" :title="item.name">{{ item.name }}</span>
                 <span class="text-[11px] leading-tight opacity-70">{{ item.rackCount }} rack{{ item.rackCount === 1 ? '' : 's' }}</span>
               </button>
@@ -576,10 +588,6 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
                 class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"
                 :disabled="busy" @click.stop="deleteFloor(item)" />
             </div>
-            </div>
-            <button v-if="floorNav.right" type="button" class="ap-floor-nav ap-floor-nav-right" aria-label="Show later floor plans" @click="scrollFloors(1)">
-              <UIcon name="i-lucide-chevron-right" class="size-4" />
-            </button>
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
             <UButton v-if="floors.length" type="button" size="sm" icon="game-icons:server-rack" class="ap-rack-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAddRack()">Add Rack</UButton>
@@ -860,48 +868,13 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
 }
 
 @media (min-width: 1280px) {
-  .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-/* The floor strip used to be a 405px middle column, so a third plan was clipped with no
-   visible affordance. It now spans the whole header row and scrolls with explicit arrows. */
-.ap-floor-strip { grid-column: 1 / -1; grid-row: 2; }
-.ap-floor-nav {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 9999px;
-  border: 1px solid var(--ui-border);
-  background: color-mix(in srgb, var(--ui-bg-elevated) 92%, transparent);
-  color: var(--ui-text-highlighted);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
-}
-.ap-floor-nav:hover { border-color: color-mix(in srgb, var(--ui-primary) 60%, transparent); color: var(--ui-primary); }
-.ap-floor-nav-left { left: 0; }
-.ap-floor-strip::before,
-.ap-floor-strip::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 44px;
-  z-index: 5;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 160ms ease;
-}
-.ap-floor-strip::before { left: 0; background: linear-gradient(to right, var(--ui-bg-elevated), transparent); }
-.ap-floor-strip::after { right: 0; background: linear-gradient(to left, var(--ui-bg-elevated), transparent); }
-.ap-floor-strip.ap-strip-fade-left::before { opacity: 1; }
-.ap-floor-strip.ap-strip-fade-right::after { opacity: 1; }
-.ap-floor-nav-right { right: 0; }
+  .ap-header-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 405px) minmax(0, 1fr); }
   .ap-header-actions { grid-column: 3; }
 }
 .ap-map-update-action { box-shadow: 0 6px 16px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.18) inset; }
-.ap-floor-list { justify-content: safe center; scrollbar-width: none; }
+.ap-floor-list { justify-content: safe center; scrollbar-width: none; cursor: grab; }
+/* No scrollbar and no arrows: the strip is panned by dragging it. */
+.ap-floor-list.ap-floor-dragging { cursor: grabbing; scroll-behavior: auto; user-select: none; }
 .ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
 .ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }
