@@ -6186,3 +6186,24 @@ VERIFIKASI (computedStyle):
 - Update map (AP, mode replacingId): nilai identik.
 - Add floor plan (Rack): nilai identik; fokus otomatis ke `floor-name` tetap jalan.
 `npx nuxt build` exit 0.
+### LED Berkedip di Marker Rack pada Floor Map (2026-11-16)
+
+HIRO: "pada icon mark di map bisa buat animasi led blinking di icon server nya? i prefer led nya di
+kotak-kotak hitam pada server, blink random biru dan kuning".
+
+Implementasi di network-rack.vue (marker rack pada peta):
+- Glyph `game-icons:server-rack` diganti SVG INLINE dengan path yang sama (silhouette tetap), karena
+  mask Nuxt Icon tidak bisa diberi elemen di dalamnya.
+- Tiga panel gelap (`rect` 218x20 rx=4, fill #030712) menutup baris drive bay tiap unit. Koordinatnya
+  diambil dari path aslinya (baris drive pada viewBox 512 ada di y 55/175/295, tinggi 18) - panel
+  ditaruh di y 54/174/294 supaya pas menutup baris itu, bukan menutupi muka unit.
+- 9 LED (`circle` r=12) di atas panel: x 88/168/248, warna biru `#38bdf8` atau kuning `#facc15`,
+  masing-masing punya `animationDuration` 1,4-3,6 s dan `animationDelay` negatif acak dari
+  `rackLeds(id)` - pseudo-random DETERMINISTIK per id rack (Math.sin hash), jadi satu rack selalu punya
+  irama sendiri dan tidak berubah tiap re-render.
+- Keyframes `ap-led-blink` (opacity 1 -> .14 -> 1 dua kali per siklus) + `drop-shadow` 2,5px senada
+  warnanya supaya LED terbaca di marker 48 px. `prefers-reduced-motion` mematikan animasi (opacity .62).
+
+VERIFIKASI: 36 LED untuk 4 rack (9 per marker), 4 biru + 5 kuning pada marker pertama, opasitas 8 dari 9
+LED berubah antar sampel 0,5 s (animasi jalan), zoom 8x menunjukkan panel hitam pas di baris drive bay
+dengan LED di dalamnya. `npx nuxt build` exit 0.

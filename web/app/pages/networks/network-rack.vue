@@ -568,6 +568,30 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
   await moveRack(current.id, rack.x, rack.y)
 }
 
+// Marker LEDs: the three dark bay panels of the server-rack glyph (viewBox 512) and a
+// deterministic pseudo-random pattern per rack, so a rack keeps its own blink rhythm instead of
+// reshuffling on every re-render.
+// The glyph draws three drive bars per unit at y = 55/175/295 (18 tall); the dark panel sits
+// over them, so its own top edge is 4 units above and the LEDs ride the bar centres.
+const RACK_BAYS = [54, 174, 294]
+function rackLeds(id: number) {
+  const leds: { x: number; y: number; blue: boolean; dur: number; delay: number }[] = []
+  RACK_BAYS.forEach((bay, row) => {
+    for (let col = 0; col < 3; col++) {
+      const noise = Math.abs(Math.sin((id * 97 + row * 41 + col * 13) * 12.9898) * 43758.5453)
+      const r = noise - Math.floor(noise)
+      leds.push({
+        x: 88 + col * 80,
+        y: bay + 10,
+        blue: r > 0.5,
+        dur: 1.4 + r * 2.2,
+        delay: -(0.2 + r * 3.4)
+      })
+    }
+  })
+  return leds
+}
+
 // Opening an add/edit dialog should land the caret in the first text box, no extra click.
 function focusField(id: string) {
   // The modal grabs focus while it mounts, so wait a frame and then claim it back.
@@ -662,7 +686,17 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
                   :aria-label="`Rack ${rack.name}${rack.description ? `, ${rack.description}` : ''}, ${rack.switchCount} switches`"
                   :title="rack.name" @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
                   <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
-                    <UIcon name="game-icons:server-rack" class="size-7 text-primary" />
+                    <!-- Same server-rack silhouette as the icon, but inlined so the three dark bay
+                         panels can carry blinking LEDs. HIRO: "i prefer led nya di kotak-kotak hitam
+                         pada server, blink random biru dan kuning". -->
+                    <svg class="ap-rack-svg size-9 text-primary" viewBox="0 0 512 512" aria-hidden="true">
+                      <path class="ap-rack-shell" d="M41 25v78h430V25zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16M64 55h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm-119 66v30h302v-30zm-64 48v78h430v-78zm254 23h18v32h-18zm121 0a16 16 0 0 1 16 16a16 16 0 0 1-16 16a16 16 0 0 1-16-16a16 16 0 0 1 16-16m-352 7h48v18H64zm80 0h48v18h-48zm80 0h48v18h-48zm13 66v30h38v-30zM25 457v30h130.2l20-30zm171.8 0l-20 30h158.4l-20-30zm140 0l20 30H487v-30z" />
+                      <rect v-for="bay in RACK_BAYS" :key="`bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
+                      <circle v-for="(led, i) in rackLeds(rack.id)" :key="`led-${i}`" class="ap-rack-led"
+                        :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
+                        :cx="led.x" :cy="led.y" r="12"
+                        :style="{ animationDuration: `${led.dur}s`, animationDelay: `${led.delay}s` }" />
+                    </svg>
                   </span>
                   <!-- Sits OUTSIDE .ap-rack-body: that element scales to 1.1 on hover, and a chip
                        anchored to its bottom edge would be carried downwards by the scale.
@@ -867,6 +901,28 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
 </template>
 
 <style scoped>
+/* Server marker LEDs: dark bay panels on the rack silhouette with indicators blinking blue/amber.
+   Kept in CSS so the rhythm is free (no JS timer per marker). */
+.ap-rack-svg { display: block; }
+.ap-rack-shell { fill: currentColor; opacity: .9; }
+.ap-rack-bay { fill: #030712; opacity: .92; }
+.ap-rack-led {
+  animation-name: ap-led-blink;
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+}
+.ap-rack-led-blue { fill: #38bdf8; filter: drop-shadow(0 0 2.5px #38bdf8); }
+.ap-rack-led-amber { fill: #facc15; filter: drop-shadow(0 0 2.5px #facc15); }
+@keyframes ap-led-blink {
+  0%, 40% { opacity: 1; }
+  41%, 52% { opacity: .14; }
+  53%, 74% { opacity: 1; }
+  75%, 86% { opacity: .14; }
+  87%, 100% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-rack-led { animation: none; opacity: .62; }
+}
 .ap-modal-icon-active :deep(.ap-upload-glyph) { animation: ap-upload-rise 2.2s ease-in-out .42s infinite; }
 @keyframes ap-upload-rise {
   0%, 100% { transform: translate3d(0, 0, 0); }
