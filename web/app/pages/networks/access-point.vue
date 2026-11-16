@@ -253,18 +253,44 @@ async function createFloor() {
   } catch (e) { uploadError.value = message(e) }
   finally { busy.value = false }
 }
-async function deleteFloor(item: FloorMapSummary) {
+// A destructive action about a named plan deserves more than the browser's grey confirm().
+const deletePlan = ref<FloorMapSummary | null>(null)
+const showDeletePlan = ref(false)
+const deletingPlan = ref(false)
+const deletePlanDialog = computed(() => {
+  const plan = deletePlan.value
+  if (!plan) return { description: '', rows: [] as { label: string; value: string }[] }
+  const shared = plan.scope === 'both'
+  return {
+    description: shared
+      ? 'This removes the plan from Access Point together with every marker on it. The Network Rack page keeps the same plan and its racks.'
+      : 'The plan and every access point marker on it are removed together. This cannot be undone from the UI.',
+    rows: [
+      { label: 'Floor plan', value: plan.name },
+      { label: 'Access points', value: String(plan.accessPointCount) },
+      ...(shared ? [{ label: 'Still on', value: 'Network Rack' }] : [])
+    ]
+  }
+})
+function deleteFloor(item: FloorMapSummary) {
   if (!isAdmin.value || busy.value) return
-  if (!window.confirm(`Delete “${item.name}” and all its access points?`)) return
-  busy.value = true; error.value = ''
+  deletePlan.value = item
+  showDeletePlan.value = true
+}
+async function confirmDeleteFloor() {
+  const plan = deletePlan.value
+  if (!plan) return
+  deletingPlan.value = true; busy.value = true; error.value = ''
   try {
-    await apiDeleteNetworkFloor(item.id, 'ap')
-    floorImages.delete(item.id)
-    if (activeId.value === item.id) activeId.value = null
+    await apiDeleteNetworkFloor(plan.id, 'ap')
+    floorImages.delete(plan.id)
+    if (activeId.value === plan.id) activeId.value = null
+    showDeletePlan.value = false
+    deletePlan.value = null
     await refresh()
     toast.add({ title: 'Floor plan deleted', color: 'primary' })
   } catch (e) { error.value = message(e) }
-  finally { busy.value = false }
+  finally { deletingPlan.value = false; busy.value = false }
 }
 function openAdd(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
@@ -604,11 +630,67 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           </div>
         </template>
       </UModal>
+
+      <!-- Delete floor plan: names the plan, counts what goes with it, and says what survives. -->
+      <UModal v-model:open="showDeletePlan" :dismissible="!deletingPlan" :close="!deletingPlan" :ui="{ content: 'max-w-md' }">
+        <template #content>
+          <div class="ap-delete-plan overflow-hidden rounded-xl">
+            <div class="relative overflow-hidden px-5 pb-5 pt-5">
+              <div aria-hidden="true" class="ap-delete-wash pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl" />
+              <div class="ap-delete-head relative flex items-start gap-3">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
+                  <UIcon name="i-lucide-trash-2" class="ap-delete-glyph size-5" />
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-semibold text-highlighted">Delete this floor plan?</h2>
+                  <p class="mt-1 text-xs leading-relaxed text-muted">{{ deletePlanDialog.description }}</p>
+                </div>
+              </div>
+              <dl class="ap-delete-rows relative mt-4 grid grid-cols-[104px_minmax(0,1fr)] gap-x-4 gap-y-1.5 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
+                <template v-for="row in deletePlanDialog.rows" :key="row.label">
+                  <dt class="text-muted">{{ row.label }}</dt>
+                  <dd class="truncate font-medium text-highlighted">{{ row.value }}</dd>
+                </template>
+              </dl>
+            </div>
+            <div class="ap-delete-footer flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
+              <UButton type="button" color="neutral" variant="ghost" label="Cancel" :disabled="deletingPlan" @click="showDeletePlan = false; deletePlan = null" />
+              <UButton type="button" color="error" class="record-delete-hover" label="Delete floor plan" :loading="deletingPlan" @click="confirmDeleteFloor">
+                <template #leading>
+                  <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+                </template>
+              </UButton>
+            </div>
+          </div>
+        </template>
+      </UModal>
     </template>
   </UDashboardPanel>
 </template>
 
 <style scoped>
+/* The dialog lands as one piece: head, rows, footer rise in sequence. */
+.ap-delete-head, .ap-delete-rows, .ap-delete-footer { animation: ap-delete-rise 320ms cubic-bezier(.22, 1, .36, 1) backwards; }
+.ap-delete-rows { animation-delay: 60ms; }
+.ap-delete-footer { animation-delay: 110ms; }
+.ap-delete-wash { animation: ap-delete-wash 520ms ease-out backwards; }
+.ap-delete-glyph { animation: ap-delete-lid 2.6s ease-in-out 420ms infinite; }
+@keyframes ap-delete-rise {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ap-delete-wash {
+  from { opacity: 0; transform: scale(.85); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ap-delete-lid {
+  0%, 72%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  80% { transform: translate3d(0, -2px, 0) rotate(-6deg); }
+  90% { transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ap-delete-head, .ap-delete-rows, .ap-delete-footer, .ap-delete-wash, .ap-delete-glyph { animation: none; }
+}
 .ap-modal-icon-active :deep(.ap-upload-glyph) { animation: ap-upload-rise 2.2s ease-in-out .42s infinite; }
 @keyframes ap-upload-rise {
   0%, 100% { transform: translate3d(0, 0, 0); }

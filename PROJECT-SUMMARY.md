@@ -6062,3 +6062,30 @@ VERIFIKASI RUNTIME:
 CATATAN OPERASIONAL: API dev sekarang jalan dari `api/bin/RackMap4/Api.dll` di :5099. Menghentikan
 proses lama pakai PID dari `netstat -ano | grep :5099` (PowerShell `.Where()` di Get-CimInstance tidak
 tersedia di mesin ini; kalau port masih dipegang proses lama, build baru diam-diam gagal bind).
+### Redesign Konfirmasi Hapus Floor Plan di Access Point (2026-11-16)
+
+HIRO: "redesign popup confirmation delete floor AP".
+
+SEBELUM: `deleteFloor()` memakai `window.confirm()` - dialog abu-abu bawaan browser yang tidak bisa
+di-style, tidak menyebut berapa marker yang ikut terhapus, dan tidak menjelaskan bahwa Network Rack
+masih memakai denah yang sama.
+
+SESUDAH (UModal, sefamili dengan dialog hapus di network-rack):
+- Header: badge bulat merah (`bg-error/10`, ring error) berisi glyph trash + wash error blur di pojok,
+  judul "Delete this floor plan?", deskripsi yang BERBEDA untuk lantai 'both' ("...The Network Rack page
+  keeps the same plan and its racks.") dan lantai milik Access Point saja.
+- Kotak detail `grid-cols-[104px_minmax(0,1fr)]`: Floor plan, Access points, plus baris "Still on:
+  Network Rack" hanya untuk lantai 'both'.
+- Footer: Cancel (ghost) + "Delete floor plan" (color error, `record-delete-hover` + TrashBinIcon).
+- Motion: head/rows/footer naik berurutan (`ap-delete-rise` 320ms, delay 0/60/110ms), wash scale-in,
+  glyph trash bergerak tiap 2,6 s; semuanya dimatikan via `prefers-reduced-motion`.
+- Alur dipisah: `deleteFloor(item)` sekarang hanya membuka dialog (`deletePlan`, `showDeletePlan`);
+  `apiDeleteNetworkFloor` dijalankan oleh `confirmDeleteFloor()`.
+
+VERIFIKASI: lantai uji "DELETE UI TEST" (scope ap) -> dialog tampil dengan nama + jumlah AP 0 -> klik
+"Delete floor plan" -> modal tertutup, lantai hilang, toast "Floor plan deleted". Lantai bersama
+(BUILDING 1) -> deskripsi menyebut Network Rack tetap menyimpan denah, klik Cancel tidak mengubah apa
+pun. `npx nuxt build` exit 0.
+
+CATATAN: `window.confirm` yang masih tersisa di access-point.vue adalah untuk menghapus SATU marker
+access point (fungsi `deletePoint`), bukan floor plan - belum diubah karena di luar permintaan.
