@@ -91,6 +91,50 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         return CreatedAtAction(nameof(Get), new { id = floor.Id }, new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = 0, RackCount = 0 });
     }
 
+    /// <summary>
+    /// Replaces a floor plan in place. The markers are untouched: their coordinates are fractions of
+    /// the image box, so they keep their relative positions and can be dragged if the new drawing is
+    /// cropped differently. Sending no file renames the floor only.
+    /// </summary>
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    [RequestSizeLimit(MaxImageBytes + 65536)]
+    public async Task<IActionResult> Update(int id, [FromForm] string? name, [FromForm] IFormFile? image, CancellationToken ct)
+    {
+        var floor = await db.NetworkFloorMaps.FindAsync([id], ct);
+        if (floor is null) return NotFound();
+
+        if (name is not null)
+        {
+            name = name.Trim();
+            if (name.Length == 0 || name.Length > 120)
+                return BadRequest(new { message = "Floor name is required (maximum 120 characters)." });
+            floor.Name = name;
+        }
+
+        var replacedImage = image is not null && image.Length > 0;
+        if (replacedImage)
+        {
+            if (image!.Length > MaxImageBytes)
+                return BadRequest(new { message = "Choose a floor-plan image smaller than 8 MB." });
+            await using var stream = image.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, ct);
+            var bytes = buffer.ToArray();
+            var contentType = ImageType(bytes);
+            if (contentType is null) return BadRequest(new { message = "Only PNG, JPEG or WebP floor-plan images are supported." });
+            floor.ImageBytes = bytes;
+            floor.ImageContentType = contentType;
+        }
+
+        await db.SaveChangesAsync(ct);
+        // The cached copy is the OLD picture; drop it so the next view reads the new one.
+        if (replacedImage) imageCache.Remove(id);
+
+        var accessPointCount = await db.NetworkAccessPoints.CountAsync(x => x.FloorMapId == id, ct);
+        return Ok(new { floor.Id, floor.Name, floor.CreatedAt, AccessPointCount = accessPointCount });
+    }
+
     [HttpDelete("{id:int}")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)

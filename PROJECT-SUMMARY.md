@@ -5843,3 +5843,38 @@ PERBAIKAN: `apcBadge.position.z` 0.013 -> 0.0165 (3.5 mm di depan muka louver).
 VERIFIKASI (Bottom UPS 1400x900): wordmark "APC" merah terlihat utuh di pojok kiri atas muka UPS,
 di atas kisi ventilasi kiri, tidak terpotong; LCD orange solid dan strip hijau di tengah tetap utuh.
 Build exit 0.
+### Update / Ganti Map Floor Plan (2026-11-16)
+
+HIRO: "sekarang saya mau ada fungsi untuk update map / floor plan ada saran yang bagus?" -> memilih opsi
+A: ganti gambar di tempat, marker tetap, cache di-invalidate, lalu tawaran "rapikan marker".
+
+BACKEND (`api/Controllers/NetworkFloorMapsController.cs`): endpoint baru
+`PUT /api/network/floor-maps/{id}` (Admin, [FromForm] name?, image?). Bedanya dengan POST:
+- floor dicari dulu (404 kalau tidak ada); `name` opsional (kirim tanpa file = rename saja);
+- gambar opsional: kalau ada, divalidasi sama seperti create (<= 8 MB, hanya PNG/JPEG/WebP lewat
+  ImageType()), lalu ImageBytes/ImageContentType diganti;
+- setelah SaveChanges, `imageCache.Remove(id)` HANYA kalau gambar diganti - tanpa ini endpoint GET
+  image tetap menyajikan gambar lama dari memori (X-Floor-Image-Cache: HIT).
+- Marker tidak disentuh sama sekali; koordinatnya fraksi kotak gambar jadi tetap relatif.
+
+FRONTEND:
+- `useApi.ts`: `apiUpdateNetworkFloor(id, name, image)` (FormData, PUT).
+- `access-point.vue`: tombol ikon `i-lucide-image-up` di tiap tab lantai (kelas `ap-plan-replace`,
+  right-8 top-1, sebaris dengan tombol hapus right-1 top-1; teks tab jadi `pr-16`). Modal upload jadi
+  dua mode: `replacingId` null = Add, non-null = Update (judul/deskripsi/tombol berubah, nama terisi
+  otomatis, gambar boleh kosong dengan catatan "Leave empty to keep the current image").
+  Sukses -> `floorImages.delete(id)` (blob lama dibuang), refresh, toast "Floor plan updated" +
+  deskripsi "Markers keep their relative positions - drag any marker to realign it."
+- `nuxt.config.ts`: 'lucide:image-up', 'lucide:save' ditambahkan ke icon.clientBundle.icons.
+
+VERIFIKASI RUNTIME (bukan statis):
+- API: create+GET image (HIT, md5 bc749b) -> PUT gambar B -> GET image MISS md5 8a04c2 (cache benar
+  terinvalidasi); rename-only 200 dan md5 gambar tidak berubah; upload file .txt -> 400.
+- Marker: floor uji dengan AP-KEEP-1 (0.25,0.35) dan AP-KEEP-2 (0.70,0.60) -> setelah PUT, daftar
+  marker IDENTIK (hostname,x,y sama), gambar berubah. Semua floor uji dihapus lagi.
+- UI: klik ikon replace -> modal "Update floor plan" nama terisi; file di-set via CDP
+  DOM.setFileInputFiles -> submit -> gambar floor itu benar-benar berganti (dicek lewat md5 API).
+
+CATATAN IKON (menghindari salah diagnosa): Nuxt Icon di app ini merender mode CSS mask, jadi span
+ikon TIDAK berisi <svg> - `querySelector('svg')` selalu kosong walau ikonnya tampil normal. Cek yang
+benar: `getComputedStyle(span).maskImage` berisi `url("data:image/svg+xml,...")`.

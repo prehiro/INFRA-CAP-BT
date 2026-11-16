@@ -17,6 +17,7 @@ const uploadInput = ref<HTMLInputElement | null>(null)
 const uploadPreviewUrl = ref('')
 const uploadError = ref('')
 const showUpload = ref(false)
+const replacingId = ref<number | null>(null)
 const showEditor = ref(false)
 const showDetails = ref(false)
 const detailError = ref('')
@@ -142,20 +143,60 @@ function pickImage(event: Event) {
   setUploadPreviewUrl(uploadFile.value && ['image/png', 'image/jpeg', 'image/webp'].includes(uploadFile.value.type)
     ? URL.createObjectURL(uploadFile.value) : '')
 }
+function openUpload() {
+  if (!isAdmin.value || busy.value) return
+  replacingId.value = null
+  uploadName.value = ''
+  uploadFile.value = null
+  setUploadPreviewUrl('')
+  uploadError.value = ''
+  showUpload.value = true
+}
+function openReplace(item: FloorMapSummary) {
+  if (!isAdmin.value || busy.value) return
+  replacingId.value = item.id
+  uploadName.value = item.name
+  uploadFile.value = null
+  setUploadPreviewUrl('')
+  uploadError.value = ''
+  showUpload.value = true
+}
 async function createFloor() {
   if (!isAdmin.value || busy.value) return
-  if (!uploadName.value.trim() || !uploadFile.value) { uploadError.value = 'Enter a floor name and choose a plan image.'; return }
-  if (uploadFile.value.size > 8 * 1024 * 1024) { uploadError.value = 'The image must be smaller than 8 MB.'; return }
+  // Replacing keeps the name and markers; only a new image is mandatory.
+  if (replacingId.value === null && !uploadFile.value) { uploadError.value = 'Enter a floor name and choose a plan image.'; return }
+  if (!uploadName.value.trim()) { uploadError.value = 'Enter a floor name.'; return }
+  if (uploadFile.value && uploadFile.value.size > 8 * 1024 * 1024) { uploadError.value = 'The image must be smaller than 8 MB.'; return }
   const uploadedFile = uploadFile.value
+  const replaceTarget = replacingId.value
   busy.value = true; uploadError.value = ''
   try {
-    const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile)
-    // The browser already has these bytes; the first view needs no image request.
-    floorImages.set(created.id, uploadedFile)
-    if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
-    showUpload.value = false
-    await refresh(created.id)
-    toast.add({ title: 'Floor plan added', color: 'primary' })
+    if (replaceTarget !== null) {
+      const updated = await apiUpdateNetworkFloor(replaceTarget, uploadName.value.trim(), uploadedFile)
+      // Drop the cached copy: it is the old picture.
+      floorImages.delete(replaceTarget)
+      if (uploadedFile) {
+        floorImages.set(replaceTarget, uploadedFile)
+        if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
+      }
+      showUpload.value = false
+      replacingId.value = null
+      await refresh(updated.id)
+      toast.add({
+        title: 'Floor plan updated',
+        description: uploadFile.value ? 'Markers keep their relative positions - drag any marker to realign it.' : undefined,
+        color: 'primary',
+        duration: 6000
+      })
+    } else {
+      const created = await apiCreateNetworkFloor(uploadName.value.trim(), uploadedFile!)
+      // The browser already has these bytes; the first view needs no image request.
+      floorImages.set(created.id, uploadedFile!)
+      if (floorImages.size > 3) floorImages.delete(floorImages.keys().next().value!)
+      showUpload.value = false
+      await refresh(created.id)
+      toast.add({ title: 'Floor plan added', color: 'primary' })
+    }
   } catch (e) { uploadError.value = message(e) }
   finally { busy.value = false }
 }
@@ -327,10 +368,13 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             <div v-for="item in floors" :key="item.id" class="ap-floor-tab relative w-[156px] shrink-0 rounded-lg border sm:w-[176px]"
               :class="activeId === item.id ? 'border-primary/50 bg-primary/10 text-primary' : 'border-default bg-default/60 text-muted hover:border-primary/40 hover:text-highlighted'">
               <button type="button" class="flex h-12 w-full flex-col justify-center gap-0.5 rounded-lg py-1 pl-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-                :class="isAdmin ? 'pr-10' : 'pr-3'" :aria-pressed="activeId === item.id" :disabled="busy" @click="loadFloor(item.id)">
+                :class="isAdmin ? 'pr-16' : 'pr-3'" :aria-pressed="activeId === item.id" :disabled="busy" @click="loadFloor(item.id)">
                 <span class="w-full truncate text-sm font-semibold leading-tight" :title="item.name">{{ item.name }}</span>
                 <span class="text-[11px] leading-tight opacity-70">{{ item.accessPointCount }} AP</span>
               </button>
+              <UButton v-if="isAdmin" type="button" icon="i-lucide-image-up" size="xs" color="neutral" variant="ghost"
+                class="ap-plan-replace absolute right-8 top-1" :aria-label="`Update map for ${item.name}`" :title="`Update map - ${item.name}`"
+                :disabled="busy" @click.stop="openReplace(item)" />
               <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" size="xs" color="neutral" variant="ghost"
                 class="ap-plan-delete absolute right-1 top-1" :aria-label="`Delete floor plan ${item.name}`" :title="`Delete ${item.name}`"
                 :disabled="busy" @click.stop="deleteFloor(item)" />
@@ -338,7 +382,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           </div>
           <div v-if="isAdmin" class="ap-header-actions flex w-full shrink-0 items-center justify-end gap-2">
             <UButton v-if="floors.length" type="button" size="sm" icon="bi:router" class="ap-ap-add-action record-add-hover stable-hover-hitbox" :disabled="busy || !floor" @click="openAdd()">Add AP</UButton>
-            <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="showUpload = true">Add floor plan</UButton>
+            <UButton type="button" size="sm" icon="iconoven:floor-plan" variant="soft" class="ap-floor-add-action record-add-hover stable-hover-hitbox" :disabled="busy" @click="openUpload()">Add floor plan</UButton>
           </div>
         </div>
 
@@ -390,12 +434,13 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         </template>
       </div>
 
-      <UModal v-if="isAdmin" v-model:open="showUpload" title="Add floor plan" description="Upload an image and give this map a clear name." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showUpload" :title="replacingId === null ? 'Add floor plan' : 'Update floor plan'" :description="replacingId === null ? 'Upload an image and give this map a clear name.' : 'Replace the map image — the markers stay where they are.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="createFloor">
             <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
-              <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon name="i-lucide-upload" class="ap-upload-glyph size-5" /></span>
-              <p>Set floor name and floor layout, then place access points directly on the plan.</p>
+              <span class="ap-modal-icon grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showUpload }"><UIcon :name="replacingId === null ? 'i-lucide-upload' : 'i-lucide-image-up'" class="ap-upload-glyph size-5" /></span>
+              <p v-if="replacingId === null">Set floor name and floor layout, then place access points directly on the plan.</p>
+              <p v-else>Markers keep their relative positions. If the new drawing is cropped differently, drag them into place afterwards.</p>
             </div>
             <div><label for="floor-name" class="mb-1.5 block text-sm font-medium text-highlighted">Floor name</label><UInput id="floor-name" v-model="uploadName" placeholder="e.g. Building A · Level 2" class="w-full" :disabled="busy" maxlength="120" /></div>
             <div>
@@ -407,7 +452,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 </label>
                 <span class="min-w-0 truncate text-sm" :class="uploadFile ? 'text-highlighted' : 'text-muted'" :title="uploadFile?.name || 'No file selected'">{{ uploadFile?.name || 'No file selected' }}</span>
               </div>
-              <p class="mt-1.5 text-xs text-muted">PNG, JPG or WebP · up to 8 MB</p>
+              <p class="mt-1.5 text-xs text-muted">{{ replacingId === null ? 'PNG, JPG or WebP · up to 8 MB' : 'Leave empty to keep the current image. PNG, JPG or WebP · up to 8 MB' }}</p>
               <div v-if="uploadPreviewUrl" class="mt-3 overflow-hidden rounded-lg border border-default bg-elevated p-2">
                 <img :src="uploadPreviewUrl" alt="Preview of selected floor plan" class="h-36 w-full object-contain" />
                 <p class="mt-1.5 truncate text-xs text-muted">{{ uploadFile?.name }}</p>
@@ -416,7 +461,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             <p role="alert" class="min-h-5 text-sm text-error">{{ uploadError }}</p>
             <div class="flex justify-end gap-2 border-t border-default pt-4">
               <UButton type="button" color="red" variant="ghost" icon="basil:cancel-outline" class="cancel-hover" :disabled="busy" @click="showUpload = false">Cancel</UButton>
-              <UButton type="submit" icon="i-lucide-upload" class="record-save-hover stable-hover-hitbox" :loading="busy" :disabled="busy">Upload plan</UButton>
+              <UButton type="submit" :icon="replacingId === null ? 'i-lucide-upload' : 'i-lucide-save'" class="record-save-hover stable-hover-hitbox" :loading="busy" :disabled="busy">{{ replacingId === null ? 'Upload plan' : 'Save changes' }}</UButton>
             </div>
           </form>
         </template>

@@ -70,6 +70,12 @@ export const apiCreateNetworkFloor = (name: string, image: File) => {
   body.set('image', image)
   return request<FloorMapSummary>('/network/floor-maps', { method: 'POST', body })
 }
+export const apiUpdateNetworkFloor = (id: number, name: string | null, image: File | null) => {
+  const body = new FormData()
+  if (name !== null) body.set('name', name)
+  if (image) body.set('image', image)
+  return request<FloorMapSummary>(`/network/floor-maps/${id}`, { method: 'PUT', body })
+}
 export const apiDeleteNetworkFloor = (id: number) => request<void>(`/network/floor-maps/${id}`, { method: 'DELETE' })
 export const apiCreateAccessPoint = (floorId: number, point: AccessPointInput) =>
   request<AccessPoint>(`/network/floor-maps/${floorId}/access-points`, { method: 'POST', body: point })
