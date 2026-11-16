@@ -373,9 +373,13 @@
   }
 }
 
-/* Accent halo in the top-right corner of a dialog. Opt-in per modal via
+/* Accent glow in the top-right corner of a dialog. Opt-in per modal via
    :ui="{ content: '… network-modal-glow' }" so it cannot leak into other pages.
-   --ui-primary can be an oklch() string, which color-mix() handles natively. */
+
+   HIRO: "samakan glownya seperti add pc record" - this is the house recipe used by the PC Ledger,
+   Users and CCTV dialogs: NOT a CSS gradient, just a plain circle of `bg-primary` with a 60px blur,
+   so the falloff IS the gradient. 0.14 on the dark surface, 0.09 on light where the same value
+   reads as a stain. `--ui-primary` is a semantic token, so the glow follows the chosen accent. */
 .network-modal-glow {
   /* Do NOT set position here: the dialog content is already absolutely positioned and
      centred with top-1/2 -translate-y-1/2. Forcing position: relative cancels that and
@@ -386,26 +390,22 @@
 .network-modal-glow::before {
   content: '';
   position: absolute;
-  top: -6.5rem;
-  right: -5rem;
-  width: 15rem;
-  height: 15rem;
+  top: -110px;
+  right: -90px;
+  width: 250px;
+  height: 250px;
   border-radius: 9999px;
+  background-color: var(--ui-primary);
+  opacity: 0.14;
+  filter: blur(60px);
   pointer-events: none;
-  background: radial-gradient(circle, color-mix(in oklab, var(--ui-primary) 55%, transparent) 0%, transparent 68%);
-  filter: blur(26px);
-  opacity: 0.75;
   z-index: 0;
-  animation: network-modal-glow-in 420ms ease-out backwards;
 }
+:root:not(.dark) .network-modal-glow::before {
+  opacity: 0.09;
+}
+/* The orb sits over the header, so the dialog's own content has to paint above it. */
 .network-modal-glow > * {
   position: relative;
   z-index: 1;
-}
-@keyframes network-modal-glow-in {
-  from { opacity: 0; transform: scale(0.86); }
-  to { opacity: 0.75; transform: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .network-modal-glow::before { animation: none; }
 }

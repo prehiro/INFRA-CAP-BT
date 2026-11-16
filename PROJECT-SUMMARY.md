@@ -6147,3 +6147,21 @@ halo aksen; badge trash tetap merah.
 VERIFIKASI: Add access point, Add/Update floor plan, Delete floor plan (AP) dan Add floor plan, Add rack
 (Rack) semuanya punya `::before` (opacity .75) dan tetap tercentang di tengah layar (mis. rect y=189
 h=572 pada viewport 950). Fokus otomatis ke field pertama tetap jalan. `npx nuxt build` exit 0.
+### Glow Modal Network Disamakan dengan Resep "Add PC Record" (2026-11-16)
+
+HIRO: "samakan glownya seperti add pc record".
+
+Resep yang dipakai aplikasi ini (pcledger.vue `.pl-record-modal[data-slot='content']::after`, juga di
+users.vue dan cctvacc.vue) BUKAN gradient CSS - hanya lingkaran `var(--ui-primary)` dengan blur besar:
+`top:-110px; right:-90px; width/height:250px; border-radius:9999px; opacity:.14; filter:blur(60px);
+pointer-events:none; z-index:0`, dan `opacity:.09` saat light mode (`:root:not(.dark)`).
+
+Sebelumnya hallo buatan sendiri (radial-gradient 240px, blur 26px, opacity .75, ada animasi scale-in)
+terlihat sebagai titik terang yang terlalu tajam. Sekarang `.network-modal-glow::before` di main.css
+MEMAKAI ANGKA YANG SAMA PERSIS dengan dialog PC Ledger, animasi dihapus (resep aslinya statis).
+
+VERIFIKASI ANGKA (computedStyle dari browser):
+- Modal Add access point: top -110px, right -90px, 250px, `rgb(0, 220, 130)`, opacity .14, blur 60px.
+- Modal Add Record PC Ledger: nilai identik (top -110px, right -90px, 250px, color sama, .14, blur 60px).
+- Light mode: opacity turun otomatis ke .09 (diuji dengan melepas/menempel kelas `dark` pada <html>).
+`npx nuxt build` exit 0.
