@@ -1216,7 +1216,10 @@ onMounted(async () => {
         new THREE.PlaneGeometry(0.044, 0.018),
         new THREE.MeshBasicMaterial({ map: createApcBrandTexture(), transparent: true, toneMapped: false })
       )
-      apcBadge.position.set(-0.185, totalH / 2 - 0.016, 0.013)
+      // Sits slightly proud of z=0.013: the intake-louver box in front of this corner ends exactly on
+      // that plane, which was covering the wordmark. The old badge was a 4 mm-deep box, so its face
+      // poked through; a flat plane has to be pushed forward to match.
+      apcBadge.position.set(-0.185, totalH / 2 - 0.016, 0.0165)
       upsGroup.add(apcBadge)
 
       // Center Illuminated LCD Status Panel

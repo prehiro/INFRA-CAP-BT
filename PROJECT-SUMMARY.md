@@ -5828,3 +5828,18 @@ APC warna merah, design yang bagus".
 VERIFIKASI (Bottom UPS 1400x900): 6 frame berjarak 0.18 s - intensitas hijau strip berosilasi
 128.9 -> 92.6 -> 51.0 -> 50.6 -> 92.0 -> 128.9 (berkedip nyata). Zoom muka UPS: wordmark APC merah
 bersih di pojok kiri tanpa blok orange, LCD orange solid, strip hijau terang di bawahnya. Build exit 0.
+### Wordmark APC Ketutup: Plane Sefield dengan Kotak Louver (2026-11-16)
+
+HIRO: "tek apc nya ketutup".
+
+AKAR MASALAH (dari geometri, bukan dugaan): kotak intake louver kiri dibangun
+`BoxGeometry(0.11, totalH*0.76, 0.016)` di `z = 0.005`, jadi muka depannya berada TEPAT di
+`z = 0.013` - sama dengan bidang wordmark. Plane tidak punya tebal, sehingga kalah/berebut depth
+dengan muka louver dan teksnya hilang. Badge lama lolos karena berupa BOX 0.004 tebal: mukanya di
+z = 0.015, jadi menonjol di depan louver.
+
+PERBAIKAN: `apcBadge.position.z` 0.013 -> 0.0165 (3.5 mm di depan muka louver).
+
+VERIFIKASI (Bottom UPS 1400x900): wordmark "APC" merah terlihat utuh di pojok kiri atas muka UPS,
+di atas kisi ventilasi kiri, tidak terpotong; LCD orange solid dan strip hijau di tengah tetap utuh.
+Build exit 0.
