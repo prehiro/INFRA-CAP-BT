@@ -571,9 +571,10 @@ async function pointerUp(event: PointerEvent, rack: NetworkRackSummary, cancelle
 // Marker LEDs: the three dark bay panels of the server-rack glyph (viewBox 512) and a
 // deterministic pseudo-random pattern per rack, so a rack keeps its own blink rhythm instead of
 // reshuffling on every re-render.
-// The glyph draws three drive bars per unit at y = 55/175/295 (18 tall); the dark panel sits
-// over them, so its own top edge is 4 units above and the LEDs ride the bar centres.
-const RACK_BAYS = [54, 174, 294]
+// Measured from the glyph's own path: the three drive bars sit at y = 55/199/343 (18 tall,
+// 144 apart - NOT the 120 that the unit pitch suggests), so the dark panel tops are those minus 1
+// and the LEDs ride the bar centres at 64/208/352.
+const RACK_BAYS = [54, 198, 342]
 function rackLeds(id: number) {
   const leds: { x: number; y: number; blue: boolean; dur: number; delay: number }[] = []
   RACK_BAYS.forEach((bay, row) => {

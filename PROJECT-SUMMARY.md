@@ -6207,3 +6207,23 @@ Implementasi di network-rack.vue (marker rack pada peta):
 VERIFIKASI: 36 LED untuk 4 rack (9 per marker), 4 biru + 5 kuning pada marker pertama, opasitas 8 dari 9
 LED berubah antar sampel 0,5 s (animasi jalan), zoom 8x menunjukkan panel hitam pas di baris drive bay
 dengan LED di dalamnya. `npx nuxt build` exit 0.
+### Presisi LED Marker: Pitch Unit Bukan 120 (2026-11-16)
+
+HIRO: "kurang presisi lednya, khususnya pada server urutan 2 dan 3. server yang pertama(atas) sudah
+pas. tolong samakan".
+
+AKAR MASALAH: saya mengasumsikan jarak antar unit 120 satuan (25 -> 145 -> 265) lalu menaruh panel di
+y 54/174/294. Ternyata path glyph-nya TIDAK memakai pitch 120: setelah di-parse ulang, baris drive bay
+berada di y 55/199/343 (pitch 144), karena tiap unit diikuti shelf 30 satuan + jeda. Unit pertama
+kebetulan pas, unit 2 dan 3 meleset ~25 satuan.
+
+GEOMETRI ASLI (viewBox 512, hasil parse path):
+- faceplate unit: y 25..103, 169..247, 313..391
+- drive bar: y 55..73, 199..217, 343..361 (x 64..112, 144..192, 224..272)
+- knob 295..313 tinggi 32, bulatan kanan x 400..432
+
+PERBAIKAN: `const RACK_BAYS = [54, 198, 342]` (bar dikurangi 1) dengan tinggi panel 20, dan LED
+`y = bay + 10` -> 64/208/352 tepat di tengah bar. Tidak ada angka lain yang berubah.
+
+VERIFIKASI: atribut `y` panel = 54/198/342; zoom 10x menunjukkan ketiga strip hitam duduk dengan jarak
+yang sama dari tepi atas tiap unit dan LED di tengah bar. `npx nuxt build` exit 0.
