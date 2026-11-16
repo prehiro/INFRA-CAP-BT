@@ -680,7 +680,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       </div>
 
       <!-- Upload floor plan modal (same as Access Point) -->
-      <UModal v-if="isAdmin" v-model:open="showUpload" :title="replacingId === null ? 'Add floor plan' : 'Update floor plan'" :description="replacingId === null ? 'Upload an image and give this map a clear name.' : 'Replace the map image — the racks stay where they are.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showUpload" :title="replacingId === null ? 'Add floor plan' : 'Update floor plan'" :description="replacingId === null ? 'Upload an image and give this map a clear name.' : 'Replace the map image — the racks stay where they are.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal network-modal-glow', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="createFloor">
             <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
@@ -714,7 +714,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       </UModal>
 
       <!-- Rack editor modal -->
-      <UModal v-if="isAdmin" v-model:open="showRackEditor" :title="editingRackId === null ? 'Add rack' : 'Edit rack'" :description="editingRackId === null ? 'Place a network rack on this floor plan.' : 'Update this rack’s details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showRackEditor" :title="editingRackId === null ? 'Add rack' : 'Edit rack'" :description="editingRackId === null ? 'Place a network rack on this floor plan.' : 'Update this rack’s details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="saveRack">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
@@ -768,7 +768,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       </UModal>
 
       <!-- Switch editor modal -->
-      <UModal v-if="isAdmin" v-model:open="showSwitchEditor" :title="editingSwitchId === null ? 'Add switch' : 'Edit switch'" :description="editingSwitchId === null ? 'Add a switch to this rack.' : 'Update this switch’s details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showSwitchEditor" :title="editingSwitchId === null ? 'Add switch' : 'Edit switch'" :description="editingSwitchId === null ? 'Add a switch to this rack.' : 'Update this switch’s details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="saveSwitch">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
@@ -797,7 +797,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       </UModal>
 
       <!-- Rack modal -->
-      <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl', body: 'p-4 sm:p-5' }">
+      <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #header="{ close }">
           <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20"><UIcon name="game-icons:server-rack" class="size-6" /></span>
@@ -828,7 +828,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       <!-- Shared delete confirmation, built like the PC Ledger / CCTV row-delete dialogs: a wrapper
            that clips, a soft danger wash bleeding in from the top-right corner, the identity of the
            record on a raised box above that wash, and a footer band on the elevated surface. -->
-      <UModal v-model:open="showDeleteDialog" :dismissible="!deleting" :close="!deleting" :ui="{ content: 'max-w-md' }">
+      <UModal v-model:open="showDeleteDialog" :dismissible="!deleting" :close="!deleting" :ui="{ content: 'max-w-md network-modal-glow' }">
         <template #content>
           <div class="overflow-hidden rounded-xl">
             <div class="relative overflow-hidden px-5 pb-5 pt-5">

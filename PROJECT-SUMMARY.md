@@ -6124,3 +6124,26 @@ karena footer modal rack sudah dihapus).
 VERIFIKASI (document.activeElement dibaca dari browser): Add AP -> activeId `ap-hostname`; Add floor
 plan (AP) -> `floor-name` dan ketikan keyboard benar-benar masuk ke field itu; Add floor plan (Rack) ->
 `floor-name`; Add Rack -> `rack-name`. `npx nuxt build` exit 0.
+### Glow Aksen di Pojok Kanan Atas Modal (2026-11-16)
+
+HIRO: "pastikan ada glow accessn color di pojok kanan atas modal ya".
+
+IMPLEMENTASI: satu kelas opt-in `network-modal-glow` di `web/app/assets/css/main.css` - pseudo element
+`::before` 240px, `top:-6.5rem right:-5rem`, `radial-gradient(circle, color-mix(in oklab,
+var(--ui-primary) 55%, transparent), transparent 68%)`, `blur(26px)`, opacity 0.75, animasi scale-in
+420ms (dimatikan pada `prefers-reduced-motion`). Dipasang lewat
+`:ui="{ content: '… network-modal-glow' }"` pada SEMUA modal halaman network saja (4 di access-point,
+5 di network-rack), jadi halaman lain tidak tersentuh. `color-mix` dipakai karena `--ui-primary` berupa
+`oklch()` dan otomatis mengikuti accent pilihan user.
+
+PITFALL PENTING (sempat bikin modal melayang): jangan menulis `position: relative` pada elemen content.
+Elemen itu sudah `absolute` + `top-1/2 -translate-y-1/2`; memaksa `relative` membatalkan centring dan
+modal lompat ke y=-286 (judul terpotong di atas layar). Cukup `overflow: hidden; isolation: isolate`,
+`::before` tetap bisa absolute karena induknya sudah positioned. Komentar peringatan sudah ditulis di CSS.
+
+Glow merah yang dulu ada di dialog delete AP (`ap-delete-wash`) DIHAPUS supaya tidak bertabrakan dengan
+halo aksen; badge trash tetap merah.
+
+VERIFIKASI: Add access point, Add/Update floor plan, Delete floor plan (AP) dan Add floor plan, Add rack
+(Rack) semuanya punya `::before` (opacity .75) dan tetap tercentang di tengah layar (mis. rect y=189
+h=572 pada viewport 950). Fokus otomatis ke field pertama tetap jalan. `npx nuxt build` exit 0.

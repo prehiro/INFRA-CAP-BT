@@ -372,3 +372,40 @@
     transform: none !important;
   }
 }
+
+/* Accent halo in the top-right corner of a dialog. Opt-in per modal via
+   :ui="{ content: '… network-modal-glow' }" so it cannot leak into other pages.
+   --ui-primary can be an oklch() string, which color-mix() handles natively. */
+.network-modal-glow {
+  /* Do NOT set position here: the dialog content is already absolutely positioned and
+     centred with top-1/2 -translate-y-1/2. Forcing position: relative cancels that and
+     the whole dialog jumps off the top of the viewport. */
+  overflow: hidden;
+  isolation: isolate;
+}
+.network-modal-glow::before {
+  content: '';
+  position: absolute;
+  top: -6.5rem;
+  right: -5rem;
+  width: 15rem;
+  height: 15rem;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: radial-gradient(circle, color-mix(in oklab, var(--ui-primary) 55%, transparent) 0%, transparent 68%);
+  filter: blur(26px);
+  opacity: 0.75;
+  z-index: 0;
+  animation: network-modal-glow-in 420ms ease-out backwards;
+}
+.network-modal-glow > * {
+  position: relative;
+  z-index: 1;
+}
+@keyframes network-modal-glow-in {
+  from { opacity: 0; transform: scale(0.86); }
+  to { opacity: 0.75; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .network-modal-glow::before { animation: none; }
+}

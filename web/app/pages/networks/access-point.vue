@@ -539,7 +539,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         </template>
       </div>
 
-      <UModal v-if="isAdmin" v-model:open="showUpload" :title="replacingId === null ? 'Add floor plan' : 'Update floor plan'" :description="replacingId === null ? 'Upload an image and give this map a clear name.' : 'Replace the map image — the markers stay where they are.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showUpload" :title="replacingId === null ? 'Add floor plan' : 'Update floor plan'" :description="replacingId === null ? 'Upload an image and give this map a clear name.' : 'Replace the map image — the markers stay where they are.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg ap-upload-modal network-modal-glow', header: 'relative z-10', body: 'relative z-10 p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="createFloor">
             <div class="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3 text-sm text-muted">
@@ -572,7 +572,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         </template>
       </UModal>
 
-      <UModal v-if="isAdmin" v-model:open="showEditor" :title="editingId === null ? 'Add access point' : 'Edit access point'" :description="editingId === null ? 'Place a network device on this floor plan.' : 'Update this device’s network details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg', body: 'p-4 sm:p-5' }">
+      <UModal v-if="isAdmin" v-model:open="showEditor" :title="editingId === null ? 'Add access point' : 'Edit access point'" :description="editingId === null ? 'Place a network device on this floor plan.' : 'Update this device’s network details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #body>
           <form class="space-y-4" @submit.prevent="savePoint">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
@@ -610,7 +610,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
         </template>
       </UModal>
 
-      <UModal v-model:open="showDetails" title="Access point details" description="Selected marker on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md', body: 'p-4 sm:p-5' }">
+      <UModal v-model:open="showDetails" title="Access point details" description="Selected marker on this floor plan." :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #body>
           <div v-if="selectedPoint" class="space-y-4">
             <div class="flex items-center gap-3">
@@ -651,11 +651,10 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
       </UModal>
 
       <!-- Delete floor plan: names the plan, counts what goes with it, and says what survives. -->
-      <UModal v-model:open="showDeletePlan" :dismissible="!deletingPlan" :close="!deletingPlan" :ui="{ content: 'max-w-md' }">
+      <UModal v-model:open="showDeletePlan" :dismissible="!deletingPlan" :close="!deletingPlan" :ui="{ content: 'max-w-md network-modal-glow' }">
         <template #content>
           <div class="ap-delete-plan overflow-hidden rounded-xl">
             <div class="relative overflow-hidden px-5 pb-5 pt-5">
-              <div aria-hidden="true" class="ap-delete-wash pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl" />
               <div class="ap-delete-head relative flex items-start gap-3">
                 <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
                   <UIcon name="i-lucide-trash-2" class="ap-delete-glyph size-5" />
@@ -694,14 +693,9 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 .ap-delete-head, .ap-delete-rows, .ap-delete-footer { animation: ap-delete-rise 320ms cubic-bezier(.22, 1, .36, 1) backwards; }
 .ap-delete-rows { animation-delay: 60ms; }
 .ap-delete-footer { animation-delay: 110ms; }
-.ap-delete-wash { animation: ap-delete-wash 520ms ease-out backwards; }
 .ap-delete-glyph { animation: ap-delete-lid 2.6s ease-in-out 420ms infinite; }
 @keyframes ap-delete-rise {
   from { opacity: 0; transform: translate3d(0, 8px, 0); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes ap-delete-wash {
-  from { opacity: 0; transform: scale(.85); }
   to { opacity: 1; transform: none; }
 }
 @keyframes ap-delete-lid {
@@ -710,7 +704,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   90% { transform: translate3d(0, 0, 0) rotate(0deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ap-delete-head, .ap-delete-rows, .ap-delete-footer, .ap-delete-wash, .ap-delete-glyph { animation: none; }
+  .ap-delete-head, .ap-delete-rows, .ap-delete-footer, .ap-delete-glyph { animation: none; }
 }
 .ap-modal-icon-active :deep(.ap-upload-glyph) { animation: ap-upload-rise 2.2s ease-in-out .42s infinite; }
 @keyframes ap-upload-rise {
