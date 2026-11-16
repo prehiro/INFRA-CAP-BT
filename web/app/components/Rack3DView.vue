@@ -544,32 +544,30 @@ onMounted(async () => {
       canvas.height = 192
       const ctx = canvas.getContext('2d')
 
-      // Backlit cyan-blue APC Smart-UPS LCD screen
-      const grad = ctx.createLinearGradient(0, 0, 0, 192)
-      grad.addColorStop(0, '#072a40')
-      grad.addColorStop(1, '#041926')
-      ctx.fillStyle = grad
+      // Solid orange backlit LCD with black lettering (HIRO): one flat fill, no gradient.
+      ctx.fillStyle = '#f97316'
       ctx.fillRect(0, 0, 512, 192)
 
-      ctx.strokeStyle = '#3b82f6'
+      // Bezel: a darker orange so the screen keeps an edge against the chassis face.
+      ctx.strokeStyle = '#c2410c'
       ctx.lineWidth = 6
       ctx.strokeRect(4, 4, 504, 184)
 
       // Top status header
-      ctx.fillStyle = '#93c5fd'
+      ctx.fillStyle = '#000000'
       ctx.font = 'bold 24px "JetBrains Mono", monospace'
       ctx.fillText(`APC Smart-UPS ${vaRating}VA`, 22, 40)
 
-      ctx.fillStyle = '#a5f3fc'
+      ctx.fillStyle = '#000000'
       ctx.font = 'bold 22px "JetBrains Mono", monospace'
       ctx.fillText('ONLINE // NORMAL', 22, 74)
 
       // Metrics bar
-      ctx.fillStyle = '#e0f2fe'
+      ctx.fillStyle = '#000000'
       ctx.font = '600 23px "JetBrains Mono", monospace'
       ctx.fillText(`LOAD:${loadPct}%   BATT:100%`, 22, 118)
 
-      ctx.fillStyle = '#93c5fd'
+      ctx.fillStyle = '#000000'
       ctx.font = '20px "JetBrains Mono", monospace'
       ctx.fillText(`IN:230.4V  OUT:230.0V  ~${runtimeMins}m`, 22, 158)
 
@@ -995,7 +993,7 @@ onMounted(async () => {
     const matPowerCord = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.75 })
     const matUpsBlack = new THREE.MeshStandardMaterial({ color: 0x12151c, roughness: 0.42, metalness: 0.78 })
     // UPS front badge/screen accent: blue, not the red APC brand colour (HIRO asked for blue).
-    const matUpsBadge = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.35, metalness: 0.3, emissive: 0x1e3a8a, emissiveIntensity: 0.28 })
+    const matUpsBadge = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35, metalness: 0.3, emissive: 0x9a3412, emissiveIntensity: 0.28 })
 
     function showToast(msg) {
       const toast = $('hud-toast')
@@ -1197,9 +1195,11 @@ onMounted(async () => {
       const runtimeMins = upsModel === '5000' ? Math.max(18, 68 - switchesData.length * 3) : Math.max(11, 44 - switchesData.length * 2)
       const lcdTex = createUpsLcdTexture(upsModel, loadPct, runtimeMins)
 
+      // toneMapped:false matters here - the scene's ACES curve desaturates the backlit orange into a
+      // cream wash, so the screen bypasses tone mapping and shows the authored colour.
       const lcdScreen = new THREE.Mesh(
         new THREE.PlaneGeometry(0.135, Math.min(0.056, totalH * 0.56)),
-        new THREE.MeshBasicMaterial({ map: lcdTex })
+        new THREE.MeshBasicMaterial({ map: lcdTex, toneMapped: false })
       )
       lcdScreen.position.set(0, 0.004, 0.013)
       upsGroup.add(lcdScreen)

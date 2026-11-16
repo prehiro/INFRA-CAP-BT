@@ -5783,3 +5783,18 @@ HIRO: "ya redupkan sedikit grid putih nya".
 
 VERIFIKASI: screenshot angled view 1400x900 - grid putih tetap jelas terbaca tapi tidak lagi
 mendominasi lantai, halo aksen di kaki rack tetap terlihat. Build exit 0.
+### Screen UPS Jadi Orange Solid, Font Hitam (2026-11-16)
+
+HIRO: "ubah tampilan screen ups jadi warna orang, font nya warna hitam" lalu "ubah warna orange solid
+tanpa gradient".
+
+- `createUpsLcdTexture` sekarang: satu `fillRect` penuh `#f97316` (tanpa `createLinearGradient`),
+  bezel tipis `#c2410c`, SEMUA teks `#000000` (header, ONLINE // NORMAL, LOAD/BATT, IN/OUT).
+- Kunci supaya orange-nya benar: `MeshBasicMaterial({ map: lcdTex, toneMapped: false })`. Tanpa ini
+  kurva ACES tone mapping mendesaturasi orange jadi krem pucat - itu yang terjadi pada percobaan
+  pertama dengan gradient.
+- `matUpsBadge` (blok APC di kiri LCD) ikut jadi `0xf97316` / emissive `0x9a3412` supaya muka UPS
+  tetap satu warna; sebelumnya keduanya biru.
+
+VERIFIKASI (Bottom UPS view, 1400x900): zoom panel - bidang orange rata tanpa gradient, teks hitam
+terbaca, badge orange senada. Build exit 0.
