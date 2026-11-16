@@ -5811,3 +5811,20 @@ VERIFIKASI (Angled View 1400x900): 4 frame berjarak 0.9 s - pixel lantai berubah
 144.291 px per langkah, jadi gerakan jelas terlihat dalam waktu di bawah satu detik. Screenshot:
 wash aksen hijau melebar sampai menutupi sebagian besar lantai yang terlihat, grid putih tetap
 terbaca. Build exit 0.
+### UPS: Strip Hijau Berkedip + Wordmark APC Merah (2026-11-16)
+
+HIRO: "strip hijau pada ups buat blinking bro. lalu square orange dipojok kiri ups ganti jadi tulisan
+APC warna merah, design yang bagus".
+
+1. STRIP HIJAU BERKEDIP. Material strip disimpan ke `upsStatusBarMat` (MeshBasicMaterial, transparent,
+   toneMapped:false) dan dipulse di `animate()`: `opacity = 0.30 + 0.70*(0.5 + 0.5*sin(upsBlinkTime*3.2))`
+   dengan `upsBlinkTime += delta`. Tidak pernah mati total supaya unit tetap terbaca "online".
+2. BLOK ORANGE DIGANTI WORDMARK. `matUpsBadge` (box orange 0.044x0.018) dihapus seluruhnya (0 referensi)
+   dan diganti plane transparan berisi teks "APC" merah `#d81f26`, font 900 Segoe UI/Arial Black,
+   di-stretch 1.08x supaya stance-nya lebar seperti logo asli. Texture dibuat oleh
+   `createApcBrandTexture()`, material `MeshBasicMaterial({ map, transparent:true, toneMapped:false })`
+   di posisi yang sama (-0.185, totalH/2 - 0.016, 0.013).
+
+VERIFIKASI (Bottom UPS 1400x900): 6 frame berjarak 0.18 s - intensitas hijau strip berosilasi
+128.9 -> 92.6 -> 51.0 -> 50.6 -> 92.0 -> 128.9 (berkedip nyata). Zoom muka UPS: wordmark APC merah
+bersih di pojok kiri tanpa blok orange, LCD orange solid, strip hijau terang di bawahnya. Build exit 0.

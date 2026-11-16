@@ -578,6 +578,28 @@ onMounted(async () => {
       return tex
     }
 
+    // Red APC wordmark for the left corner of the UPS face. Drawn as transparent text rather than a
+    // filled plate so it sits straight on the chassis like the real silkscreen print.
+    function createApcBrandTexture() {
+      const canvas = document.createElement('canvas')
+      canvas.width = 320
+      canvas.height = 132
+      const ctx = canvas.getContext('2d')
+
+      ctx.fillStyle = '#d81f26'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      // A wide, heavy grotesque: the real mark is noticeably broader than a default bold.
+      ctx.font = '900 92px "Segoe UI", "Arial Black", Arial, sans-serif'
+      ctx.setTransform(1.08, 0, 0, 1, -12.8, 4)
+      ctx.fillText('APC', 160, 64)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+
+      const tex = new THREE.CanvasTexture(canvas)
+      tex.anisotropy = 4
+      return tex
+    }
+
     const brushedTex = createBrushedMetalTexture()
     const railNumTex = createRailNumberTexture()
 
@@ -995,7 +1017,6 @@ onMounted(async () => {
     const matPowerCord = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.75 })
     const matUpsBlack = new THREE.MeshStandardMaterial({ color: 0x12151c, roughness: 0.42, metalness: 0.78 })
     // UPS front badge/screen accent: blue, not the red APC brand colour (HIRO asked for blue).
-    const matUpsBadge = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.35, metalness: 0.3, emissive: 0x9a3412, emissiveIntensity: 0.28 })
 
     function showToast(msg) {
       const toast = $('hud-toast')
@@ -1128,6 +1149,9 @@ onMounted(async () => {
       return tex
     }
 
+    let upsStatusBarMat: THREE.MeshBasicMaterial | null = null
+    let upsBlinkTime = 0
+
     function buildUpsMesh() {
       const upsU = getUpsHeightU()
       if (upsU === 0) return
@@ -1187,8 +1211,11 @@ onMounted(async () => {
         }
       })
 
-      // APC Red Brand Badge on Left
-      const apcBadge = new THREE.Mesh(new THREE.BoxGeometry(0.044, 0.018, 0.004), matUpsBadge)
+      // APC wordmark on the left of the face: red lettering, no coloured block behind it.
+      const apcBadge = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.044, 0.018),
+        new THREE.MeshBasicMaterial({ map: createApcBrandTexture(), transparent: true, toneMapped: false })
+      )
       apcBadge.position.set(-0.185, totalH / 2 - 0.016, 0.013)
       upsGroup.add(apcBadge)
 
@@ -1206,11 +1233,9 @@ onMounted(async () => {
       lcdScreen.position.set(0, 0.004, 0.013)
       upsGroup.add(lcdScreen)
 
-      // Green Online Status Bar below LCD
-      const statusBar = new THREE.Mesh(
-        new THREE.BoxGeometry(0.09, 0.004, 0.004),
-        new THREE.MeshBasicMaterial({ color: 0x10ff70 })
-      )
+      // Green online strip below the LCD. Blinking, so the material is kept and pulsed in animate().
+      upsStatusBarMat = new THREE.MeshBasicMaterial({ color: 0x10ff70, transparent: true, toneMapped: false })
+      const statusBar = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.004, 0.004), upsStatusBarMat)
       statusBar.position.set(0, -totalH * 0.32, 0.013)
       upsGroup.add(statusBar)
 
@@ -2429,6 +2454,12 @@ let accentPoll = 0
     function animate() {
       rafId = requestAnimationFrame(animate)
       const delta = clock.getDelta()
+
+      // Green online strip on the UPS: a steady pulse that never fully goes dark
+      if (upsStatusBarMat) {
+        upsBlinkTime += delta
+        upsStatusBarMat.opacity = 0.30 + 0.70 * (0.5 + 0.5 * Math.sin(upsBlinkTime * 3.2))
+      }
 
       // Smoothly animate front glass door hinge rotation
       doorPivot.rotation.y += (targetDoorAngle - doorPivot.rotation.y) * Math.min(1, delta * 7.5)
