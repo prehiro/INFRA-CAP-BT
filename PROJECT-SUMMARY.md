@@ -6227,3 +6227,19 @@ PERBAIKAN: `const RACK_BAYS = [54, 198, 342]` (bar dikurangi 1) dengan tinggi pa
 
 VERIFIKASI: atribut `y` panel = 54/198/342; zoom 10x menunjukkan ketiga strip hitam duduk dengan jarak
 yang sama dari tepi atas tiap unit dan LED di tengah bar. `npx nuxt build` exit 0.
+### LED Juga di Icon Judul Halaman Network Rack (2026-11-16)
+
+HIRO: "aplikasikan juga led nya ke icon title page network rack".
+
+Icon di header "Network Rack Map" (network-rack.vue baris ~619, RecordAddIcon + SVG inline berisi tiga
+path `nr-rack-line`) mendapat perlakuan yang sama dengan marker peta: tiga panel drive bay gelap
+(`.ap-rack-bay`, x 58 w 218 h 20) di y 54/198/342 dan 9 LED `.ap-rack-led` (r 12, x 88/168/248,
+y bay+10) berkedip biru/kuning.
+
+Seed ritme memakai id tetap `rackLeds(7)` supaya icon judul punya irama sendiri, tidak meniru rack
+mana pun dan tidak berubah saat data rack berubah. Kelas CSS-nya dipakai ulang dari blok scoped yang
+sudah ada, jadi tidak ada duplikasi aturan animasi.
+
+VERIFIKASI: tile 48 px berisi 9 LED + 3 panel; 7 dari 9 LED berubah opasitas dalam 0,45 s (animasi
+jalan), LED pertama `rgb(56, 189, 248)` durasi 2,51 s; zoom 10x menunjukkan strip hitam duduk di dalam
+ketiga unit seperti pada marker. `npx nuxt build` exit 0.

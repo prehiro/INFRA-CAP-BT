@@ -623,6 +623,13 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
                   <path class="nr-rack-line nr-rack-line-1" d="M 41 25 L 41 103 L 471 103 L 471 25 Z M 295 48 L 313 48 L 313 80 L 295 80 Z M 416 48 A 16 16 0 0 1 432 64 A 16 16 0 0 1 416 80 A 16 16 0 0 1 400 64 A 16 16 0 0 1 416 48 Z M 64 55 L 112 55 L 112 73 L 64 73 Z M 144 55 L 192 55 L 192 73 L 144 73 Z M 224 55 L 272 55 L 272 73 L 224 73 Z M 105 121 L 105 151 L 407 151 L 407 121 Z" />
                   <path class="nr-rack-line nr-rack-line-2" d="M 41 169 L 41 247 L 471 247 L 471 169 Z M 295 192 L 313 192 L 313 224 L 295 224 Z M 416 192 A 16 16 0 0 1 432 208 A 16 16 0 0 1 416 224 A 16 16 0 0 1 400 208 A 16 16 0 0 1 416 192 Z M 64 199 L 112 199 L 112 217 L 64 217 Z M 144 199 L 192 199 L 192 217 L 144 217 Z M 224 199 L 272 199 L 272 217 L 224 217 Z M 105 265 L 105 295 L 407 295 L 407 265 Z" />
                   <path class="nr-rack-line nr-rack-line-3" d="M 41 313 L 41 391 L 471 391 L 471 313 Z M 295 336 L 313 336 L 313 368 L 295 368 Z M 416 336 A 16 16 0 0 1 432 352 A 16 16 0 0 1 416 368 A 16 16 0 0 1 400 352 A 16 16 0 0 1 416 336 Z M 64 343 L 112 343 L 112 361 L 64 361 Z M 144 343 L 192 343 L 192 361 L 144 361 Z M 224 343 L 272 343 L 272 361 L 224 361 Z M 237 409 L 237 439 L 275 439 L 275 409 Z" />
+                  <!-- Same LED treatment as the map markers, on a fixed seed so the page icon keeps
+                       its own rhythm. -->
+                  <rect v-for="bay in RACK_BAYS" :key="`icon-bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
+                  <circle v-for="(led, i) in rackLeds(7)" :key="`icon-led-${i}`" class="ap-rack-led"
+                    :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
+                    :cx="led.x" :cy="led.y" r="12"
+                    :style="{ animationDuration: `${led.dur}s`, animationDelay: `${led.delay}s` }" />
                 </svg>
               </RecordAddIcon>
             </span>
