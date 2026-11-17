@@ -1316,37 +1316,39 @@ onMounted(async () => {
     // starts at z = RACK_D/2 - 0.021), otherwise the cord pokes through the door.
     function buildOtbFiberCord(portWorld) {
       const otbY = getUSlotY(otbSlotU)
-      const otbFaceZ = frontRailZ + 0.015
-      const railZ = frontRailZ + 0.014
-      // Runs up just inside the cabinet's right-hand edge and turns into the OTB with a short bend,
-      // so it never draws a diagonal across the OTB faceplate.
-      const runX = 0.210
-      const runZ = railZ + 0.030
-      const otbPortX = 0.115
+      // HIRO: "jangan colok ke depan OTB, arah kabel nya kebelakang otb". The OTB body is 150 mm deep
+      // starting 1 mm behind the group origin, so its REAR face is frontRailZ - 0.141. The cord leaves
+      // the switch port, swings to the right of the chassis, runs rearward past the faceplates, climbs
+      // the gap between the chassis edge and the rack post, then comes forward into that rear face.
+      const otbRearZ = frontRailZ - 0.141
+      const runX = 0.246
+      const runZ = 0.170
+      const otbPortX = 0.152
 
       const curve = new THREE.CatmullRomCurve3([
         portWorld.clone(),
-        new THREE.Vector3(portWorld.x + 0.002, portWorld.y - 0.001, portWorld.z + 0.009),
-        new THREE.Vector3(portWorld.x + 0.008, portWorld.y - 0.008, runZ - 0.006),
-        new THREE.Vector3(runX - 0.008, portWorld.y + 0.006, runZ),
-        new THREE.Vector3(runX, portWorld.y + 0.030, runZ + 0.002),
-        new THREE.Vector3(runX, (portWorld.y + otbY) / 2, runZ + 0.002),
-        new THREE.Vector3(runX - 0.001, otbY - 0.030, runZ - 0.002),
-        new THREE.Vector3(runX - 0.016, otbY - 0.020, otbFaceZ + 0.013),
-        new THREE.Vector3(0.150, otbY - 0.011, otbFaceZ + 0.008),
-        new THREE.Vector3(otbPortX, otbY - 0.005, otbFaceZ + 0.005)
+        new THREE.Vector3(portWorld.x + 0.004, portWorld.y - 0.001, portWorld.z + 0.008),
+        new THREE.Vector3(portWorld.x + 0.020, portWorld.y - 0.004, portWorld.z + 0.002),
+        new THREE.Vector3(0.238, portWorld.y - 0.006, frontRailZ + 0.006),
+        new THREE.Vector3(runX, portWorld.y + 0.010, frontRailZ - 0.070),
+        new THREE.Vector3(runX, portWorld.y + 0.050, runZ),
+        new THREE.Vector3(runX, (portWorld.y + otbY) / 2, runZ),
+        new THREE.Vector3(runX - 0.002, otbY - 0.032, runZ),
+        new THREE.Vector3(0.230, otbY - 0.014, otbRearZ - 0.006),
+        new THREE.Vector3(0.178, otbY - 0.004, otbRearZ - 0.003),
+        new THREE.Vector3(otbPortX, otbY, otbRearZ + 0.002)
       ])
-      const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 110, 0.0017, 10, false), matFiberAqua)
+      const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.0017, 10, false), matFiberAqua)
       dynamicEquipmentGroup.add(cord)
 
-      // Aqua boot at the switch end, LC connector flush with the OTB faceplate.
+      // Aqua boot at the switch end, LC connector seated in the OTB's rear face.
       const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.0033, 0.0033, 0.013, 12), matFiberAqua)
       boot.rotation.x = Math.PI / 2
       boot.position.set(portWorld.x, portWorld.y, portWorld.z + 0.004)
       dynamicEquipmentGroup.add(boot)
 
-      const lc = new THREE.Mesh(new THREE.BoxGeometry(0.0076, 0.0060, 0.013), matFiberAqua)
-      lc.position.set(otbPortX, otbY - 0.005, otbFaceZ + 0.006)
+      const lc = new THREE.Mesh(new THREE.BoxGeometry(0.0076, 0.0060, 0.011), matFiberAqua)
+      lc.position.set(otbPortX, otbY, otbRearZ - 0.004)
       dynamicEquipmentGroup.add(lc)
     }
 

@@ -6288,3 +6288,22 @@ VERIFIKASI: Front View + zoom menunjukkan kabel aqua keluar dari blok SFP switch
 naik di sisi kanan, dan masuk ke OTB; tidak ada ujung menggantung di port 1 lagi (stub lama hanya
 tersisa untuk port 2 dan untuk switch lain). Angled View tidak menunjukkan kabel menembus faceplate
 atau pintu. `npx nuxt build` exit 0.
+### Kabel Fiber Dibuat Masuk ke BELAKANG OTB (2026-11-16)
+
+HIRO: "jangan colok ke depan OTB, arah kabel nya kebelakang otb".
+
+OTB body 150 mm dalam, mulai 1 mm di belakang origin group, jadi muka BELAKANGNYA ada di
+`frontRailZ - 0.141` (= 0,191 m pada RACK_D 0,8), sementara muka depannya di `frontRailZ + 0.010`.
+Kabel sebelumnya berakhir di x 0,115 pada muka DEPAN, jadi garisnya melintang di plate.
+
+RUTE BARU (semua koordinat dunia):
+- keluar port SFP+ -> maju 8 mm -> geser ke kanan melewati tepi chassis (x 0,238)
+- turun/mundur ke z `frontRailZ + 0,006` lalu ke `frontRailZ - 0,070`
+- naik vertikal di x 0,246, z 0,170 (celah antara tepi chassis 0,221 dan post kabinet ~0,28) -
+  posisi ini DI LUAR lebar plate OTB (0,221) sehingga tidak pernah menutupi muka depannya
+- di ketinggian OTB: belok ke kiri ke x 0,230 -> 0,178 -> masuk muka belakang di x 0,152, z 0,193
+- konektor LC dipindah ke `otbRearZ - 0,004` (di belakang plate)
+
+VERIFIKASI: Front View + zoom - muka depan OTB hanya menampilkan grafis oranye tercetak, tanpa diagonal
+maupun konektor kabel; jalur aqua terlihat naik di sisi kanan lalu menghilang di belakang plate.
+`npx nuxt build` exit 0.
