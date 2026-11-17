@@ -6536,3 +6536,20 @@ HASIL:
 - Log API menunjukkan prefetch mengambil 31, 3, 5 berurutan masing-masing <1 ms setelah warm-up
 `npx nuxt build` exit 0; `dotnet build -o bin/RackMap5` 0 error; API dev sekarang jalan dari
 `api/bin/RackMap5/Api.dll` (log api5.out).
+### Dashboard Server Metrics: Grafik Cepat Muncul (2026-11-16)
+
+HIRO: "pada halaman dashboard server metrics lama muncul grafiknya, bisa tolong optimasi biar cepat
+muncul?"
+
+PENYEBAB: `/api/metrics` sendiri cepat (0,45-0,5 ms per request, diukur di log API). Masalahnya kadens
+di frontend: `MetricsChart` polling tiap 5 detik, dan `MetricSparkline` baru menggambar garis setelah
+ada titik data. Dengan satu sampel panel masih "Waiting for data…", jadi garis baru terlihat setelah
+polling kedua - sampai 10 detik.
+
+PERBAIKAN (MetricsChart.vue): konstanta `PRIME_SAMPLES = 8` dan `PRIME_MS = 450`; `schedule()`
+memakai jeda 450 ms selama sampel masih kurang dari 8, lalu kembali ke `INTERVAL_MS` (5 s). Jadi
+jendela grafik terisi dalam ~3,5 detik pertama alih-alih 40 detik (8 x 5 s), tanpa mengubah akurasi
+(CPU tetap dihitung dari delta nyata, jendela sampel 450 ms masih jauh di atas MinCpuWindowTicks 20 ms).
+
+VERIFIKASI: setelah reload dashboard, log API mencatat 10 request `/api/metrics` dalam 4 detik
+(steady-state sendirian hanya ~1); tiap request 0,45-0,5 ms. `npx nuxt build` exit 0.

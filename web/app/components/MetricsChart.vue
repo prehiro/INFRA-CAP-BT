@@ -99,6 +99,11 @@ const INTERVAL_S = 5
 const WINDOW = 60
 const INTERVAL_MS = INTERVAL_S * 1000
 const BACKOFF_MS = 20_000
+// A line needs more than one point. At the steady 5 s cadence the first real graph only appeared
+// after two polls (up to 10 s of "Waiting for data…"), so the panel primes its window with a fast
+// burst on mount and then settles into INTERVAL_MS.
+const PRIME_SAMPLES = 8
+const PRIME_MS = 450
 const FAILURES_BEFORE_BACKOFF = 3
 const HOT_THRESHOLD = 90
 
@@ -251,7 +256,8 @@ async function poll() {
 
 function schedule() {
   if (timer) clearTimeout(timer)
-  const delay = failures >= FAILURES_BEFORE_BACKOFF ? BACKOFF_MS : INTERVAL_MS
+  const priming = failures === 0 && cpuHistory.length < PRIME_SAMPLES
+  const delay = failures >= FAILURES_BEFORE_BACKOFF ? BACKOFF_MS : priming ? PRIME_MS : INTERVAL_MS
   timer = setTimeout(() => {
     // A hidden tab draws nothing, so polling it would be pure load on the API host.
     if (typeof document !== 'undefined' && document.hidden) return
