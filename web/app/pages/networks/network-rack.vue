@@ -762,7 +762,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
           <form class="space-y-4" @submit.prevent="saveRack">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
               <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><UIcon name="game-icons:server-rack" class="size-5" /></span>
-              <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p><p class="text-xs text-muted">Position: {{ Math.round(rackDraft.x * 100) }}% across · {{ Math.round(rackDraft.y * 100) }}% down</p></div>
+              <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p></div>
             </div>
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Rack name</legend>

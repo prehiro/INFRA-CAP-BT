@@ -6327,3 +6327,19 @@ VERIFIKASI NUMERIK (Catmull-Rom centripetal, 440 sampel sepanjang tube):
 - titik yang berada di dalam brush cable bar (slot bebas di bawah tiap switch): 0
 - x jalur vertikal 0,250 vs muka dalam post 0,258 -> bebas 8 mm
 `npx nuxt build` exit 0.
+### Baris "Position: …% across …% down" Dihapus dari Modal Add Rack (2026-11-16)
+
+HIRO: "pada saat add rack ada teks Position: 50% across · 50% down pada modal, bisa ganti ini?
+informasi ini tidak butuh".
+
+Baris itu (`network-rack.vue` baris 765) adalah paragraf kedua di kotak ringkasan lantai pada modal
+Add rack: `<p class="text-xs text-muted">Position: {{ Math.round(rackDraft.x*100) }}% across ·
+{{ Math.round(rackDraft.y*100) }}% down</p>`. Dihapus; nama lantai + ikonnya tetap ada sehingga kotak
+tetap terbaca dan tingginya menyusut satu baris.
+
+Halaman Access Point MEMILIKI baris serupa di modal Add access point (access-point.vue baris 581,
+variabel `draft.x/draft.y`). TIDAK diubah karena permintaan hanya menyebut add rack - tinggal bilang
+kalau mau dihapus juga.
+
+VERIFIKASI: modal Add rack dibuka di browser, `hasPosition: false`, isi kotak = ikon rack + "BUILDING 1";
+screenshot addrack_header.png. `npx nuxt build` exit 0.
