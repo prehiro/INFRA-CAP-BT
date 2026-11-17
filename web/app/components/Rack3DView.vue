@@ -1308,6 +1308,48 @@ onMounted(async () => {
       dynamicEquipmentGroup.add(group)
     }
 
+    // HIRO: "switch yang pertama, port sfp no 1 itu connect ke OTB menggunakan fiber patch cord".
+    // The switch faceplate used to grow a short aqua stub that ended in mid-air; instead the TOP
+    // switch's SFP+ port 1 is patched up into the OTB. Drawn in world space on purpose: it leaves the
+    // cage, swings out past the faceplates, climbs the right-hand side of the cabinet and curves back
+    // into the OTB face. Every z stays in front of the rails but behind the glass door (door body
+    // starts at z = RACK_D/2 - 0.021), otherwise the cord pokes through the door.
+    function buildOtbFiberCord(portWorld) {
+      const otbY = getUSlotY(otbSlotU)
+      const otbFaceZ = frontRailZ + 0.015
+      const railZ = frontRailZ + 0.014
+      // Runs up just inside the cabinet's right-hand edge and turns into the OTB with a short bend,
+      // so it never draws a diagonal across the OTB faceplate.
+      const runX = 0.210
+      const runZ = railZ + 0.030
+      const otbPortX = 0.115
+
+      const curve = new THREE.CatmullRomCurve3([
+        portWorld.clone(),
+        new THREE.Vector3(portWorld.x + 0.002, portWorld.y - 0.001, portWorld.z + 0.009),
+        new THREE.Vector3(portWorld.x + 0.008, portWorld.y - 0.008, runZ - 0.006),
+        new THREE.Vector3(runX - 0.008, portWorld.y + 0.006, runZ),
+        new THREE.Vector3(runX, portWorld.y + 0.030, runZ + 0.002),
+        new THREE.Vector3(runX, (portWorld.y + otbY) / 2, runZ + 0.002),
+        new THREE.Vector3(runX - 0.001, otbY - 0.030, runZ - 0.002),
+        new THREE.Vector3(runX - 0.016, otbY - 0.020, otbFaceZ + 0.013),
+        new THREE.Vector3(0.150, otbY - 0.011, otbFaceZ + 0.008),
+        new THREE.Vector3(otbPortX, otbY - 0.005, otbFaceZ + 0.005)
+      ])
+      const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 110, 0.0017, 10, false), matFiberAqua)
+      dynamicEquipmentGroup.add(cord)
+
+      // Aqua boot at the switch end, LC connector flush with the OTB faceplate.
+      const boot = new THREE.Mesh(new THREE.CylinderGeometry(0.0033, 0.0033, 0.013, 12), matFiberAqua)
+      boot.rotation.x = Math.PI / 2
+      boot.position.set(portWorld.x, portWorld.y, portWorld.z + 0.004)
+      dynamicEquipmentGroup.add(boot)
+
+      const lc = new THREE.Mesh(new THREE.BoxGeometry(0.0076, 0.0060, 0.013), matFiberAqua)
+      lc.position.set(otbPortX, otbY - 0.005, otbFaceZ + 0.006)
+      dynamicEquipmentGroup.add(lc)
+    }
+
     function rebuildRackEquipment() {
       enforceBottomUpsRule()
 
@@ -1363,6 +1405,11 @@ onMounted(async () => {
       scene.add(ledInstancedMesh)
 
       let ledIndex = 0
+
+      // The OTB patch cord comes from the highest switch in the rack (that is what "switch yang
+      // pertama" means when you look at the cabinet), so record that port while the faceplates build.
+      const topSwitchU = switchesData.reduce((max, sw) => Math.max(max, sw.u), 0)
+      let otbFiberPort = null
 
       switchesData.forEach((cfg) => {
         const switchGroup = new THREE.Group()
@@ -1598,17 +1645,22 @@ onMounted(async () => {
               latch.position.set(sx, sy - 0.0035, 0.017)
               switchGroup.add(latch)
 
-              const curve = new THREE.CatmullRomCurve3([
-                new THREE.Vector3(sx, sy, 0.017),
-                new THREE.Vector3(sx + 0.010, sy - 0.004, 0.040),
-                new THREE.Vector3(0.246, sy - 0.012, 0.030),
-                new THREE.Vector3(0.252, -0.22, -0.04)
-              ])
-              const tubeMesh = new THREE.Mesh(
-                new THREE.TubeGeometry(curve, 16, 0.0015, 6, false),
-                sfpSeq === 0 ? matFiberAqua : matFiberOrange
-              )
-              switchGroup.add(tubeMesh)
+              if (sfpSeq === 0 && cfg.u === topSwitchU) {
+                // Patched to the OTB instead of a stub - see buildOtbFiberCord().
+                otbFiberPort = new THREE.Vector3(sx, sy, 0.0165).add(switchGroup.position)
+              } else {
+                const curve = new THREE.CatmullRomCurve3([
+                  new THREE.Vector3(sx, sy, 0.017),
+                  new THREE.Vector3(sx + 0.010, sy - 0.004, 0.040),
+                  new THREE.Vector3(0.246, sy - 0.012, 0.030),
+                  new THREE.Vector3(0.252, -0.22, -0.04)
+                ])
+                const tubeMesh = new THREE.Mesh(
+                  new THREE.TubeGeometry(curve, 16, 0.0015, 6, false),
+                  sfpSeq === 0 ? matFiberAqua : matFiberOrange
+                )
+                switchGroup.add(tubeMesh)
+              }
             }
 
             // One LED per uplink port, sitting exactly under its own cage. Only ports 1 and 3 blink.
@@ -1658,6 +1710,8 @@ onMounted(async () => {
         const cordMesh = new THREE.Mesh(new THREE.TubeGeometry(cordCurve, 12, 0.0032, 6, false), matPowerCord)
         switchGroup.add(cordMesh)
       })
+
+      if (otbFiberPort && otbSlotU) buildOtbFiberCord(otbFiberPort)
 
       ledInstancedMesh.instanceMatrix.needsUpdate = true
       if (ledInstancedMesh.instanceColor) ledInstancedMesh.instanceColor.needsUpdate = true

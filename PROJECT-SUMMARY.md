@@ -6262,3 +6262,29 @@ VERIFIKASI:
 - Opasitas 9 LED modal SAMA PERSIS dengan 9 LED marker rack itu pada saat yang sama (seed sama), dan
   berubah antar sampel 0,5 s (animasi jalan)
 - `npx nuxt build` exit 0; screenshot: details_icon_leds.png
+### Fiber Patch Cord: Switch Pertama SFP+ Port 1 → OTB (2026-11-16)
+
+HIRO: "ke 3d rack. coba buat switch yang pertama, port sfp no 1 itu connect ke OTB menggunakan fiber
+patch cord".
+
+SEBELUMNYA: tiap SFP+ yang ada transceiver-nya punya "stub" tube pendek (aqua untuk port 1, orange
+untuk port 2) yang berakhir begitu saja di (0,252, -0,22, -0,04) - jadi kabelnya menggantung tanpa
+tujuan. Untuk switch TERATAS stub port 1 sekarang diganti kabel sungguhan ke OTB.
+
+IMPLEMENTASI (Rack3DView.vue):
+- `topSwitchU = max(sw.u)`, dan saat faceplate switch itu dibangun, posisi dunia SFP+ port 1 dicatat
+  ke `otbFiberPort` (Vector3 local (sx, sy, 0,0165) + switchGroup.position).
+- `buildOtbFiberCord(portWorld)` dipanggil setelah seluruh kabinet selesai (setelah loop switch),
+  hanya bila `otbSlotU` ada. Kabel digambar di RUANG DUNIA (bukan lokal switch) karena harus keluar
+  cage, lewat depan faceplate, naik di sisi kanan kabinet, lalu membelok masuk ke muka OTB.
+- Rute: keluar port -> maju ~9 mm -> naik di railX 0,210 (z = frontRailZ + 0,044) -> naik vertikal ->
+  belok kiri di bawah wordmark NETVIEL -> masuk OTB di x 0,115, sedikit di bawah garis tengah plate.
+- TubeGeometry (110 segmen, radius 1,7 mm, 10 radial) material `matFiberAqua` (0x06b6d4), plus boot
+  aqua di sisi switch dan konektor LC di muka OTB.
+- Semua z dijaga < frontRailZ + 0,046 karena pintu kaca mulai di z = RACK_D/2 - 0,021; kalau lebih,
+  kabel menembus pintu.
+
+VERIFIKASI: Front View + zoom menunjukkan kabel aqua keluar dari blok SFP switch U41 (SW-EDGE-01),
+naik di sisi kanan, dan masuk ke OTB; tidak ada ujung menggantung di port 1 lagi (stub lama hanya
+tersisa untuk port 2 dan untuk switch lain). Angled View tidak menunjukkan kabel menembus faceplate
+atau pintu. `npx nuxt build` exit 0.
