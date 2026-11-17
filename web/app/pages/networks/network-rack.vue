@@ -98,6 +98,25 @@ const selectedRackDetail = ref<NetworkRackDetail | null>(null)
 const rackDetailLoading = ref(false)
 let rackDetailVersion = 0
 
+// Opening a rack used to feel slow for two reasons that had nothing to do with the API (which answers
+// in ~15 ms warm): the dialog is a LazyRack3DView, so Vue could not even mount it until the three.js
+// chunk had downloaded and parsed (~380 ms measured), and every open re-fetched the detail. Both are
+// one-time costs, so pay them off the critical path: warm the chunk once the floor is on screen, and
+// keep the last detail per rack so a re-open paints immediately while a silent refresh runs.
+const rackDetailCache = new Map<number, NetworkRackDetail>()
+let rack3dWarmed = false
+function warmRack3D() {
+  if (rack3dWarmed) return
+  rack3dWarmed = true
+  const run = () => { import('~/components/Rack3DView.vue').catch(() => { rack3dWarmed = false }) }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 2500 })
+  else setTimeout(run, 400)
+}
+function prefetchRackDetail(rack: { id: number }) {
+  if (rackDetailCache.has(rack.id) || !floor.value) return
+  apiGetNetworkRack(floor.value.id, rack.id).then(d => rackDetailCache.set(rack.id, d)).catch(() => {})
+}
+
 // One delete dialog for every destructive action on this page (a switch, a floor plan). It is a
 // request object rather than a boolean so the dialog can name the row that is about to vanish
 // before any API call happens - a destructive confirmation that cannot show WHICH record it is
@@ -168,6 +187,7 @@ async function loadFloor(id: number) {
   activeFloorId.value = id
   floor.value = null
   racks.value = []
+  rackDetailCache.clear()          // details belong to this floor's racks
   selectedRackId.value = null
   setImageUrl('')
   mapNatural.value = null
@@ -182,6 +202,7 @@ async function loadFloor(id: number) {
     floor.value = detail
     setImageUrl(URL.createObjectURL(blob))
     await loadRacks(id)
+    warmRack3D()
   } catch (e) { if (version === loadVersion) error.value = message(e) }
 }
 async function loadRacks(floorId: number) {
@@ -383,6 +404,7 @@ async function performDeleteRack(rack: NetworkRackSummary) {
   try {
     await apiDeleteNetworkRack(floor.value!.id, rack.id)
     racks.value = racks.value.filter(r => r.id !== rack.id)
+    rackDetailCache.delete(rack.id)
     if (selectedRackId.value === rack.id) {
       selectedRackId.value = null
       selectedRackDetail.value = null
@@ -405,20 +427,23 @@ function openRackDetails(rack: NetworkRackSummary) {
   if (rack.id === suppressRackClickId && performance.now() < suppressRackClickUntil) return
   selectedRackId.value = rack.id
   showRackDetails.value = true
+  warmRack3D()
   // Drop the previous rack BEFORE the fetch: the dialog is already mounted, so keeping the old
   // object renders its cabinet and LEDs for as long as the request takes.
-  selectedRackDetail.value = null
-  rackDetailLoading.value = true
-  loadRackDetail(rack.id)
+  const cached = rackDetailCache.get(rack.id) ?? null
+  selectedRackDetail.value = cached
+  rackDetailLoading.value = cached === null
+  loadRackDetail(rack.id)                                  // silent refresh even when cached
 }
 async function loadRackDetail(rackId: number) {
   const version = ++rackDetailVersion
   try {
     const detail = await apiGetNetworkRack(floor.value!.id, rackId)
+    rackDetailCache.set(rackId, detail)
     if (version !== rackDetailVersion) return            // a newer rack was opened meanwhile
     selectedRackDetail.value = detail
   } catch (e) {
-    if (version === rackDetailVersion) toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' })
+    if (version === rackDetailVersion && !selectedRackDetail.value) toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' })
   } finally {
     if (version === rackDetailVersion) rackDetailLoading.value = false
   }
@@ -715,7 +740,8 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
                   :class="[selectedRackId === rack.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
                   :style="{ left: `${rack.x * 100}%`, top: `${rack.y * 100}%` }"
                   :aria-label="`Rack ${rack.name}${rack.description ? `, ${rack.description}` : ''}, ${rack.switchCount} switches`"
-                  :title="rack.name" @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
+                  :title="rack.name" @pointerenter="prefetchRackDetail(rack); warmRack3D()" @focusin="prefetchRackDetail(rack)"
+                  @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
                   <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
                     <!-- Same server-rack silhouette as the icon, but inlined so the three dark bay
                          panels can carry blinking LEDs. HIRO: "i prefer led nya di kotak-kotak hitam

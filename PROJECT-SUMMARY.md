@@ -6437,3 +6437,30 @@ VERIFIKASI (latensi jaringan disuntik 2500 ms supaya jedanya bisa diamati):
 - klik beruntun S lalu C saat latensi 2000 ms: hasil akhir tetap C (respons S yang datang belakangan
   dibuang oleh token versi)
 `npx nuxt build` exit 0; screenshot rack_detail_loading.png.
+### Optimasi "Loading" Rack Details (2026-11-16)
+
+HIRO: "loading nya jadi lama ya, bisa optimize?"
+
+PENGUKURAN DULU (bukan tebakan):
+- API detail rack: 13-61 ms pada 4 rack BUILDING 1 (proxy Nuxt), jadi server BUKAN penyebabnya.
+- Waktu klik -> canvas 3D pertama muncul: **1995 ms** (sebelum optimasi).
+- Probe di dalam Rack3DView: handler onMounted baru mulai **~395 ms** setelah klik (mount tertunda
+  oleh chunk LazyRack3DView), `document.fonts.ready` hanya **31 ms**, build equipment **103 ms**.
+  Artinya biaya terbesar ada di depan komponen: chunk three.js + fetch detail tiap kali buka.
+
+OPTIMASI (network-rack.vue):
+1. `warmRack3D()` - meng-import `~/components/Rack3DView.vue` saat `requestIdleCallback` setelah daftar
+   rack tampil (dan sekali lagi saat pointer masuk marker), sehingga chunk three.js sudah dievaluasi
+   sebelum dialog diminta.
+2. `rackDetailCache` per rack id - buka ulang rack yang sama tidak menunggu apa pun; cache diisi juga
+   saat `pointerenter`/`focusin` marker. Buka rack yang sudah di-cache tidak memunculkan spinner lagi,
+   dan tetap ada refresh diam-diam di belakang (versi `rackDetailVersion` menjaga klik beruntun).
+3. Cache dibersihkan saat ganti lantai dan saat rack dihapus, supaya tidak menyajikan data basi.
+
+HASIL (lingkungan dev yang sama): klik -> canvas **1995 ms menjadi ~520-660 ms** (3-4x). Sisa ~500 ms
+adalah evaluasi modul three.js di Vite dev + animasi masuk UModal; di build produksi (.output) chunk itu
+sudah ter-bundle sehingga jauh lebih cepat. `npx nuxt build` exit 0.
+
+Jebakan yang ditemui: `import('../components/Rack3DView.vue')` dari `app/pages/networks/` salah path
+(resolve ke app/pages/components) dan membuat seluruh halaman 500 "Failed to fetch dynamically imported
+module". Path yang benar: `~/components/Rack3DView.vue`.
