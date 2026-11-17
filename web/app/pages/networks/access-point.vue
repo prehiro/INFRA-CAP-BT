@@ -122,6 +122,26 @@ function getFloorImage(id: number): Promise<Blob> {
   return request
 }
 
+// Switching floors used to wait for a fresh blob download, and on a cold remote SQL Server that first
+// read is the slow one (the API answers warm in a few ms, MISS reads take seconds). Warm the remaining
+// plans of this page one per idle slot so switching tabs is instant; each blob lands in floorImages
+// (max 3 kept), which getFloorImage already serves from.
+function prefetchFloorImages() {
+  const pending = floors.value.map(f => f.id).filter(id => !floorImages.has(id) && !pendingFloorImages.has(id))
+  const step = () => {
+    const id = pending.shift()
+    if (id === undefined || disposed) return
+    getFloorImage(id)
+      .catch(() => {})
+      .finally(() => {
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 4000 })
+        else setTimeout(step, 500)
+      })
+  }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 4000 })
+  else setTimeout(step, 800)
+}
+
 function fitMap() {
   const stage = mapStageEl.value
   const nat = mapNatural.value
@@ -195,7 +215,7 @@ async function refresh(preferId?: number) {
     floors.value = await apiListNetworkFloors('ap')
     const next = preferId && floors.value.some(f => f.id === preferId) ? preferId
       : floors.value.some(f => f.id === activeId.value) ? activeId.value! : floors.value[0]?.id
-    if (next) await loadFloor(next)
+    if (next) { await loadFloor(next); prefetchFloorImages() }
     else { ++loadVersion; activeId.value = null; floor.value = null; setImageUrl('') }
   } catch (e) { error.value = message(e) }
   finally { loading.value = false }
@@ -504,7 +524,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             </div>
             <div v-if="floor && imageUrl" ref="mapStageEl" class="flex min-h-0 flex-1 items-center justify-center overflow-hidden">
                 <div ref="mapEl" :style="mapFitStyle" class="relative shrink-0 overflow-hidden rounded-lg border border-default bg-elevated" :class="isAdmin ? 'cursor-crosshair' : ''" @click="placeOnMap">
-                <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" class="block h-full w-full select-none" @load="onMapImageLoad" />
+                <img :src="imageUrl" :alt="`Floor plan: ${floor.name}`" draggable="false" decoding="async" class="block h-full w-full select-none" @load="onMapImageLoad" />
                 <button v-for="point in floor.accessPoints" :key="point.id" type="button"
                   class="ap-marker absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center border-2 transition-[box-shadow] focus-visible:outline-2 sm:size-9"
                   :class="[point.apType === 'bcp' ? 'rounded-full border-transparent bg-transparent outline-amber-400' : 'rounded-full border-white bg-primary text-white shadow-md outline-primary', point.apType !== 'bcp' && (selectedId === point.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30'), isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"

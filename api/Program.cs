@@ -30,6 +30,9 @@ builder.Services.AddScoped<SeedService>();
 builder.Services.AddScoped<LogbookNumberService>();
 builder.Services.AddScoped<AuditService>();
 builder.Services.AddSingleton<FloorImageCache>();
+// The dev SQL Server answers a cold floor-plan LOB read in ~5 s (warm: under 1 ms), so the images are
+// loaded into that cache once at boot - see FloorImageWarmup for the measurement.
+builder.Services.AddHostedService<FloorImageWarmup>();
 // Singleton: CPU usage is a delta between two samples, so the sampler owns the baseline.
 builder.Services.AddSingleton<SystemMetricsService>();
 // The generic CRUD engine fills the CCTV Log Book's required+unique `nomor` field on

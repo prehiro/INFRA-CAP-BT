@@ -6512,3 +6512,27 @@ VERIFIKASI: log API menunjukkan racks 11, 12, 13, 14 diambil berurutan oleh pref
 4-16 ms; klik rack memakai cache sehingga tidak ada status loading kedua. `npx nuxt build` exit 0.
 Catatan: kalau idle-nya berjam-jam dan SQL benar-benar dingin lagi, prefetch ulang terjadi setiap kali
 halaman di-reload; selama tab tidak di-reload, cache di memori tetap dipakai.
+### Optimasi Loading Floor Plan Image (AP + Network Rack) (2026-11-16)
+
+HIRO: "loading floor plan image juga kadang lambat pada page AP dan network rack".
+
+PENGUKURAN: `GET /network/floor-maps/{id}/image` saat MISS (cache API kosong) = **5172 ms** untuk floor 31
+(329 KB webp) di log API; request berikutnya untuk floor yang sama = **0,7 ms** (HIT). Jadi lambatnya
+bukan transfer gambar, tapi LOB read dingin dari SQL Server remote.
+
+PERBAIKAN (dua sisi):
+1. API - `Services/FloorImageWarmup.cs` (BackgroundService terdaftar di Program.cs): saat boot, semua
+   gambar floor plan dibaca sekali dan dimasukkan ke `FloorImageCache`. Baca sinkron seperti di
+   controller (alasannya sama: async LOB read jauh lebih lambat di jalur SQL dev). Log boot:
+   "Floor plan images warmed: 3/3 plans, 1171 KB".
+2. Web - `prefetchFloorImages()` di access-point.vue dan network-rack.vue: setelah lantai aktif tampil,
+   sisa floor plan di halaman itu diunduh satu per satu lewat `requestIdleCallback` dan masuk ke
+   `floorImages` (cache blob yang sudah ada), jadi pindah tab tidak menunggu unduhan.
+   Tambahan: atribut `decoding="async"` pada <img> peta di kedua halaman.
+
+HASIL:
+- API setelah restart: floor 31/3/5 semuanya `X-Floor-Image-Cache: HIT`, 10-58 ms (sebelumnya 5172 ms)
+- Pindah tab BUILDING 1 -> BUILDING 2: gambar terpaint dalam **383 ms** tanpa request jaringan baru
+- Log API menunjukkan prefetch mengambil 31, 3, 5 berurutan masing-masing <1 ms setelah warm-up
+`npx nuxt build` exit 0; `dotnet build -o bin/RackMap5` 0 error; API dev sekarang jalan dari
+`api/bin/RackMap5/Api.dll` (log api5.out).
