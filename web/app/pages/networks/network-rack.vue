@@ -92,6 +92,11 @@ watch(mapStageEl, el => {
 
 const selectedRack = computed(() => racks.value.find(r => r.id === selectedRackId.value) ?? null)
 const selectedRackDetail = ref<NetworkRackDetail | null>(null)
+// The detail request is a separate round trip, and the remote SQL host can take a while. Without
+// these two the dialog kept painting the PREVIOUS rack (header, LED seed and the whole 3D canvas)
+// until the new payload landed, so switching racks flashed the old cabinet first.
+const rackDetailLoading = ref(false)
+let rackDetailVersion = 0
 
 // One delete dialog for every destructive action on this page (a switch, a floor plan). It is a
 // request object rather than a boolean so the dialog can name the row that is about to vanish
@@ -400,14 +405,31 @@ function openRackDetails(rack: NetworkRackSummary) {
   if (rack.id === suppressRackClickId && performance.now() < suppressRackClickUntil) return
   selectedRackId.value = rack.id
   showRackDetails.value = true
+  // Drop the previous rack BEFORE the fetch: the dialog is already mounted, so keeping the old
+  // object renders its cabinet and LEDs for as long as the request takes.
+  selectedRackDetail.value = null
+  rackDetailLoading.value = true
   loadRackDetail(rack.id)
 }
 async function loadRackDetail(rackId: number) {
+  const version = ++rackDetailVersion
   try {
-    selectedRackDetail.value = await apiGetNetworkRack(floor.value!.id, rackId)
-  } catch (e) { toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' }) }
+    const detail = await apiGetNetworkRack(floor.value!.id, rackId)
+    if (version !== rackDetailVersion) return            // a newer rack was opened meanwhile
+    selectedRackDetail.value = detail
+  } catch (e) {
+    if (version === rackDetailVersion) toast.add({ title: 'Could not load rack details', description: message(e), color: 'error' })
+  } finally {
+    if (version === rackDetailVersion) rackDetailLoading.value = false
+  }
 }
-function closeRackDetails() { showRackDetails.value = false; selectedRackId.value = null; selectedRackDetail.value = null }
+function closeRackDetails() {
+  rackDetailVersion++
+  rackDetailLoading.value = false
+  showRackDetails.value = false
+  selectedRackId.value = null
+  selectedRackDetail.value = null
+}
 
 function openAddSwitch() {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
@@ -852,7 +874,14 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       <!-- Rack modal -->
       <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #header="{ close }">
-          <div v-if="selectedRackDetail" class="flex w-full items-center gap-3">
+          <div v-if="!selectedRackDetail" class="flex w-full items-center gap-3 text-muted">
+            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-elevated/60">
+              <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
+            </span>
+            <p class="flex-1 text-sm">Loading rack…</p>
+            <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" aria-label="Close" @click="close" />
+          </div>
+          <div v-else class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
               <!-- Same rack glyph and LED bays as the map marker; seeded with THIS rack's id so the
                    modal icon blinks in step with that rack on the plan. -->
@@ -879,7 +908,10 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
           </div>
         </template>
         <template #body>
-          <div v-if="selectedRackDetail">
+          <div v-if="!selectedRackDetail" class="grid h-[min(680px,calc(100dvh_-_18rem))] place-items-center rounded-xl border border-default text-sm text-muted">
+            <span class="flex items-center gap-2"><UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" /> Loading rack…</span>
+          </div>
+          <div v-else>
             <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"
               :total-u="selectedRackDetail.sizeU" :hud-settings="selectedRackDetail.hudSettings || ''"
               @delete-switch="deleteSwitchFromRack3D" @save-switch="saveSwitchFromRack3D"

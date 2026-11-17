@@ -6411,3 +6411,29 @@ VERIFIKASI (hover sungguhan lewat CDP Input.dispatchMouseEvent):
 Catatan: screenshot hover TIDAK bisa diambil ulang karena browser harness di sesi ini timeout pada
 Page.captureScreenshot; bukti di atas dari computed style elemen yang benar-benar di-hover.
 `npx nuxt build` exit 0.
+### Pindah Rack Details Tidak Lagi Menampilkan Rack Sebelumnya (2026-11-16)
+
+HIRO: "pada saat pindah details rack, terkadang tampilan rack sebelumnya terlihat beberapa saat
+sebelum menampilkan rack yang di klik".
+
+AKAR MASALAH: `openRackDetails()` menyetel `showRackDetails = true` lalu memanggil `loadRackDetail()`
+yang menunggu round trip ke SQL Server. Dialognya SUDAH ter-mount, dan `selectedRackDetail` masih
+berisi rack sebelumnya - jadi selama request berjalan header, seed LED dan seluruh canvas 3D masih
+milik rack lama. Halaman rack details memakai `:key="rack3d-{id}-{sizeU}"`, tapi key itu baru berubah
+setelah data baru tiba, sehingga instance 3D lama tetap hidup dan tetap dirender.
+
+PERBAIKAN (network-rack.vue):
+- `openRackDetails` mengosongkan `selectedRackDetail` DULU, lalu set `rackDetailLoading = true`
+- `loadRackDetail` memakai token `rackDetailVersion`; respons yang datang setelah rack lain dibuka
+  dibuang, jadi klik beruntun tidak menimpa rack terakhir yang dipilih
+- `closeRackDetails` menaikkan token dan mematikan loading
+- header & body punya state loading: spinner `i-lucide-loader-circle` + "Loading rack…", tinggi body
+  dipatok `h-[min(680px,calc(100dvh_-_18rem))]` supaya dialog tidak melompat saat isinya masuk
+
+VERIFIKASI (latensi jaringan disuntik 2500 ms supaya jedanya bisa diamati):
+- buka D-B1, tutup, lalu klik "C" -> pada +350 ms dialog berisi "Loading rack…" di header DAN body,
+  spinner ada, `document.querySelector('[role="dialog"] canvas')` = false (canvas rack lama sudah hilang)
+- setelah fetch selesai header menjadi "C / 19U / BUILDING 1 - 1.00 m cabinet"
+- klik beruntun S lalu C saat latensi 2000 ms: hasil akhir tetap C (respons S yang datang belakangan
+  dibuang oleh token versi)
+`npx nuxt build` exit 0; screenshot rack_detail_loading.png.
