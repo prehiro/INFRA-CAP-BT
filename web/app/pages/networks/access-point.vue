@@ -615,7 +615,15 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
           <div v-if="selectedPoint" class="space-y-4">
             <div class="flex items-center gap-3">
               <span v-if="selectedPoint.apType === 'bcp'" class="relative grid size-12 shrink-0 place-items-center rounded-xl bg-amber-400/10 ring-1 ring-inset ring-amber-400/25"><span class="absolute inset-2 rotate-45 rounded-[6px] border-2 border-white bg-amber-400" /><span class="relative text-[10px] font-black text-slate-950">BCP</span></span>
-              <span v-else class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'ap-modal-icon-active': showDetails }"><UIcon name="i-lucide-wifi" class="size-6" /></span>
+              <span v-else class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'ap-modal-icon-active': showDetails }">
+                <!-- Same progressive Wi-Fi as the map marker: dot -> 1 bar -> 2 -> 3 -> back to the dot. -->
+                <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
+                  <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
+                  <path class="ap-wifi-inner" d="M8.5 15.2a5 5 0 0 1 7 0" />
+                  <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
               <div class="min-w-0"><h3 class="truncate text-base font-semibold text-highlighted">{{ selectedPoint.hostname }}</h3><p class="truncate text-xs text-muted">{{ floor?.name }}</p></div>
             </div>
             <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">

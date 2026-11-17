@@ -6357,3 +6357,21 @@ ini punya irama sendiri dan tidak ikut berubah saat rack lain berubah.
 VERIFIKASI: modal Add rack dibuka, icon berisi 9 LED + 3 panel + path shell; 4 dari 9 LED berubah
 opasitas dalam 0,5 s; zoom 8x menunjukkan strip gelap dengan LED biru/kuning seperti marker.
 `npx nuxt build` exit 0; screenshot addrack_icon_leds.png.
+### Icon Wi-Fi di Modal Details AP Dianimasikan (2026-11-16)
+
+HIRO: "icon wifi pada modal details AP tolong dianimasikan".
+
+Modal details AP (`access-point.vue`, baris ~618) memakai `<UIcon name="i-lucide-wifi" class="size-6">`
+- ikon statis. Diganti SVG inline yang SAMA dengan marker peta: tiga path ber-class
+`ap-wifi-inner`/`ap-wifi-mid`/`ap-wifi-outer` + titik `circle`, sehingga ikut keyframes
+`ap-wifi-inner/middle/outer` (2,7 s, opacity .12 -> 1) yang sudah ada di blok scoped.
+
+Urutannya membangun dari titik: inner menyala di 20% siklus, mid 42%, outer 62%, lalu memudar kembali.
+`prefers-reduced-motion` sudah mematikan animasi dan menahan opacity 1 (aturan lama).
+Varian BCP (belah ketupat amber) sengaja tidak disentuh - itu bukan Wi-Fi.
+
+VERIFIKASI: modal "Access point details" untuk Ap001 - ketiga path punya `animationName`
+ap-wifi-inner/middle/outer durasi 2,7 s; sampling 6x per 0,45 s menunjukkan badannya bergerak
+(outer 0,12 -> 0,44 -> 0,99 -> 0,12; mid 0,12 -> 0,88 -> 1 -> 0,19 -> 0,12) sementara inner memimpin.
+Zoom 8x: busur dalam menyala terang, dua busur luar meredup - sesuai pola marker.
+`npx nuxt build` exit 0; screenshot ap_details_wifi.png.
