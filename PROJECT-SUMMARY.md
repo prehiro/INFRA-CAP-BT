@@ -6307,3 +6307,23 @@ RUTE BARU (semua koordinat dunia):
 VERIFIKASI: Front View + zoom - muka depan OTB hanya menampilkan grafis oranye tercetak, tanpa diagonal
 maupun konektor kabel; jalur aqua terlihat naik di sisi kanan lalu menghilang di belakang plate.
 `npx nuxt build` exit 0.
+### Kabel Fiber Tidak Lagi Menembus Besi Rail U (2026-11-16)
+
+HIRO: "jangan menembus besi u nya".
+
+Besi yang dilanggar: rail mounting 19" vertikal depan, box x 0,222..0,244 (railOffsetX 0,233, tebal
+0,022) dan z frontRailZ ± 0,0125 (frontRailZ = RACK_D/2 - 0,068 = 0,332). Rute lama melintasi x 0,238
+tepat di z 0,338 - yaitu DI DALAM tebal rail, jadi kabelnya menembus besi.
+
+PERBAIKAN RUTE (koordinat dunia):
+- menyeberang ke kanan hanya SELAGI di depan muka rail: z frontRailZ + 0,026 -> +0,022 -> +0,010
+  (muka rail ada di +0,0125, jadi semuanya di depannya)
+- jalur vertikal dipindah ke x 0,250 dan z 0,172: 6 mm di luar rail (0,244) dan 8 mm di dalam muka
+  dalam post kabinet (postW 0,042, post di x 0,258..0,300)
+- di ketinggian OTB tetap masuk dari belakang (x 0,234 -> 0,178 -> 0,152, z di sekitar otbRearZ)
+
+VERIFIKASI NUMERIK (Catmull-Rom centripetal, 440 sampel sepanjang tube):
+- titik yang berada di dalam box rail depan: 0
+- titik yang berada di dalam brush cable bar (slot bebas di bawah tiap switch): 0
+- x jalur vertikal 0,250 vs muka dalam post 0,258 -> bebas 8 mm
+`npx nuxt build` exit 0.

@@ -1321,21 +1321,27 @@ onMounted(async () => {
       // the switch port, swings to the right of the chassis, runs rearward past the faceplates, climbs
       // the gap between the chassis edge and the rack post, then comes forward into that rear face.
       const otbRearZ = frontRailZ - 0.141
-      const runX = 0.246
-      const runZ = 0.170
+      // Clearances that must NOT be crossed (HIRO: "jangan menembus besi u nya"):
+      //  - 19" mounting rail: box x 0.222..0.244, z frontRailZ±0.0125 (its front face is +0.0125)
+      //  - brush cable bar under each switch: x ±0.241, z ~frontRailZ+0.012
+      // So the cord crosses to the right only while it is IN FRONT of the rail's front face, then
+      // travels rearward outside both, and climbs at 0.250 - 6 mm clear of the rail and 9 mm of the bar.
+      const runX = 0.250
+      const runZ = 0.172
       const otbPortX = 0.152
 
       const curve = new THREE.CatmullRomCurve3([
         portWorld.clone(),
         new THREE.Vector3(portWorld.x + 0.004, portWorld.y - 0.001, portWorld.z + 0.008),
-        new THREE.Vector3(portWorld.x + 0.020, portWorld.y - 0.004, portWorld.z + 0.002),
-        new THREE.Vector3(0.238, portWorld.y - 0.006, frontRailZ + 0.006),
-        new THREE.Vector3(runX, portWorld.y + 0.010, frontRailZ - 0.070),
-        new THREE.Vector3(runX, portWorld.y + 0.050, runZ),
+        new THREE.Vector3(portWorld.x + 0.024, portWorld.y - 0.003, frontRailZ + 0.026),
+        new THREE.Vector3(0.234, portWorld.y - 0.004, frontRailZ + 0.022),
+        new THREE.Vector3(runX, portWorld.y - 0.004, frontRailZ + 0.010),
+        new THREE.Vector3(runX, portWorld.y + 0.008, frontRailZ - 0.040),
+        new THREE.Vector3(runX, portWorld.y + 0.034, runZ),
         new THREE.Vector3(runX, (portWorld.y + otbY) / 2, runZ),
-        new THREE.Vector3(runX - 0.002, otbY - 0.032, runZ),
-        new THREE.Vector3(0.230, otbY - 0.014, otbRearZ - 0.006),
-        new THREE.Vector3(0.178, otbY - 0.004, otbRearZ - 0.003),
+        new THREE.Vector3(runX, otbY - 0.032, runZ),
+        new THREE.Vector3(0.234, otbY - 0.014, otbRearZ - 0.008),
+        new THREE.Vector3(0.178, otbY - 0.004, otbRearZ - 0.004),
         new THREE.Vector3(otbPortX, otbY, otbRearZ + 0.002)
       ])
       const cord = new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.0017, 10, false), matFiberAqua)
