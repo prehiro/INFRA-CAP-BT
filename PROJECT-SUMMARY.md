@@ -6375,3 +6375,24 @@ ap-wifi-inner/middle/outer durasi 2,7 s; sampling 6x per 0,45 s menunjukkan bada
 (outer 0,12 -> 0,44 -> 0,99 -> 0,12; mid 0,12 -> 0,88 -> 1 -> 0,19 -> 0,12) sementara inner memimpin.
 Zoom 8x: busur dalam menyala terang, dua busur luar meredup - sesuai pola marker.
 `npx nuxt build` exit 0; screenshot ap_details_wifi.png.
+### Animasi Hover Tombol Delete di Kartu Floor (AP + Network Rack) (2026-11-16)
+
+HIRO: "animasikan tombol delete card yang ada di page AP dan Network rack ketika di hover".
+
+Tombol `.ap-plan-delete` (UButton xs ghost, ikon trash di pojok tiap kartu lantai) sebelumnya hanya
+berganti warna + latar merah tipis saat hover - tanpa gerak. Kedua halaman (access-point.vue dan
+network-rack.vue) sekarang memakai aturan yang sama, masih hover-only jadi tidak ada warna permanen:
+
+- transisi ditambah `transform` dan `box-shadow` (180ms)
+- hover: `translateY(-1px) scale(1.1)`, teks/ikon jadi `var(--ui-error)`, latar error 14%,
+  ring 1px error 32% + shadow `0 4px 12px` error 30%
+- glyph trash memutar mengikuti keyframes rumah `record-delete-nudge` (520ms) yang sudah dipakai
+  dialog delete - animasi hanya di span `[data-slot='leadingIcon']`, tombolnya tetap
+- `prefers-reduced-motion` mematikan nudge dan semua transform
+
+VERIFIKASI (hover sungguhan lewat CDP mouse move, bukan class buatan):
+- network-rack: transform `matrix(1.1, 0, 0, 1.1, 0, -1)`, warna error, 2 lapis shadow error,
+  `animationName: record-delete-nudge`, durasi 0,52 s
+- access-point: nilai identik
+- screenshot delete_hover_rack.png / delete_hover_ap.png: pil merah dengan ring lembut, ukuran tetap
+  wajar (24 px -> ~26 px). `npx nuxt build` exit 0.

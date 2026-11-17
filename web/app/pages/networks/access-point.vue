@@ -789,7 +789,10 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 .ap-floor-nav:hover { color: var(--ui-primary); border-color: color-mix(in srgb, var(--ui-primary) 55%, transparent); background: color-mix(in srgb, var(--ui-primary) 12%, transparent); }
 .ap-floor-list::-webkit-scrollbar { display: none; }
 .ap-floor-tab { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
-.ap-plan-delete { color: var(--ui-text-muted); transition: color 180ms ease, background-color 180ms ease; }
+.ap-plan-delete {
+  color: var(--ui-text-muted);
+  transition: color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
 .ap-plan-delete:focus-visible { color: var(--ui-error); outline: 2px solid var(--ui-error); outline-offset: 1px; }
 .ap-close-action :deep([data-slot='leadingIcon']) { transition: transform 220ms cubic-bezier(.2,.8,.2,1); }
 .ap-marker > svg:not(.ap-bcp-wifi) { transition: transform 200ms ease-out; }
@@ -800,7 +803,18 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 }
 @media (hover: hover) and (pointer: fine) {
   .ap-floor-tab:hover { box-shadow: 0 3px 10px color-mix(in srgb, var(--ui-primary) 14%, transparent); }
-  .ap-plan-delete:not(:disabled):hover { color: var(--ui-error); background-color: color-mix(in srgb, var(--ui-error) 12%, transparent); }
+  /* HIRO: "animasikan tombol delete card ... ketika di hover" - hover-only motion, no permanent
+     colour: lift + error ring + the household trash nudge. */
+  .ap-plan-delete:not(:disabled):not([aria-disabled='true']):hover {
+    color: var(--ui-error);
+    background-color: color-mix(in srgb, var(--ui-error) 14%, transparent);
+    transform: translateY(-1px) scale(1.1);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-error) 32%, transparent),
+                0 4px 12px color-mix(in srgb, var(--ui-error) 30%, transparent);
+  }
+  .ap-plan-delete:not(:disabled):not([aria-disabled='true']):hover :deep([data-slot='leadingIcon']) {
+    animation: record-delete-nudge 520ms ease-out;
+  }
   .ap-close-action:not(:disabled):hover :deep([data-slot='leadingIcon']) { transform: scale(1.14) rotate(12deg); }
   .ap-marker:hover:not(:active) > svg:not(.ap-bcp-wifi) { transform: scale(1.12); }
 }
@@ -808,6 +822,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 .ap-stable-action.record-delete-hover:not(:disabled):not([aria-disabled='true']):is(:hover, :focus-visible) { transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .ap-floor-tab, .ap-plan-delete, .ap-close-action :deep([data-slot='leadingIcon']), .ap-marker > svg { transition: none; transform: none !important; }
+  .ap-plan-delete :deep([data-slot='leadingIcon']) { animation: none !important; }
   .ap-modal-icon-active { animation: none; }
 }
 
