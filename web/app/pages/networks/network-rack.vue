@@ -104,6 +104,11 @@ let rackDetailVersion = 0
 // one-time costs, so pay them off the critical path: warm the chunk once the floor is on screen, and
 // keep the last detail per rack so a re-open paints immediately while a silent refresh runs.
 const rackDetailCache = new Map<number, NetworkRackDetail>()
+// The header only needs name / sizeU / id, all of which the rack SUMMARY already carries. Keeping the
+// clicked summary here lets the dialog open fully labelled while the detail request is in flight, so
+// the only loading state the user ever sees is the 3D view's own "Initializing ..." screen.
+const pendingRack = ref<NetworkRackSummary | null>(null)
+const headerRack = computed(() => selectedRackDetail.value ?? pendingRack.value)
 let rack3dWarmed = false
 function warmRack3D() {
   if (rack3dWarmed) return
@@ -430,6 +435,7 @@ function openRackDetails(rack: NetworkRackSummary) {
   warmRack3D()
   // Drop the previous rack BEFORE the fetch: the dialog is already mounted, so keeping the old
   // object renders its cabinet and LEDs for as long as the request takes.
+  pendingRack.value = rack
   const cached = rackDetailCache.get(rack.id) ?? null
   selectedRackDetail.value = cached
   rackDetailLoading.value = cached === null
@@ -449,6 +455,7 @@ async function loadRackDetail(rackId: number) {
   }
 }
 function closeRackDetails() {
+  pendingRack.value = null
   rackDetailVersion++
   rackDetailLoading.value = false
   showRackDetails.value = false
@@ -900,21 +907,14 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
       <!-- Rack modal -->
       <UModal v-model:open="showRackDetails" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-7xl network-modal-glow', body: 'p-4 sm:p-5' }">
         <template #header="{ close }">
-          <div v-if="!selectedRackDetail" class="flex w-full items-center gap-3 text-muted">
-            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-elevated/60">
-              <UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" />
-            </span>
-            <p class="flex-1 text-sm">Loading rack…</p>
-            <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" aria-label="Close" @click="close" />
-          </div>
-          <div v-else class="flex w-full items-center gap-3">
+          <div v-if="headerRack" class="flex w-full items-center gap-3">
             <span class="ap-modal-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
               <!-- Same rack glyph and LED bays as the map marker; seeded with THIS rack's id so the
                    modal icon blinks in step with that rack on the plan. -->
               <svg class="ap-rack-svg size-7" viewBox="0 0 512 512" aria-hidden="true">
                 <path class="ap-rack-shell" :d="RACK_GLYPH_PATH" />
                 <rect v-for="bay in RACK_BAYS" :key="`detail-bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
-                <circle v-for="(led, i) in rackLeds(selectedRackDetail.id)" :key="`detail-led-${i}`" class="ap-rack-led"
+                <circle v-for="(led, i) in rackLeds(headerRack.id)" :key="`detail-led-${i}`" class="ap-rack-led"
                   :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
                   :cx="led.x" :cy="led.y" r="12"
                   :style="{ animationDuration: `${led.dur}s`, animationDelay: `${led.delay}s` }" />
@@ -922,20 +922,25 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
             </span>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
-                <h3 class="truncate text-base font-semibold text-highlighted">{{ selectedRackDetail.name }}</h3>
-                <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/25">{{ selectedRackDetail.sizeU }}U</span>
+                <h3 class="truncate text-base font-semibold text-highlighted">{{ headerRack.name }}</h3>
+                <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-primary ring-1 ring-inset ring-primary/25">{{ headerRack.sizeU }}U</span>
               </div>
-              <p class="truncate text-xs text-muted">{{ floor?.name }} · {{ rackSizeHeight(selectedRackDetail.sizeU) }} cabinet</p>
+              <p class="truncate text-xs text-muted">{{ floor?.name }} · {{ rackSizeHeight(headerRack.sizeU) }} cabinet</p>
             </div>
-            <UButton v-if="isAdmin" type="button" icon="i-lucide-trash-2" variant="ghost" color="error" size="sm"
-              :disabled="busy" :aria-label="`Delete ${selectedRackDetail.name}`" :title="`Delete ${selectedRackDetail.name}`"
+            <UButton v-if="isAdmin && selectedRackDetail" type="button" icon="i-lucide-trash-2" variant="ghost" color="error" size="sm"
+              :disabled="busy" :aria-label="`Delete ${headerRack.name}`" :title="`Delete ${headerRack.name}`"
               @click="deleteRack(selectedRackDetail)" />
-            <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" class="ap-close-action" :disabled="busy" :aria-label="`Close ${selectedRackDetail.name}`" @click="close" />
+            <UButton type="button" icon="i-lucide-x" variant="ghost" color="neutral" size="sm" class="ap-close-action" :disabled="busy" :aria-label="`Close ${headerRack.name}`" @click="close" />
           </div>
         </template>
         <template #body>
-          <div v-if="!selectedRackDetail" class="grid h-[min(680px,calc(100dvh_-_18rem))] place-items-center rounded-xl border border-default text-sm text-muted">
-            <span class="flex items-center gap-2"><UIcon name="i-lucide-loader-circle" class="size-5 animate-spin" /> Loading rack…</span>
+          <!-- Deliberately the SAME panel as Rack3DView's #loading-screen (dark plate, 48px primary
+               ring, mono uppercase caption) so the changeover is invisible: one initialising state. -->
+          <div v-if="!selectedRackDetail" class="grid h-[min(680px,calc(100dvh_-_18rem))] place-items-center overflow-hidden rounded-xl border border-default bg-[#06090f]">
+            <div class="flex flex-col items-center justify-center">
+              <div class="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-primary/30 border-t-primary"></div>
+              <div class="text-sm font-mono tracking-widest uppercase text-primary">Initializing {{ headerRack?.sizeU ?? 42 }}U Rack &amp; Switch Telemetry...</div>
+            </div>
           </div>
           <div v-else>
             <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"

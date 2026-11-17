@@ -6464,3 +6464,26 @@ sudah ter-bundle sehingga jauh lebih cepat. `npx nuxt build` exit 0.
 Jebakan yang ditemui: `import('../components/Rack3DView.vue')` dari `app/pages/networks/` salah path
 (resolve ke app/pages/components) dan membuat seluruh halaman 500 "Failed to fetch dynamically imported
 module". Path yang benar: `~/components/Rack3DView.vue`.
+### Satu Saja Status Loading di Rack Details: "Initializing" (2026-11-16)
+
+HIRO: "kenapa loading nya 2 kali, yang pertama teks loading rack, lalu muncul initializing, saya mau
+satu aja initializing".
+
+Dua status itu berasal dari dua tempat: placeholder baru di dialog ("Loading rack…" + spinner kecil) dan
+overlay milik Rack3DView sendiri (`#loading-screen`: plat gelap #06090f, ring 48 px primary, caption
+mono uppercase "Initializing {U}U Rack & Switch Telemetry..."). Karena detail rack datang lebih dulu
+daripada scene 3D siap, keduanya muncul berurutan.
+
+PERBAIKAN (network-rack.vue):
+- `pendingRack` menyimpan ringkasan rack yang diklik, dan `headerRack = selectedRackDetail ?? pendingRack`
+  dipakai header (nama, badge U, tinggi kabinet, seed LED). Header karena itu LENGKAP sejak klik pertama,
+  tidak perlu status loading sendiri.
+- Placeholder body diganti panel yang identik dengan `#loading-screen` milik Rack3DView (plat gelap,
+  ring 48 px primary, caption "Initializing {U}U Rack & Switch Telemetry..."), jadi peralihan ke scene
+  tidak terlihat sebagai status kedua.
+- Tombol delete di header hanya muncul setelah detail asli ada (butuh objek detail untuk dihapus);
+  tombol close tetap aktif sejak awal.
+
+VERIFIKASI (recorder 70 ms di halaman): sepanjang transisi hanya ada satu caption INITIALIZING, tepat
+1 spinner, `Loading rack` muncul 0 kali, tidak pernah ada dua caption bersamaan. Setelah scene siap
+`#loading-screen` hilang (0 spinner) dan dialog menampilkan isi rack. `npx nuxt build` exit 0.
