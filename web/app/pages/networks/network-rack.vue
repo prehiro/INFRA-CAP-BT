@@ -121,6 +121,27 @@ function prefetchRackDetail(rack: { id: number }) {
   if (rackDetailCache.has(rack.id) || !floor.value) return
   apiGetNetworkRack(floor.value.id, rack.id).then(d => rackDetailCache.set(rack.id, d)).catch(() => {})
 }
+// The dev SQL Server sits on another subnet and goes cold after a quiet spell: the API log shows the
+// first queries of a session taking 4.8-5.1 s while warm ones answer in 4-16 ms. Paying that ahead of
+// the click instead of inside it is the difference between "Initializing..." for five seconds and an
+// instant open, so walk the floor's racks once, one request per idle slot.
+function scheduleRackDetailPrefetch() {
+  const pending = racks.value.map(r => r.id).filter(id => !rackDetailCache.has(id))
+  const step = () => {
+    const id = pending.shift()
+    if (id === undefined || !floor.value) return
+    const floorId = floor.value.id
+    apiGetNetworkRack(floorId, id)
+      .then(d => rackDetailCache.set(id, d))
+      .catch(() => {})
+      .finally(() => {
+        if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 4000 })
+        else setTimeout(step, 500)
+      })
+  }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(step, { timeout: 4000 })
+  else setTimeout(step, 800)
+}
 
 // One delete dialog for every destructive action on this page (a switch, a floor plan). It is a
 // request object rather than a boolean so the dialog can name the row that is about to vanish
@@ -208,6 +229,7 @@ async function loadFloor(id: number) {
     setImageUrl(URL.createObjectURL(blob))
     await loadRacks(id)
     warmRack3D()
+    scheduleRackDetailPrefetch()
   } catch (e) { if (version === loadVersion) error.value = message(e) }
 }
 async function loadRacks(floorId: number) {

@@ -6487,3 +6487,28 @@ PERBAIKAN (network-rack.vue):
 VERIFIKASI (recorder 70 ms di halaman): sepanjang transisi hanya ada satu caption INITIALIZING, tepat
 1 spinner, `Loading rack` muncul 0 kali, tidak pernah ada dua caption bersamaan. Setelah scene siap
 `#loading-screen` hilang (0 spinner) dan dialog menampilkan isi rack. `npx nuxt build` exit 0.
+### Kenapa Buka Rack Details Terasa Lama Setelah Idle Lama (2026-11-16)
+
+HIRO: "kenapa kalau lama idle, lalu saya buka rack detail loading nya jadi lama?"
+
+DIAGNOSA (angka, bukan dugaan):
+- TCP ke SQL Server 192.168.4.3:1433 cepat: 4-34 ms per connect (5x percobaan).
+- API setelah idle 120 detik: GET /network/floor-maps/3 = **12,9 ms** (hangat 14,9 ms), jadi 2 menit idle
+  BUKAN pemicunya dan frontend tidak salah.
+- Tapi di `api/api4.out` ada sekumpulan request pertama tiap sesi yang makan **4,8-5,1 detik**:
+  POST /auth/login 4,87 s dan 9,44 s, GET /network/floor-maps 4,84 s, GET /network/floor-maps/3 4,93 s,
+  GET /network/floor-maps/5 5,12 s, GET /network/floor-maps/3/image 4,86 s. Query hangat yang sama
+  hanya 4-16 ms. Tidak ada satu pun exception/timeout DB di log (hanya 1 token kedaluwarsa), jadi ini
+  latency query, bukan kegagalan/retry.
+- Artinya: SQL Server remote di subnet lain "dingin" setelah didiamkan lama (buffer/disk/VM), dan
+  request pertama sesi membayar 5 detik. Dialog rack details menampilkan "Initializing..." selama
+  request itu, jadi terasa seperti loadingnya lambat.
+
+PERBAIKAN: `scheduleRackDetailPrefetch()` di network-rack.vue - setelah daftar rack tampil, detail
+SEMUA rack di lantai itu diambil satu per satu lewat `requestIdleCallback`, jadi biaya dingin dibayar
+di latar belakang sebelum klik, bukan di dalam klik (cache `rackDetailCache` yang sama dipakai dialog).
+
+VERIFIKASI: log API menunjukkan racks 11, 12, 13, 14 diambil berurutan oleh prefetch ini, masing-masing
+4-16 ms; klik rack memakai cache sehingga tidak ada status loading kedua. `npx nuxt build` exit 0.
+Catatan: kalau idle-nya berjam-jam dan SQL benar-benar dingin lagi, prefetch ulang terjadi setiap kali
+halaman di-reload; selama tab tidak di-reload, cache di memori tetap dipakai.
