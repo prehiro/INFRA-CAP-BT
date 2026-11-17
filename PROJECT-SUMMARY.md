@@ -6396,3 +6396,18 @@ VERIFIKASI (hover sungguhan lewat CDP mouse move, bukan class buatan):
 - access-point: nilai identik
 - screenshot delete_hover_rack.png / delete_hover_ap.png: pil merah dengan ring lembut, ukuran tetap
   wajar (24 px -> ~26 px). `npx nuxt build` exit 0.
+### Ring/Border Hover Tombol Delete Dihilangkan (2026-11-16)
+
+HIRO: "hilangkan bordernya" (setelah animasi hover tombol delete kartu lantai).
+
+Yang dibuang hanya lapisan ring 1 px dari box-shadow hover:
+sebelum `0 0 0 1px error/32%, 0 4px 12px error/30%` -> sekarang satu lapis
+`0 4px 12px error/26%`. Sisa gerak tetap: translateY(-1px) scale(1.1), ikon jadi error, latar error 14%,
+glyph trash tetap `record-delete-nudge`. Berlaku di access-point.vue dan network-rack.vue.
+
+VERIFIKASI (hover sungguhan lewat CDP Input.dispatchMouseEvent):
+`box-shadow: color(...error / 0.26) 0px 4px 12px 0px` - hanya satu lapis, tidak ada ring 1 px,
+`transform: matrix(1.1, 0, 0, 1.1, 0, -1)` dan `color: oklch(0.704 0.191 22.216)`.
+Catatan: screenshot hover TIDAK bisa diambil ulang karena browser harness di sesi ini timeout pada
+Page.captureScreenshot; bukti di atas dari computed style elemen yang benar-benar di-hover.
+`npx nuxt build` exit 0.

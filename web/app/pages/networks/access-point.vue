@@ -809,8 +809,8 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
     color: var(--ui-error);
     background-color: color-mix(in srgb, var(--ui-error) 14%, transparent);
     transform: translateY(-1px) scale(1.1);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-error) 32%, transparent),
-                0 4px 12px color-mix(in srgb, var(--ui-error) 30%, transparent);
+    /* No ring/border on hover - HIRO: "hilangkan bordernya". Only the soft drop glow stays. */
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--ui-error) 26%, transparent);
   }
   .ap-plan-delete:not(:disabled):not([aria-disabled='true']):hover :deep([data-slot='leadingIcon']) {
     animation: record-delete-nudge 520ms ease-out;
