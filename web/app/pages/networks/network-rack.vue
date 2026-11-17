@@ -761,7 +761,17 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
         <template #body>
           <form class="space-y-4" @submit.prevent="saveRack">
             <div class="flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
-              <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><UIcon name="game-icons:server-rack" class="size-5" /></span>
+              <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <!-- Same LED treatment as the map markers / details header, on a fixed seed of its own. -->
+                <svg class="ap-rack-svg size-6" viewBox="0 0 512 512" aria-hidden="true">
+                  <path class="ap-rack-shell" :d="RACK_GLYPH_PATH" />
+                  <rect v-for="bay in RACK_BAYS" :key="`add-bay-${bay}`" class="ap-rack-bay" x="58" :y="bay" width="218" height="20" rx="4" />
+                  <circle v-for="(led, i) in rackLeds(3)" :key="`add-led-${i}`" class="ap-rack-led"
+                    :class="led.blue ? 'ap-rack-led-blue' : 'ap-rack-led-amber'"
+                    :cx="led.x" :cy="led.y" r="12"
+                    :style="{ animationDuration: `${led.dur}s`, animationDelay: `${led.delay}s` }" />
+                </svg>
+              </span>
               <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p></div>
             </div>
             <fieldset :disabled="busy">

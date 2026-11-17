@@ -6343,3 +6343,17 @@ kalau mau dihapus juga.
 
 VERIFIKASI: modal Add rack dibuka di browser, `hasPosition: false`, isi kotak = ikon rack + "BUILDING 1";
 screenshot addrack_header.png. `npx nuxt build` exit 0.
+### LED Berkedip di Icon Modal Add Rack (2026-11-16)
+
+HIRO: "icon server pada modal add rack kasih blinking led seperti yang lain".
+
+`network-rack.vue` modal Add rack memakai `<UIcon name="game-icons:server-rack" class="size-5">` di tile
+`ap-modal-icon size-10`. Diganti SVG inline seperti marker/icon judul/header details: `RACK_GLYPH_PATH`
++ tiga `.ap-rack-bay` + 9 `.ap-rack-led` (naik ke `size-6` supaya LED-nya terbaca di tile 40 px).
+
+Seed ritme `rackLeds(3)` - seed tetap, terpisah dari icon judul (7) dan dari seed per-rack, jadi modal
+ini punya irama sendiri dan tidak ikut berubah saat rack lain berubah.
+
+VERIFIKASI: modal Add rack dibuka, icon berisi 9 LED + 3 panel + path shell; 4 dari 9 LED berubah
+opasitas dalam 0,5 s; zoom 8x menunjukkan strip gelap dengan LED biru/kuning seperti marker.
+`npx nuxt build` exit 0; screenshot addrack_icon_leds.png.
