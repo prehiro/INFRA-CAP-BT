@@ -1,7 +1,8 @@
 import type {
   AuditPage, EntityMeta, FieldMeta, LoginResponse, MetricsSnapshot, RecordPage, RecordRow, User,
   FloorMapSummary, FloorMapDetail, AccessPoint, AccessPointInput,
-  NetworkRackSummary, NetworkRackDetail, NetworkRackInput, NetworkSwitch, NetworkSwitchInput
+  NetworkRackSummary, NetworkRackDetail, NetworkRackInput, NetworkSwitch, NetworkSwitchInput,
+  UpsUnit, UpsInput
 } from '~/types'
 
 /**
@@ -165,3 +166,9 @@ export const apiListAudit = (params: Record<string, any> = {}) => {
   ).toString()
   return request<AuditPage>(`/audit${qs ? `?${qs}` : ''}`)
 }
+
+// ---- UPS register ----
+export const apiListUps = () => request<UpsUnit[]>('/ups')
+export const apiCreateUps = (unit: UpsInput) => request<UpsUnit>('/ups', { method: 'POST', body: unit })
+export const apiUpdateUps = (id: number, unit: UpsInput) => request<UpsUnit>(`/ups/${id}`, { method: 'PUT', body: unit })
+export const apiDeleteUps = (id: number) => request<void>(`/ups/${id}`, { method: 'DELETE' })

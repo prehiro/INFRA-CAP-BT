@@ -39,7 +39,8 @@ const links = computed<NavigationMenuItem[][]>(() => [
         { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/device/pcledger' },
         { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/device/standbypc' },
         { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/device/factorypc' },
-        { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/device/dispose' }
+        { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/device/dispose' },
+        { label: 'UPS', icon: 'i-lucide-battery-charging', to: '/device/ups' }
       ]
     }
   ],
@@ -112,6 +113,7 @@ const groups = computed(() => [
       { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/device/standbypc' },
       { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/device/factorypc' },
       { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/device/dispose' },
+      { label: 'UPS', icon: 'i-lucide-battery-charging', to: '/device/ups' },
       { label: 'Access Point', icon: 'i-lucide-wifi', to: '/networks/access-point' },
       { label: 'Network Rack', icon: 'game-icons:server-rack', to: '/networks/network-rack' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },

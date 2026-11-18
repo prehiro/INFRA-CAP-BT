@@ -6645,3 +6645,30 @@ VERIFIKASI (browser): keempat URL merender judul yang benar (PC Ledger 452 recor
 Factory PC 10 rows, Dispose), tidak ada error di halaman, dan keempat link sidebar sudah menunjuk ke
 `/device/*`. `npx nuxt build` exit 0.
 Catatan: URL lama (/pcledger dst) tidak lagi ada - SPA akan menampilkan halaman 404 untuk bookmark lama.
+### Page UPS Register (2026-11-18)
+
+HIRO: "buat 1 page bernama UPS. page ini berisikan list UPS yang ada. disini user bisa add, delete, edit
+data ups nya. datanya ada di reff/Screenshot 2026-11-09 155526_035615.png tapi jangan includekan kolom
+ups condition".
+
+MODEL: kolom sheet = No, Brand, Model, SN, UPS Condition (Physical Condition + Lamp Indicator), Location.
+Condition TIDAK dimodelkan sama sekali (bukan disembunyikan) - dia tidak ada di entity, DTO, maupun form.
+
+BACKEND:
+- `Domain/UpsUnit.cs` (Id, Brand, Model, SerialNumber, Location, CreatedAt) + DbSet `UpsUnits`
+- `Controllers/UpsController.cs` di `api/ups`: GET list, GET id, POST/PUT/DELETE Admin-only. Validasi:
+  keempat field wajib, panjang 60/120/60/160, dan S/N duplikat ditolak dengan kalimat ramah
+  ("Serial number ... is already registered") karena S/N adalah natural key sheet.
+- Migration `20261118135736_AddUpsUnits` (tabel) + `20261118140010_SeedUpsRegister` (20 baris awal dari
+  screenshot, dijaga `IF NOT EXISTS (SELECT 1 FROM [UpsUnits])` supaya sekali jalan; Down menghapus
+  tepat 20 S/N itu). Dua-duanya sudah di-apply ke DB dev.
+
+FRONTEND: `pages/device/ups.vue` (UDashboardPanel + PageHeader, kartu header dengan jumlah unit, kotak
+cari, tabel No/Brand/Model/SN/Location/Actions, modal Add/Edit, modal konfirmasi Delete, toast). Menu
+"UPS" ditambahkan di grup Device Ledger (lucide:battery-charging, ditambahkan juga ke
+icon.clientBundle karena ikon menu berasal dari data, bukan template).
+
+VERIFIKASI: API - GET 20 baris, POST 201, S/N duplikat 400, PUT 200, DELETE 204. Browser - halaman
+merender 20 baris tanpa kolom condition, Add (jadi 21), Edit (location berubah), Delete (kembali 20),
+search "PowerPlus" menyaring jadi 4 baris, ikon menu & header terender. `npx nuxt build` exit 0.
+CATATAN: API dev sekarang jalan dari `api/bin/RackMap6/Api.dll` (log api6.out).

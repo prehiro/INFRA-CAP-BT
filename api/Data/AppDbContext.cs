@@ -19,6 +19,7 @@ public class AppDbContext : DbContext
     public DbSet<NetworkAccessPoint> NetworkAccessPoints => Set<NetworkAccessPoint>();
     public DbSet<NetworkRack> NetworkRacks => Set<NetworkRack>();
     public DbSet<NetworkSwitch> NetworkSwitches => Set<NetworkSwitch>();
+    public DbSet<UpsUnit> UpsUnits => Set<UpsUnit>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

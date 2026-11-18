@@ -184,3 +184,15 @@ export interface MetricsSnapshot {
   diskTotalBytes: number
   diskDrive: string
 }
+
+/** A UPS in the register. The sheet's "UPS Condition" columns are intentionally not modelled. */
+export interface UpsUnit {
+  id: number
+  brand: string
+  model: string
+  serialNumber: string
+  location: string
+  createdAt: string
+}
+
+export type UpsInput = Omit<UpsUnit, 'id' | 'createdAt'>
