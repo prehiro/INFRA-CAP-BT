@@ -24,7 +24,7 @@ const editingSwitchId = ref<number | null>(null)
 const RACK_SIZES = [19, 22, 27, 42] as const
 const U_HEIGHT_M = 0.04445
 const rackSizeHeight = (u: number) => `${(u * U_HEIGHT_M + 0.16).toFixed(2)} m`
-const rackDraft = reactive<NetworkRackInput>({ name: '', description: '', x: 0.5, y: 0.5, sizeU: 42 })
+const rackDraft = reactive<NetworkRackInput>({ name: '', x: 0.5, y: 0.5, sizeU: 42 })
 const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '' })
 const mapEl = ref<HTMLElement | null>(null)
 const mapStageEl = ref<HTMLElement | null>(null)
@@ -407,14 +407,14 @@ function openAddRack(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
   showRackDetails.value = false
   editingRackId.value = null
-  Object.assign(rackDraft, { name: '', description: '', x, y, sizeU: 42 })
+  Object.assign(rackDraft, { name: '', x, y, sizeU: 42 })
   rackError.value = ''; showRackEditor.value = true
 }
 function openEditRack(rack: NetworkRackSummary) {
   if (!isAdmin.value || busy.value) return
   showRackDetails.value = false
   editingRackId.value = rack.id
-  Object.assign(rackDraft, { name: rack.name, description: rack.description, x: rack.x, y: rack.y, sizeU: rack.sizeU ?? 42 })
+  Object.assign(rackDraft, { name: rack.name, x: rack.x, y: rack.y, sizeU: rack.sizeU ?? 42 })
   rackError.value = ''; showRackEditor.value = true
 }
 async function saveRack() {
@@ -423,7 +423,7 @@ async function saveRack() {
   const floorId = floor.value.id
   busy.value = true; rackError.value = ''
   try {
-    const payload = { ...rackDraft, name: rackDraft.name.trim(), description: rackDraft.description.trim() }
+    const payload = { ...rackDraft, name: rackDraft.name.trim() }
     const saved = editingRackId.value === null
       ? await apiCreateNetworkRack(floorId, payload)
       : await apiUpdateNetworkRack(floorId, editingRackId.value, payload)
@@ -788,7 +788,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
                   class="ap-rack-marker absolute -translate-x-1/2 -translate-y-1/2 transition-[box-shadow] focus-visible:outline-2"
                   :class="[selectedRackId === rack.id ? 'ring-4 ring-primary/40' : 'hover:ring-4 hover:ring-primary/30', isAdmin ? 'cursor-grab active:cursor-grabbing touch-none' : 'cursor-pointer']"
                   :style="{ left: `${rack.x * 100}%`, top: `${rack.y * 100}%` }"
-                  :aria-label="`Rack ${rack.name}${rack.description ? `, ${rack.description}` : ''}, ${rack.switchCount} switches`"
+                  :aria-label="`Rack ${rack.name}, ${rack.switchCount} switches`"
                   :title="rack.name" @pointerenter="prefetchRackDetail(rack); warmRack3D()" @focusin="prefetchRackDetail(rack)"
                   @click.stop="openRackDetails(rack)" @pointerdown.stop="pointerDown($event, rack)" @pointermove="pointerMove($event, rack)" @pointerup="pointerUp($event, rack)" @pointercancel="pointerUp($event, rack, true)">
                   <span class="ap-rack-body relative grid size-12 place-items-center rounded-xl border-2 border-primary bg-elevated shadow-md">
@@ -902,10 +902,6 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
               <p class="mt-2 text-[11px] leading-relaxed text-muted">
                 The 3D cabinet, its U numbering and the free-U count all follow this size. Existing racks keep their own size when edited.
               </p>
-            </fieldset>
-            <fieldset :disabled="busy">
-              <legend class="mb-1.5 text-sm font-medium text-highlighted">Description (optional)</legend>
-              <UInput v-model="rackDraft.description" class="w-full" maxlength="300" placeholder="e.g. Core switch rack, 42U" :disabled="busy" />
             </fieldset>
             <p class="text-xs text-muted">You can drag the rack on the plan to adjust its position later.</p>
             <p role="alert" class="min-h-5 text-sm text-error">{{ rackError }}</p>

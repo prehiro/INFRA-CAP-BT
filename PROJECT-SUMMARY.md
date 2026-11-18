@@ -6597,3 +6597,29 @@ DETAIL YANG MENENTUKAN HASILNYA:
 VERIFIKASI (browser): accent default -> link jadi data URL dengan `fill="#00dc82"` (= `--ui-primary`
 #00DC82); cookie diubah ke violet + reload -> `fill="#a684ff"` (= oklch 70.2% 0.183 293.541); jumlah
 `<link rel="icon">` tetap 1. `npx nuxt build` exit 0.
+### Field Description Dihapus dari Modal Add/Edit Rack (2026-11-18)
+
+HIRO: "hapus aja deh section itu, tidak butuh, pastikan clear code nya, dah hanya pada modal ini saja
+jangan malah hapus page lain".
+
+Deskripsi rack memang tersimpan dan dikembalikan API, tetapi tidak pernah tampil di layar mana pun -
+satu-satunya pemakaian yang terlihat adalah di form Edit, dan itu pun tidak terjangkau karena tombol
+"Edit rack" tidak ada di UI (fungsi `openEditRack` tidak dipanggil dari template). Jadi field itu
+menghasilkan input yang tidak berefek.
+
+YANG DIHAPUS (hanya `web/app/pages/networks/network-rack.vue` + tipe payload-nya):
+- `<fieldset>` "Description (optional)" beserta `UInput` rackDraft.description
+- `description` dari inisialisasi `rackDraft`, dari reset `openAddRack`, dari prefill `openEditRack`,
+  dan dari payload `saveRack`
+- potongan `rack.description` pada `aria-label` marker peta (tidak ada lagi field untuk dibacakan)
+- `NetworkRackInput` di `types/index.ts` sekarang meng-Omit `description`, karena form ini memang tidak
+  membawa field itu lagi
+
+TIDAK DISENTUH: kolom `NetworkRack.Description` di database, validasi/PUT/POST di
+`NetworkRacksController`, dan halaman lain (access-point.vue, dsb). Rack lama yang sudah punya
+description tetap menyimpannya di DB; halamannya saja yang tidak lagi mengirim/membacanya.
+
+VERIFIKASI: modal Add rack hanya punya satu input (Rack name) dan `hasDescription: false`; payload
+tanpa description diterima API - POST /api/network/floor-maps/3/racks mengembalikan 201 dengan
+`description: ""` (row uji id 18 lalu dihapus, 204). Sisa kata "description" di file itu semuanya milik
+toast/subtitle modal, bukan field rack. `npx nuxt build` exit 0.

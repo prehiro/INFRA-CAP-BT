@@ -49,7 +49,9 @@ export interface NetworkRackSummary {
   createdAt: string
   switchCount: number
 }
-export type NetworkRackInput = Omit<NetworkRackSummary, 'id' | 'createdAt' | 'switchCount'>
+// The Add/Edit rack form has no description field, so the payload deliberately does not carry one:
+// whatever the API still stores for older racks is simply not part of this form.
+export type NetworkRackInput = Omit<NetworkRackSummary, 'id' | 'createdAt' | 'switchCount' | 'description'>
 export interface NetworkSwitch {
   id: number
   ipAddress: string
