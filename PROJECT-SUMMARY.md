@@ -6571,3 +6571,29 @@ di head), jadi tab browser memakai ikon default.
 VERIFIKASI: `GET /favicon.svg` -> 200 `image/svg+xml`, 1153 byte; head memuat
 `<link rel="icon" href="/favicon.svg">`; glyph dirender 220 px di atas latar gelap, putih, dan abu -
 bentuk roda Kubernetes jelas. `npx nuxt build` exit 0 dan `.output/public/favicon.svg` ikut ter-copy.
+### Favicon Ikut Accent Color (2026-11-16)
+
+HIRO: "favicon bisa ikut accent color?"
+
+YA. `web/app/plugins/favicon-accent.client.ts` mengganti isi `<link rel="icon">` dengan `data:` URL
+dari glyph yang SAMA, diwarnai dengan nilai `--ui-primary` yang sedang aktif.
+
+DETAIL YANG MENENTUKAN HASILNYA:
+- `useHead({ link: [{ key: 'favicon', ... href }] })`, BUKAN `link.href = ...`. Percobaan pertama
+  memutasi elemen `<link>` langsung dan head manager (unhead) menimpanya kembali dengan href statis
+  pada patch berikutnya, jadi tab tetap hijau apa pun yang dipilih. `key: 'favicon'` juga dipasang di
+  nuxt.config supaya unhead MENGGANTI link statis itu, bukan menambah link kedua.
+- Warna dibaca dari `--ui-primary`, bukan `appConfig.ui.colors.primary`, karena appConfig hanya
+  menyimpan NAMA palet ("violet"); nilai warnanya baru ada setelah Nuxt UI menulis CSS variable.
+- Nilainya bisa `oklch(...)`, jadi dikonversi ke #rrggbb lewat canvas 1x1 (`fillStyle` menerima oklch,
+  `getImageData` mengembalikan byte). Kalau nilainya tidak bisa dibaca, plugin berhenti dan favicon
+  statis tetap dipakai - bukan tab hitam.
+- Repaint dipicu `watch` pada pasangan primary/neutral (jalur Theme Studio maupun restore cookie) dan
+  MutationObserver pada class `<html>` (mode terang/gelap bisa me-resolve token berbeda).
+- `setTimeout(..., 0)`, BUKAN `requestAnimationFrame`: rAF tidak pernah jalan di tab background, dan
+  versi rAF terbukti sama sekali tidak mengubah apa pun saat diuji. Ini yang paling memakan waktu.
+- `public/favicon.svg` ikut disamakan ke `#00DC82` supaya sebelum JS jalan warnanya sudah benar.
+
+VERIFIKASI (browser): accent default -> link jadi data URL dengan `fill="#00dc82"` (= `--ui-primary`
+#00DC82); cookie diubah ke violet + reload -> `fill="#a684ff"` (= oklch 70.2% 0.183 293.541); jumlah
+`<link rel="icon">` tetap 1. `npx nuxt build` exit 0.

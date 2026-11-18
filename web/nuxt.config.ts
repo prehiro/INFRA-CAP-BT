@@ -70,7 +70,7 @@ export default defineNuxtConfig({
       // See PUBLIC_SANS_FACES above: faces in the head + preload = the font is ready before the
       // first paint, so a refresh never re-renders the chrome text mid-load.
       style: [{ innerHTML: PUBLIC_SANS_FACES + paletteCss }],
-      link: [{ rel: 'icon' as const, type: 'image/svg+xml' as const, href: `${BASE_URL}favicon.svg` },
+      link: [{ rel: 'icon' as const, type: 'image/svg+xml' as const, key: 'favicon', href: `${BASE_URL}favicon.svg` },
         { rel: 'stylesheet' as const, href: `${BASE_URL}fonts/studio/fonts.css` }, ...PUBLIC_SANS_WEIGHTS.map((w) => ({
         rel: 'preload' as const,
         as: 'font' as const,
