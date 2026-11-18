@@ -6672,3 +6672,37 @@ VERIFIKASI: API - GET 20 baris, POST 201, S/N duplikat 400, PUT 200, DELETE 204.
 merender 20 baris tanpa kolom condition, Add (jadi 21), Edit (location berubah), Delete (kembali 20),
 search "PowerPlus" menyaring jadi 4 baris, ikon menu & header terender. `npx nuxt build` exit 0.
 CATATAN: API dev sekarang jalan dari `api/bin/RackMap6/Api.dll` (log api6.out).
+### UPS Page Disamakan Dengan Page Device Lain (2026-11-18)
+
+HIRO: "sesuaikan style modal, tombol, dan animasi seperti page device lain".
+
+Yang dipakai sekarang SAMA PERSIS dengan PC Ledger (sumber acuannya dibaca langsung dari
+`pages/device/pcledger.vue`, bukan ditebak dari kelasnya):
+
+- SHELL: `UDashboardPanel :ui="{ body: 'p-6' }"` + kartu header `anim-fade-up rounded-lg border ...
+  bg-elevated p-4`; judul `<h1 class="text-lg font-bold tracking-wide">` + subjudul `text-xs text-muted`
+  dengan "· N units"; search `UInput` ber-ikon, `w-72`, `:ui="{ base: 'h-9' }"` dan tombol clear di #trailing.
+- TOMBOL ADD: `color="primary" label="Add UPS" class="record-add-hover stable-hover-hitbox"` dengan
+  `<ChannelAddIcon />` di #leading.
+- TOMBOL CANCEL: `color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover"`.
+  TOMBOL SAVE: `record-save-hover` saat edit, `channel-add-hover` saat menambah (persis pola pcledger).
+  TOMBOL DELETE modal: `color="error" class="record-delete-hover trash-bin-hover"` + `TrashBinIcon`.
+- AKSI BARIS: bukan UButton, tapi `<button>` native xs bergaya sama dengan pcledger (komentar pcledger:
+  tiga pohon komponen reaktif per baris itu pemborosan), kelas `pencil-hover` + `PencilIcon` dan
+  `trash-bin-hover` + `TrashBinIcon` supaya animasi pensil/tempat sampahnya identik.
+- MODAL FORM: `#content` sendiri (bukan slot vendor): header ikon `RecordAddIcon` di plat `size-9`,
+  judul `text-sm font-semibold`, subjudul `text-xs`, tombol X yang hover-nya merah; label section
+  `text-[11px] uppercase tracking-wider`; footer `border-t` dengan tombol Cancel + Save.
+  Glow memakai `.network-modal-glow` (resep rumah yang sama, global di main.css) karena `.pl-record-modal`
+  milik pcledger ter-scope dan tidak menembus konten yang di-teleport.
+- MODAL DELETE: klip `overflow-hidden rounded-xl`, wash `bg-error/20 blur-3xl` di pojok, badge trash
+  `size-11 rounded-full`, kotak identitas `dl` di `bg-elevated/60 ring-default`, footer band `bg-elevated/40`.
+- IKON HEADER: komponen baru `UpsIcon.vue` (SVG inline baterai + bolt) memakai kelas tilt `pc-add-tilt`
+  yang sama dengan PcLedgerIcon/StandbyIcon, dengan pulse opacity lembut dan reduced-motion guard.
+- TABEL: `anim-fade-up` card, sticky header uppercase, baris `hover:bg-primary/5`, dan footer band
+  "Showing X of Y" seperti register device lain.
+
+VERIFIKASI (browser 1440x900): header + ikon + tombol Add memakai kelas yang benar; 20 baris; modal
+form punya `.network-modal-glow` (::before 250px, rgb(0,220,130), opacity .14, overflow hidden) dan
+tombol `channel-add-hover`/`cancel-hover`; modal delete tampil seperti dialog hapus device lain
+(wash + kotak identitas); Add lewat UI -> 21 baris, Delete -> kembali 20 tanpa sisa. `npx nuxt build` exit 0.

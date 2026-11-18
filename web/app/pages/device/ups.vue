@@ -135,37 +135,53 @@ onMounted(load)
 </script>
 
 <template>
-  <UDashboardPanel id="device-ups" :ui="{ body: 'flex min-h-0 flex-col p-4 sm:p-6' }">
+  <UDashboardPanel :ui="{ body: 'p-6' }">
     <template #header><PageHeader title="UPS" /></template>
+
     <template #body>
-      <div class="mx-auto flex min-h-0 w-full max-w-[1400px] flex-1 flex-col gap-4">
-
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4">
-          <div class="flex min-w-0 items-center gap-3">
-            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
-              <UIcon name="i-lucide-battery-charging" class="size-6" />
-            </span>
-            <div class="min-w-0">
-              <h2 class="text-lg font-bold tracking-wide text-highlighted">UPS Register</h2>
-              <p class="text-xs text-muted">
-                {{ units.length }} unit{{ units.length === 1 ? '' : 's' }} · {{ serialCount }} serial number{{ serialCount === 1 ? '' : 's' }}
-              </p>
+      <div class="space-y-6">
+        <!-- Register header: same shape as the other Device Ledger sheets (title mark left, actions right). -->
+        <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-3">
+              <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+                <RecordAddIcon size="lg" random-halo>
+                  <UpsIcon class="pc-add-tilt size-8" />
+                </RecordAddIcon>
+              </span>
+              <div class="min-w-0">
+                <h1 class="text-lg font-bold tracking-wide">UPS Register</h1>
+                <p class="text-xs text-muted">
+                  Uninterruptible power supplies
+                  <span v-if="!loading"> · {{ units.length }} unit{{ units.length === 1 ? '' : 's' }}</span>
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div class="ml-auto flex flex-wrap items-center gap-2">
-            <UInput v-model="query" icon="i-lucide-search" placeholder="Search brand, model, S/N, location" class="w-64" />
-            <UButton v-if="isAdmin" icon="i-lucide-plus" :disabled="busy" @click="openAdd">Add UPS</UButton>
+            <div class="flex flex-wrap items-center gap-2">
+              <UInput v-model="query" icon="i-lucide-search" placeholder="Search brand, model, S/N, location..." class="w-72" :ui="{ base: 'h-9' }">
+                <template v-if="query" #trailing>
+                  <UButton color="neutral" variant="link" icon="i-lucide-x" size="xs" aria-label="Clear search" @click="query = ''" />
+                </template>
+              </UInput>
+
+              <UButton
+                v-if="isAdmin"
+                color="primary"
+                label="Add UPS" class="record-add-hover stable-hover-hitbox"
+                @click="openAdd"
+              >
+                <template #leading><ChannelAddIcon /></template>
+              </UButton>
+            </div>
           </div>
         </div>
 
-        <p v-if="loadError" role="alert" class="rounded-lg border border-error/30 bg-error/10 px-3 py-2 text-sm text-error">
-          {{ loadError }}
-        </p>
+        <UAlert v-if="loadError" color="error" variant="soft" icon="i-lucide-triangle-alert" :title="loadError" />
 
-        <div class="min-h-0 flex-1 overflow-hidden rounded-xl border border-default bg-elevated">
-          <div class="max-h-[calc(100vh-16rem)] overflow-auto">
-            <table class="w-full min-w-[860px] border-collapse text-sm">
+        <div class="anim-fade-up overflow-hidden rounded-xl border border-default bg-elevated">
+          <div class="max-h-[70vh] overflow-y-auto overflow-x-auto">
+            <table class="w-full min-w-[880px] border-collapse text-sm">
               <thead class="sticky top-0 z-10 bg-elevated">
                 <tr class="border-b border-default text-[11px] uppercase tracking-wider text-muted">
                   <th class="w-16 px-3 py-2.5 text-left font-semibold">No</th>
@@ -173,76 +189,183 @@ onMounted(load)
                   <th class="px-3 py-2.5 text-left font-semibold">Model</th>
                   <th class="px-3 py-2.5 text-left font-semibold">SN</th>
                   <th class="px-3 py-2.5 text-left font-semibold">Location</th>
-                  <th v-if="isAdmin" class="w-28 px-3 py-2.5 text-right font-semibold">Actions</th>
+                  <th v-if="isAdmin" class="w-24 px-3 py-2.5 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(unit, index) in visible" :key="unit.id" class="border-b border-default/60 last:border-0 odd:bg-default/30 hover:bg-primary/5">
-                  <td class="px-3 py-2 tabular-nums text-muted">{{ index + 1 }}</td>
-                  <td class="px-3 py-2 font-medium text-highlighted">{{ unit.brand }}</td>
-                  <td class="px-3 py-2 text-default">{{ unit.model }}</td>
-                  <td class="px-3 py-2 font-mono text-xs text-default">{{ unit.serialNumber }}</td>
-                  <td class="px-3 py-2 text-default">{{ unit.location }}</td>
-                  <td v-if="isAdmin" class="px-3 py-2">
+                <tr
+                  v-for="(unit, index) in visible"
+                  :key="unit.id"
+                  class="border-b border-default/60 transition-colors last:border-0 hover:bg-primary/5"
+                >
+                  <td class="px-3 py-2.5 tabular-nums text-muted">{{ index + 1 }}</td>
+                  <td class="px-3 py-2.5 font-medium text-highlighted">{{ unit.brand }}</td>
+                  <td class="px-3 py-2.5 text-default">{{ unit.model }}</td>
+                  <td class="px-3 py-2.5 font-mono text-xs text-default">{{ unit.serialNumber }}</td>
+                  <td class="px-3 py-2.5 text-default">{{ unit.location }}</td>
+                  <td v-if="isAdmin" class="px-3 py-1.5">
                     <div class="flex justify-end gap-1">
-                      <UButton icon="i-lucide-pencil" color="neutral" variant="ghost" size="xs" :aria-label="`Edit ${unit.serialNumber}`" :disabled="busy" @click="openEdit(unit)" />
-                      <UButton icon="i-lucide-trash-2" color="error" variant="ghost" size="xs" :aria-label="`Delete ${unit.serialNumber}`" :disabled="busy" @click="askDelete(unit)" />
+                      <!-- Native xs ghost buttons, the same construction (and icon animations) as the PC
+                           Ledger row actions: three reactive vendor buttons per row is wasted work. -->
+                      <button
+                        type="button"
+                        data-slot="base"
+                        class="inline-flex items-center rounded-md p-1 text-xs font-medium text-default transition-colors hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 disabled:cursor-not-allowed disabled:opacity-75 pencil-hover"
+                        :aria-label="`Edit UPS ${unit.serialNumber}`"
+                        title="Edit"
+                        :disabled="busy"
+                        @click="openEdit(unit)"
+                      >
+                        <PencilIcon class="size-4" data-slot="leadingIcon" />
+                      </button>
+                      <button
+                        type="button"
+                        data-slot="base"
+                        class="inline-flex items-center rounded-md p-1 text-xs font-medium text-error transition-colors hover:bg-error/10 active:bg-error/10 outline-error/25 focus-visible:outline-3 disabled:cursor-not-allowed disabled:opacity-75 trash-bin-hover"
+                        :aria-label="`Delete UPS ${unit.serialNumber}`"
+                        title="Delete"
+                        :disabled="busy"
+                        @click="askDelete(unit)"
+                      >
+                        <TrashBinIcon class="size-4" data-slot="leadingIcon" />
+                      </button>
                     </div>
                   </td>
                 </tr>
-                <tr v-if="!loading && !visible.length">
-                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-10 text-center text-sm text-muted">
+
+                <tr v-if="loading">
+                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-12 text-center text-sm text-muted">Loading UPS register…</td>
+                </tr>
+                <tr v-else-if="!visible.length">
+                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-12 text-center text-sm text-muted">
                     {{ query ? `No UPS matches "${query}".` : 'No UPS registered yet.' }}
                   </td>
-                </tr>
-                <tr v-if="loading">
-                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-10 text-center text-sm text-muted">Loading UPS register…</td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <div v-if="!loading && visible.length" class="flex items-center justify-between gap-3 border-t border-default bg-default/30 px-4 py-2.5 text-xs text-muted">
+            <span>{{ visible.length }} {{ visible.length === 1 ? 'unit' : 'units' }}</span>
+            <span class="tabular-nums">Showing {{ visible.length }} of {{ units.length }}</span>
+          </div>
         </div>
       </div>
 
-      <UModal v-if="isAdmin" v-model:open="showEditor" :title="editingId === null ? 'Add UPS' : 'Edit UPS'" :description="editingId === null ? 'Register a UPS unit.' : 'Update this unit’s details.'" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-lg network-modal-glow', body: 'p-4 sm:p-5' }">
-        <template #body>
-          <form class="space-y-4" @submit.prevent="save">
-            <div class="grid gap-4 sm:grid-cols-2">
-              <fieldset :disabled="busy">
-                <legend class="mb-1.5 text-sm font-medium text-highlighted">Brand</legend>
-                <UInput v-model="draft.brand" class="w-full" maxlength="60" placeholder="e.g. APC" :disabled="busy" />
-              </fieldset>
-              <fieldset :disabled="busy">
-                <legend class="mb-1.5 text-sm font-medium text-highlighted">Model</legend>
-                <UInput v-model="draft.model" class="w-full" maxlength="120" placeholder="e.g. Smart-UPS SRT 5000VA 230V" :disabled="busy" />
-              </fieldset>
+      <!-- ---------------- add / edit ---------------- -->
+      <UModal v-if="isAdmin" v-model:open="showEditor" :dismissible="!busy" :close="!busy" :ui="{ content: 'w-full max-w-2xl network-modal-glow' }">
+        <template #content>
+          <div class="flex flex-col">
+            <div class="flex items-center gap-3 border-b border-default px-5 py-4">
+              <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+                <RecordAddIcon :name="editingId !== null ? 'i-lucide-pencil' : 'channel-add'" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <h2 class="text-sm font-semibold leading-tight">{{ editingId !== null ? 'Edit UPS' : 'New UPS' }}</h2>
+                <p class="text-xs text-muted">
+                  {{ editingId !== null ? 'Changes are written to the register immediately.' : 'Add a UPS unit to the register.' }}
+                </p>
+              </div>
+              <button
+                type="button"
+                class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Close UPS form"
+                :disabled="busy"
+                @click="showEditor = false"
+              >
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
             </div>
-            <fieldset :disabled="busy">
-              <legend class="mb-1.5 text-sm font-medium text-highlighted">S/N</legend>
-              <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :disabled="busy" />
-            </fieldset>
-            <fieldset :disabled="busy">
-              <legend class="mb-1.5 text-sm font-medium text-highlighted">Location</legend>
-              <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :disabled="busy" />
-            </fieldset>
-            <p role="alert" class="min-h-5 text-sm text-error">{{ formError }}</p>
-            <div class="flex justify-end gap-2 border-t border-default pt-4">
-              <UButton type="button" color="red" variant="ghost" icon="basil:cancel-outline" class="cancel-hover" :disabled="busy" @click="showEditor = false">Cancel</UButton>
-              <UButton type="submit" :icon="editingId === null ? 'i-lucide-plus' : 'i-lucide-pencil'" :loading="busy" :disabled="busy">{{ editingId === null ? 'Add UPS' : 'Save changes' }}</UButton>
-            </div>
-          </form>
+
+            <form @submit.prevent="save">
+              <div class="space-y-4 px-5 pb-4 pt-4">
+                <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  <UIcon name="i-lucide-battery-charging" class="size-3.5" />
+                  Unit details
+                </p>
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <fieldset :disabled="busy">
+                    <legend class="mb-1.5 text-sm font-medium text-highlighted">Brand</legend>
+                    <UInput v-model="draft.brand" class="w-full" maxlength="60" placeholder="e.g. APC" :disabled="busy" />
+                  </fieldset>
+                  <fieldset :disabled="busy">
+                    <legend class="mb-1.5 text-sm font-medium text-highlighted">Model</legend>
+                    <UInput v-model="draft.model" class="w-full" maxlength="120" placeholder="e.g. Smart-UPS SRT 5000VA 230V" :disabled="busy" />
+                  </fieldset>
+                </div>
+                <fieldset :disabled="busy">
+                  <legend class="mb-1.5 text-sm font-medium text-highlighted">S/N</legend>
+                  <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :disabled="busy" />
+                </fieldset>
+                <fieldset :disabled="busy">
+                  <legend class="mb-1.5 text-sm font-medium text-highlighted">Location</legend>
+                  <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :disabled="busy" />
+                </fieldset>
+
+                <!-- Reserved, so a validation message never makes the dialog grow. -->
+                <p role="alert" class="min-h-5 text-xs text-error">{{ formError }}</p>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
+                <UButton color="red" variant="ghost" icon="basil:cancel-outline" label="Cancel" class="cancel-hover" :disabled="busy" @click="showEditor = false" />
+                <UButton
+                  color="primary"
+                  :class="editingId !== null ? 'record-save-hover' : 'channel-add-hover'"
+                  :label="editingId !== null ? 'Save changes' : 'Add UPS'"
+                  :loading="busy"
+                  @click="save"
+                >
+                  <template #leading>
+                    <SaveIcon v-if="editingId !== null" />
+                    <ChannelAddIcon v-else />
+                  </template>
+                </UButton>
+              </div>
+            </form>
+          </div>
         </template>
       </UModal>
 
-      <UModal v-if="isAdmin" v-model:open="showDelete" title="Delete UPS" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md', body: 'p-5' }">
-        <template #body>
-          <p class="text-sm text-default">
-            Remove <span class="font-semibold text-highlighted">{{ deleteTarget?.brand }} {{ deleteTarget?.model }}</span>
-            (S/N {{ deleteTarget?.serialNumber }}) from the register? This cannot be undone.
-          </p>
-          <div class="mt-5 flex justify-end gap-2">
-            <UButton color="neutral" variant="ghost" :disabled="busy" @click="showDelete = false">Cancel</UButton>
-            <UButton color="error" icon="i-lucide-trash-2" :loading="busy" :disabled="busy" @click="confirmDelete">Delete</UButton>
+      <!-- ---------------- delete ---------------- -->
+      <UModal v-if="isAdmin" v-model:open="showDelete" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md' }">
+        <template #content>
+          <!-- Same construction as the other Device Ledger delete dialogs: a clipping wrapper, a danger
+               wash bleeding in from the corner, the row identity on a raised box above it, footer band. -->
+          <div class="overflow-hidden rounded-xl">
+            <div class="relative overflow-hidden px-5 pb-5 pt-5">
+              <div aria-hidden="true" class="pointer-events-none absolute -right-16 -top-24 size-48 rounded-full bg-error/20 blur-3xl" />
+              <div class="relative flex items-start gap-3">
+                <span class="grid size-11 shrink-0 place-items-center rounded-full bg-error/10 text-error ring-1 ring-inset ring-error/25">
+                  <UIcon name="i-lucide-trash-2" class="size-5" />
+                </span>
+                <div class="min-w-0">
+                  <h2 class="text-sm font-semibold">Delete this UPS?</h2>
+                  <p class="mt-1 text-xs text-muted">
+                    The unit disappears from the register. This cannot be undone from the UI.
+                  </p>
+                </div>
+              </div>
+
+              <dl v-if="deleteTarget" class="relative mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
+                <dt class="text-muted">Brand</dt>
+                <dd class="truncate font-medium">{{ deleteTarget.brand }}</dd>
+                <dt class="text-muted">Model</dt>
+                <dd class="truncate">{{ deleteTarget.model }}</dd>
+                <dt class="text-muted">S/N</dt>
+                <dd class="truncate font-mono tabular-nums">{{ deleteTarget.serialNumber }}</dd>
+                <dt class="text-muted">Location</dt>
+                <dd class="truncate">{{ deleteTarget.location }}</dd>
+              </dl>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 bg-elevated/40 px-5 py-4">
+              <UButton color="neutral" variant="ghost" label="Cancel" :disabled="busy" @click="showDelete = false" />
+              <UButton color="error" class="record-delete-hover trash-bin-hover" label="Delete unit" :loading="busy" @click="confirmDelete">
+                <template #leading>
+                  <TrashBinIcon class="size-5" data-slot="leadingIcon" />
+                </template>
+              </UButton>
+            </div>
           </div>
         </template>
       </UModal>
