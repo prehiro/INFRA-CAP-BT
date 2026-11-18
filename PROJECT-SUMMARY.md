@@ -6623,3 +6623,25 @@ VERIFIKASI: modal Add rack hanya punya satu input (Rack name) dan `hasDescriptio
 tanpa description diterima API - POST /api/network/floor-maps/3/racks mengembalikan 201 dengan
 `description: ""` (row uji id 18 lalu dihapus, 204). Sisa kata "description" di file itu semuanya milik
 toast/subtitle modal, bukan field rack. `npx nuxt build` exit 0.
+### Struktur URL: Register PC Di Bawah /device (2026-11-18)
+
+HIRO: "ubah struktur link. saya mau pc ledger, standby pc, factory pc, dispose ada di dalam link
+/device. misal device/pcledger".
+
+PATH BARU (Nuxt file-based route, folder `web/app/pages/device/`):
+- /device/pcledger
+- /device/standbypc
+- /device/factorypc
+- /device/dispose
+
+YANG DIUBAH:
+- Empat file dipindah dengan `git mv` dari `app/pages/*.vue` ke `app/pages/device/*.vue`. Karena
+  standbypc.vue dan dispose.vue mengimpor `./pcledger.vue` secara RELATIF, pemindahan bersama membuat
+  import itu tetap valid tanpa disentuh.
+- `layouts/default.vue`: semua `to:` pada group Device Ledger dan pada daftar menu datar diubah ke
+  `/device/...` (8 tempat), plus komentar contoh milik HIRO ikut diperbarui supaya tidak menyesatkan.
+
+VERIFIKASI (browser): keempat URL merender judul yang benar (PC Ledger 452 records, Standby PC,
+Factory PC 10 rows, Dispose), tidak ada error di halaman, dan keempat link sidebar sudah menunjuk ke
+`/device/*`. `npx nuxt build` exit 0.
+Catatan: URL lama (/pcledger dst) tidak lagi ada - SPA akan menampilkan halaman 404 untuk bookmark lama.

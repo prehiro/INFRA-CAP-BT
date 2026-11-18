@@ -24,8 +24,8 @@ const links = computed<NavigationMenuItem[][]>(() => [
   ],
   [
     // Device Ledger groups the two asset registers, and is a `trigger` group like Log Book so it can
-    // be collapsed. HIRO: "saya mau seperti ini: Device Ledger |- PC Ledger -> /pcledger
-    // |- Factory PC -> /factorypc".
+    // be collapsed. HIRO: "saya mau seperti ini: Device Ledger |- PC Ledger -> /device/pcledger
+    // |- Factory PC -> /device/factorypc".
     //
     // PC Ledger used to sit in this slot on its own. Keeping the pair in their own group also leaves
     // the layout's `mt-auto` rule untouched: the LAST group is still Log Audit + User Management,
@@ -36,10 +36,10 @@ const links = computed<NavigationMenuItem[][]>(() => [
       type: 'trigger',
       defaultOpen: true,
       children: [
-        { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
-        { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/standbypc' },
-        { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/factorypc' },
-        { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/dispose' }
+        { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/device/pcledger' },
+        { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/device/standbypc' },
+        { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/device/factorypc' },
+        { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/device/dispose' }
       ]
     }
   ],
@@ -108,10 +108,10 @@ const groups = computed(() => [
     label: 'Navigation',
     items: [
       { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/' },
-      { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/pcledger' },
-      { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/standbypc' },
-      { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/factorypc' },
-      { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/dispose' },
+      { label: 'PC Ledger', icon: 'i-andrsrxn-device-pc-cpu', to: '/device/pcledger' },
+      { label: 'Standby PC', icon: 'i-streamline-flex-desktop-screensaver-sleep', to: '/device/standbypc' },
+      { label: 'Factory PC', icon: 'i-ix-pc-tower-settings', to: '/device/factorypc' },
+      { label: 'Dispose', icon: 'i-lucide-monitor-x', to: '/device/dispose' },
       { label: 'Access Point', icon: 'i-lucide-wifi', to: '/networks/access-point' },
       { label: 'Network Rack', icon: 'game-icons:server-rack', to: '/networks/network-rack' },
       { label: 'CCTV Access', icon: 'i-lucide-video', to: '/logbook/cctvacc' },
