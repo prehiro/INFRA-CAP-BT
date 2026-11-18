@@ -6553,3 +6553,21 @@ jendela grafik terisi dalam ~3,5 detik pertama alih-alih 40 detik (8 x 5 s), tan
 
 VERIFIKASI: setelah reload dashboard, log API mencatat 10 request `/api/metrics` dalam 4 detik
 (steady-state sendirian hanya ~1); tiap request 0,45-0,5 ms. `npx nuxt build` exit 0.
+### Favicon: carbon:kubernetes (2026-11-16)
+
+HIRO: "favicon ubah pakai carbon:kubernetes".
+
+Sebelumnya app tidak punya favicon sama sekali (tidak ada `public/favicon.ico`, tidak ada `rel="icon"`
+di head), jadi tab browser memakai ikon default.
+
+- `web/public/favicon.svg` - glyph `carbon:kubernetes` (roda Kubernetes) diambil dari
+  `@iconify-json/carbon` yang sudah terpasang, jadi tetap offline; `viewBox="0 0 32 32"`, fill
+  `#00C16A` (aksen app), 1,1 KB.
+- `nuxt.config.ts` - link pertama di `app.head.link`: `{ rel: 'icon', type: 'image/svg+xml', href:
+  `${BASE_URL}favicon.svg` }`. `BASE_URL` dipakai supaya di produksi (IIS, `/INFRA-CAP`) path-nya benar.
+  Literal `rel`/`as`/`type` diberi `as const` karena tanpa itu TypeScript melebarkan tipe array
+  preload font menjadi `string` dan nuxt.config gagal typecheck.
+
+VERIFIKASI: `GET /favicon.svg` -> 200 `image/svg+xml`, 1153 byte; head memuat
+`<link rel="icon" href="/favicon.svg">`; glyph dirender 220 px di atas latar gelap, putih, dan abu -
+bentuk roda Kubernetes jelas. `npx nuxt build` exit 0 dan `.output/public/favicon.svg` ikut ter-copy.
