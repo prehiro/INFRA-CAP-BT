@@ -25,6 +25,16 @@ const draft = reactive<UpsInput>({ brand: '', model: '', serialNumber: '', locat
 const showDelete = ref(false)
 const deleteTarget = ref<UpsUnit | null>(null)
 
+const showView = ref(false)
+const viewTarget = ref<UpsUnit | null>(null)
+
+/** "18 Nov 2026, 14:00" - the register's registration stamp, read-only in the details dialog. */
+function formatStamp(value: string): string {
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return '-'
+  return d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 const visible = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return units.value
@@ -108,6 +118,11 @@ async function save() {
   }
 }
 
+function openView(unit: UpsUnit) {
+  viewTarget.value = unit
+  showView.value = true
+}
+
 function askDelete(unit: UpsUnit) {
   if (!isAdmin.value) return
   deleteTarget.value = unit
@@ -189,7 +204,7 @@ onMounted(load)
                   <th class="px-3 py-2.5 text-left font-semibold">Model</th>
                   <th class="px-3 py-2.5 text-left font-semibold">SN</th>
                   <th class="px-3 py-2.5 text-left font-semibold">Location</th>
-                  <th v-if="isAdmin" class="w-24 px-3 py-2.5 text-right font-semibold">Actions</th>
+                  <th class="w-28 px-3 py-2.5 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -203,11 +218,26 @@ onMounted(load)
                   <td class="px-3 py-2.5 text-default">{{ unit.model }}</td>
                   <td class="px-3 py-2.5 font-mono text-xs text-default">{{ unit.serialNumber }}</td>
                   <td class="px-3 py-2.5 text-default">{{ unit.location }}</td>
-                  <td v-if="isAdmin" class="px-3 py-1.5">
+                  <td class="px-3 py-1.5">
                     <div class="flex justify-end gap-1">
                       <!-- Native xs ghost buttons, the same construction (and icon animations) as the PC
                            Ledger row actions: three reactive vendor buttons per row is wasted work. -->
                       <button
+                        type="button"
+                        data-slot="base"
+                        class="inline-flex items-center rounded-md p-1 text-xs font-medium text-primary outline-primary/30 transition-colors hover:bg-primary/10 active:bg-primary/10 focus-visible:outline-3 ups-eye-hover"
+                        :aria-label="`View details for UPS ${unit.serialNumber}`"
+                        title="View details"
+                        @click="openView(unit)"
+                      >
+                        <span class="ups-eye">
+                          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path class="ups-eye-outline" d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z" />
+                            <circle class="ups-eye-iris" cx="12" cy="12" r="2.5" />
+                          </svg>
+                        </span>
+                      </button>
+                      <button v-if="isAdmin"
                         type="button"
                         data-slot="base"
                         class="inline-flex items-center rounded-md p-1 text-xs font-medium text-default transition-colors hover:bg-elevated active:bg-elevated outline-inverted/25 focus-visible:outline-3 disabled:cursor-not-allowed disabled:opacity-75 pencil-hover"
@@ -219,6 +249,7 @@ onMounted(load)
                         <PencilIcon class="size-4" data-slot="leadingIcon" />
                       </button>
                       <button
+                        v-if="isAdmin"
                         type="button"
                         data-slot="base"
                         class="inline-flex items-center rounded-md p-1 text-xs font-medium text-error transition-colors hover:bg-error/10 active:bg-error/10 outline-error/25 focus-visible:outline-3 disabled:cursor-not-allowed disabled:opacity-75 trash-bin-hover"
@@ -234,10 +265,10 @@ onMounted(load)
                 </tr>
 
                 <tr v-if="loading">
-                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-12 text-center text-sm text-muted">Loading UPS register…</td>
+                  <td :colspan="6" class="px-3 py-12 text-center text-sm text-muted">Loading UPS register…</td>
                 </tr>
                 <tr v-else-if="!visible.length">
-                  <td :colspan="isAdmin ? 6 : 5" class="px-3 py-12 text-center text-sm text-muted">
+                  <td :colspan="6" class="px-3 py-12 text-center text-sm text-muted">
                     {{ query ? `No UPS matches "${query}".` : 'No UPS registered yet.' }}
                   </td>
                 </tr>
@@ -326,6 +357,54 @@ onMounted(load)
         </template>
       </UModal>
 
+      <!-- ---------------- read-only details ---------------- -->
+      <UModal v-model:open="showView" :ui="{ content: 'w-full max-w-lg network-modal-glow' }">
+        <template #content>
+          <div v-if="viewTarget" class="flex flex-col">
+            <div class="flex items-center gap-3 border-b border-default px-5 py-4">
+              <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
+                <UpsIcon class="size-5" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <h2 class="text-sm font-semibold leading-tight">{{ viewTarget.brand }} {{ viewTarget.model }}</h2>
+                <p class="text-xs text-muted">S/N {{ viewTarget.serialNumber }} · UPS details</p>
+              </div>
+              <button
+                type="button"
+                class="grid size-8 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:bg-error/10 hover:text-error focus-visible:outline-2 focus-visible:outline-error"
+                aria-label="Close UPS details"
+                @click="showView = false"
+              >
+                <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div class="px-5 pb-5 pt-4">
+              <p class="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                <UIcon name="i-lucide-battery-charging" class="size-3.5" />
+                Unit details
+              </p>
+              <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 rounded-lg bg-elevated/60 p-3 text-xs ring-1 ring-inset ring-default">
+                <dt class="text-muted">Brand</dt>
+                <dd class="truncate font-medium">{{ viewTarget.brand }}</dd>
+                <dt class="text-muted">Model</dt>
+                <dd class="truncate">{{ viewTarget.model }}</dd>
+                <dt class="text-muted">S/N</dt>
+                <dd class="truncate font-mono tabular-nums">{{ viewTarget.serialNumber }}</dd>
+                <dt class="text-muted">Location</dt>
+                <dd class="truncate">{{ viewTarget.location }}</dd>
+                <dt class="text-muted">Registered</dt>
+                <dd class="truncate tabular-nums">{{ formatStamp(viewTarget.createdAt) }}</dd>
+              </dl>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 border-t border-default px-5 py-3">
+              <UButton color="neutral" variant="ghost" label="Close" @click="showView = false" />
+            </div>
+          </div>
+        </template>
+      </UModal>
+
       <!-- ---------------- delete ---------------- -->
       <UModal v-if="isAdmin" v-model:open="showDelete" :dismissible="!busy" :close="!busy" :ui="{ content: 'max-w-md' }">
         <template #content>
@@ -372,3 +451,26 @@ onMounted(load)
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/* The eye glances sideways on hover — the same family as the PC Ledger's view action, kept on the
+   iris only so the button itself stays flat (HIRO rejects hover motion on the button chrome). */
+.ups-eye { display: inline-flex; }
+.ups-eye-iris {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ups-eye-hover:not(:disabled):hover .ups-eye-iris {
+    animation: ups-eye-glance 820ms cubic-bezier(0.33, 1, 0.68, 1);
+  }
+}
+@keyframes ups-eye-glance {
+  0%, 100% { transform: translateX(0); }
+  38% { transform: translateX(1.7px); }
+  72% { transform: translateX(-1.3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ups-eye-hover .ups-eye-iris { animation: none !important; }
+}
+</style>

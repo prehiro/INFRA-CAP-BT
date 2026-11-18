@@ -6706,3 +6706,21 @@ VERIFIKASI (browser 1440x900): header + ikon + tombol Add memakai kelas yang ben
 form punya `.network-modal-glow` (::before 250px, rgb(0,220,130), opacity .14, overflow hidden) dan
 tombol `channel-add-hover`/`cancel-hover`; modal delete tampil seperti dialog hapus device lain
 (wash + kotak identitas); Add lewat UI -> 21 baris, Delete -> kembali 20 tanpa sisa. `npx nuxt build` exit 0.
+### UPS Page: Action View (2026-11-18)
+
+HIRO: "tambah action view".
+
+- Tombol mata (SVG eye outline + iris) sebagai aksi PERTAMA di kolom Actions, memakai bentuk tombol xs
+  native yang sama dengan pencil/trash. Hover cuma menggerakkan iris (glance 820ms), tombolnya tetap
+  datar - sejalan dengan aturan HIRO soal hover yang tidak boleh menggerakkan chrome tombol.
+- Kolom Actions sekarang SELALU tampil (sebelumnya hanya untuk admin), karena view berguna untuk semua
+  user; pencil dan trash tetap `v-if="isAdmin"`. Colspan baris loading/empty jadi tetap 6.
+- Modal read-only `showView`: header ikon UpsIcon + judul "BRAND MODEL" + "S/N ... · UPS details",
+  tombol X, label section UNIT DETAILS, kotak `dl` berisi Brand, Model, S/N, Location, dan Registered
+  (stempel createdAt diformat "18 Nov 2026, 14:00" lewat formatStamp), footer tombol Close.
+  Glow memakai `.network-modal-glow` seperti dialog lain.
+
+VERIFIKASI (browser): tombol mata ada + SVG-nya terender; klik -> modal berisi 5 baris detail dengan
+data unit yang benar; kelas `network-modal-glow` aktif di content; aturan hover terpasang di media
+(hover:hover) dengan keyframes ter-scope `ups-eye-glance-f319bd3f` dan override reduced-motion;
+`npx nuxt build` exit 0.
