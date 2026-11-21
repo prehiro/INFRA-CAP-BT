@@ -6824,3 +6824,39 @@ VERIFIKASI (browser, user Staff `zz-qa-staff` sementara, sudah dihapus lagi):
   baris sengaja dibuat `bg-elevated/70` (bukan `bg-default/20` yang putih-di-atas-putih).
 - Mobile 390px: kartu 342px di x=24, tanpa overflow horizontal.
 - `npx nuxt build` exit 0.
+### Fix: restart-dev.ps1 - login gagal "Cannot reach the server" tiap restart (2026-11-21)
+
+HIRO: "setiap saya restart selalu ada error setiap kali melakukan login. Cannot reach the server.
+Check your network connection or contact the administrator."
+
+AKAR MASALAH (bukan Nuxt, bukan halaman login): API .NET di :5099 mati. `web/dev-server.log` penuh
+`ERROR http proxy error: /api/auth/login` + `AggregateError [ECONNREFUSED]` - Vite proxy tidak bisa
+menghubungi target. Yang hidup cuma web (200), jadi halaman login tampil normal dan HANYA tombol login
+yang gagal. Diverifikasi live saat sesi ini: `curl :5099/api/auth/me` = 000 (mati) sementara
+`curl :3000/` = 200, dan login lewat proxy = **502**. Script lama hanya start ulang Nuxt, tidak pernah
+menyentuh API - API mati bersama terminal yang menjalankannya, dan restart web berikutnya tidak
+memperbaikinya. Pesan error di login.vue baris 30 adalah fallback "else" untuk error apa pun tanpa
+status (termasuk 502 dan HTML-dari-SPA), jadi pesannya identik untuk dua sebab berbeda.
+
+SCRIPT BARU (`web/restart-dev.ps1`), berurutan:
+1. Set `NUXT_API_PROXY_TARGET=http://localhost:5099`, hapus `NUXT_APP_BASE_URL` (seperti sebelumnya).
+2. **Preflight API**: probe `GET /api/auth/me`. Kalau 000 -> start API dari
+   `api/bin/Debug/net10.0/Api.dll` (kalau ada; fallback `dotnet run --no-launch-profile`), lalu tunggu
+   sampai 401 dengan batas 90 s. Gagal -> cetak 20 baris `api/dev-api.err` dan exit 1.
+3. Kill node InternalApp, lalu TUNGGU port 3000 benar-benar bebas sebelum start. Kalau port masih
+   terikat, Nuxt pindah ke 3001 diam-diam dan di browser hasilnya sama saja dengan server mati.
+4. Start Nuxt dengan `NUXT_IGNORE_LOCK=1` (lock basi dari kill sebelumnya memblokir start) dan
+   redirect di level `Start-Process` (`-RedirectStandardOutput/-RedirectStandardError`), BUKAN
+   `> file` di dalam cmd - redirect shell cuma menutupi npm, cmd.exe tetap memegang handle stdout
+   pemanggil sehingga `| tail` tidak pernah EOF dan skripnya tergantung.
+5. **Gate verifikasi**: halaman harus 200 di :3000, DAN `/api/auth/me` harus 401 LEWAT proxy :3000.
+   401 membuktikan request sampai ke API; 200 berisi index.html berarti `NUXT_API_PROXY_TARGET` tidak
+   sampai ke dev server - itu sebab login gagal dengan pesan yang sama. Gagal -> log + exit 1.
+
+Ada switch `-WebOnly` untuk restart Nuxt saja tanpa menyentuh API.
+
+VERIFIKASI (dua skenario, dijalankan sungguhan):
+- API hidup: API already running (401) -> kill 3 node -> 0 sisa -> page 200 -> proxy 401 -> Ready, 5 s.
+- API mati (skenario yang dilaporkan): `api=000`, login via proxy 502 -> skrip: "API not answering -
+  starting it" -> API ready -> page 200 -> proxy 401 -> Ready. Login di browser sungguhan lewat form
+  :3000 -> Dashboard sebagai Administrator.
