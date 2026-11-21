@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import { apiListRoles, apiListUsers } from '~/composables/useApi'
 
 /**
  * App shell, rebuilt on the Nuxt dashboard template (UDashboardGroup + collapsible
@@ -162,7 +163,37 @@ const SPRING_ARM_MS = 700
 let springArmed = false
 let springObserver: MutationObserver | undefined
 
+/**
+ * Warm the admin registers once per session.
+ *
+ * WHY: /users is admin-only, so its two reads (/users and /users/roles) are never touched until the
+ * moment someone clicks the menu - which is exactly when a first hit on a cold SQL connection costs
+ * the most. Firing them while the browser is idle after sign-in moves that cost off the click; the
+ * page's own load() still runs and still refreshes, it simply no longer has to wait for it.
+ *
+ * Deliberately NOT a cache: nothing here stores the payload, so a stale register is impossible.
+ */
+function warmAdminRegisters() {
+  const { isAdmin } = useAuth()
+  let warmed = false
+  const warm = () => {
+    if (warmed || !isAdmin.value) return
+    warmed = true
+    // Nothing is stored: the page still fetches, it just no longer pays for a cold connection.
+    apiListUsers().catch(() => {})
+    apiListRoles().catch(() => {})
+  }
+  const idle = () => {
+    if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 4000 })
+    else window.setTimeout(warm, 1200)
+  }
+  // The layout can mount before the session is restored from the stored token, so watch instead of
+  // reading once - otherwise a reload would silently skip the warm-up.
+  const stop = watch(isAdmin, (now) => { if (now) { idle(); stop() } }, { immediate: true })
+}
+
 onMounted(() => {
+  warmAdminRegisters()
   // Everything the vendor writes while mounting the shell is ignored: arming late is what keeps the
   // spring off the initial paint, and a real user flip can only happen after the shell is up.
   window.setTimeout(() => { springArmed = true }, SPRING_ARM_MS)

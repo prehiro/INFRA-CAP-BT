@@ -33,6 +33,11 @@ builder.Services.AddSingleton<FloorImageCache>();
 // The dev SQL Server answers a cold floor-plan LOB read in ~5 s (warm: under 1 ms), so the images are
 // loaded into that cache once at boot - see FloorImageWarmup for the measurement.
 builder.Services.AddHostedService<FloorImageWarmup>();
+// Same reasoning one layer down: the first read of a table after an idle gap costs seconds on the
+// remote SQL Server (GET /api/users measured 4798 ms while /api/users/roles, fired in the same
+// instant, took 12.6 ms). A cheap per-minute aggregate keeps those pages resident so the user page
+// does not open slowly depending on how long the machine sat idle - see SqlWarmup.
+builder.Services.AddHostedService<SqlWarmup>();
 // Singleton: CPU usage is a delta between two samples, so the sampler owns the baseline.
 builder.Services.AddSingleton<SystemMetricsService>();
 // The generic CRUD engine fills the CCTV Log Book's required+unique `nomor` field on

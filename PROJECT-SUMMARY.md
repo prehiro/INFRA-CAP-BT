@@ -6724,3 +6724,41 @@ VERIFIKASI (browser): tombol mata ada + SVG-nya terender; klik -> modal berisi 5
 data unit yang benar; kelas `network-modal-glow` aktif di content; aturan hover terpasang di media
 (hover:hover) dengan keyframes ter-scope `ups-eye-glance-f319bd3f` dan override reduced-motion;
 `npx nuxt build` exit 0.
+### Page User Management Lambat - Cold SQL, Bukan Halamannya (2026-11-18)
+
+HIRO: "page user management lama load nya bro".
+
+### Pengukuran (bukan dugaan)
+
+- API hangat: `GET /api/users` 5-8 ms, `GET /api/users/roles` 5-8 ms.
+- API setelah idle: `GET /api/users` **4798 ms**, sementara `GET /api/users/roles` yang dikirim di
+  detik yang sama **12,6 ms**. Jadi yang lambat query users-nya, bukan koneksi/pool, dan bukan halamannya.
+- Dev server: kunjungan PERTAMA ke page apa pun ~4 s (`/audit` 3,96 s, `/users` 4,61 s), kunjungan
+  kedua 0,70 s. Ini compile-on-demand Vite, bukan berat page users.
+- Build produksi (SPA `.output` disajikan + `/api` diproxy): `/users` 1,01 s pertama, 0,53 s kedua;
+  `/device/ups` 0,69 s. Jadi di deployment IIS page ini setara page lain.
+
+### Perbaikan
+
+1. `api/Services/SqlWarmup.cs` (hosted service, didaftarkan di `Program.cs`): tiap 60 detik menjalankan
+   `SELECT COUNT(*)` pada `[Users]` dan `[Roles]` - agregat termurah yang tetap menyentuh data page-nya.
+   Tidak menyimpan apa pun (tidak ada cache yang bisa basi) dan kegagalan di-swallow supaya warm-up
+   yang tidak bisa menghubungi SQL tidak menjatuhkan API. Log: "Reference tables kept warm (HH:mm:ss)".
+2. `web/app/layouts/default.vue` - `warmAdminRegisters()`: setelah user terdeteksi admin, kedua read
+   (`/api/users`, `/api/users/roles`) dikirim saat browser idle lewat `requestIdleCallback`. Tidak
+   menyimpan hasil (page tetap fetch sendiri, hanya tidak menunggu koneksi dingin). Pakai `watch`
+   terhadap `isAdmin`, bukan baca sekali, karena layout bisa mount sebelum session dipulihkan dari token.
+
+### Verifikasi
+
+- Warm-up terbukti jalan: proses QA baru di `:5101` -> log "Reference tables kept warm (16:58:00)",
+  `/api/users` pertama **91 ms** (dibanding 4798 ms pada proses lama yang idle).
+- Frontend: setelah login, `performance` resource timing menunjukkan 2 request `/api/users*` (4812 ms
+  untuk users - inilah cold hit yang tertangkap) tanpa membuka page-nya.
+- `dotnet build` 0 error, `npx nuxt build` exit 0.
+
+### Yang masih perlu
+
+API utama di `:5099` masih menjalankan build lama; `Stop-Process` butuh persetujuan HIRO, jadi restart
+belum dijalankan. Setelah API di-restart dengan build baru, page users tidak lagi bergantung pada
+lama idle mesin.
