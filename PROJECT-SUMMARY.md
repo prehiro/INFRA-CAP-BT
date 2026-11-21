@@ -6762,3 +6762,13 @@ HIRO: "page user management lama load nya bro".
 API utama di `:5099` masih menjalankan build lama; `Stop-Process` butuh persetujuan HIRO, jadi restart
 belum dijalankan. Setelah API di-restart dengan build baru, page users tidak lagi bergantung pada
 lama idle mesin.
+
+### Restart API + Dev Server (2026-11-18)
+
+- API lama (`bin/RackMap6`, PID 31676) dan instance QA (`bin/RackMap7` di `:5101`, PID 32892) dihentikan;
+  port 5099/5101 bersih. API baru jalan dari `api/bin/RackMap7/Api.dll` di `:5099` (log `api/api9.out`),
+  boot normal: "Now listening on: http://localhost:5099" + "Reference tables kept warm".
+- `/api/users` pada proses baru yang baru boot: **103 ms** (proses lama setelah idle: 4798 ms).
+- Dev server dihidupkan ulang: `NUXT_API_PROXY_TARGET=http://localhost:5099 NUXT_IGNORE_LOCK=1 npm run dev`
+  (log `web/dev.out`), `GET /api/auth/me` lewat proxy mengembalikan 401 JSON (bukan index.html).
+- Verifikasi browser: page `/users` kunjungan pertama **1,15 s** dengan 4 baris (sebelumnya 4,61 s).
