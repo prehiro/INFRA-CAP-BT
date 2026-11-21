@@ -6906,3 +6906,42 @@ tidak meninggalkan :hover yang nyangkut. Warna memakai `--ui-error` yang sama de
 VERIFIKASI (browser): hover -> color oklch(70.4% 0.191 22.216) = persis `--ui-error`
 (oklch(0.92 0.004 286.32) saat diam), bg error/12, ikon rotate -6deg; keluar hover -> kembali netral.
 `npx nuxt build` exit 0.
+### Dashboard: 7 kartu modul (2026-11-21)
+
+HIRO: "7 kartu, design yang keren, saya prefer ada animasinya".
+
+SEBELUM: grid dashboard berisi 3 kartu - CCTV (angka asli) + DUA placeholder mati (`opacity-50`,
+`pointer-events-none`, angka 0) untuk Handover Log dan Audit Log, padahal kedua halamannya sudah ada.
+Angka 0 itu bukan data, cuma placeholder yang lupa dihapus.
+
+SESUDAH: komponen baru `web/app/components/DashboardCard.vue` + grid di `pages/index.vue` diisi 7 kartu
+modul, semua dengan angka ASLI dari API:
+- CCTV Access Requests 13 (`cctv_log_book`), Handover Log Book 5 (`handover_log_book`),
+  PC Ledger 453 (`pc_ledger`), Factory PC 10 (`factory_pc`) - semuanya dari `/entities`.
+- UPS Register 20 (`/api/ups`), Network Racks 4 (`/api/network/floor-maps?scope=rack`),
+  Access Points 4 (`scope=ap`).
+- Kartu ke-7 (Access Points) `lg:col-span-3` karena 7 kartu tidak habis dibagi 3 kolom (3+3+1);
+  dia memuat breakdown per floor (BUILDING 1 = 3, BUILDING 2 = 1) supaya baris terakhir penuh dan
+  kartu lebar itu memang berguna, bukan cuma melebar.
+- Audit Log + User Management TIDAK dimasukkan: itu halaman admin/system, bukan modul data, dan
+  keduanya role-gated - kartunya akan jadi jalan buntu bagi non-admin.
+
+ANIMASI (di `DashboardCard.vue`, semua di balik `@media (hover:hover) and (pointer:fine)`):
+- Kartu terangkat 4px, border -> primary/40, shadow-xl.
+- Glow warna modul muncul di pojok ikon (opacity 0 -> 1, 420ms), di-clip `overflow-hidden`.
+- Chip ikon "mengangguk" -6deg + scale 1,05 (transform, bukan margin, jadi chrome tidak bergeser).
+- Chevron geser 4px + berubah warna primary; ini satu-satunya elemen yang benar-benar berpindah,
+  karena dia yang berarti "lanjut".
+- Sheen sekali lewat 620ms (tidak loop).
+- Semua transisi 0s di `prefers-reduced-motion`, termasuk `.dc` sendiri - transisi lift datang dari
+  Tailwind di root kartu, jadi ikut di-reset eksplisit.
+
+CATATAN TEKNIS: nama ikon di `DashboardCard` datang dari array di script, dan scanner Nuxt Icon tidak
+membaca array script - jadi 6 nama ikon ditambahkan manual ke `icon.clientBundle.icons` di
+`nuxt.config.ts` (kalau tidak, ikonnya render sebagai span kosong tanpa error).
+
+VERIFIKASI (browser 1440x1000): 7 kartu dengan angka 13/5/453/10/20/4/4; baris 1-2 isi 3 kartu
+@373px, baris 3 kartu lebar 1168px; chips "BUILDING 1 3 / BUILDING 2 1"; hover kartu -> translate
+0 -4px, glow opacity 1, chip matrix(...)=rotate(-6)scale(1.05), chevron translate 4px + rgb(0,220,130),
+sheen dc-sheen; keluar hover balik ke none; light mode chip emerald-600 di kartu putih; tanpa overflow;
+`npx nuxt build` exit 0.
