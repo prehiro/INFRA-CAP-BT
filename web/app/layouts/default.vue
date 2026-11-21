@@ -188,8 +188,11 @@ function warmAdminRegisters() {
     else window.setTimeout(warm, 1200)
   }
   // The layout can mount before the session is restored from the stored token, so watch instead of
-  // reading once - otherwise a reload would silently skip the warm-up.
-  const stop = watch(isAdmin, (now) => { if (now) { idle(); stop() } }, { immediate: true })
+  // reading once - otherwise a reload would silently skip the warm-up. The watcher is NOT stopped
+  // from inside its own callback: with `immediate: true` the callback runs before the watch()
+  // call returns, so the `stop` binding is still in its temporal dead zone and touching it throws
+  // "Cannot access 'stop' before initialization". `warmed` already makes the callback idempotent.
+  watch(isAdmin, (now) => { if (now) idle() }, { immediate: true })
 }
 
 onMounted(() => {

@@ -6772,3 +6772,25 @@ lama idle mesin.
 - Dev server dihidupkan ulang: `NUXT_API_PROXY_TARGET=http://localhost:5099 NUXT_IGNORE_LOCK=1 npm run dev`
   (log `web/dev.out`), `GET /api/auth/me` lewat proxy mengembalikan 401 JSON (bukan index.html).
 - Verifikasi browser: page `/users` kunjungan pertama **1,15 s** dengan 4 baris (sebelumnya 4,61 s).
+### Fix: Dev Server 500 - TDZ di warmAdminRegisters (2026-11-21)
+
+HIRO: "cek dev server eror 500". Penyebabnya bug saya sendiri di perubahan sebelumnya:
+
+```
+ERROR [Unhandled rejection] ReferenceError: Cannot access 'stop' before initialization
+ > watch.immediate  layouts/default.vue:304
+ > warmAdminRegisters  layouts/default.vue:301
+```
+
+`const stop = watch(isAdmin, ..., { immediate: true })` - dengan `immediate: true` callback-nya jalan
+SINKRON di dalam panggilan `watch()`, jadi saat callback menyentuh `stop()` variabel itu masih di
+temporal dead zone (baru diassign setelah `watch()` return). Effect-nya: layout gagal mount, dev
+server balas 500, dan error-nya terulang 16x per page load (29 kemunculan sebelum diperbaiki).
+
+FIX: `stop()` dibuang dari callback. Tidak perlu - flag `warmed` sudah membuat callback idempoten,
+watcher-nya biarkan hidup. Komentar di kode menjelaskan jebakan TDZ-nya supaya tidak diulang.
+
+VERIFIKASI (dev server, 3x hard reload): jumlah "Cannot access 'stop'" tetap 29 (tidak nambah),
+`GET /` `/users` `/device/ups` `/device/pcledger` `/networks/network-rack` `/networks/access-point`
+semuanya **200**, 0 baris "500" di dev.out, `/api/users` tetap terkirim (200, 7,9 ms), `npx nuxt build`
+exit 0.
