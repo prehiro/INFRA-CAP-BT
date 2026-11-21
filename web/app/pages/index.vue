@@ -180,7 +180,7 @@ const apChips = computed(() =>
           <div class="@container min-w-0 xl:h-full">
             <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-5 @min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
-                class="col-span-1 @min-[560px]:col-span-2"
+                class="col-span-1"
                 :items="chassis"
                 :total="chassisTotal"
                 :label="chassisLabel"

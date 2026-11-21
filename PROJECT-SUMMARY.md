@@ -7147,3 +7147,15 @@ tinggi dibagi rata oleh `xl:h-full auto-rows-fr`. Tidak ada clip, page tidak scr
 
 VERIFIKASI: legend tinggal 3 baris (Desktop 196 42.3%, Notebook 169 36.5%, Tablet 98 21.2%),
 0 link di dalam kartu, tooltip Notebook -> "164 PC Ledger 97.0% / 1 Standby 0.6% / 3 Factory 1.8% / 1 Dispose 0.6%" (jumlah 169).
+### Dashboard: kartu Chassis Mix jadi 1 kolom (2026-11-21)
+
+HIRO: "coba jadikan 1 col". Class kartu dari `col-span-1 @min-[560px]:col-span-2` -> `col-span-1`.
+
+AKIBATNYA (排 celah di baris terakhir, karena total sel tidak lagi habis dibagi):
+- 4 kolom (1920): baris 1 = pie+pc+factory+ups (penuh), baris 2 = racks + AP(2) -> 1 slot kosong.
+- 3 kolom (1440): baris 1 penuh, baris 2 = ups+racks -> 1 slot kosong, baris 3 = AP(3) penuh.
+- 2 kolom (1280/760): baris [pie+pc], [factory+ups], [racks + kosong], [AP(2)] -> 2 slot kosong.
+- 3 kolom (1100): baris 1 penuh, baris 2 = 2 dari 3 -> 1 slot kosong.
+Tinggi kartu 343 (1440/1280/1100) dan 395 @1920 (dibagi rata `xl:h-full auto-rows-fr`), nol clip, page tidak scroll.
+
+Cara mengisi kalau nanti diminta: buat Network Racks ikut span 2 (4 kolom jadi 4+2+2 = penuh; 3 kolom 3+3+3; 2 kolom 2+2+2+2), atau kembalikan pie ke 2 kolom seperti sebelumnya.
