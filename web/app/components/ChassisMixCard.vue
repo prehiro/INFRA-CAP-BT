@@ -141,6 +141,10 @@ const active = computed(() =>
   hovered.value !== null ? segments.value[hovered.value] ?? null : null
 )
 
+// Unique per instance: this card renders twice on the dashboard and a fixed id would be
+// duplicated across the two SVGs.
+const glowId = useId()
+
 const TIP_W = 216
 const TIP_H = 168
 
@@ -223,6 +227,25 @@ function clearTip() {
       <div v-else class="flex flex-col items-center gap-4 @min-[420px]:flex-row @min-[420px]:gap-6">
         <div class="relative size-36 shrink-0 @min-[520px]:size-40">
           <svg viewBox="0 0 100 100" class="size-full -rotate-90" aria-hidden="true">
+            <!-- Hover glow. Blurring SourceGraphic keeps the slice's own colour, so the halo matches the
+                 arc instead of being one flat accent. The alpha transfer is what makes it "sedikit": a
+                 plain drop-shadow at full strength reads as a second, brighter ring. The filter region
+                 is widened because the default -10%/120% clips the blur on the outer edge.
+                 The id comes from useId() - this card renders twice on the dashboard and a fixed id
+                 would be duplicated across the two SVGs. -->
+            <defs>
+              <filter :id="glowId" x="-45%" y="-45%" width="190%" height="190%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2.2" result="blur" />
+                <feComponentTransfer in="blur" result="soft">
+                  <feFuncA type="linear" slope="0.55" />
+                </feComponentTransfer>
+                <feMerge>
+                  <feMergeNode in="soft" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
             <!-- Empty track, so a small slice still reads as part of a whole. -->
             <circle cx="50" cy="50" r="40" fill="none" stroke-width="14" class="stroke-default" />
 
@@ -238,6 +261,7 @@ function clearTip() {
                 :d="seg.d"
                 :fill="seg.color"
                 class="slice cursor-pointer"
+                :filter="hovered === seg.index ? `url(#${glowId})` : undefined"
                 :style="{ animationDelay: `${seg.index * 90}ms` }"
                 @mouseenter="hovered = seg.index"
                 @mousemove="moveTip(seg.index, $event)"

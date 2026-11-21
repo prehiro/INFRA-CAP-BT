@@ -7263,3 +7263,21 @@ berubah tampilannya untuk kartu All Capacitor PC's.
 
 VERIFIKASI: console bersih, 463 (196/169/98) dan 447 (189/164/94) dua-duanya benar, nol clip,
 tooltip dua kartu benar.
+### Dashboard: efek glow saat hover slice pie (2026-11-21)
+
+HIRO: "sekarang kasi sedikit efek glow pada saat user hover ke bar pie chart".
+
+CARA: SVG filter per instance di dalam <svg> ChassisMixCard - feGaussianBlur(SourceGraphic, stdDeviation 2.2)
+-> feComponentTransfer (feFuncA slope 0.55, ini yang bikin "sedikit") -> feMerge (blur + SourceGraphic).
+Dipasang lewat `:filter="hovered === seg.index ? `url(#${glowId})` : undefined"` di <path>.
+Warnanya ikut warna slice karena yang di-blur SourceGraphic, bukan flood satu warna.
+Region filter dibuka ke x/y -45% / 190% (default -10%/120% memotong blur di tepi luar).
+
+PENTING: id filter pakai useId() - kartu ini dirender 2x di dashboard, id tetap akan dobel dan SVG kedua
+ikut merujuk filter yang pertama.
+
+VERIFIKASI (bukan cuma "kelihatan"): screenshot glow-on vs glow-off dengan hover state identik
+(filter dipaksa none lewat style.setProperty('filter','none','important')), lalu diff pixel:
+halo 3-7px di luar tepi ring (r 71-78px), puncak delta 117/765 (~39 per channel), nol perubahan
+di luar r<78px. Perlu hook hover identik karena sparkline Server Metrics animasi terus-menerus -
+diff screenshot polos akan penuh noise di seluruh viewport.
