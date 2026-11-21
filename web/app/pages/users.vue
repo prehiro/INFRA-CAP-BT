@@ -264,13 +264,17 @@ onMounted(() => {
 
     <template #body>
       <div class="space-y-4">
-        <UAlert
+        <!-- Non-Admins get the shared RestrictedAccess panel: what the page holds, the role that
+             blocked them, and two ways forward. Was a bare warning UAlert. -->
+        <RestrictedAccess
           v-if="!isAdmin"
-          color="warning"
-          variant="soft"
-          icon="i-lucide-lock"
-          title="Restricted access"
-          description="Only an Admin can view and manage users."
+          title="User Management"
+          description="Only an Admin can view and manage users. Ask an Admin to grant your account access."
+          :features="[
+            { icon: 'i-lucide-users', label: 'Every account with its roles' },
+            { icon: 'i-lucide-user-plus', label: 'Create users and reset their passwords' },
+            { icon: 'i-lucide-shield-check', label: 'Assign Admin, Manager or Staff access' }
+          ]"
         />
 
         <template v-else>

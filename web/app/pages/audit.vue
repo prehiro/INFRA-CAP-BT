@@ -243,13 +243,17 @@ onMounted(() => {
 
     <template #body>
       <div class="flex min-h-0 flex-1 flex-col gap-4">
-        <UAlert
+        <!-- Non-Admins get the shared RestrictedAccess panel: what the page holds, the role that
+             blocked them, and two ways forward. Was a bare warning UAlert. -->
+        <RestrictedAccess
           v-if="!isAdmin"
-          color="warning"
-          variant="soft"
-          icon="i-lucide-lock"
-          title="Restricted access"
-          description="Only an Admin can view the activity trail."
+          title="Log Audit"
+          description="Only an Admin can view the activity trail. Ask an Admin to grant your account access."
+          :features="[
+            { icon: 'i-lucide-scroll-text', label: 'Every sign-in attempt, successful or not' },
+            { icon: 'i-lucide-trash-2', label: 'Deletions with the record that was removed' },
+            { icon: 'i-lucide-search', label: 'Filter by actor, action or date range' }
+          ]"
         />
 
         <template v-else>

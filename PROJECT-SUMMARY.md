@@ -6794,3 +6794,33 @@ VERIFIKASI (dev server, 3x hard reload): jumlah "Cannot access 'stop'" tetap 29 
 `GET /` `/users` `/device/ups` `/device/pcledger` `/networks/network-rack` `/networks/access-point`
 semuanya **200**, 0 baris "500" di dev.out, `/api/users` tetap terkirim (200, 7,9 ms), `npx nuxt build`
 exit 0.
+### Redesign: Halaman Restricted Access (2026-11-21)
+
+HIRO: "redesign page restricted access, buat yang bagus dan kreatif".
+
+SEBELUM: `UAlert color="warning" variant="soft"` - satu baris kuning datar berisi "Restricted access" +
+"Only an Admin can ...". Tidak memberi tahu apa yang ada di balik blokir, siapa yang sedang login,
+atau harus apa. Terbaca seperti jalan buntu, bukan batas izin.
+
+SESUDAH: komponen baru `web/app/components/RestrictedAccess.vue`, dipakai di `pages/audit.vue` dan
+`pages/users.vue` (state-nya identik, jadi tidak boleh kembar dua versi):
+
+- Kartu `max-w-2xl` memusat, `rounded-2xl border border-default bg-elevated/60 backdrop-blur-sm`,
+  dua wash aksen (primary/15 kanan-atas, info/10 kiri-bawah) yang di-clip kartu.
+- Badge kunci 80px (`size-20`) dengan satu halo pulse 3,4 s - halo adalah ring terpisah yang
+  absolute, jadi mark-nya sendiri tidak pernah bergerak (tidak ada layout shift).
+- Chip "ADMIN ONLY" (uppercase, 11px), judul `text-xl sm:text-2xl`, deskripsi `max-w-md`.
+- Daftar isi halaman (3 baris) - ini yang mengubah "denied" jadi "ini yang kamu lewatkan".
+- Baris sesi: "Signed in as QA Staff · Staff" dengan role sebagai chip warning.
+- Aksi: "Back to dashboard" (primary) + "Sign out" (ghost, logout lalu navigateTo('/login')).
+- Masuk dengan `ra-rise` 460ms; semua animasi mati di `prefers-reduced-motion`.
+
+VERIFIKASI (browser, user Staff `zz-qa-staff` sementara, sudah dihapus lagi):
+- `/users` dan `/audit` sama-sama menampilkan kartu; judul "User Management" / "Log Audit";
+  3 baris fitur; baris sesi "Signed in as QA Staff · Staff"; aksi "Back to dashboard" + "Sign out".
+- 6/6 ikon terender (mask `data:image/svg+xml`) - `i-lucide-filter` ternyata TIDAK ada di bundle
+  (mask none), diganti `i-lucide-search` yang sudah terbukti ada.
+- Light mode (`.dark` dilepas): card oklab(0.967/0.6), baris oklab(0.967/0.7) + border oklch(0.92) -
+  baris sengaja dibuat `bg-elevated/70` (bukan `bg-default/20` yang putih-di-atas-putih).
+- Mobile 390px: kartu 342px di x=24, tanpa overflow horizontal.
+- `npx nuxt build` exit 0.
