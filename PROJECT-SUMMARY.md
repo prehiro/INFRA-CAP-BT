@@ -6967,3 +6967,31 @@ VERIFIKASI (browser, 3 lebar):
 - 1280x900: 4 kolom, kartu 237px, lebar 494px, 4 label 2 baris, TIDAK ADA yang terpotong.
 - Hover masih utuh: translate 0 -4px, glow 1, chevron translate 4px, sheen dc-sheen, shadow-xl;
   keluar hover balik ke none. Tanpa overflow horizontal. `npx nuxt build` exit 0.
+### Dashboard: Server Metrics jadi kolom vertikal di kiri (2026-11-21)
+
+HIRO: "bisa buat server metrics berjejer vertical di kiri? jadi card bisa disusun di kanan".
+
+- Layout: `grid xl:grid-cols-[300px_minmax(0,1fr)]` - panel metrics kolom kiri 300px, kartu modul di kanan.
+  Di bawah xl (1280) tetap menumpuk ke atas seperti semula.
+- Panel metrics jadi container-aware (`@container` di UCard):
+  - Tiles CPU/RAM/Disk: `grid-cols-1` + divide-y di kolom sempit, 3 sejajar hanya kalau panel >=520px.
+    Sebelumnya `sm:grid-cols-3` (viewport) - di kolom 300px itu bikin 3 grafik berdesakan.
+  - Subtitle "Live host load..." dan baris "N samples" disembunyikan kalau panel <520px.
+  - Tinggi sparkline 72px -> 48px di kolom sempit, diukur pakai ResizeObserver pada `$el` kartu
+    (bukan viewport), karena komponen yang sama dipakai di dua lebar.
+  - WAJIB: `ref` pada komponen (UCard) mengembalikan INSTANCE, bukan DOM - `observe()` langsung
+    melempar "parameter 1 is not of type 'Element'" dan seluruh halaman jadi 500. Harus `$el`.
+  - Timestamp "Updated HH:MM:SS" tadinya `sm:inline` (viewport) - di viewport 1920 dia TETAP tampil di
+    dalam kolom 300px dan bikin header wrap 2 baris. Diganti `@min-[520px]:inline`.
+- Grid kartu ikut container-aware: `@min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4`,
+  jadi jumlah kolom ngikut lebar area kartu, bukan lebar viewport. Kartu Access Points (wide) ikut
+  container: span 2 / 3 / 2 kolom, dan 6 kartu + 1 wide selalu memenuhi baris (2, 3, atau 4 kolom).
+
+VERIFIKASI (browser):
+- 1920x1080: panel 300x518 di kiri (x=232), kartu 4 kolom @321px baris 1-2, kartu lebar 662px.
+- 1440x1000: panel 300x518, kartu 3 kolom @274px, 3 baris.
+- 1280x900: panel 300x518, kartu 2 kolom @334px, 4 baris.
+- 700x900: panel full width 637x281 (spark 72px, 3 grafik sejajar), kartu 2 kolom @309px.
+- Hover kartu tetap: translate 0 -4px, glow 1, chevron 4px. Tanpa overflow horizontal di semua lebar.
+- `npx nuxt build` exit 0. 29 ERROR di dev.out semuanya bug lama `warmAdminRegisters`
+  ("Cannot access 'stop' before initialization" di layouts/default.vue) - TIDAK bertambah.

@@ -1,17 +1,18 @@
 <template>
   <UCard
+    ref="cardEl"
     :ui="{ header: 'p-0 sm:p-0', body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }"
-    class="anim-fade-up overflow-hidden"
+    class="anim-fade-up @container overflow-hidden"
   >
     <template #header>
-      <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 @min-[520px]:px-5 @min-[520px]:py-4">
         <div class="flex items-center gap-3">
           <span class="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary ring-1 ring-inset ring-primary/20">
             <ServerMetricsIcon :active="status === 'live'" />
           </span>
           <div class="min-w-0">
             <h2 class="text-sm font-semibold leading-tight">Server Metrics</h2>
-            <p class="text-xs text-muted">Live host load, sampled every {{ INTERVAL_S }}s</p>
+            <p class="hidden text-xs text-muted @min-[520px]:block">Live host load, sampled every {{ INTERVAL_S }}s</p>
           </div>
         </div>
 
@@ -23,15 +24,18 @@
             <span class="live-dot" :class="`live-dot--${status}`" />
             {{ statusLabel }}
           </span>
-          <span class="hidden text-[11px] text-muted tabular-nums sm:inline">
+          <span class="hidden text-[11px] text-muted tabular-nums @min-[520px]:inline">
             {{ updatedLabel }}
           </span>
         </div>
       </div>
     </template>
 
-    <div class="grid grid-cols-1 divide-y divide-default sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-      <div v-for="tile in tiles" :key="tile.key" class="px-5 py-4">
+    <!-- One column per metric, or three side by side when there is room. This keys off the PANEL's own
+         width (@container), not the viewport: on the dashboard the panel is a 300px left column, so
+         `sm:grid-cols-3` would have squeezed three charts into 300px and made all of them unreadable. -->
+    <div class="grid grid-cols-1 divide-y divide-default @min-[520px]:grid-cols-3 @min-[520px]:divide-x @min-[520px]:divide-y-0">
+      <div v-for="tile in tiles" :key="tile.key" class="px-4 py-3 @min-[520px]:px-5 @min-[520px]:py-4">
         <div class="flex items-start justify-between gap-2">
           <div class="flex min-w-0 items-center gap-2">
             <UIcon :name="tile.icon" class="size-4 shrink-0" :style="{ color: tile.color }" />
@@ -55,7 +59,7 @@
             :times="tile.times"
             :color="tile.color"
             :label="tile.label"
-            :height="70"
+            :height="sparkHeight"
           />
         </div>
 
@@ -73,7 +77,7 @@
           <UIcon name="i-lucide-triangle-alert" class="size-3.5 shrink-0" />
           {{ lastError }}
         </span>
-        <span v-else class="tabular-nums">{{ WINDOW }} samples ({{ windowLabel }})</span>
+        <span v-else class="hidden tabular-nums @min-[520px]:inline">{{ WINDOW }} samples ({{ windowLabel }})</span>
       </div>
     </template>
   </UCard>
@@ -106,6 +110,29 @@ const PRIME_SAMPLES = 8
 const PRIME_MS = 450
 const FAILURES_BEFORE_BACKOFF = 3
 const HOT_THRESHOLD = 90
+// 72px charts are right when the panel is full width (stacked above the tiles); in the dashboard's
+// 300px left column they eat the panel, so they shrink. Measured off the card itself rather than the
+// viewport, because the same component is used in both places.
+const COMPACT_BELOW = 520
+const cardEl = ref<any>(null)
+const narrow = ref(false)
+const sparkHeight = computed(() => (narrow.value ? 48 : 72))
+let observer: ResizeObserver | null = null
+
+onMounted(() => {
+  // A template ref on a COMPONENT gives the component instance, not the DOM node - UCard has to be
+  // unwrapped through $el, otherwise observe() throws "parameter 1 is not of type 'Element'" and the
+  // whole page renders as a 500.
+  const el = (cardEl.value as any)?.$el ?? cardEl.value
+  if (!(el instanceof Element)) return
+  observer = new ResizeObserver((entries) => {
+    // Idempotent - assigning the same boolean is a no-op, so this cannot feed back into layout.
+    narrow.value = entries[0].contentRect.width < COMPACT_BELOW
+  })
+  observer.observe(el)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
 
 /**
  * Fixed per-metric hues rather than theme tokens: the three lines must stay distinguishable

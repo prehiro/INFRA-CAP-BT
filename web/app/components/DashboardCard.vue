@@ -34,7 +34,8 @@ const props = withDefaults(defineProps<{
   tone?: keyof typeof TONES
   /** Optional per-floor breakdown, shown on the wide card. */
   chips?: { label: string, value: number }[]
-  /** Spans two of the four columns on lg, so 6 normal tiles + this one fill 4 + 4 exactly. */
+  /** Spans the row the grid cannot fill: 2 of 2, all 3, or 2 of 4 columns. 6 normal tiles + this one
+ *  always tile exactly (3 rows, 3 rows, 4 rows) - see the class in the template. */
   wide?: boolean
 }>(), {
   sub: '',
@@ -88,7 +89,7 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
   <UCard
     :to="to"
     class="dc group relative block overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
-    :class="wide ? 'lg:col-span-2' : ''"
+    :class="wide ? 'col-span-1 @min-[560px]:col-span-2 @min-[780px]:col-span-3 @min-[1060px]:col-span-2' : ''"
   >
     <!-- Corner bloom in the icon's colour. Absolutely positioned and clipped by the card, so it can
          never push the content around. -->

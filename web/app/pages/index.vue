@@ -77,15 +77,23 @@ const apChips = computed(() =>
     </template>
 
     <template #body>
-      <div class="space-y-8">
+      <div class="space-y-6">
         <!-- Greeting lives in the body, not the navbar: the navbar is locked to 64px. -->
         <WelcomeBanner class="anim-fade-up" />
 
-        <!-- System Metrics panel. It renders its own UCard: a card inside a card would
-             double the padding and the header. -->
-        <MetricsChart />
+        <!-- Metrics on the left, tiles on the right. The split only happens at xl: below that the
+             metrics panel is full width (its own @container keeps the three charts side by side when
+             it has room, stacked when it is the narrow left column). -->
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-[300px_minmax(0,1fr)] xl:items-start">
+          <!-- System Metrics panel. It renders its own UCard: a card inside a card would
+               double the padding and the header. -->
+          <MetricsChart />
 
-        <div class="anim-stagger mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+          <!-- @container, not the viewport: the tile columns follow the width this block actually
+               gets once the metrics column takes its 300px, so four columns only appear where four
+               columns fit. -->
+          <div class="@container min-w-0">
+            <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-5 @min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4">
           <DashboardCard
             v-for="card in [
               { to: '/logbook/cctvacc', label: 'CCTV Access Requests', value: countOf('cctv_log_book'), icon: 'i-lucide-video', tone: 'emerald' },
@@ -99,6 +107,8 @@ const apChips = computed(() =>
             :key="card.to"
             v-bind="card"
           />
+            </div>
+          </div>
         </div>
       </div>
     </template>
