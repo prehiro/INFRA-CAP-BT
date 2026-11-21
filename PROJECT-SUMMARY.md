@@ -6860,3 +6860,35 @@ VERIFIKASI (dua skenario, dijalankan sungguhan):
 - API mati (skenario yang dilaporkan): `api=000`, login via proxy 502 -> skrip: "API not answering -
   starting it" -> API ready -> page 200 -> proxy 401 -> Ready. Login di browser sungguhan lewat form
   :3000 -> Dashboard sebagai Administrator.
+### Animasi: halaman Restricted Access (2026-11-21)
+
+HIRO: "saya mau lu animasikan icon, button, label nya, buat yang kreatif dan keren".
+
+Kunci: lock-nya diubah dari `UIcon` (CSS mask, satu span, tidak ada bagian dalam yang bisa dianimasikan)
+ke **SVG inline** dengan shackle sebagai `<g>` sendiri. Dua animasi di elemen yang sama akan saling
+menimpa, jadi drop dan tug dipisah ke dua `<g>` bersarang.
+
+Yang bergerak:
+- Shackle: drop sekali saat masuk (`ra-shackle-drop`, overshoot), lalu **tug** tiap 5,6 s
+  (`ra-shackle-tug`) - ini yang membaca sebagai "terkunci" tanpa mengubah satu kata pun.
+- Hover kartu -> padlock **rattle** sekali (`ra-rattle` 620ms), lalu kembali ke tug.
+- Mark: pop-in 520ms dengan overshoot, lapisan dalam bernapas 4,6 s (scale 1 -> 1,045).
+- Halo: pulse 3,4 s (halo lama dipertahankan).
+- Chip "ADMIN ONLY": titik warning berdenyut 2,4 s; hover kartu -> tracking melebar 0 -> 0,12em
+  (1,32px terukur), tanpa reflow.
+- Baris fitur: masuk bertahap 0,14/0,21/0,28 s; hover -> bg primary/10, border primary/30, ikon geser 3px.
+- Tombol: chrome TIDAK BERGESER - hanya ikon terdepan yang miring/arah (Back -> geser 3px,
+  Sign out -> geser 2px + rotate -6deg). Transform, bukan margin, supaya tidak ada reflow.
+- Dua wash sudut drift 20 s / 26 s (arah berlawanan) supaya glass tidak pernah benar-benar diam.
+- Semua mati di `prefers-reduced-motion` (diuji: 15 selector, semua `animationName: none`,
+  0 animasi aktif di dalam kartu).
+
+CATATAN TEKNIS: aturan hover `.ra-title { transform: translateY(-1px) }` saya buang, bukan dibiarkan -
+entrance fade-up memakai `fill-mode: both`, dan keyframe terakhir `transform: none` mengalahkan aturan
+hover (terukur: transform tetap identity). CSS mati tidak ditinggal.
+
+VERIFIKASI (browser, user Staff sementara, sudah dihapus): animasi terpasang dan JALAN
+(`currentTime` 31.135 ms, playState running), hover kartu -> rattle + tracking 1,32px, hover baris ->
+bg primary/10 + ikon matrix(...3,0), hover tombol -> ikon 3px / rotate -6deg, stroke SVG
+rgb(0,220,130) (ikut accent), SVG 37px di dalam badge 80px, tanpa overflow, 0 error konsol,
+`npx nuxt build` exit 0.
