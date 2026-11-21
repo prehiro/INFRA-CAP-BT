@@ -3,14 +3,20 @@
  * Dashboard landing page.
  *
  * WHAT IS ON IT
- * Welcome banner, the live Server Metrics chart, then one tile per module that actually has a page -
- * seven of them, each carrying its real record count. Until 2026-11-21 this grid held the CCTV tile
- * plus two hand-written placeholders ("0", opacity-50, pointer-events-none) for Handover and Audit,
- * even though both pages already existed; the numbers now come from the API instead of being typed in.
+ * Welcome banner, the live Server Metrics rail, then the Chassis Mix doughnut (spanning two tiles)
+ * and one tile per module that has a page, each carrying its real record count.
  *
- * WHY THE LAST TILE IS WIDE
- * Seven tiles do not fill a 4-column grid evenly (4 + 3 leaves a hole). The Access Point tile spans two
- * columns and carries its per-floor breakdown, so 6 + 2 cells fill 4 + 4 exactly.
+ * WHY THE CHASSIS DOUGHNUT REPLACED TWO TILES
+ * The CCTV and Handover tiles only showed "13" and "5" - a number nobody can act on. The same two
+ * columns now answer a question the PC Ledger data already holds: what the fleet is made of
+ * (Desktop / Notebook / Tablet, and their share). The counts come from
+ * /records/{id}/distribution?field=chassis, which groups in SQL instead of shipping 453 rows to the
+ * browser to be counted client-side.
+ *
+ * TILE SPANS
+ * The doughnut takes 2 of 2/3/4 columns and Access Points takes 3 of 3 / 2 of 2 / 2 of 4, so every
+ * row is exactly full at every width: 4 cols = 2+1+1 / 1+1+2, 3 cols = 2+1 / 1+1+1 / 3, 2 cols =
+ * 2 / 2 / 2 / 2.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -47,6 +53,39 @@ const list = computed(() => (entities.value as EntityMeta[]) ?? [])
 
 /** Record count for a dynamic entity, straight from the /entities payload. */
 const countOf = (slug: string) => list.value.find(e => e.slug === slug)?.recordCount ?? 0
+
+/** Resolved by slug, never by id: dev and prod databases number their entities differently. */
+const pcLedgerId = computed(() => list.value.find(e => e.slug === 'pc_ledger')?.id ?? null)
+
+const chassis = ref<{ value: string, count: number }[]>([])
+const chassisTotal = ref(0)
+const chassisLabel = ref('Computer Chassis')
+const chassisState = ref<'loading' | 'ready' | 'error'>('loading')
+
+// A plain $fetch rather than useFetch: the entity id only exists once /entities has answered, and a
+// URL whose identity changes is exactly what useFetch does not want.
+watch(pcLedgerId, async (id) => {
+  if (!id) return
+  chassisState.value = 'loading'
+  try {
+    const res = await $fetch<{
+      label: string
+      total: number
+      items: { value: string, count: number }[]
+    }>(`/records/${id}/distribution?field=chassis`, {
+      baseURL: useRuntimeConfig().public.apiBase,
+      headers: authHeaders.value
+    })
+    chassis.value = res.items
+    chassisTotal.value = res.total
+    chassisLabel.value = res.label
+    chassisState.value = 'ready'
+  }
+  catch {
+    // A failed pie must not take the rest of the dashboard with it - the tile says so and moves on.
+    chassisState.value = 'error'
+  }
+}, { immediate: true })
 
 const rackCount = computed(() =>
   (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
@@ -96,19 +135,25 @@ const apChips = computed(() =>
                columns fit. -->
           <div class="@container min-w-0 xl:h-full">
             <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-5 @min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
-          <DashboardCard
-            v-for="card in [
-              { to: '/logbook/cctvacc', label: 'CCTV Access Requests', value: countOf('cctv_log_book'), icon: 'i-lucide-video', tone: 'emerald' },
-              { to: '/logbook/handover', label: 'Handover Log Book', value: countOf('handover_log_book'), icon: 'i-lucide-folder-check', tone: 'sky' },
-              { to: '/device/pcledger', label: 'PC Ledger', value: countOf('pc_ledger'), icon: 'i-lucide-monitor', tone: 'violet' },
-              { to: '/device/factorypc', label: 'Factory PC', value: countOf('factory_pc'), icon: 'i-lucide-laptop', tone: 'rose' },
-              { to: '/device/ups', label: 'UPS Register', value: (ups as UpsUnit[] ?? []).length, icon: 'i-lucide-battery-charging', tone: 'amber' },
-              { to: '/networks/network-rack', label: 'Network Racks', value: rackCount, sub: `${rackFloorCount} floor`, icon: 'i-lucide-server', tone: 'cyan' },
-              { to: '/networks/access-point', label: 'Access Points', value: apCount, sub: `${apFloorCount} floor`, icon: 'i-lucide-wifi', tone: 'primary', wide: true, chips: apChips }
-            ]"
-            :key="card.to"
-            v-bind="card"
-          />
+              <ChassisMixCard
+                class="col-span-1 @min-[560px]:col-span-2"
+                :items="chassis"
+                :total="chassisTotal"
+                :label="chassisLabel"
+                :state="chassisState"
+              />
+
+              <DashboardCard
+                v-for="card in [
+                  { to: '/device/pcledger', label: 'PC Ledger', value: countOf('pc_ledger'), icon: 'i-lucide-monitor', tone: 'violet' },
+                  { to: '/device/factorypc', label: 'Factory PC', value: countOf('factory_pc'), icon: 'i-lucide-laptop', tone: 'rose' },
+                  { to: '/device/ups', label: 'UPS Register', value: (ups as UpsUnit[] ?? []).length, icon: 'i-lucide-battery-charging', tone: 'amber' },
+                  { to: '/networks/network-rack', label: 'Network Racks', value: rackCount, sub: `${rackFloorCount} floor`, icon: 'i-lucide-server', tone: 'cyan' },
+                  { to: '/networks/access-point', label: 'Access Points', value: apCount, sub: `${apFloorCount} floor`, icon: 'i-lucide-wifi', tone: 'primary', wide: true, chips: apChips }
+                ]"
+                :key="card.to"
+                v-bind="card"
+              />
             </div>
           </div>
         </div>

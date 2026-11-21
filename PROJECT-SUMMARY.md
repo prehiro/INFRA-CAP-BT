@@ -7029,3 +7029,41 @@ VERIFIKASI (browser, tinggi panel == tinggi kolom kartu di ketiga lebar):
   ikut di-stretch.
 - Hover kartu tetap (translate -4px, glow 1, chevron 4px, sheen). Tanpa overflow horizontal.
 - `npx nuxt build` exit 0.
+### Dashboard: pie chart chassis menggantikan 2 kartu (2026-11-21)
+
+HIRO: "saya mau tambahkan pie chart untuk menggantikan card cctv access request dan handover logbook...
+presentase computer chasis berdasarkan tipenya... style seperti https://vue.primeuipro.dev/charts (tab pie)".
+
+DATA: 3 tipe chassis di pc_ledger (453 record) - Desktop 191 (42.2%), Notebook 166 (36.6%), Tablet 96 (21.2%).
+
+ENDPOINT BARU (API): `GET /api/records/{entityId}/distribution?field=chassis`
+- `DynamicRecordService.FieldDistributionAsync` - GROUP BY TextValue di SQL, soft-deleted dibuang,
+  kosong dilaporkan sebagai "(kosong)" supaya total tetap sama dengan recordCount entity.
+- `RecordsController.Distribution` -> `{ field, label, total, items: [{value, count}] }`.
+- Field tidak ada -> 404 (NotFoundException -> handler global), bukan 500.
+- ALASAN ADA: tanpa ini dashboard harus menarik 453 row lengkap (17 field) cuma untuk menghitung 3 nilai.
+- CATATAN DEPLOY: endpoint ini belum ada di server kantor - API harus di-redeploy (flashdisk) bareng web.
+
+KOMPONEN: `web/app/components/ChassisMixCard.vue`
+- SVG doughnut, BUKAN canvas: tiap slice satu `<circle pathLength="100">` + dasharray, jadi hover/focus
+  dan sweep-in cukup CSS, tanpa pointer maths + redraw loop, dan tajam di DPI apa pun.
+- Tengah donut = total; hover slice -> readout ganti jadi persentase + nama tipe (meniru demo PrimeUI
+  "slice hover updating the center readout").
+- Legend = swatch + nama + jumlah + persen; hover legend row juga menyorot slice-nya (satu permukaan kontrol).
+- Warna: slice 1 `var(--ui-primary)` (ikut accent theme), lalu #38BDF8, #A78BFA, dst. Track `stroke-default`.
+- Animasi: sweep-in 700ms per slice, delay 90ms per slice, 0.7% celah antar slice supaya tidak menyatu.
+  `prefers-reduced-motion` -> transisi mati.
+- PENTING: `ready` (pemicu sweep) pakai setTimeout 60ms, BUKAN requestAnimationFrame - rAF tidak pernah
+  jalan di tab yang tidak fokus, jadi dashboard yang dibuka di background tab akan menggambar donut
+  collapsed "0 100" selamanya.
+
+GRID: 2 kartu (CCTV 13, Handover 5) dihapus dari list; pie mengambil 2 kolom di posisi pertama.
+Jumlah sel jadi 8 (pie 2 + pc 1 + factory 1 + ups 1 + racks 1 + AP 2) -> baris penuh di 2/3/4 kolom.
+
+VERIFIKASI (browser):
+- Legend: Desktop 191 42.2% / Notebook 166 36.6% / Tablet 96 21.2%; center 453.
+- Dasharray 41.46/35.94/20.49 (total 97.9 + 3x0.7 celah) - sesuai persen.
+- Hover legend Notebook: strokeWidth 18px, opacity lain 0.3, center "36.6% / NOTEBOOK"; keluar -> 14px, 453.
+- 1920: pie 662x395, tiles 321 (4 kolom) / 1440: pie 559x272, tiles 269 (3 kolom) /
+  1280: pie 688x272 (2 kolom) / 1100: pie 545x272 (menumpuk). Tanpa overflow.
+- `npx nuxt build` exit 0.

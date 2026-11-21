@@ -686,6 +686,50 @@ public class DynamicRecordService
         return list;
     }
 
+    // ---------- distribution (dashboard pie) ----------
+
+    /// <summary>
+    /// How many records hold each distinct value of one text field - the PC Ledger's chassis mix,
+    /// for example. Exists because the dashboard otherwise has to page through all 453 rows to count
+    /// three values; this returns three rows of one column instead. Soft-deleted records are excluded,
+    /// and blanks are reported under "(kosong)" rather than dropped, so the pie's total still matches
+    /// the entity's record count.
+    /// </summary>
+    public async Task<object> FieldDistributionAsync(int entityId, string fieldName)
+    {
+        var entity = await _db.Entities.AsNoTracking().Include(e => e.Fields)
+            .FirstOrDefaultAsync(e => e.Id == entityId)
+            ?? throw new NotFoundException($"Entity {entityId} tidak ditemukan");
+
+        var field = entity.Fields.FirstOrDefault(f =>
+            string.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase));
+        if (field is null)
+            throw new NotFoundException($"Field '{fieldName}' tidak ada di {entity.Name}");
+
+        var rows = await (
+            from rv in _db.RecordValues.AsNoTracking()
+            join r in _db.Records.AsNoTracking() on rv.RecordId equals r.Id
+            where rv.FieldId == field.Id && r.EntityId == entityId && !r.IsDeleted
+            group rv by rv.TextValue into g
+            select new { Value = g.Key, Count = g.Count() }
+        ).ToListAsync();
+
+        var counts = rows
+            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+            .GroupBy(x => x.Value!.Trim())
+            .ToDictionary(x => x.Key, x => x.Sum(v => v.Count));
+
+        var blank = rows.Where(x => string.IsNullOrWhiteSpace(x.Value)).Sum(x => x.Count);
+        if (blank > 0) counts["(kosong)"] = blank;
+
+        var items = counts
+            .Select(kv => new { value = kv.Key, count = kv.Value })
+            .OrderByDescending(x => x.count)
+            .ToList();
+
+        return new { field = field.Name, label = field.Label, total = items.Sum(x => x.count), items };
+    }
+
     // ---------- conversion helpers ----------
 
     private static bool TryToDecimal(object raw, out decimal value)

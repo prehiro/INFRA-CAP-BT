@@ -52,6 +52,10 @@ public class RecordsController : ControllerBase
         [FromQuery] bool desc = false)
         => Ok(await _svc.ListAsync(entityId, page, pageSize, search, lookupFieldId, lookupValue, sort, desc));
 
+    [HttpGet("distribution")]
+    public async Task<ActionResult<object>> Distribution([FromRoute] int entityId, [FromQuery] string field)
+        => Ok(await _svc.FieldDistributionAsync(entityId, field));
+
     [HttpGet("{recordId:long}")]
     public async Task<ActionResult<RecordDto>> Get([FromRoute] int entityId, [FromRoute] long recordId)
         => Ok(await _svc.GetAsync(entityId, recordId));
