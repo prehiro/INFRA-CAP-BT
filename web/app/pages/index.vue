@@ -61,24 +61,32 @@ const chassis = ref<{ value: string, count: number }[]>([])
 const chassisTotal = ref(0)
 const chassisLabel = ref('Computer Chassis')
 const chassisState = ref<'loading' | 'ready' | 'error'>('loading')
+const statusDist = ref<{ value: string, count: number }[]>([])
+
+type Distribution = { field: string, label: string, total: number, items: { value: string, count: number }[] }
 
 // A plain $fetch rather than useFetch: the entity id only exists once /entities has answered, and a
 // URL whose identity changes is exactly what useFetch does not want.
 watch(pcLedgerId, async (id) => {
   if (!id) return
   chassisState.value = 'loading'
+  const opts = { baseURL: useRuntimeConfig().public.apiBase, headers: authHeaders.value }
   try {
-    const res = await $fetch<{
-      label: string
-      total: number
-      items: { value: string, count: number }[]
-    }>(`/records/${id}/distribution?field=chassis`, {
-      baseURL: useRuntimeConfig().public.apiBase,
-      headers: authHeaders.value
-    })
-    chassis.value = res.items
-    chassisTotal.value = res.total
-    chassisLabel.value = res.label
+    // Two questions, one entity: what the fleet is made of, and which register each computer sits in.
+    // asset_status is the field PC Ledger / Standby PC / Dispose filter on (see pages/device/pcledger.vue).
+    // Each call fails on its own - a prod database without asset_status must not cost us the doughnut.
+    const [mix, status] = await Promise.all([
+      $fetch<Distribution>(`/records/${id}/distribution?field=chassis`, opts).catch(() => null),
+      $fetch<Distribution>(`/records/${id}/distribution?field=asset_status`, opts).catch(() => null)
+    ])
+    if (!mix) {
+      chassisState.value = 'error'
+      return
+    }
+    chassis.value = mix.items
+    chassisTotal.value = mix.total
+    chassisLabel.value = mix.label
+    statusDist.value = status?.items ?? []
     chassisState.value = 'ready'
   }
   catch {
@@ -86,6 +94,25 @@ watch(pcLedgerId, async (id) => {
     chassisState.value = 'error'
   }
 }, { immediate: true })
+
+/**
+ * A computer sits in exactly ONE register: PC Ledger (asset_status empty or "Active"), Standby, Dispose,
+ * or the separate Factory PC entity. PC Ledger is the remainder rather than its own count, so the four
+ * always add up to the real total even when a new status word appears in the data.
+ */
+const standbyCount = computed(() => statusDist.value.find(i => i.value === 'Standby')?.count ?? 0)
+const disposeCount = computed(() => statusDist.value.find(i => i.value === 'Plan Dispose')?.count ?? 0)
+const factoryCount = computed(() => countOf('factory_pc'))
+const activeCount = computed(() =>
+  Math.max(countOf('pc_ledger') - standbyCount.value - disposeCount.value, 0)
+)
+const registers = computed(() => [
+  { label: 'PC Ledger', value: activeCount.value, to: '/device/pcledger' },
+  { label: 'Factory PC', value: factoryCount.value, to: '/device/factorypc' },
+  { label: 'Standby PC', value: standbyCount.value, to: '/device/standbypc' },
+  { label: 'Dispose', value: disposeCount.value, to: '/device/dispose' }
+])
+const registerTotal = computed(() => registers.value.reduce((n, r) => n + r.value, 0))
 
 const rackCount = computed(() =>
   (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
@@ -141,6 +168,8 @@ const apChips = computed(() =>
                 :total="chassisTotal"
                 :label="chassisLabel"
                 :state="chassisState"
+                :registers="registers"
+                :register-total="registerTotal"
               />
 
               <DashboardCard

@@ -7067,3 +7067,34 @@ VERIFIKASI (browser):
 - 1920: pie 662x395, tiles 321 (4 kolom) / 1440: pie 559x272, tiles 269 (3 kolom) /
   1280: pie 688x272 (2 kolom) / 1100: pie 545x272 (menumpuk). Tanpa overflow.
 - `npx nuxt build` exit 0.
+### Dashboard: rincian register di kartu Chassis Mix (2026-11-21)
+
+HIRO: "bisa buat lebih detail? jadi user tau berapa persen yang ada di pc ledger, standby pc, factory pc, dispose".
+Data asli (bukan perkiraan): PC Ledger 447, Factory PC 10, Standby PC 3, Dispose 3 -> total 463.
+
+STRUKTUR DATA YANG PENTING: PC Ledger / Standby PC / Dispose BUKAN entity terpisah - semuanya satu entity
+`pc_ledger` (id 10) yang difilter lewat field `asset_status` (lihat pages/device/pcledger.vue):
+standby = 'Standby', dispose = 'Plan Dispose', aktif = '' atau 'Active'. Factory PC entity sendiri (id 11).
+Jadi pie chassis dihitung dari pc_ledger, sedangkan register diambil dari:
+- `distribution?field=asset_status` -> Standby 3, Plan Dispose 3 (sisanya record tanpa nilai status = aktif)
+- `countOf('factory_pc')` dari /entities -> 10
+- PC Ledger sengaja dihitung sebagai SISA (453 - 3 - 3 = 447), bukan angka sendiri, supaya keempat baris
+  selalu berjumlah sama dengan total record kalau nanti ada kata status baru.
+
+KENAPA REGISTER TIDAK JADI SLICE PIE: proporsinya 96,5 / 2,2 / 0,6 / 0,6 - pie-nya jadi satu cincin penuh
+tanpa informasi. (HIRO ditanya dan memilih: pie chassis tetap + 4 baris rincian register.)
+
+KOMPONEN: ChassisMixCard.vue sekarang punya blok kedua di bawah legend chassis:
+- heading "REGISTER · 463 UNIT", lalu 4 baris (NuxtLink ke /device/pcledger, /device/factorypc,
+  /device/standbypc, /device/dispose) dengan nama + jumlah + persen.
+- Nama kolom DIAMINKAN di x=784 sama seperti baris chassis (ps-[1.75rem] = 8px px-2 + 10px swatch + 10px gap),
+  jadi 7 baris terbaca sebagai satu tabel; kolom jumlah & persen right-aligned di posisi yang sama.
+- Row 28px, font 13px, tanpa wrap. Donut 160px (size-36 -> size-40 di atas 520px container).
+- Kartu jadi 662x395 @1920 dan 559x331 @1440 (naik dari 272 karena 7 baris) - `auto-rows-fr` membuat
+  kartu lain di baris yang sama ikut 331. Tidak ada clip (scrollHeight == clientHeight) di 1920/1600/1440/1280/1100.
+
+FE-API: dua panggilan paralel di dalam watch yang sama (Promise.all + catch masing-masing), supaya prod
+yang belum punya field asset_status tetap dapat doughnut-nya.
+
+VERIFIKASI: legend ['PC Ledger 447 96.5%','Factory PC 10 2.2%','Standby PC 3 0.6%','Dispose 3 0.6%'],
+7 baris, hover legend chassis tetap mengubah readout tengah, build exit 0.
