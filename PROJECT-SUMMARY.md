@@ -6995,3 +6995,37 @@ VERIFIKASI (browser):
 - Hover kartu tetap: translate 0 -4px, glow 1, chevron 4px. Tanpa overflow horizontal di semua lebar.
 - `npx nuxt build` exit 0. 29 ERROR di dev.out semuanya bug lama `warmAdminRegisters`
   ("Cannot access 'stop' before initialization" di layouts/default.vue) - TIDAK bertambah.
+### Dashboard: metrics setinggi viewport + animasi sonar (2026-11-21)
+
+HIRO: "tinggi bagian server metrics nya buat penuh layar/responsive. ping live nya tambah animasi sonar".
+
+TINGGI:
+- `index.vue`: wrapper konten jadi `flex min-h-full flex-col gap-6`, grid dua kolom jadi `xl:flex-1`.
+  Panel metrics ikut `h-full` -> tingginya mengikuti sisa ruang di bawah banner, sampai dasar viewport.
+- `MetricsChart`: UCard jadi `flex flex-col`, body `flex-1`, tiles `h-full grid-rows-3` (1 baris kalau
+  panel melebar), dan sparkline dapat prop `fill` (baru di `MetricSparkline`) - canvas mengikuti
+  tinggi elemen (`wrapEl.clientHeight`), bukan angka `height`. Jadi 3 grafik membagi tinggi kolom,
+  tidak ada pita kosong di bawah tiap grafik.
+- Kartu modul: grid kanan `xl:h-full xl:auto-rows-fr`, root UCard jadi `flex flex-col`, body `flex-1`,
+  dan konten kartu `flex flex-col justify-center` -> kartu ikut tinggi baris dan isinya center,
+  bukan menempel ke atas. Angka `text-3xl -> @min-[1060px]:text-4xl` dan chip `size-11 -> size-12`
+  supaya kartu 395px tidak terasa kosong.
+- 6 kartu + 1 wide tetap memenuhi baris di 2/3/4 kolom.
+
+SONAR:
+- `.live-dot` (span 6px) dapat `::before` + `::after` sebagai cincin yang mengembang 1 -> 3.6x dan
+  memudar (2600ms, delay 1300ms, jadi selalu ada satu cincin terbang). `background: inherit`
+  supaya warnanya ikut status (primary/dimmed/error) tanpa menyalin palet.
+- Offline: tanpa cincin (`.live-dot--offline::before/::after { animation: none }`).
+- Connecting: cincin lebih lambat (3400ms).
+- `prefers-reduced-motion`: semua animasi mati, cincin `opacity: 0`.
+- Diukur: transform ::before 1 -> 3.08 dalam 0.5s, opacity 0.5 -> 0.12 (animasi benar-benar jalan).
+
+VERIFIKASI (browser, tinggi panel == tinggi kolom kartu di ketiga lebar):
+- 1920x1080: panel 300x810 (bottom 1056 dari viewport 1080), kartu 321x395, spark 145, chip 48, angka 36px.
+- 1440x1000: panel 300x730 (bottom 976), kartu 274x230, spark 134.
+- 1280x900: panel 300x630 (bottom 876), kartu 342x143, spark 134.
+- 1100x900 (di bawah xl, menumpuk): panel full width 843x330, spark 121, kartu 268x93 - layout tidak
+  ikut di-stretch.
+- Hover kartu tetap (translate -4px, glow 1, chevron 4px, sheen). Tanpa overflow horizontal.
+- `npx nuxt build` exit 0.

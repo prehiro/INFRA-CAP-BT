@@ -1,8 +1,8 @@
 <template>
   <UCard
     ref="cardEl"
-    :ui="{ header: 'p-0 sm:p-0', body: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }"
-    class="anim-fade-up @container overflow-hidden"
+    :ui="{ header: 'p-0 sm:p-0', body: 'p-0 sm:p-0 flex-1', footer: 'p-0 sm:p-0' }"
+    class="anim-fade-up @container flex flex-col overflow-hidden"
   >
     <template #header>
       <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 @min-[520px]:px-5 @min-[520px]:py-4">
@@ -34,8 +34,14 @@
     <!-- One column per metric, or three side by side when there is room. This keys off the PANEL's own
          width (@container), not the viewport: on the dashboard the panel is a 300px left column, so
          `sm:grid-cols-3` would have squeezed three charts into 300px and made all of them unreadable. -->
-    <div class="grid grid-cols-1 divide-y divide-default @min-[520px]:grid-cols-3 @min-[520px]:divide-x @min-[520px]:divide-y-0">
-      <div v-for="tile in tiles" :key="tile.key" class="px-4 py-3 @min-[520px]:px-5 @min-[520px]:py-4">
+    <div
+      class="grid h-full grid-cols-1 grid-rows-3 divide-y divide-default @min-[520px]:grid-cols-3 @min-[520px]:grid-rows-1 @min-[520px]:divide-x @min-[520px]:divide-y-0"
+    >
+      <div
+        v-for="tile in tiles"
+        :key="tile.key"
+        class="flex flex-col px-4 py-3 @min-[520px]:px-5 @min-[520px]:py-4"
+      >
         <div class="flex items-start justify-between gap-2">
           <div class="flex min-w-0 items-center gap-2">
             <UIcon :name="tile.icon" class="size-4 shrink-0" :style="{ color: tile.color }" />
@@ -53,13 +59,14 @@
           </div>
         </div>
 
-        <div class="mt-3">
+        <div class="mt-3 min-h-[48px] flex-1">
           <MetricSparkline
             :values="tile.history"
             :times="tile.times"
             :color="tile.color"
             :label="tile.label"
             :height="sparkHeight"
+            fill
           />
         </div>
 
@@ -314,11 +321,56 @@ onBeforeUnmount(() => {
 /* A live monitor needs a "still alive" cue that does not shift the layout: an opacity animation
    on a 6px dot is cheap, and it is switched off entirely for reduced motion. */
 .live-dot {
+  position: relative;
   width: 6px;
   height: 6px;
   border-radius: 9999px;
   background: var(--ui-primary);
   animation: metrics-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Sonar: two rings leaving the dot half a cycle apart, so one is always in flight. `background:
+   inherit` keeps them in the status colour (primary / dimmed / error) without restating the palette.
+   They are absolutely positioned against the dot, so they add no layout width to the status pill. */
+.live-dot::before,
+.live-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  pointer-events: none;
+  animation: metrics-sonar 2600ms cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.live-dot::after {
+  animation-delay: 1300ms;
+}
+
+@keyframes metrics-sonar {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  70% {
+    opacity: 0.08;
+  }
+  100% {
+    transform: scale(3.6);
+    opacity: 0;
+  }
+}
+
+/* A host that is not reachable has nothing to ping: no rings. */
+.live-dot--offline::before,
+.live-dot--offline::after {
+  animation: none;
+  opacity: 0;
+}
+
+.live-dot--connecting::before,
+.live-dot--connecting::after {
+  animation-duration: 3400ms;
 }
 
 .live-dot--connecting {
@@ -338,6 +390,11 @@ onBeforeUnmount(() => {
 @media (prefers-reduced-motion: reduce) {
   .live-dot {
     animation: none;
+  }
+  .live-dot::before,
+  .live-dot::after {
+    animation: none;
+    opacity: 0;
   }
 }
 </style>

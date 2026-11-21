@@ -88,7 +88,8 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
 <template>
   <UCard
     :to="to"
-    class="dc group relative block overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
+    :ui="{ body: 'p-0 sm:p-0 flex flex-1 flex-col' }"
+    class="dc group relative flex flex-col overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
     :class="wide ? 'col-span-1 @min-[560px]:col-span-2 @min-[780px]:col-span-3 @min-[1060px]:col-span-2' : ''"
   >
     <!-- Corner bloom in the icon's colour. Absolutely positioned and clipped by the card, so it can
@@ -103,17 +104,19 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
 
     <!-- The chevron is absolutely positioned in the corner rather than sitting in the flex row: at four
          columns the row was tight enough that "CCTV Access Requests" truncated to "CCTV Access…". -->
-    <div class="relative flex items-start gap-2.5 p-4 sm:p-5">
-      <div class="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
+    <!-- h-full + justify-center: when the tile is stretched to the row height (dashboard, xl+) the
+         content sits in the middle instead of clinging to the top with a band of empty card below. -->
+    <div class="relative flex flex-1 flex-col justify-center p-4 sm:p-5">
+      <div class="flex min-w-0 items-center gap-2.5 sm:gap-3">
         <span
-          class="dc-chip grid size-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset sm:size-11"
+          class="dc-chip grid size-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset sm:size-11 @min-[1060px]:size-12"
           :class="tone.chip"
         >
           <UIcon :name="icon" class="size-5" aria-hidden="true" />
         </span>
 
         <div class="min-w-0 flex-1 pr-5">
-          <p class="text-3xl font-bold tracking-tight tabular-nums">{{ value }}</p>
+          <p class="text-3xl font-bold tracking-tight tabular-nums @min-[1060px]:text-4xl">{{ value }}</p>
           <p class="line-clamp-2 text-xs leading-snug text-muted">{{ label }}</p>
           <p v-if="sub" class="truncate text-[11px] text-muted/80">{{ sub }}</p>
 

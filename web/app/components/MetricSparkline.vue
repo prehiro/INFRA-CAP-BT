@@ -1,5 +1,10 @@
 <template>
-  <div ref="wrapEl" class="relative w-full select-none" :style="{ height: `${height}px` }">
+  <div
+    ref="wrapEl"
+    class="relative w-full select-none"
+    :class="fill ? 'h-full' : undefined"
+    :style="fill ? undefined : { height: `${height}px` }"
+  >
     <canvas
       ref="canvasEl"
       role="img"
@@ -42,10 +47,17 @@ const props = withDefaults(defineProps<{
   times?: number[]
   height?: number
   label?: string
+  /**
+   * Grow to whatever height the parent gives this, instead of the fixed `height`. Used when the panel
+   * is stretched to the viewport on the dashboard: the three charts share the column's height instead
+   * of leaving a band of empty card under each one. Falls back to `height` as the minimum.
+   */
+  fill?: boolean
 }>(), {
   times: () => [],
   height: 72,
-  label: 'Metric'
+  label: 'Metric',
+  fill: false
 })
 
 // ---- geometry (CSS pixels; the context is scaled by the DPR) ----
@@ -337,7 +349,8 @@ function resize() {
   if (!el || !wrap) return
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
   cssW = Math.max(wrap.clientWidth, 1)
-  cssH = props.height
+  // With `fill` the wrapper is sized by CSS, so the bitmap has to follow the element, not the prop.
+  cssH = props.fill && wrapEl.value ? wrapEl.value.clientHeight : props.height
   el.width = Math.round(cssW * dpr)
   el.height = Math.round(cssH * dpr)
   ctx = el.getContext('2d')
@@ -346,7 +359,7 @@ function resize() {
 }
 
 watch(() => props.values, transition, { deep: true })
-watch(() => props.height, resize)
+watch(() => [props.height, props.fill], resize)
 
 onMounted(() => {
   resize()
