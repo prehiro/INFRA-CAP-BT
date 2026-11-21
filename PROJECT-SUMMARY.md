@@ -7171,3 +7171,27 @@ pct `w-12`. Hasil: jarak nama->jumlah 10px, jumlah->persen 10px, dan blok legend
 donut (269px card: donut center 687, legend center 687). Divider donut-legend juga dikecilin gap-5 -> gap-4.
 
 Terverifikasi 1920 (card 321) dan 1440 (card 269): nol clip, tooltip tetap muncul & di dalam viewport.
+### Dashboard: sudut slice pie dibulatkan (2026-11-21)
+
+HIRO: "berikan sedikit radius pada sudut bar pie chart nya".
+
+CAUSA TEKNIS: slice digambar sebagai `<circle>` + `stroke-dasharray` (butt cap). Sudut membulat tidak
+bisa dari situ: `stroke-linecap="round"` menambah semicircle 7px per ujung (radius = strokeWidth/2), jadi
+supaya slice tidak saling tindih gap harus dilebar ~6% per slice (3 slice = ~18-20% cincin jadi celah).
+Untuk "sedikit radius" itu terlalu banyak.
+
+GANTI: slice sekarang `<path>` annular sector (filled), ring radius 33..47 (tebal 14 unit), sudut
+dibulatkan radius 3.2 unit (~4.6 CSS px pada donut 144px) - Chart.js `borderRadius` style. Tiap sudut
+pakai quadratic Bézier yang lewat titik sudut tajam (bukan tangency eksak, tapi bedanya tak terlihat di
+radius segini). Gap 0.7% yang lama tetap dipakai.
+
+Konsekuensi: dash array hilang -> sweep-in diganti animasi `slice-in` (scale 0.9 -> 1 + fade, 700ms,
+stagger 90ms). `both` + delay bikin slice tampil dari opacity 0; itu benar di tab aktif (verified:
+animationName slice-in, currentTime 700/790/880, playState finished, opacity 1), tapi di tab yang tidak
+fokus timeline CSS beku - jangan menyimpulkan bug dari opacity 0 di harness, panggil Page.bringToFront dulu.
+Hover: ring berdenyut (ro 47->49, ri 33->31) + opacity g 0.3 untuk slice lain (opacity taruh di <g>,
+animasi di <path>, kalau satu elemen animasi `both` akan mengalahkan dimming).
+
+VERIFIKASI: 3 path, masing-masing 4 Q (4 sudut), bbox per slice sesuai sektor (Desktop 152°, Notebook
+131°, Tablet 76°), hover -> "A49" (radius naik), opacities ['0.3','1','0.3'], tooltip utuh, card 321x395
+@1920 / 269x339 @1440, nol clip.

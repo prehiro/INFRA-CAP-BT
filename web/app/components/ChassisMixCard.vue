@@ -8,15 +8,18 @@
  *    desktops are in PC Ledger, still in Factory PC, on standby, or planned for disposal, each with
  *    its share OF THAT TYPE.
  *
+ * WHY FILLED PATHS AND NOT A STROKED CIRCLE WITH A DASH ARRAY
+ * A dash array gives butted ends and cannot be rounded: `stroke-linecap="round"` adds a 7px semicircle
+ * at each end, which would need a ~6% gap between slices to stay separated. The slices here are drawn
+ * as annular sectors with a small corner radius instead (the Chart.js `borderRadius` look), so the ends
+ * stay softly squared and the 0.7% gap survives. The trade: there is no dash to animate, so the
+ * entrance is a staggered scale+fade rather than a sweep.
+ *
  * WHY THE TOOLTIP IS HAND-ROLLED AND NOT UTooltip
  * It has to hang off both an SVG arc and an HTML row. UTooltip wraps its trigger in an element, and a
  * wrapper inside an <svg> is not allowed - so the panel is teleported to <body>, positioned `fixed`
  * from the pointer, and flipped when it would leave the viewport. Being outside the card also means no
  * ancestor can clip it.
- *
- * WHY SVG AND NOT CANVAS: each slice is one <circle> with pathLength=100 and a dash array, so hover,
- * focus and the sweep-in are CSS rather than pointer maths plus a redraw loop - and it stays crisp at
- * any pixel density without a devicePixelRatio dance.
  */
 type Part = { label: string, count: number }
 type Slice = { value: string, count: number, parts: Part[] }
@@ -42,15 +45,57 @@ const COLORS = ['var(--ui-primary)', '#38BDF8', '#A78BFA', '#F59E0B', '#F472B6',
 // dropped with a warning and the card silently renders one column wide.
 defineOptions({ inheritAttrs: false })
 
+/** Geometry, in the 100x100 viewBox: the ring runs from R_IN to R_OUT, i.e. 14 units thick. */
+const R_OUT = 47
+const R_IN = 33
+/** Corner radius. 3.2 units is ~4.6 CSS px on the 144px doughnut: softened, not pill-shaped. */
+const CORNER = 3.2
+const TAU = Math.PI * 2
+
 const hovered = ref<number | null>(null)
-const ready = ref(false)
 const tip = ref<{ x: number, y: number, index: number } | null>(null)
 
-// A timeout, not requestAnimationFrame: rAF never fires in a background tab, so a dashboard opened in
-// a tab that is not focused would keep every slice collapsed at "0 100" until the tab was focused.
-onMounted(() => {
-  setTimeout(() => { ready.value = true }, 60)
-})
+const polar = (radius: number, turn: number) => {
+  const a = turn * TAU
+  return [50 + radius * Math.cos(a), 50 + radius * Math.sin(a)]
+}
+
+/**
+ * One annular sector from turn t0 to t1 with rounded corners of radius r.
+ * Each corner is a quadratic through the sharp corner point, which is the cheap way to soften it
+ * without solving the real arc/arc tangency - at this radius the difference is invisible.
+ */
+function ringPath(t0: number, t1: number, ro: number, ri: number, r: number) {
+  const dOut = r / ro / TAU
+  const dIn = r / ri / TAU
+  const large = (t1 - t0) > 0.5 ? 1 : 0
+
+  const [ax, ay] = polar(ro, t0 + dOut)
+  const [bx, by] = polar(ro, t1 - dOut)
+  const [c1x, c1y] = polar(ro, t1)
+  const [cx, cy] = polar(ro - r, t1)
+  const [dx, dy] = polar(ri + r, t1)
+  const [c2x, c2y] = polar(ri, t1)
+  const [ex, ey] = polar(ri, t1 - dIn)
+  const [fx, fy] = polar(ri, t0 + dIn)
+  const [c3x, c3y] = polar(ri, t0)
+  const [gx, gy] = polar(ri + r, t0)
+  const [hx, hy] = polar(ro - r, t0)
+  const [c0x, c0y] = polar(ro, t0)
+
+  return [
+    `M${ax} ${ay}`,
+    `A${ro} ${ro} 0 ${large} 1 ${bx} ${by}`,
+    `Q${c1x} ${c1y} ${cx} ${cy}`,
+    `L${dx} ${dy}`,
+    `Q${c2x} ${c2y} ${ex} ${ey}`,
+    `A${ri} ${ri} 0 ${large} 0 ${fx} ${fy}`,
+    `Q${c3x} ${c3y} ${gx} ${gy}`,
+    `L${hx} ${hy}`,
+    `Q${c0x} ${c0y} ${ax} ${ay}`,
+    'Z'
+  ].join(' ')
+}
 
 const segments = computed(() => {
   const sum = props.items.reduce((n, i) => n + i.count, 0) || 1
@@ -58,12 +103,23 @@ const segments = computed(() => {
   return props.items.map((it, i) => {
     const pct = (it.count / sum) * 100
     // A sliver of each slice is left empty so neighbouring segments do not bleed into one another.
-    const seg = {
+    const len = Math.max(pct - 0.7, 0.3)
+    const t0 = acc / 100
+    const t1 = (acc + len) / 100
+    acc += pct
+
+    // Hovering swells the ring the way the old stroke-width did: 2 units outward and 2 inward.
+    const hot = hovered.value === i
+    const ro = R_OUT + (hot ? 2 : 0)
+    const ri = R_IN - (hot ? 2 : 0)
+    // Never let the corner radius eat more than a quarter of the inner edge.
+    const r = Math.min(CORNER, (t1 - t0) * TAU * ri * 0.25)
+
+    return {
       ...it,
       pct,
       color: COLORS[i % COLORS.length],
-      len: Math.max(pct - 0.7, 0.3),
-      offset: acc,
+      d: ringPath(t0, t1, ro, ri, r),
       index: i,
       parts: it.parts.map(p => ({
         label: p.label,
@@ -71,16 +127,12 @@ const segments = computed(() => {
         pct: it.count > 0 ? (p.count / it.count) * 100 : 0
       }))
     }
-    acc += pct
-    return seg
   })
 })
 
 const active = computed(() =>
   hovered.value !== null ? segments.value[hovered.value] ?? null : null
 )
-
-const dash = (seg: { len: number }) => (ready.value ? `${seg.len} ${100 - seg.len}` : '0 100')
 
 const TIP_W = 216
 const TIP_H = 168
@@ -157,25 +209,24 @@ function clearTip() {
             <!-- Empty track, so a small slice still reads as part of a whole. -->
             <circle cx="50" cy="50" r="40" fill="none" stroke-width="14" class="stroke-default" />
 
-            <circle
+            <!-- The dim scales the whole slice, the animation fades it - so they must live on
+                 different elements or the animation's final opacity:1 would beat the dim. -->
+            <g
               v-for="seg in segments"
               :key="seg.value"
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              :stroke="seg.color"
-              :stroke-width="hovered === seg.index ? 18 : 14"
+              class="transition-opacity duration-200"
               :opacity="hovered !== null && hovered !== seg.index ? 0.3 : 1"
-              pathLength="100"
-              :stroke-dasharray="dash(seg)"
-              :stroke-dashoffset="-seg.offset"
-              class="cursor-pointer"
-              :style="{ transitionDelay: ready ? `${seg.index * 90}ms` : '0ms' }"
-              @mouseenter="hovered = seg.index"
-              @mousemove="moveTip(seg.index, $event)"
-              @mouseleave="clearTip"
-            />
+            >
+              <path
+                :d="seg.d"
+                :fill="seg.color"
+                class="slice cursor-pointer"
+                :style="{ animationDelay: `${seg.index * 90}ms` }"
+                @mouseenter="hovered = seg.index"
+                @mousemove="moveTip(seg.index, $event)"
+                @mouseleave="clearTip"
+              />
+            </g>
           </svg>
 
           <div class="pointer-events-none absolute inset-0 grid place-content-center px-5 text-center">
@@ -252,18 +303,28 @@ function clearTip() {
 </template>
 
 <style scoped>
-/* The sweep-in: every segment grows from nothing to its share, staggered a little so it reads as a
-   single gesture instead of three. Hover/focus changes must NOT inherit that delay. */
-svg circle {
-  transition:
-    stroke-dasharray 700ms cubic-bezier(0.22, 1, 0.36, 1),
-    stroke-width 180ms ease,
-    opacity 180ms ease;
+/* Staggered entrance. This replaces the old dash-array sweep: an annular path has no dash to grow, so
+   each slice scales up from the doughnut centre instead. `both` keeps it collapsed during its delay. */
+.slice {
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  animation: slice-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes slice-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  svg circle {
-    transition: none;
+  .slice {
+    animation: none;
   }
 }
 </style>
