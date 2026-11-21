@@ -7129,3 +7129,21 @@ Tooltip:
 VERIFIKASI: hover legend Desktop -> "Desktop | 42.3% | 196 unit · semua register | PC Ledger 189 96.4% |
 Standby PC 1 0.5% | Factory PC 5 2.6% | Dispose 1 0.5%" (total 196 ✓), box 216x154 in-view; hover arc sama;
 mouseleave -> hidden; 1920: 662x395, 1440: 559x331, 1280: 688x331, clipped 0.
+### Dashboard: list register di kartu Chassis Mix dihapus (2026-11-21)
+
+HIRO: "ok sekarang hapus list register yang di kolom chasis mix".
+
+YANG DIHAPUS (code, bukan cuma disembunyikan):
+- ChassisMixCard.vue: prop `registers` + `registerTotal`, fungsi `share()`, blok `<NuxtLink>` di bawah legend.
+- index.vue: computed `registers`, `registerTotal`, `standbyCount`, `disposeCount`, `factoryCount`,
+  `activeCount`, ref `statusDist`, dan fetch `?field=asset_status` (paralel) - semuanya jadi tak terpakai.
+  Fetch yang tersisa: `chassis&splitBy=asset_status` (untuk tooltip) + `chassis` entity factory_pc.
+
+YANG TETAP: pie chassis (196/169/98 = 463) dan tooltip rincian register per slice - tooltip tidak
+terpengaruh, datanya dari `splitBy`, bukan dari list register.
+
+Efek layout: kartu 1440/1280/1100 turun dari 331 -> 252 (7 baris jadi 3 baris); 1920 tetap 395 karena
+tinggi dibagi rata oleh `xl:h-full auto-rows-fr`. Tidak ada clip, page tidak scroll.
+
+VERIFIKASI: legend tinggal 3 baris (Desktop 196 42.3%, Notebook 169 36.5%, Tablet 98 21.2%),
+0 link di dalam kartu, tooltip Notebook -> "164 PC Ledger 97.0% / 1 Standby 0.6% / 3 Factory 1.8% / 1 Dispose 0.6%" (jumlah 169).

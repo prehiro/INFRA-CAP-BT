@@ -64,19 +64,19 @@ const chassis = ref<{ value: string, count: number, parts: { label: string, coun
 const chassisTotal = ref(0)
 const chassisLabel = ref('Computer Chassis')
 const chassisState = ref<'loading' | 'ready' | 'error'>('loading')
-const statusDist = ref<{ value: string, count: number }[]>([])
 
 /** Resolved by slug, never by id: dev and prod databases number their entities differently. */
 const factoryId = computed(() => list.value.find(e => e.slug === 'factory_pc')?.id ?? null)
 
 /**
- * One list of chassis types, each carrying how many of them sit in each register.
+ * One list of chassis types, each carrying how many of them sit in each register - that is what the
+ * hover tooltip breaks down.
  *
  * pc_ledger is the only one of the two with a status, so its rows come back split on asset_status;
  * Factory PC is a separate entity with no status, so all of its rows land in the "Factory PC" column.
  * "PC Ledger" collects the empty and 'Active' rows - exactly how pages/device/pcledger.vue reads them -
- * so the four columns add up to the type's own total and the pie's denominator matches the register
- * block underneath it (463, not 453).
+ * so the four add up to the type's own total and the pie's denominator is the whole fleet (463), not
+ * pc_ledger on its own (453).
  */
 function mergeChassis(ledger: DistItem[], factory: DistItem[]) {
   const factoryOf = new Map(factory.map(i => [i.value, i.count]))
@@ -107,12 +107,11 @@ watch(pcLedgerId, async (id) => {
   const opts = { baseURL: useRuntimeConfig().public.apiBase, headers: authHeaders.value }
   const fid = factoryId.value
   try {
-    // Three questions, answered in parallel: what the fleet is made of, how that splits by register,
-    // and which register each PC sits in. Each call fails on its own - a prod database without
-    // asset_status must not cost us the doughnut.
-    const [mix, status, factoryMix] = await Promise.all([
+    // Two questions, answered in parallel: what the fleet is made of (split by register, for the
+    // tooltip) and how many of each chassis the Factory PC entity holds. Each call fails on its own -
+    // a prod database without asset_status must not cost us the doughnut.
+    const [mix, factoryMix] = await Promise.all([
       $fetch<Distribution>(`/records/${id}/distribution?field=chassis&splitBy=asset_status`, opts).catch(() => null),
-      $fetch<Distribution>(`/records/${id}/distribution?field=asset_status`, opts).catch(() => null),
       fid
         ? $fetch<Distribution>(`/records/${fid}/distribution?field=chassis`, opts).catch(() => null)
         : Promise.resolve(null)
@@ -124,7 +123,6 @@ watch(pcLedgerId, async (id) => {
     chassis.value = mergeChassis(mix.items, factoryMix?.items ?? [])
     chassisTotal.value = chassis.value.reduce((n, i) => n + i.count, 0)
     chassisLabel.value = mix.label
-    statusDist.value = status?.items ?? []
     chassisState.value = 'ready'
   }
   catch {
@@ -132,25 +130,6 @@ watch(pcLedgerId, async (id) => {
     chassisState.value = 'error'
   }
 }, { immediate: true })
-
-/**
- * A computer sits in exactly ONE register: PC Ledger (asset_status empty or "Active"), Standby, Dispose,
- * or the separate Factory PC entity. PC Ledger is the remainder rather than its own count, so the four
- * always add up to the real total even when a new status word appears in the data.
- */
-const standbyCount = computed(() => statusDist.value.find(i => i.value === 'Standby')?.count ?? 0)
-const disposeCount = computed(() => statusDist.value.find(i => i.value === 'Plan Dispose')?.count ?? 0)
-const factoryCount = computed(() => countOf('factory_pc'))
-const activeCount = computed(() =>
-  Math.max(countOf('pc_ledger') - standbyCount.value - disposeCount.value, 0)
-)
-const registers = computed(() => [
-  { label: 'PC Ledger', value: activeCount.value, to: '/device/pcledger' },
-  { label: 'Factory PC', value: factoryCount.value, to: '/device/factorypc' },
-  { label: 'Standby PC', value: standbyCount.value, to: '/device/standbypc' },
-  { label: 'Dispose', value: disposeCount.value, to: '/device/dispose' }
-])
-const registerTotal = computed(() => registers.value.reduce((n, r) => n + r.value, 0))
 
 const rackCount = computed(() =>
   (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
@@ -206,8 +185,6 @@ const apChips = computed(() =>
                 :total="chassisTotal"
                 :label="chassisLabel"
                 :state="chassisState"
-                :registers="registers"
-                :register-total="registerTotal"
               />
 
               <DashboardCard

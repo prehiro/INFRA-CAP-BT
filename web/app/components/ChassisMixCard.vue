@@ -1,13 +1,12 @@
 <script setup lang="ts">
 /**
- * Chassis mix + register split for the dashboard (replaces the CCTV / Handover tiles).
+ * Chassis mix doughnut for the dashboard (replaces the CCTV / Handover tiles).
  *
- * THREE QUESTIONS, ONE CARD
+ * TWO QUESTIONS, ONE CARD
  * 1. The doughnut: what the fleet is made of (Desktop / Notebook / Tablet, each with its share).
  * 2. Hover a slice or its legend row: a tooltip breaks that type down by register - how many of the
  *    desktops are in PC Ledger, still in Factory PC, on standby, or planned for disposal, each with
  *    its share OF THAT TYPE.
- * 3. The rows underneath: where everything sits, register by register.
  *
  * WHY THE TOOLTIP IS HAND-ROLLED AND NOT UTooltip
  * It has to hang off both an SVG arc and an HTML row. UTooltip wraps its trigger in an element, and a
@@ -30,16 +29,10 @@ const props = withDefaults(defineProps<{
   /** Where the numbers come from, e.g. "All registers". */
   source?: string
   state?: 'loading' | 'ready' | 'error'
-  /** The four registers a computer can sit in. Rendered as rows, not as pie slices. */
-  registers?: { label: string, value: number, to?: string }[]
-  /** Denominator for the register percentages (all four added up). */
-  registerTotal?: number
 }>(), {
   label: 'Computer Chassis',
   source: 'All registers',
-  state: 'ready',
-  registers: () => [],
-  registerTotal: 0
+  state: 'ready'
 })
 
 const COLORS = ['var(--ui-primary)', '#38BDF8', '#A78BFA', '#F59E0B', '#F472B6', '#2DD4BF', '#F87171']
@@ -88,9 +81,6 @@ const active = computed(() =>
 )
 
 const dash = (seg: { len: number }) => (ready.value ? `${seg.len} ${100 - seg.len}` : '0 100')
-
-const share = (value: number) =>
-  ((props.registerTotal > 0 ? (value / props.registerTotal) * 100 : 0).toFixed(1))
 
 const TIP_W = 216
 const TIP_H = 168
@@ -221,26 +211,6 @@ function clearTip() {
               </button>
             </li>
           </ul>
-
-          <!-- The register block. Separate from the doughnut on purpose: its slices would be 96.5 /
-               2.2 / 0.6 / 0.6 and the pie would carry no information at all. -->
-          <div v-if="registers.length" class="mt-2 space-y-0.5 border-t border-default/70 pt-2">
-            <p class="px-2 pb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted">
-              Register · {{ registerTotal }} unit
-            </p>
-            <NuxtLink
-              v-for="reg in registers"
-              :key="reg.label"
-              :to="reg.to"
-              class="flex items-center gap-2.5 rounded-md px-2 py-1 ps-[1.75rem] text-[13px] transition-colors hover:bg-elevated/50"
-            >
-              <span class="min-w-0 flex-1 truncate">{{ reg.label }}</span>
-              <span class="w-9 shrink-0 text-right text-xs text-muted tabular-nums">{{ reg.value }}</span>
-              <span class="w-12 shrink-0 text-right font-semibold tabular-nums">
-                {{ share(reg.value) }}%
-              </span>
-            </NuxtLink>
-          </div>
         </div>
       </div>
     </div>
