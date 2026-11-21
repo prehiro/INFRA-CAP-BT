@@ -3,20 +3,19 @@
  * Dashboard landing page.
  *
  * WHAT IS ON IT
- * Welcome banner, the live Server Metrics rail, then the Chassis Mix doughnut (spanning two tiles)
- * and one tile per module that has a page, each carrying its real record count.
+ * Welcome banner, the live Server Metrics rail, then one tile per module that has a page - each
+ * carrying its real record count - plus two chassis doughnuts: the fleet-wide Chassis Mix and, next to
+ * the renamed Active PC tile, the PC Ledger list on its own.
  *
- * WHY THE CHASSIS DOUGHNUT REPLACED TWO TILES
- * The CCTV and Handover tiles only showed "13" and "5" - a number nobody can act on. The same two
- * columns now answer a question the PC Ledger data already holds: what the fleet is made of
- * (Desktop / Notebook / Tablet, and their share). The counts come from
- * /records/{id}/distribution?field=chassis, which groups in SQL instead of shipping 453 rows to the
- * browser to be counted client-side.
+ * WHY TWO DOUGHNUTS AND NOT ONE
+ * They answer different questions and count different populations: Chassis Mix is pc_ledger + Factory
+ * PC (463), the PC Ledger doughnut is the pc_ledger list alone (453). They are separate fetches on
+ * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
- * The doughnut takes 2 of 2/3/4 columns and Access Points takes 3 of 3 / 2 of 2 / 2 of 4, so every
- * row is exactly full at every width: 4 cols = 2+1+1 / 1+1+2, 3 cols = 2+1 / 1+1+1 / 3, 2 cols =
- * 2 / 2 / 2 / 2.
+ * Both doughnuts are one column and Access Points is the only double-width card, so the grid holds
+ * eight cells: full at 4 columns (4+4), at 3 columns (3+3+2, with Access Points taking a row of its
+ * own) and at 2 columns (2+2+2+2).
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -131,6 +130,55 @@ watch(pcLedgerId, async (id) => {
   }
 }, { immediate: true })
 
+/**
+ * The second doughnut: the PC Ledger list on its own (453 rows), split by chassis, with the register
+ * split carried into the tooltip. It is deliberately a separate fetch from `chassis` above - that one
+ * counts the fleet (pc_ledger + Factory PC = 463) and merging the two is what made the cards drift.
+ */
+const activeChassis = ref<{ value: string, count: number, parts: { label: string, count: number }[] }[]>([])
+const activeTotal = ref(0)
+const activeState = ref<'loading' | 'ready' | 'error'>('loading')
+
+/**
+ * Chassis rows -> chassis rows carrying their register split. An empty asset_status (or 'Active') is
+ * PC Ledger, which is exactly how pages/device/pcledger.vue reads it, so the three parts always add up
+ * to the row's own count.
+ */
+function splitByRegister(rows: DistItem[]) {
+  const pick = (split: DistItem['split'], test: (v: string) => boolean) =>
+    (split ?? []).filter(s => test(s.value)).reduce((n, s) => n + s.count, 0)
+
+  return rows
+    .map(row => ({
+      value: row.value,
+      count: row.count,
+      parts: [
+        { label: 'PC Ledger', count: pick(row.split, v => v === '' || v === '(kosong)' || v === 'Active') },
+        { label: 'Standby PC', count: pick(row.split, v => v === 'Standby') },
+        { label: 'Dispose', count: pick(row.split, v => v === 'Plan Dispose') }
+      ]
+    }))
+    .filter(i => i.count > 0)
+}
+
+// Same shape as the fetch above, but split by asset_status so the tooltip can break a slice down.
+watch(pcLedgerId, async (id) => {
+  if (!id) return
+  activeState.value = 'loading'
+  const res = await $fetch<Distribution>(
+    `/records/${id}/distribution?field=chassis&splitBy=asset_status`,
+    { baseURL: useRuntimeConfig().public.apiBase, headers: authHeaders.value }
+  ).catch(() => null)
+
+  if (!res) {
+    activeState.value = 'error'
+    return
+  }
+  activeChassis.value = splitByRegister(res.items)
+  activeTotal.value = res.total
+  activeState.value = 'ready'
+}, { immediate: true })
+
 const rackCount = computed(() =>
   (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
 )
@@ -187,9 +235,31 @@ const apChips = computed(() =>
                 :state="chassisState"
               />
 
+              <!-- Renamed from PC Ledger. Everything else about the tile is untouched: same link,
+                   same count, same icon and tone. -->
+              <DashboardCard
+                to="/device/pcledger"
+                label="Active PC"
+                :value="countOf('pc_ledger')"
+                icon="i-lucide-monitor"
+                tone="violet"
+              />
+
+              <!-- The new doughnut, in the slot right of Active PC: the PC Ledger list by chassis.
+                   One column wide, like its neighbours, so the grid stays exactly full at 2/3/4
+                   columns (six single cards + the double-width Access Points card). -->
+              <ChassisMixCard
+                class="col-span-1"
+                title="PC Ledger"
+                source="PC Ledger"
+                to="/device/pcledger"
+                :items="activeChassis"
+                :total="activeTotal"
+                :state="activeState"
+              />
+
               <DashboardCard
                 v-for="card in [
-                  { to: '/device/pcledger', label: 'PC Ledger', value: countOf('pc_ledger'), icon: 'i-lucide-monitor', tone: 'violet' },
                   { to: '/device/factorypc', label: 'Factory PC', value: countOf('factory_pc'), icon: 'i-lucide-laptop', tone: 'rose' },
                   { to: '/device/ups', label: 'UPS Register', value: (ups as UpsUnit[] ?? []).length, icon: 'i-lucide-battery-charging', tone: 'amber' },
                   { to: '/networks/network-rack', label: 'Network Racks', value: rackCount, sub: `${rackFloorCount} floor`, icon: 'i-lucide-server', tone: 'cyan' },

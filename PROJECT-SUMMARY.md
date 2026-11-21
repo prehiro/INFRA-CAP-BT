@@ -7195,3 +7195,30 @@ animasi di <path>, kalau satu elemen animasi `both` akan mengalahkan dimming).
 VERIFIKASI: 3 path, masing-masing 4 Q (4 sudut), bbox per slice sesuai sektor (Desktop 152°, Notebook
 131°, Tablet 76°), hover -> "A49" (radius naik), opacities ['0.3','1','0.3'], tooltip utuh, card 321x395
 @1920 / 269x339 @1440, nol clip.
+### Dashboard: kartu Active PC + pie chart PC Ledger baru (2026-11-21)
+
+HIRO: "pada card pc ledger ganti dengan Active PC, disini buat pie chart berdasarkan list yang ada di pc
+ledger, kategorikan berdasarkan chasis juga" -> setelah salah pasang: "maksud saya buat card baru
+disebelah kanannya, jangan ganggu card lain!"
+
+REVERT: percobaan pertama (hapus tile PC Ledger, pie Chassis Mix dijadikan Active PC) di-`git checkout --`
+ke d9eff09. File yang sama sekarang cuma berisi penambahan, bukan perubahan.
+
+YANG BERUBAH:
+1. Tile "PC Ledger" -> label "Active PC". Link /device/pcledger, icon i-lucide-monitor, tone violet,
+   value countOf('pc_ledger') = 453 - semuanya sama seperti sebelumnya.
+2. KARTU BARU di kanan Active PC: judul "PC Ledger", pie chassis list pc_ledger (453):
+   Desktop 191 (42,2%) / Notebook 166 (36,6%) / Tablet 96 (21,2%), tooltip per register
+   (Desktop -> PC Ledger 189 / Standby PC 1 / Dispose 1 = 191).
+3. Chassis Mix (463) TIDAK disentuh - tetap 3 slice 196/169/98 + tooltip 4 kategori (Factory PC ikut).
+
+KOMPONEN: ChassisMixCard dapat prop `title` (default 'Chassis Mix' supaya kartu lama tidak berubah) +
+`to` (judul jadi NuxtLink; tanpa link, tanpa <a> pembungkus, karena baris legend berisi <button>).
+Tooltip subtitle dari "semua register" -> `{{ source }}` (kartu Chassis Mix: "All registers",
+kartu PC Ledger: "PC Ledger").
+
+DATA: dua fetch terpisah di index.vue - `chassis` (fleet, mergeChassis dgn factory) dan `activeChassis`
+(splitByRegister: kosong/'Active' -> PC Ledger, 'Standby', 'Plan Dispose'). Sengaja tidak digabung.
+
+GRID: 7 kartu, 8 sel (6 single + AP double). Penuh di semua breakpoint:
+1920/4kol = 4+4; 1440/1100/3kol = 3+3+AP(3); 1280/760/2kol = 2+2+2+AP(2). Nol clip, page tidak scroll.

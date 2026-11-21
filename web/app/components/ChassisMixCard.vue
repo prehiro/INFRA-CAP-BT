@@ -27,12 +27,17 @@ type Slice = { value: string, count: number, parts: Part[] }
 const props = withDefaults(defineProps<{
   items: Slice[]
   total: number
+  /** Card title. Defaults to the Chassis Mix heading, which is what the fleet card uses. */
+  title?: string
+  /** Where the title links to. Omit for a plain heading. */
+  to?: string
   /** Field label, e.g. "Computer Chassis". */
   label?: string
   /** Where the numbers come from, e.g. "All registers". */
   source?: string
   state?: 'loading' | 'ready' | 'error'
 }>(), {
+  title: 'Chassis Mix',
   label: 'Computer Chassis',
   source: 'All registers',
   state: 'ready'
@@ -177,7 +182,17 @@ function clearTip() {
     <div class="flex flex-1 flex-col justify-center gap-4 p-5">
       <header class="flex items-baseline justify-between gap-3">
         <div class="min-w-0">
-          <h2 class="truncate text-sm font-semibold">Chassis Mix</h2>
+          <!-- The title links to the page when `to` is given, so a chart card can still be the way
+               into its list without wrapping the whole card in an <a> (the legend rows are buttons
+               and must not be nested inside a link). -->
+          <h2 class="truncate text-sm font-semibold">
+            <NuxtLink
+              v-if="to"
+              :to="to"
+              class="transition-colors hover:text-primary"
+            >{{ title }}</NuxtLink>
+            <template v-else>{{ title }}</template>
+          </h2>
           <p class="truncate text-xs text-muted">{{ label }} · {{ source }}</p>
         </div>
         <span class="shrink-0 text-[11px] text-muted tabular-nums">{{ total }} unit</span>
@@ -285,7 +300,7 @@ function clearTip() {
         <span class="shrink-0 tabular-nums">{{ active.pct.toFixed(1) }}%</span>
       </p>
       <p class="mt-0.5 text-[10px] text-muted tabular-nums">
-        {{ active.count }} unit · semua register
+        {{ active.count }} unit · {{ source }}
       </p>
       <div class="mt-2 space-y-1 border-t border-default/70 pt-2">
         <div
