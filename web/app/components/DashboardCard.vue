@@ -7,6 +7,9 @@
  * placeholders ("0", opacity-50, pointer-events-none) while the pages they pointed at already existed.
  * One card shape also means the hover choreography is written once instead of seven times.
  *
+ * The label wraps to two lines instead of truncating: at four columns (cards ~237px at the xl breakpoint)
+ * "CCTV Access Requests" does not fit on one line, and a cut-off module name is worse than a taller card.
+ *
  * MOTION
  * Everything moves on hover of the whole card, never on hover of the number alone: the tile lifts 1px,
  * a tinted glow blooms in the corner the icon sits in, the icon chip cocks back a few degrees, and a
@@ -31,7 +34,7 @@ const props = withDefaults(defineProps<{
   tone?: keyof typeof TONES
   /** Optional per-floor breakdown, shown on the wide card. */
   chips?: { label: string, value: number }[]
-  /** Spans the full row on lg. Use for the last tile so a 7-card grid still fills whole rows. */
+  /** Spans two of the four columns on lg, so 6 normal tiles + this one fill 4 + 4 exactly. */
   wide?: boolean
 }>(), {
   sub: '',
@@ -85,7 +88,7 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
   <UCard
     :to="to"
     class="dc group relative block overflow-hidden transition-[transform,box-shadow,border-color] duration-300 ease-out hover:-translate-y-1 hover:border-primary/40 hover:shadow-xl"
-    :class="wide ? 'lg:col-span-3' : ''"
+    :class="wide ? 'lg:col-span-2' : ''"
   >
     <!-- Corner bloom in the icon's colour. Absolutely positioned and clipped by the card, so it can
          never push the content around. -->
@@ -97,18 +100,20 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
     <!-- One sheen crossing the surface, on hover only. -->
     <span aria-hidden="true" class="dc-sheen pointer-events-none absolute inset-0" />
 
-    <div class="relative flex items-center justify-between gap-4 p-6">
-      <div class="flex min-w-0 items-center gap-4">
+    <!-- The chevron is absolutely positioned in the corner rather than sitting in the flex row: at four
+         columns the row was tight enough that "CCTV Access Requests" truncated to "CCTV Access…". -->
+    <div class="relative flex items-start gap-2.5 p-4 sm:p-5">
+      <div class="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-3">
         <span
-          class="dc-chip grid size-11 shrink-0 place-items-center rounded-xl ring-1 ring-inset"
+          class="dc-chip grid size-10 shrink-0 place-items-center rounded-xl ring-1 ring-inset sm:size-11"
           :class="tone.chip"
         >
           <UIcon :name="icon" class="size-5" aria-hidden="true" />
         </span>
 
-        <div class="min-w-0">
+        <div class="min-w-0 flex-1 pr-5">
           <p class="text-3xl font-bold tracking-tight tabular-nums">{{ value }}</p>
-          <p class="truncate text-xs text-muted">{{ label }}</p>
+          <p class="line-clamp-2 text-xs leading-snug text-muted">{{ label }}</p>
           <p v-if="sub" class="truncate text-[11px] text-muted/80">{{ sub }}</p>
 
           <!-- Per-floor breakdown. Only the wide card carries these, which is what makes it earn its
@@ -129,7 +134,7 @@ const tone = computed(() => TONES[props.tone] ?? TONES.primary)
 
       <UIcon
         name="i-lucide-chevron-right"
-        class="dc-chev size-5 shrink-0 text-muted opacity-60"
+        class="dc-chev absolute right-3.5 top-4 size-5 text-muted opacity-60 sm:right-4 sm:top-5"
         aria-hidden="true"
       />
     </div>

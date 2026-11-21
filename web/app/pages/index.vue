@@ -9,9 +9,8 @@
  * even though both pages already existed; the numbers now come from the API instead of being typed in.
  *
  * WHY THE LAST TILE IS WIDE
- * Seven tiles do not fit a 3-column grid evenly (3 + 3 + 1 leaves a hole). The Access Point tile spans
- * the full row and carries its per-floor breakdown, so the last row is deliberately full instead of
- * accidentally short.
+ * Seven tiles do not fill a 4-column grid evenly (4 + 3 leaves a hole). The Access Point tile spans two
+ * columns and carries its per-floor breakdown, so 6 + 2 cells fill 4 + 4 exactly.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -86,7 +85,7 @@ const apChips = computed(() =>
              double the padding and the header. -->
         <MetricsChart />
 
-        <div class="anim-stagger mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="anim-stagger mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
           <DashboardCard
             v-for="card in [
               { to: '/logbook/cctvacc', label: 'CCTV Access Requests', value: countOf('cctv_log_book'), icon: 'i-lucide-video', tone: 'emerald' },

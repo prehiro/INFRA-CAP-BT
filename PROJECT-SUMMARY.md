@@ -6945,3 +6945,25 @@ VERIFIKASI (browser 1440x1000): 7 kartu dengan angka 13/5/453/10/20/4/4; baris 1
 0 -4px, glow opacity 1, chip matrix(...)=rotate(-6)scale(1.05), chevron translate 4px + rgb(0,220,130),
 sheen dc-sheen; keluar hover balik ke none; light mode chip emerald-600 di kartu putih; tanpa overflow;
 `npx nuxt build` exit 0.
+### Dashboard: grid 4 kolom (2026-11-21)
+
+HIRO: "bisa buat 4 col?".
+
+- Grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`. Empat kolom baru aktif di >=1280px;
+  di 1024-1279 tetap 3 kolom karena kartu 4 kolom di lebar itu cuma ~237px dan labelnya jadi tidak
+  enak dibaca.
+- Kartu Access Points ikut disesuaikan: `lg:col-span-3` -> `lg:col-span-2`. 6 kartu normal + 1 kartu
+  lebar 2 kolom = 4 + 4, jadi dua baris penuh tanpa lubang (sebelumnya di 3 kolom: 3 + 3 + 3).
+- Chevron dipindah dari flex row ke `absolute right-4 top-5`. Di 4 kolom barisnya sempit dan
+  "CCTV Access Requests" terpotong jadi "CCTV Access..." - chiplenya masih di alur flex, tapi panah
+  tidak lagi ikut makan lebar.
+- Padding kartu `p-6` -> `p-4 sm:p-5`, chip `size-11` -> `size-10 sm:size-11`, gap 4 -> 2.5/3.
+- Label: `truncate` -> `line-clamp-2`. Nama modul yang terpotong lebih buruk daripada kartu yang
+  sedikit lebih tinggi; baris dalam satu row tetap sama tinggi karena grid stretch.
+
+VERIFIKASI (browser, 3 lebar):
+- 1920x1080: 4 kolom, kartu 401px, kartu lebar 822px, semua label 1 baris.
+- 1440x1000: 4 kolom, kartu 281px, lebar 582px, hanya "CCTV Access Requests" jadi 2 baris.
+- 1280x900: 4 kolom, kartu 237px, lebar 494px, 4 label 2 baris, TIDAK ADA yang terpotong.
+- Hover masih utuh: translate 0 -4px, glow 1, chevron translate 4px, sheen dc-sheen, shadow-xl;
+  keluar hover balik ke none. Tanpa overflow horizontal. `npx nuxt build` exit 0.
