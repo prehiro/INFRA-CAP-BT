@@ -7098,3 +7098,34 @@ yang belum punya field asset_status tetap dapat doughnut-nya.
 
 VERIFIKASI: legend ['PC Ledger 447 96.5%','Factory PC 10 2.2%','Standby PC 3 0.6%','Dispose 3 0.6%'],
 7 baris, hover legend chassis tetap mengubah readout tengah, build exit 0.
+### Dashboard: tooltip rincian register per slice (2026-11-21)
+
+HIRO: "coba buat jadi tooltip informasi pc ledger, standby pc, factory pc, dispose. misalnya user hover ke
+chart desktop, maka muncul tooltip berapa jumlah dan persennya berdasarkan kategori tersebut".
+
+API: `FieldDistributionAsync(entityId, field, splitBy)` + `RecordsController.Distribution(... splitBy)`.
+Dengan `?field=chassis&splitBy=asset_status` balikannya `{ items: [{ value, count, split: [{value,count}] }] }`.
+Cara hitung: ambil record id entity (buang soft-deleted), lalu ambil RecordValues untuk 2 field, agregasi
+di memori. Bukan self-join SQL - tabel terbesar di sini 453 baris.
+Data asli: Desktop 191 -> PC Ledger 189 / Standby 1 / Plan Dispose 1; Notebook 166 -> 164/1/1;
+Tablet 96 -> 94/1/1. Factory PC (entity 11, tanpa status): Desktop 5, Notebook 3, Tablet 2.
+
+PERUBAHAN ANGKA PIE: pie sekarang mencakup SEMUA register (pc_ledger + factory_pc) = 463, bukan 453 lagi.
+Alasannya tooltip harus konsisten: 4 kategori di tooltip harus berjumlah sama dengan total slice-nya.
+Jadi Desktop 196 (42,3%), Notebook 169 (36,5%), Tablet 98 (21,2%) - header "All registers · 463 unit".
+Kalau pie tetap 453, tooltip Desktop akan berisi 189+1+5+1 = 196 != 191.
+
+Tooltip:
+- Teleport ke <body>, `position: fixed`, ikut pointer, flip ke kiri/atas kalau mau keluar viewport.
+  BUKAN UTooltip: tooltip harus bisa nempel di arc SVG, dan UTooltip membungkus trigger-nya dengan elemen -
+  wrapper di dalam <svg> tidak dirender. Being outside the card juga membebaskan dari overflow card.
+- Isi: nama tipe + persen, "196 unit · semua register", lalu 4 baris kategori (jumlah + persen dari tipe itu).
+- Memicu: hover/mouseenter/move pada arc SVG DAN pada baris legend (termasuk focus keyboard, di-anchor ke
+  elemen karena focus tidak punya koordinat pointer).
+- Bug yang ketemu: komponen jadi 2 root (UCard + Teleport) -> class `col-span-2` dari index.vue tidak
+  jatuh otomatis, pie jadi 1 kolom (269px) di 1440. Fix: `defineOptions({ inheritAttrs: false })` +
+  `v-bind="$attrs"` di UCard.
+
+VERIFIKASI: hover legend Desktop -> "Desktop | 42.3% | 196 unit · semua register | PC Ledger 189 96.4% |
+Standby PC 1 0.5% | Factory PC 5 2.6% | Dispose 1 0.5%" (total 196 ✓), box 216x154 in-view; hover arc sama;
+mouseleave -> hidden; 1920: 662x395, 1440: 559x331, 1280: 688x331, clipped 0.

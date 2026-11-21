@@ -57,13 +57,47 @@ const countOf = (slug: string) => list.value.find(e => e.slug === slug)?.recordC
 /** Resolved by slug, never by id: dev and prod databases number their entities differently. */
 const pcLedgerId = computed(() => list.value.find(e => e.slug === 'pc_ledger')?.id ?? null)
 
-const chassis = ref<{ value: string, count: number }[]>([])
+type DistItem = { value: string, count: number, split?: { value: string, count: number }[] }
+type Distribution = { field: string, label: string, total: number, items: DistItem[] }
+
+const chassis = ref<{ value: string, count: number, parts: { label: string, count: number }[] }[]>([])
 const chassisTotal = ref(0)
 const chassisLabel = ref('Computer Chassis')
 const chassisState = ref<'loading' | 'ready' | 'error'>('loading')
 const statusDist = ref<{ value: string, count: number }[]>([])
 
-type Distribution = { field: string, label: string, total: number, items: { value: string, count: number }[] }
+/** Resolved by slug, never by id: dev and prod databases number their entities differently. */
+const factoryId = computed(() => list.value.find(e => e.slug === 'factory_pc')?.id ?? null)
+
+/**
+ * One list of chassis types, each carrying how many of them sit in each register.
+ *
+ * pc_ledger is the only one of the two with a status, so its rows come back split on asset_status;
+ * Factory PC is a separate entity with no status, so all of its rows land in the "Factory PC" column.
+ * "PC Ledger" collects the empty and 'Active' rows - exactly how pages/device/pcledger.vue reads them -
+ * so the four columns add up to the type's own total and the pie's denominator matches the register
+ * block underneath it (463, not 453).
+ */
+function mergeChassis(ledger: DistItem[], factory: DistItem[]) {
+  const factoryOf = new Map(factory.map(i => [i.value, i.count]))
+  const names = new Set([...ledger.map(i => i.value), ...factoryOf.keys()])
+  const pick = (split: DistItem['split'], test: (v: string) => boolean) =>
+    (split ?? []).filter(s => test(s.value)).reduce((n, s) => n + s.count, 0)
+
+  return [...names]
+    .map((name) => {
+      const split = ledger.find(i => i.value === name)?.split
+      const parts = [
+        { label: 'PC Ledger', count: pick(split, v => v === '' || v === '(kosong)' || v === 'Active') },
+        { label: 'Standby PC', count: pick(split, v => v === 'Standby') },
+        { label: 'Factory PC', count: factoryOf.get(name) ?? 0 },
+        { label: 'Dispose', count: pick(split, v => v === 'Plan Dispose') }
+      ]
+      return { value: name, count: parts.reduce((n, p) => n + p.count, 0), parts }
+    })
+    .filter(i => i.count > 0)
+    .sort((a, b) => b.count - a.count)
+}
 
 // A plain $fetch rather than useFetch: the entity id only exists once /entities has answered, and a
 // URL whose identity changes is exactly what useFetch does not want.
@@ -71,20 +105,24 @@ watch(pcLedgerId, async (id) => {
   if (!id) return
   chassisState.value = 'loading'
   const opts = { baseURL: useRuntimeConfig().public.apiBase, headers: authHeaders.value }
+  const fid = factoryId.value
   try {
-    // Two questions, one entity: what the fleet is made of, and which register each computer sits in.
-    // asset_status is the field PC Ledger / Standby PC / Dispose filter on (see pages/device/pcledger.vue).
-    // Each call fails on its own - a prod database without asset_status must not cost us the doughnut.
-    const [mix, status] = await Promise.all([
-      $fetch<Distribution>(`/records/${id}/distribution?field=chassis`, opts).catch(() => null),
-      $fetch<Distribution>(`/records/${id}/distribution?field=asset_status`, opts).catch(() => null)
+    // Three questions, answered in parallel: what the fleet is made of, how that splits by register,
+    // and which register each PC sits in. Each call fails on its own - a prod database without
+    // asset_status must not cost us the doughnut.
+    const [mix, status, factoryMix] = await Promise.all([
+      $fetch<Distribution>(`/records/${id}/distribution?field=chassis&splitBy=asset_status`, opts).catch(() => null),
+      $fetch<Distribution>(`/records/${id}/distribution?field=asset_status`, opts).catch(() => null),
+      fid
+        ? $fetch<Distribution>(`/records/${fid}/distribution?field=chassis`, opts).catch(() => null)
+        : Promise.resolve(null)
     ])
     if (!mix) {
       chassisState.value = 'error'
       return
     }
-    chassis.value = mix.items
-    chassisTotal.value = mix.total
+    chassis.value = mergeChassis(mix.items, factoryMix?.items ?? [])
+    chassisTotal.value = chassis.value.reduce((n, i) => n + i.count, 0)
     chassisLabel.value = mix.label
     statusDist.value = status?.items ?? []
     chassisState.value = 'ready'

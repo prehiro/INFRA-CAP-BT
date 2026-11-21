@@ -695,7 +695,7 @@ public class DynamicRecordService
     /// and blanks are reported under "(kosong)" rather than dropped, so the pie's total still matches
     /// the entity's record count.
     /// </summary>
-    public async Task<object> FieldDistributionAsync(int entityId, string fieldName)
+    public async Task<object> FieldDistributionAsync(int entityId, string fieldName, string? splitBy = null)
     {
         var entity = await _db.Entities.AsNoTracking().Include(e => e.Fields)
             .FirstOrDefaultAsync(e => e.Id == entityId)
@@ -706,29 +706,84 @@ public class DynamicRecordService
         if (field is null)
             throw new NotFoundException($"Field '{fieldName}' tidak ada di {entity.Name}");
 
-        var rows = await (
-            from rv in _db.RecordValues.AsNoTracking()
-            join r in _db.Records.AsNoTracking() on rv.RecordId equals r.Id
-            where rv.FieldId == field.Id && r.EntityId == entityId && !r.IsDeleted
-            group rv by rv.TextValue into g
-            select new { Value = g.Key, Count = g.Count() }
-        ).ToListAsync();
+        var splitField = string.IsNullOrWhiteSpace(splitBy)
+            ? null
+            : entity.Fields.FirstOrDefault(f => string.Equals(f.Name, splitBy, StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(splitBy) && splitField is null)
+            throw new NotFoundException($"Field '{splitBy}' tidak ada di {entity.Name}");
 
-        var counts = rows
-            .Where(x => !string.IsNullOrWhiteSpace(x.Value))
-            .GroupBy(x => x.Value!.Trim())
-            .ToDictionary(x => x.Key, x => x.Sum(v => v.Count));
+        // One pass over the entity's records, pulling just the two columns we need. Counting a
+        // cross-tab in SQL would need a self-join per split value; the biggest table here is 453 rows,
+        // so reading them is both cheaper to write and easier to check.
+        var recordIds = await _db.Records.AsNoTracking()
+            .Where(r => r.EntityId == entityId && !r.IsDeleted)
+            .Select(r => r.Id)
+            .ToListAsync();
+        var idSet = recordIds.ToHashSet();
 
-        var blank = rows.Where(x => string.IsNullOrWhiteSpace(x.Value)).Sum(x => x.Count);
-        if (blank > 0) counts["(kosong)"] = blank;
+        var primary = await _db.RecordValues.AsNoTracking()
+            .Where(rv => rv.FieldId == field.Id && idSet.Contains(rv.RecordId))
+            .Select(rv => new { rv.RecordId, rv.TextValue })
+            .ToListAsync();
 
-        var items = counts
-            .Select(kv => new { value = kv.Key, count = kv.Value })
+        if (splitField is null)
+        {
+            var counts = primary
+                .Where(x => !string.IsNullOrWhiteSpace(x.TextValue))
+                .GroupBy(x => x.TextValue!.Trim())
+                .ToDictionary(x => x.Key, x => x.Count());
+
+            var blank = primary.Count(x => string.IsNullOrWhiteSpace(x.TextValue));
+            if (blank > 0) counts["(kosong)"] = blank;
+
+            var items = counts
+                .Select(kv => new { value = kv.Key, count = kv.Value })
+                .OrderByDescending(x => x.count)
+                .ToList();
+
+            return new { field = field.Name, label = field.Label, total = items.Sum(x => x.count), items };
+        }
+
+        var secondary = await _db.RecordValues.AsNoTracking()
+            .Where(rv => rv.FieldId == splitField.Id && idSet.Contains(rv.RecordId))
+            .Select(rv => new { rv.RecordId, rv.TextValue })
+            .ToListAsync();
+
+        // A record without a row for the split field counts as empty, which is exactly how the
+        // register pages read it (an empty asset_status means PC Ledger).
+        var splitOf = secondary
+            .GroupBy(x => x.RecordId)
+            .ToDictionary(g => g.Key, g => Key(g.First().TextValue));
+
+        var buckets = primary
+            .GroupBy(x => Key(x.TextValue))
+            .Select(g => new
+            {
+                value = g.Key,
+                count = g.Count(),
+                split = g
+                    .GroupBy(x => splitOf.GetValueOrDefault(x.RecordId, "(kosong)"))
+                    .Select(s => new { value = s.Key, count = s.Count() })
+                    .OrderByDescending(s => s.count)
+                    .ToList()
+            })
             .OrderByDescending(x => x.count)
             .ToList();
 
-        return new { field = field.Name, label = field.Label, total = items.Sum(x => x.count), items };
+        return new
+        {
+            field = field.Name,
+            label = field.Label,
+            splitBy = splitField.Name,
+            splitLabel = splitField.Label,
+            total = buckets.Sum(x => x.count),
+            items = buckets
+        };
     }
+
+    /// <summary>Blank values are reported as "(kosong)" rather than dropped, so totals still add up.</summary>
+    private static string Key(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? "(kosong)" : value.Trim();
 
     // ---------- conversion helpers ----------
 
