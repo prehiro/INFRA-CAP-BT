@@ -7241,3 +7241,25 @@ satu slot kosong di baris kedua dari bawah. Kalau mau penuh: jadikan kartu "All 
 
 VERIFIKASI: console bersih (hook console.error/warn + window.error + unhandledrejection -> nol entri),
 6 kartu urut tanpa lubang, judul benar, nol clip, page tidak scroll di 1920/1440/1280/760.
+### Dashboard: pie Active PC's jadi 447 (2026-11-21)
+
+HIRO: "kenapa totalnya 453? dapat hitungan dari mana?" -> 453 = T I K A L record entity pc_ledger
+(COUNT di SQL), bukan angka aktif. Rincian: Desktop 191 + Notebook 166 + Tablet 96 = 453, dari mana
+447 status kosong (aktif) + 3 Standby + 3 Plan Dispose. Halaman /device/pcledger sendiri menulis
+"447 records" di header-nya.
+Setelah dicek: "ya saya mau yang aktif saja sesuai table halaman pc ladger".
+
+PERUBAHAN: kartu "Active PC's" sekarang menghitung HANYA baris aktif (asset_status kosong / 'Active'):
+Desktop 189 (42,3%) / Notebook 164 (36,7%) / Tablet 94 (21,0%) = 447. Total diambil dari jumlah slice,
+BUKAN dari res.total (itu 453 seluruh entity).
+
+TANPA RINCIAN REGISTER di kartu ini: satu slice = satu register (aktif), jadi tooltip-nya cuma
+"189 unit · PC Ledger". Rincian "berapa standby/dispose" tetap ada di kartu All Capacitor PC's di
+sebelahnya (Desktop -> PC Ledger 189 / Standby PC 1 / Factory PC 5 / Dispose 1 = 196).
+
+KOMPONEN: `Slice.parts` jadi opsional (`parts?`), `(it.parts ?? [])` di computed, dan blok rincian di
+tooltip dapat `v-if="active.parts.length"` supaya tidak ada garis border kosong. ChassisMixCard tidak
+berubah tampilannya untuk kartu All Capacitor PC's.
+
+VERIFIKASI: console bersih, 463 (196/169/98) dan 447 (189/164/94) dua-duanya benar, nol clip,
+tooltip dua kartu benar.

@@ -9,7 +9,8 @@
  *
  * WHY TWO DOUGHNUTS AND NOT ONE
  * They answer different questions and count different populations: All Capacitor PC's is pc_ledger +
- * Factory PC (463), Active PC's is the pc_ledger list alone (453). They are separate fetches on
+ * Factory PC (463), Active PC's is only the ACTIVE rows of the pc_ledger list (447 - the count the
+ * PC Ledger page's own header shows). They are separate fetches on
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
@@ -75,7 +76,7 @@ const factoryId = computed(() => list.value.find(e => e.slug === 'factory_pc')?.
  * Factory PC is a separate entity with no status, so all of its rows land in the "Factory PC" column.
  * "PC Ledger" collects the empty and 'Active' rows - exactly how pages/device/pcledger.vue reads them -
  * so the four add up to the type's own total and the pie's denominator is the whole fleet (463), not
- * pc_ledger on its own (453).
+ * the pc_ledger entity on its own (453 rows, 447 of them active).
  */
 function mergeChassis(ledger: DistItem[], factory: DistItem[]) {
   const factoryOf = new Map(factory.map(i => [i.value, i.count]))
@@ -131,37 +132,37 @@ watch(pcLedgerId, async (id) => {
 }, { immediate: true })
 
 /**
- * The second doughnut: the PC Ledger list on its own (453 rows), split by chassis, with the register
- * split carried into the tooltip. It is deliberately a separate fetch from `chassis` above - that one
- * counts the fleet (pc_ledger + Factory PC = 463) and merging the two is what made the cards drift.
+ * The second doughnut: the PC Ledger list, active rows only (447), split by chassis.
+ *
+ * It is deliberately a separate fetch from `chassis` above - that one counts the fleet (pc_ledger +
+ * Factory PC = 463) and merging the two is what made the cards drift. No `parts`: the slice is already
+ * a single register, so the tooltip has nothing to break it down into.
  */
-const activeChassis = ref<{ value: string, count: number, parts: { label: string, count: number }[] }[]>([])
+const activeChassis = ref<{ value: string, count: number }[]>([])
 const activeTotal = ref(0)
 const activeState = ref<'loading' | 'ready' | 'error'>('loading')
 
-/**
- * Chassis rows -> chassis rows carrying their register split. An empty asset_status (or 'Active') is
- * PC Ledger, which is exactly how pages/device/pcledger.vue reads it, so the three parts always add up
- * to the row's own count.
- */
-function splitByRegister(rows: DistItem[]) {
-  const pick = (split: DistItem['split'], test: (v: string) => boolean) =>
-    (split ?? []).filter(s => test(s.value)).reduce((n, s) => n + s.count, 0)
+/** An empty asset_status (or the literal 'Active') is an active PC - the same predicate
+ *  pages/device/pcledger.vue filters its default table on. */
+const isActive = (v: string) => v === '' || v === '(kosong)' || v === 'Active'
 
+/**
+ * Chassis rows -> active rows only: the PC Ledger list filtered the way its page filters its default
+ * table, so a chassis slice is 189 / 164 / 94 and the card totals 447 instead of 453.
+ *
+ * There is deliberately no register breakdown on this card: a slice already IS one register (active),
+ * and "where are the rest" is the question the All Capacitor PC's card next to it answers.
+ */
+function activeOnly(rows: DistItem[]) {
   return rows
     .map(row => ({
       value: row.value,
-      count: row.count,
-      parts: [
-        { label: 'PC Ledger', count: pick(row.split, v => v === '' || v === '(kosong)' || v === 'Active') },
-        { label: 'Standby PC', count: pick(row.split, v => v === 'Standby') },
-        { label: 'Dispose', count: pick(row.split, v => v === 'Plan Dispose') }
-      ]
+      count: (row.split ?? []).filter(s => isActive(s.value)).reduce((n, s) => n + s.count, 0)
     }))
     .filter(i => i.count > 0)
 }
 
-// Same shape as the fetch above, but split by asset_status so the tooltip can break a slice down.
+// Same shape as the fetch above, but split by asset_status so only the active rows can be kept.
 watch(pcLedgerId, async (id) => {
   if (!id) return
   activeState.value = 'loading'
@@ -174,8 +175,9 @@ watch(pcLedgerId, async (id) => {
     activeState.value = 'error'
     return
   }
-  activeChassis.value = splitByRegister(res.items)
-  activeTotal.value = res.total
+  activeChassis.value = activeOnly(res.items)
+  // Summed from the slices, not taken from res.total: that one is the whole entity (453).
+  activeTotal.value = activeChassis.value.reduce((n, i) => n + i.count, 0)
   activeState.value = 'ready'
 }, { immediate: true })
 

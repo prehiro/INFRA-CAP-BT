@@ -22,7 +22,9 @@
  * ancestor can clip it.
  */
 type Part = { label: string, count: number }
-type Slice = { value: string, count: number, parts: Part[] }
+// `parts` is optional: a card whose population is already one register (the active PCs) has
+// nothing to break a slice down into, and then the tooltip shows just the slice itself.
+type Slice = { value: string, count: number, parts?: Part[] }
 
 const props = withDefaults(defineProps<{
   items: Slice[]
@@ -126,7 +128,7 @@ const segments = computed(() => {
       color: COLORS[i % COLORS.length],
       d: ringPath(t0, t1, ro, ri, r),
       index: i,
-      parts: it.parts.map(p => ({
+      parts: (it.parts ?? []).map(p => ({
         label: p.label,
         count: p.count,
         pct: it.count > 0 ? (p.count / it.count) * 100 : 0
@@ -302,7 +304,7 @@ function clearTip() {
       <p class="mt-0.5 text-[10px] text-muted tabular-nums">
         {{ active.count }} unit · {{ source }}
       </p>
-      <div class="mt-2 space-y-1 border-t border-default/70 pt-2">
+      <div v-if="active.parts.length" class="mt-2 space-y-1 border-t border-default/70 pt-2">
         <div
           v-for="part in active.parts"
           :key="part.label"
