@@ -7159,3 +7159,15 @@ AKIBATNYA (排 celah di baris terakhir, karena total sel tidak lagi habis dibagi
 Tinggi kartu 343 (1440/1280/1100) dan 395 @1920 (dibagi rata `xl:h-full auto-rows-fr`), nol clip, page tidak scroll.
 
 Cara mengisi kalau nanti diminta: buat Network Racks ikut span 2 (4 kolom jadi 4+2+2 = penuh; 3 kolom 3+3+3; 2 kolom 2+2+2+2), atau kembalikan pie ke 2 kolom seperti sebelumnya.
+### Dashboard: legenda pie dirapikan ke tengah (2026-11-21)
+
+HIRO: "details dibawah pie chart perdekat ketengah, jarak antara chasis dan persentase jumlah nya terlalu jauh".
+
+CAUSA: kartu 1 kolom (321px) tapi baris legend pakai `w-full` + nama `flex-1`, jadi nama di kiri dan
+angka menempel ke tepi kanan kartu - jarak nama -> jumlah ~112px.
+
+FIX: blok legend jadi `mx-auto w-fit` (220px) dan kolom nama fixed `w-20` (bukan flex-1), count `w-9`,
+pct `w-12`. Hasil: jarak nama->jumlah 10px, jumlah->persen 10px, dan blok legend center persis di bawah
+donut (269px card: donut center 687, legend center 687). Divider donut-legend juga dikecilin gap-5 -> gap-4.
+
+Terverifikasi 1920 (card 321) dan 1440 (card 269): nol clip, tooltip tetap muncul & di dalam viewport.

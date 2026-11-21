@@ -151,7 +151,7 @@ function clearTip() {
         Belum ada data chassis.
       </div>
 
-      <div v-else class="flex flex-col items-center gap-5 @min-[420px]:flex-row @min-[420px]:gap-6">
+      <div v-else class="flex flex-col items-center gap-4 @min-[420px]:flex-row @min-[420px]:gap-6">
         <div class="relative size-36 shrink-0 @min-[520px]:size-40">
           <svg viewBox="0 0 100 100" class="size-full -rotate-90" aria-hidden="true">
             <!-- Empty track, so a small slice still reads as part of a whole. -->
@@ -188,12 +188,15 @@ function clearTip() {
           </div>
         </div>
 
-        <div class="w-full min-w-0 flex-1">
+        <!-- w-fit + mx-auto, not w-full: at one column wide the rows used to stretch to the card edge and
+             push the count and percentage ~110px away from the chassis name. The block now hugs its
+             content and sits centred under the doughnut, so name and numbers read as one line. -->
+        <div class="mx-auto w-fit min-w-0">
           <ul class="space-y-0.5">
             <li v-for="seg in segments" :key="seg.value">
               <button
                 type="button"
-                class="flex w-full items-center gap-2.5 rounded-md px-2 py-1 text-left text-[13px] transition-colors"
+                class="flex items-center gap-2.5 rounded-md px-2 py-1 text-left text-[13px] transition-colors"
                 :class="hovered === seg.index ? 'bg-elevated/70' : 'hover:bg-elevated/50'"
                 :aria-label="`${seg.value}: ${seg.count} unit, ${seg.pct.toFixed(1)} persen`"
                 @mouseenter="moveTip(seg.index, $event)"
@@ -203,7 +206,7 @@ function clearTip() {
                 @blur="clearTip"
               >
                 <span class="size-2.5 shrink-0 rounded-sm" :style="{ backgroundColor: seg.color }" />
-                <span class="min-w-0 flex-1 truncate">{{ seg.value }}</span>
+                <span class="w-20 truncate">{{ seg.value }}</span>
                 <span class="w-9 shrink-0 text-right text-xs text-muted tabular-nums">{{ seg.count }}</span>
                 <span class="w-12 shrink-0 text-right font-semibold tabular-nums">
                   {{ seg.pct.toFixed(1) }}%
