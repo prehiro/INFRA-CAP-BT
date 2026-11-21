@@ -7281,3 +7281,26 @@ VERIFIKASI (bukan cuma "kelihatan"): screenshot glow-on vs glow-off dengan hover
 halo 3-7px di luar tepi ring (r 71-78px), puncak delta 117/765 (~39 per channel), nol perubahan
 di luar r<78px. Perlu hook hover identik karena sparkline Server Metrics animasi terus-menerus -
 diff screenshot polos akan penuh noise di seluruh viewport.
+### Dashboard: Server Metrics pindah ke kanan + halaman tanpa scrollbar (2026-11-21)
+
+HIRO: "pindahkan server metrics jadi di sebelah kanan halaman. atur juga supaya halaman fix tanpa scroll bar".
+
+1. METRICS KE KANAN: grid `xl:grid-cols-[minmax(0,1fr)_300px]` (dulu `[300px_minmax(0,1fr)]`) dan
+   <MetricsChart /> dipindah ke posisi kedua di DOM, jadi kolom 2 = kanan. Terukur: x=1595 di 1920,
+   x=1115 di 1440, jarak ke tepi kanan 25px.
+
+2. TANPA SCROLLBAR - ada DUA penyebab, bukan satu:
+   a. TILES 3 BARIS. Breakpoint kolom 1060 -> 860 (2 kolom 520, 3 kolom 700). Di 1440 lebar tiles cuma
+      dapat ~864px, jadi dengan 1060 jatuh ke 3 kolom = 3 baris = 1056px, jauh melebihi viewport.
+      Sekarang 4 kolom = 2 baris.
+   b. METRICS CARD KE-CLIP. Body-nya flex-1 tanpa min-h-0, jadi tetap 3 x 225px = 675px dan UCard
+      (overflow-hidden) memotong chart DISK di kartu yang tingginya 630. Ini bug yang baru kelihatan
+      setelah tiles jadi 2 baris - sebelumnya kartu metrics ikut melar ke 1056px jadi tidak terlihat.
+      Fix: `min-h-0` di body UCard + `min-h-0` di grid-nya, rows 1fr jadi menyusut.
+
+3. CARD di-ringkas sedikit supaya 2 baris muat: donut 144 -> 128 (size-32, tetap 160 di kartu lebar),
+   baris legend py-1 -> py-0.5, gap body 16 -> 12.
+
+HASIL (diukur, bukan dilihat): 1920x1080, 1600x900, 1440x900 -> nol scrollbar, nol clip, tiga chart
+CPU/MEMORY/DISK utuh, 7 kartu semua muat. 1366x768 MASIH scroll: 3 kolom x 306px = 952px sementara
+viewport cuma menyediakan ~430px setelah banner - tidak mungkin muat tanpa memotong isi kartu.

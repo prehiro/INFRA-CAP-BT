@@ -224,8 +224,8 @@ function clearTip() {
         Belum ada data chassis.
       </div>
 
-      <div v-else class="flex flex-col items-center gap-4 @min-[420px]:flex-row @min-[420px]:gap-6">
-        <div class="relative size-36 shrink-0 @min-[520px]:size-40">
+      <div v-else class="flex w-full flex-col items-center gap-3 @min-[420px]:flex-row @min-[420px]:gap-6">
+        <div class="relative size-32 shrink-0 @min-[520px]:size-40">
           <svg viewBox="0 0 100 100" class="size-full -rotate-90" aria-hidden="true">
             <!-- Hover glow. Blurring SourceGraphic keeps the slice's own colour, so the halo matches the
                  arc instead of being one flat accent. The alpha transfer is what makes it "sedikit": a
@@ -288,7 +288,7 @@ function clearTip() {
             <li v-for="seg in segments" :key="seg.value">
               <button
                 type="button"
-                class="flex items-center gap-2.5 rounded-md px-2 py-1 text-left text-[13px] transition-colors"
+                class="flex items-center gap-2.5 rounded-md px-2 py-0.5 text-left text-[13px] transition-colors"
                 :class="hovered === seg.index ? 'bg-elevated/70' : 'hover:bg-elevated/50'"
                 :aria-label="`${seg.value}: ${seg.count} unit, ${seg.pct.toFixed(1)} persen`"
                 @mouseenter="moveTip(seg.index, $event)"

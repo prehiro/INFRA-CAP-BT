@@ -3,7 +3,8 @@
  * Dashboard landing page.
  *
  * WHAT IS ON IT
- * Welcome banner, the live Server Metrics rail, then one tile per module that has a page - each
+ * Welcome banner, the module tiles, and the live Server Metrics rail down the right edge - one tile
+ * per module that has a page, each
  * carrying its real record count - plus two chassis doughnuts: "All Capacitor PC's" for the whole fleet
  * and "Active PC's" for the PC Ledger list on its own.
  *
@@ -216,19 +217,19 @@ const apChips = computed(() =>
         <!-- Greeting lives in the body, not the navbar: the navbar is locked to 64px. -->
         <WelcomeBanner class="anim-fade-up" />
 
-        <!-- Metrics on the left, tiles on the right. The split only happens at xl: below that the
+        <!-- Tiles on the left, metrics on the RIGHT. The split only happens at xl: below that the
              metrics panel is full width (its own @container keeps the three charts side by side when
-             it has room, stacked when it is the narrow left column). -->
-        <div class="grid grid-cols-1 gap-5 xl:min-h-0 xl:flex-1 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <!-- System Metrics panel. It renders its own UCard: a card inside a card would
-               double the padding and the header. -->
-          <MetricsChart />
-
+             it has room, stacked when it is the narrow right column).
+             min-h-0 on both children is what keeps the page scroll-free: a flex/grid item defaults to
+             min-height:auto, so without it the tiles' min-content height pushes the whole page taller
+             than the viewport and the app's page wrapper grows a scrollbar. -->
+        <div class="grid grid-cols-1 gap-4 sm:gap-5 xl:min-h-0 xl:flex-1 xl:grid-cols-[minmax(0,1fr)_300px]">
           <!-- @container, not the viewport: the tile columns follow the width this block actually
                gets once the metrics column takes its 300px, so four columns only appear where four
-               columns fit. -->
+               columns fit. 860px, not 1060: at 1060 a 1440-wide window only got three columns, which
+               made three rows of cards and pushed the page past the viewport height. -->
           <div class="@container min-w-0 xl:h-full">
-            <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-5 @min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
+            <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-4 @min-[520px]:grid-cols-2 @min-[700px]:grid-cols-3 @min-[860px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
                 class="col-span-1"
                 title="All Capacitor PC's"
@@ -262,6 +263,10 @@ const apChips = computed(() =>
               />
             </div>
           </div>
+
+          <!-- System Metrics panel, right column. It renders its own UCard: a card inside a card
+               would double the padding and the header. -->
+          <MetricsChart />
         </div>
       </div>
     </template>

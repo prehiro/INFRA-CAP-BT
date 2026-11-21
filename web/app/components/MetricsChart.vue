@@ -1,7 +1,7 @@
 <template>
   <UCard
     ref="cardEl"
-    :ui="{ header: 'p-0 sm:p-0', body: 'p-0 sm:p-0 flex-1', footer: 'p-0 sm:p-0' }"
+    :ui="{ header: 'p-0 sm:p-0', body: 'p-0 sm:p-0 flex-1 min-h-0', footer: 'p-0 sm:p-0' }"
     class="anim-fade-up @container flex flex-col overflow-hidden"
   >
     <template #header>
@@ -32,10 +32,14 @@
     </template>
 
     <!-- One column per metric, or three side by side when there is room. This keys off the PANEL's own
-         width (@container), not the viewport: on the dashboard the panel is a 300px left column, so
-         `sm:grid-cols-3` would have squeezed three charts into 300px and made all of them unreadable. -->
+         width (@container), not the viewport: on the dashboard the panel is a 300px right column, so
+         `sm:grid-cols-3` would have squeezed three charts into 300px and made all of them unreadable.
+
+         min-h-0 on the body above is what lets these rows shrink: as a grid item the card stretches to
+         the row height the tiles need, and without it the body keeps its 3 x 225px min-content and the
+         card (overflow-hidden) silently cuts the third chart off instead of compressing. -->
     <div
-      class="grid h-full grid-cols-1 grid-rows-3 divide-y divide-default @min-[520px]:grid-cols-3 @min-[520px]:grid-rows-1 @min-[520px]:divide-x @min-[520px]:divide-y-0"
+      class="grid h-full min-h-0 grid-cols-1 grid-rows-3 divide-y divide-default @min-[520px]:grid-cols-3 @min-[520px]:grid-rows-1 @min-[520px]:divide-x @min-[520px]:divide-y-0"
     >
       <div
         v-for="tile in tiles"
