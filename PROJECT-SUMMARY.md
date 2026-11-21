@@ -7222,3 +7222,22 @@ DATA: dua fetch terpisah di index.vue - `chassis` (fleet, mergeChassis dgn facto
 
 GRID: 7 kartu, 8 sel (6 single + AP double). Penuh di semua breakpoint:
 1920/4kol = 4+4; 1440/1100/3kol = 3+3+AP(3); 1280/760/2kol = 2+2+2+AP(2). Nol clip, page tidak scroll.
+### Dashboard: rename dua pie + hapus tile Active PC (2026-11-21)
+
+HIRO: "title chasis mix ganti jadi All Capacitor PC's, title card PC Ledger ganti Active PC's, card
+count 453 active pc hapus saja pastikan clean code dan tidak ada error".
+
+- Kartu 1: title "Chassis Mix" -> "All Capacitor PC's" (463, isi/tooltip tidak berubah).
+- Kartu 2: title "PC Ledger" -> "Active PC's" (453, isi/tooltip tidak berubah).
+- Tile DashboardCard "Active PC" (453) DIHAPUS - bukan cuma disembunyikan.
+
+CLEAN-UP yang ikut: `countOf('pc_ledger')` hilang (sekarang countOf cuma dipakai factory_pc), blok
+DashboardCard-nya dibuang, komentar doc di index.vue disesuaikan (dulu menyebut "Active PC tile").
+Referensi 'pcledger' yang tersisa hanya komentar penjelasan + `to="/device/pcledger"` di kartu Active PC's.
+
+GRID sekarang 6 kartu / 7 sel (5 single + AP double): 4+3 @4kol, 3+2+1 @3kol, 2+2+1+1 @2kol -
+satu slot kosong di baris kedua dari bawah. Kalau mau penuh: jadikan kartu "All Capacitor PC's" 2 kolom
+(2+1+1+1+1+2 = 8 sel -> penuh di 4/3/2 kolom).
+
+VERIFIKASI: console bersih (hook console.error/warn + window.error + unhandledrejection -> nol entri),
+6 kartu urut tanpa lubang, judul benar, nol clip, page tidak scroll di 1920/1440/1280/760.

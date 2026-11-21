@@ -4,18 +4,18 @@
  *
  * WHAT IS ON IT
  * Welcome banner, the live Server Metrics rail, then one tile per module that has a page - each
- * carrying its real record count - plus two chassis doughnuts: the fleet-wide Chassis Mix and, next to
- * the renamed Active PC tile, the PC Ledger list on its own.
+ * carrying its real record count - plus two chassis doughnuts: "All Capacitor PC's" for the whole fleet
+ * and "Active PC's" for the PC Ledger list on its own.
  *
  * WHY TWO DOUGHNUTS AND NOT ONE
- * They answer different questions and count different populations: Chassis Mix is pc_ledger + Factory
- * PC (463), the PC Ledger doughnut is the pc_ledger list alone (453). They are separate fetches on
+ * They answer different questions and count different populations: All Capacitor PC's is pc_ledger +
+ * Factory PC (463), Active PC's is the pc_ledger list alone (453). They are separate fetches on
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
  * Both doughnuts are one column and Access Points is the only double-width card, so the grid holds
- * eight cells: full at 4 columns (4+4), at 3 columns (3+3+2, with Access Points taking a row of its
- * own) and at 2 columns (2+2+2+2).
+ * seven cells: 4+3 at four columns, 3+3+1 at three and 2+2+2+1 at two, where the double-width card
+ * takes the last row by itself.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -229,28 +229,18 @@ const apChips = computed(() =>
             <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-5 @min-[560px]:grid-cols-2 @min-[780px]:grid-cols-3 @min-[1060px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
                 class="col-span-1"
+                title="All Capacitor PC's"
                 :items="chassis"
                 :total="chassisTotal"
                 :label="chassisLabel"
                 :state="chassisState"
               />
 
-              <!-- Renamed from PC Ledger. Everything else about the tile is untouched: same link,
-                   same count, same icon and tone. -->
-              <DashboardCard
-                to="/device/pcledger"
-                label="Active PC"
-                :value="countOf('pc_ledger')"
-                icon="i-lucide-monitor"
-                tone="violet"
-              />
-
-              <!-- The new doughnut, in the slot right of Active PC: the PC Ledger list by chassis.
-                   One column wide, like its neighbours, so the grid stays exactly full at 2/3/4
-                   columns (six single cards + the double-width Access Points card). -->
+              <!-- The new doughnut, one slot right of the first: the PC Ledger list by chassis.
+                   One column wide, like its neighbours. -->
               <ChassisMixCard
                 class="col-span-1"
-                title="PC Ledger"
+                title="Active PC's"
                 source="PC Ledger"
                 to="/device/pcledger"
                 :items="activeChassis"
