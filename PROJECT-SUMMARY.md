@@ -6892,3 +6892,17 @@ VERIFIKASI (browser, user Staff sementara, sudah dihapus): animasi terpasang dan
 bg primary/10 + ikon matrix(...3,0), hover tombol -> ikon 3px / rotate -6deg, stroke SVG
 rgb(0,220,130) (ikut accent), SVG 37px di dalam badge 80px, tanpa overflow, 0 error konsol,
 `npx nuxt build` exit 0.
+### Sign out jadi merah saat hover (2026-11-21)
+
+HIRO: "tombol sign outnya jadi merah ketika di hover".
+
+`.ra-out` adalah satu-satunya kontrol di kartu itu yang tidak memberi sinyal apa pun soal sifatnya,
+padahal dia mengeluarkan user dari sesi. Sekarang hover -> teks DAN ikon merah (keduanya ikut
+`currentColor`, jadi satu deklarasi warna cukup) + background error 12%. Ikon tetap membawa rotate
+-6deg yang sudah ada. Dijaga di `@media (hover: hover) and (pointer: fine)` supaya tap di layar sentuh
+tidak meninggalkan :hover yang nyangkut. Warna memakai `--ui-error` yang sama dengan
+`.record-delete-hover`, bukan merah hard-coded.
+
+VERIFIKASI (browser): hover -> color oklch(70.4% 0.191 22.216) = persis `--ui-error`
+(oklch(0.92 0.004 286.32) saat diam), bg error/12, ikon rotate -6deg; keluar hover -> kembali netral.
+`npx nuxt build` exit 0.

@@ -307,6 +307,20 @@ function signOut() {
   transform: translateX(2px) rotate(-6deg);
 }
 
+/* Sign out turns red on hover: it is the destructive action on this card, and up to now it was the
+   only control that gave no signal about that. Text and icon both follow `currentColor`, so one colour
+   declaration covers both. Guarded to real pointers - a tap on a touch screen leaves :hover stuck on. */
+.ra-out {
+  transition: color 220ms ease, background-color 220ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ra-out:not(:disabled):hover {
+    color: var(--ui-error);
+    background-color: color-mix(in oklab, var(--ui-error) 12%, transparent);
+  }
+}
+
 /* The two corner washes drift a few pixels so the glass is never fully static. */
 .ra-drift {
   animation: ra-drift 20s ease-in-out infinite alternate;
