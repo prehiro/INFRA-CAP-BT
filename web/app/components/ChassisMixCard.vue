@@ -251,8 +251,20 @@ function clearTip() {
               </filter>
             </defs>
 
-            <!-- Empty track, so a small slice still reads as part of a whole. -->
-            <circle cx="50" cy="50" r="40" fill="none" stroke-width="14" class="stroke-default" />
+            <!-- Empty track, so a small slice still reads as part of a whole.
+                 NOT stroke-default: a preset can point --ui-border at a near-black shade for light
+                 mode (carbon uses shade 950 = oklch(14.1%)), and the gaps between slices came out as
+                 black lines on a white card. A faint tint of the card's OWN background is a soft seam
+                 in every preset and both modes, because it is derived from --ui-bg, never from a
+                 border ramp. -->
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke-width="14"
+              style="stroke: color-mix(in oklab, var(--ui-bg) 88%, var(--ui-text) 12%)"
+            />
 
             <!-- The dim scales the whole slice, the animation fades it - so they must live on
                  different elements or the animation's final opacity:1 would beat the dim. -->

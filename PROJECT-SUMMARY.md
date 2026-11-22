@@ -7481,3 +7481,24 @@ HIRO: "perbesar ikon nya dong".
 - Glyph 1.3rem (21px) -> 1.62rem (26px); hover area 1.9rem (30px) -> 2.2rem (35px).
 - Header TIDAK ikut naik: teks (h2 + subtitle) 36px > badge 35px, jadi `items-center` tetap 36px dan card
   tidak berubah tinggi. pageOverflow 0 @1920 dan @1280.
+### Dashboard: celah doughnut hitam di tema terang (2026-11-22)
+
+HIRO: "pada pie chart, gap antara bar nya ada object bewarna lain? kalau saya ganti thema terang misalnya
+carbon, gap tersebut terlihat warna hitam nya. tolong perbaiki agar visualnya bagus".
+
+AKAR MASALAH: track doughnut memakai `class="stroke-default"` = `var(--ui-border)`. Preset `carbon`
+(app/assets/theme/reference.json) mendefinisikan `"--ui-border": { "light": 950, "dark": 600 }`, dan shade
+950 carbon = `oklch(14.1% 0.005 285.805)` = HAMPIR HITAM. Jadi di tema terang carbon, celah antar-slice
+(juga sudut membulat) tampak garis hitam di atas card putih.
+
+FIX: track tidak lagi pakai token border, tapi warna turunan surface card sendiri:
+`style="stroke: color-mix(in oklab, var(--ui-bg) 88%, var(--ui-text) 12%)"`.
+Tetap terlihat sebagai garis halus di dark (oklab 0.294 vs bg 0.208) dan abu lembut di light
+(rgb 223,219,208 vs card 255,255,255).
+
+VERIFIKASI (bukan cuma computed style): token carbon dipasang manual ke documentElement, screenshot
+doughnut diambil, lalu histogram band ring-nya - tidak ada lagi pixel gelap (paling gelap = hijau slice,
+lum 125), warna celah (223,219,208) lum 219. Sebelum fix, band itu berisi oklch(0.274)/hitam.
+
+CATATAN: preset lain bisa saja punya tokenShades aneh (border-inverted, bg-accented, dst). Kalau nanti ada
+laporan serupa di objek lain, cari token yang dipakai objek itu, jangan tebak.
