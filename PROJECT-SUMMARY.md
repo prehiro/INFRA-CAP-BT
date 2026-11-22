@@ -7886,3 +7886,21 @@ Dua hal dilakukan:
 
 Terverifikasi: 1600x1000 over=0 barPx=0; 1440x900 over=0 barPx=0 (Hardware & Telemetry); 1280x800 over=77
 tapi barPx=0 (tidak ada bar, konten masih tergulir). Add switch + toast masih normal (card 259px).
+### Panel "Controls & telemetry": sisa space bawah dipakai, konten fit (2026-11-22)
+
+HIRO: "buat fit dong yang sekarang masih ada space sedikit dibawah"
+
+Setelah dipadatkan, isi panel 435px sedangkan pane 458px (1440x900) -> sisa ~23px kosong di bawah.
+Sekarang pane jadi flex column dan blok terakhir menempel ke dasar:
+- `#view-hardware` -> `flex flex-col gap-1.5` (space-y diganti gap)
+- switch card -> `grow shrink-0 flex flex-col`, grid field-nya `flex-1 flex flex-col justify-between`
+  (field mengikuti tinggi card, jadi sisa space terbagi rata ke jarak antar field, bukan menggantung di bawah)
+- UPS card -> `mt-auto` (tetap jadi blok paling bawah walau belum ada switch dipilih)
+
+`shrink-0` WAJIB: dengan `flex-1` saja card ikut menyusut di window pendek (1280x800 -> card 181px)
+dan field-nya terpotong oleh overflow-hidden, padahal pane melaporkan over=0. Sekarang card tidak pernah
+lebih kecil dari isinya, pane menggulung kalau memang tidak cukup.
+
+TERUKUR: 1440x900 -> pane 458, over=0, barPx=0, card 281 (dari 259), UPS menempel dasar (gap 0).
+1600x1000 -> over=0, card 349, gap 0. 1280x800 -> over=77 (menggulung), card 259, semua field terlihat,
+barPx=0 (tidak ada bar).

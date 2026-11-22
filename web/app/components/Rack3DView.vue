@@ -2815,7 +2815,7 @@ let accentPoll = 0
       </div>
 
       <!-- TAB 1: HARDWARE, SWITCH CONFIG & UPS MANAGEMENT -->
-      <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-1.5">
+      <div id="view-hardware" class="flex-1 flex flex-col gap-1.5 overflow-y-auto custom-scroll pr-1">
         <!-- Add Switch Action - above the editor on purpose: adding a switch is the primary thing to
              do with an empty rack, and with the editor card first the button sat below a card that is
              hidden until something is selected. -->
@@ -2829,7 +2829,7 @@ let accentPoll = 0
         </div>
 
         <!-- Selected Switch Editor Card -->
-        <div id="switch-editor-card" class="relative overflow-hidden p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-1.5">
+        <div id="switch-editor-card" class="relative grow shrink-0 flex flex-col overflow-hidden p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-1.5">
           <div class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-primary to-amber-400"></div>
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
@@ -2841,7 +2841,7 @@ let accentPoll = 0
             </button>
           </div>
 
-          <div class="grid grid-cols-1 gap-1.5">
+          <div class="flex-1 flex flex-col justify-between gap-1.5">
             <!-- Brand/Model first, and required: the register stores it and both the hover card and
                  the 3D label quote it. The id sits on the wrapper because SuggestInput keeps its
                  <input> inside its own root, so #input-model input is how the caret is claimed. -->
@@ -2910,7 +2910,7 @@ let accentPoll = 0
 
 
         <!-- Bottom UPS Selector & Serial Number (Always Bottom U's) -->
-        <div class="p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-emerald-500/25 space-y-1.5">
+        <div class="mt-auto p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-emerald-500/25 space-y-1.5">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
