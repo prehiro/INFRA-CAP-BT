@@ -7572,3 +7572,24 @@ BUG YANG KETAHUAN SAAT UKUR (bukan saat lihat):
 
 VERIFIKASI: animasi scaleX 0.09->1 terukur (delay ribbon vs bar beda); hover model & brand + dimansi benar;
 page 1920x1080 / 1600x900 / 1440x900 semuanya 0 scrollbar, 0 console error.
+### Dashboard: UPS card, warna per model (2026-11-22)
+
+HIRO: "saya mau tiap model berbeda warna".
+
+- Warna tidak lagi per brand, tapi PER MODEL: 4 baris = primary (green), sky, violet, amber - palet yang
+  sama dengan dua doughnut di page ini, jadi satu set.
+- Ribbon 100% ikut warna model (bukan warna brand lagi), urutan sama dengan bar. Jadi satu bahasa warna
+  di seluruh card; brand pindah ke tooltip ("4 unit · PowerPlus").
+- Legenda chip brand DIHAPUS (ribbon + baris berlabel sudah jadi legenda). `brands`, `colorOf`,
+  `activeBrand`, `brandModels`, `brandDim` ikut hilang - tidak ada sisa.
+- Hover ribbon = hover baris (tooltip yang sama), dan sebaliknya.
+
+BUG BARU YANG KETAHUAN: hover row -> opacity ribbon TIDAK berubah (semua tetap 1). Penyebab:
+`.ribbon-seg` punya `animation: bar-grow ... both` yang menahan `opacity: 1` di akhir animasi, jadi
+`:style="{ opacity }` di element yang sama kalah. Fix: opacity + width dipindah ke span pembungkus,
+animasi di span dalam. Ini varian dari pitfall "keep the dim and the entrance on separate elements".
+
+Verifikasi: 4 warna di ribbon == 4 warna di bar (urutan sama); hover 2200AP -> ribbon [0.3,0.3,1,0.3],
+baris [0.35,0.35,1,0.35]; tooltip "2200AP 20.0% 4 unit · PowerPlus Dipasang di 2 lokasi"; 0 label
+terpotong di 1920/1600/1440; page 1080/900/900 px tanpa scrollbar; 0 console error; light carbon: 4 warna
+tetap kebaca di atas track abu muda.
