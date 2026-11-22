@@ -16,7 +16,7 @@
  * that lives in this file cannot go missing.
  */
 defineProps<{
-  kind: 'fleet' | 'domain' | 'treemap'
+  kind: 'fleet' | 'domain' | 'treemap' | 'ups'
   /** Shown in the tooltip and to screen readers; the number itself is no longer painted. */
   total: number
 }>()
@@ -62,6 +62,23 @@ defineProps<{
         <path d="M7.4 15.8v2M5.2 17.8h4.4" />
         <circle cx="17.2" cy="15.4" r="4.2" />
         <path class="ico-tick" d="M15.3 15.5l1.4 1.5 2.5-2.9" />
+      </svg>
+
+      <!-- ups: a battery with a bolt - the register's whole subject in one glyph. -->
+      <svg
+        v-else-if="kind === 'ups'"
+        class="ico-glyph"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="2.4" y="6.4" width="16" height="11.2" rx="2.4" />
+        <path d="M20.6 10.2v3.6" />
+        <path class="ico-bolt" d="M11.6 8.2l-3.2 4.6h2.5l-1 3.4 3.4-4.7h-2.5z" />
       </svg>
 
       <!-- treemap: four tiles of different sizes, echoing the chart itself. -->
@@ -122,6 +139,13 @@ defineProps<{
   animation: ico-breathe 3.4s ease-in-out infinite;
 }
 
+/* The bolt is the "power" half of the badge: it swells and dims on a slow loop, like a charge cycle. */
+.ico-bolt {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ico-pulse 2.6s ease-in-out infinite;
+}
+
 .ico-tile:nth-child(2) { animation-delay: 0.18s; }
 .ico-tile:nth-child(3) { animation-delay: 0.36s; }
 .ico-tile:nth-child(4) { animation-delay: 0.54s; }
@@ -137,6 +161,11 @@ defineProps<{
   100% { stroke-dashoffset: 7; }
 }
 
+@keyframes ico-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.14); opacity: 1; }
+}
+
 @keyframes ico-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(0.84); }
@@ -146,7 +175,8 @@ defineProps<{
 @media (prefers-reduced-motion: reduce) {
   .ico-notebook,
   .ico-tick,
-  .ico-tile {
+  .ico-tile,
+  .ico-bolt {
     animation: none;
   }
 

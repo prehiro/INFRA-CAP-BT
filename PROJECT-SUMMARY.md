@@ -7536,3 +7536,39 @@ VERIFIKASI (screenshot + histogram band ring 0.33w..0.47w, scale 3):
 - Light carbon (token preset dipasang manual): celah (255,250,238) = bg card, nol pixel gelap
   (paling gelap = hijau slice, lum 125).
 - Elemen di SVG: 6 path.slice, 0 .slice-seam, 0 circle.
+### Dashboard: kartu UPS menggantikan tile Network Racks (2026-11-22)
+
+HIRO: "sekarang card 4 network rack, ganti dengan chart UPS. lu design chart yang keren dan sesuai untuk
+section ini. pastikan informatif untuk user".
+
+KOMPONEN BARU: web/app/components/UpsFleetCard.vue (1 kolom, shell sama seperti ChassisMixCard).
+- Ribbon 10px = split brand (APC 16 / 80% · PowerPlus 4 / 20%) + legend chip (dot + merek + jumlah + %).
+- Di bawahnya 4 bar model ter-ranking, warna bar = warna brand-nya, jadi ribbon-cum-legend menjelaskan bar.
+- Hover baris model: tooltip "9 unit · 45% · APC · N lokasi" + baris lain dim 0.35. Hover chip brand:
+  tooltip berisi daftar model brand itu + bar/brand lain diredupkan.
+- Footer: "Tersebar di 16 lokasi · 4 model".
+- Badge kanan atas: kind 'ups' baru di CardMetricIcon.vue (battery + bolt yang pulse).
+
+KENAPA BUKAN DONUT: 16/4 = 80/20, pie-nya tidak informatif (dua donut sudah ada di page ini). Ribbon 10px
+menyampaikan split-nya, ruang tinggi dipakai untuk 4 model yang bervariasi.
+
+DATA: GET /ups (20 baris, pihak API sudah flat: Brand/Model/SerialNumber/Location/CreatedAt) -> agregasi
+di page (upsModels/upsTotal/upsLocations). Brand diturunkan di dalam card dari rows yang sama, supaya
+ribbon dan bar tidak bisa beda sumber.
+
+DEAD CODE YANG IKUT DIHAPUS: tile Network Racks hilang -> rackCount, rackFloorCount, rackFloors + useFetch
+`scope=rack` (0 referensi). v-for satu item untuk Access Points juga dijadikan elemen langsung.
+Catatan: page /networks/network-rack tetap ada di sidebar (app/layouts/default.vue), jadi tidak ada page
+yang jadi dead end.
+
+BUG YANG KETAHUAN SAAT UKUR (bukan saat lihat):
+1. Card 306px di dalam card 397px -> 91px dead space di bawah (grid stretch, body UCard tidak flex-1).
+   Fix: `:ui="{ body: 'p-0 sm:p-0 flex-1' }"` + `h-full` di div dalam.
+2. Di 1600x900 card bikin page 851>836 (15px overflow). Dipangkas: gap-3.5->gap-3, mt-1->mt-0.5,
+   gap-2->gap-1.5 -> 307px, page 900/900 lagi.
+3. Di 1440 (card 204px) "Smart-UPS SMT3000RMI2UC" terpotong (butuh 154px, dapat 116px). Fix: container
+   query `@max-[230px]` -> font 10px + sembunyikan "· pct" (pct tetap di tooltip). Sekarang 0 label
+   terpotong di 1440/1600/1920.
+
+VERIFIKASI: animasi scaleX 0.09->1 terukur (delay ribbon vs bar beda); hover model & brand + dimansi benar;
+page 1920x1080 / 1600x900 / 1440x900 semuanya 0 scrollbar, 0 console error.

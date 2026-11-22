@@ -34,13 +34,18 @@ const { data: entities } = await useFetch<EntityMeta[]>('/entities', {
   default: () => []
 })
 
-const { data: rackFloors } = await useFetch<FloorMapSummary[]>('/network/floor-maps?scope=rack', {
+const { data: apFloors } = await useFetch<FloorMapSummary[]>('/network/floor-maps?scope=ap', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
 })
 
-const { data: apFloors } = await useFetch<FloorMapSummary[]>('/network/floor-maps?scope=ap', {
+/** One row of the UPS register (api/Controllers/UpsController.cs). */
+type UpsUnit = { id: number, brand: string, model: string, serialNumber: string, location: string, createdAt: string }
+
+// The register is 20 rows, not the EAV record table, so one list call is the whole population - no
+// distribution endpoint needed and nothing to aggregate server-side.
+const { data: upsUnits, error: upsError } = await useFetch<UpsUnit[]>('/ups', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
@@ -193,15 +198,41 @@ watch(pcLedgerId, async (id) => {
   modelsState.value = 'ready'
 }, { immediate: true })
 
-const rackCount = computed(() =>
-  (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
-)
-const apCount = computed(() =>
-  (apFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.accessPointCount ?? 0), 0)
+/**
+ * UPS aggregates for the fleet card.
+ *
+ * One population: every row of the UPS register (20 units). Grouped by model for the bars, and the
+ * brand is carried on each row so the card can derive the ribbon from the SAME rows - a second
+ * grouping would be a second source of truth that can drift from the bars.
+ */
+const upsModels = computed(() => {
+  const groups = new Map<string, { label: string, brand: string, count: number, places: Set<string> }>()
+  for (const u of (upsUnits.value as UpsUnit[]) ?? []) {
+    const label = u.model?.trim() || '(tanpa model)'
+    const brand = u.brand?.trim() || '(tanpa merek)'
+    const g = groups.get(label) ?? { label, brand, count: 0, places: new Set<string>() }
+    g.count += 1
+    if (u.location?.trim()) g.places.add(u.location.trim())
+    groups.set(label, g)
+  }
+  return [...groups.values()]
+    .map(g => ({ label: g.label, brand: g.brand, count: g.count, locations: g.places.size }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+})
+
+/** The card shows its own error line rather than an empty chart. */
+const upsState = computed<'loading' | 'ready' | 'error'>(() => (upsError.value ? 'error' : 'ready'))
+
+/** Summed from the rows, so the card's denominator is the register itself. */
+const upsTotal = computed(() => upsModels.value.reduce((n, m) => n + m.count, 0))
+
+/** Distinct locations across the register - the card's footer line. */
+const upsLocations = computed(() =>
+  new Set(((upsUnits.value as UpsUnit[]) ?? []).map(u => u.location?.trim()).filter(Boolean)).size
 )
 
-const rackFloorCount = computed(() =>
-  (rackFloors.value as FloorMapSummary[] ?? []).filter(f => (f.rackCount ?? 0) > 0).length
+const apCount = computed(() =>
+  (apFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.accessPointCount ?? 0), 0)
 )
 const apFloorCount = computed(() =>
   (apFloors.value as FloorMapSummary[] ?? []).filter(f => (f.accessPointCount ?? 0) > 0).length
@@ -279,13 +310,31 @@ const apChips = computed(() =>
                 :state="modelsState"
               />
 
+              <!-- UPS Fleet, one column: the register's brand split as a ribbon and its four models
+                   ranked underneath. Replaces the Network Racks tile, which was a single count of a
+                   page that is still in the sidebar. -->
+              <UpsFleetCard
+                class="col-span-1"
+                title="UPS Fleet"
+                label="Registered units"
+                source="By model"
+                to="/device/ups"
+                :models="upsModels"
+                :total="upsTotal"
+                :locations="upsLocations"
+                :state="upsState"
+              />
+
+              <!-- One tile left, so it is written out rather than looped over a one-item array. -->
               <DashboardCard
-                v-for="card in [
-                  { to: '/networks/network-rack', label: 'Network Racks', value: rackCount, sub: `${rackFloorCount} floor`, icon: 'i-lucide-server', tone: 'cyan' },
-                  { to: '/networks/access-point', label: 'Access Points', value: apCount, sub: `${apFloorCount} floor`, icon: 'i-lucide-wifi', tone: 'primary', wide: true, chips: apChips }
-                ]"
-                :key="card.to"
-                v-bind="card"
+                to="/networks/access-point"
+                label="Access Points"
+                :value="apCount"
+                :sub="`${apFloorCount} floor`"
+                icon="i-lucide-wifi"
+                tone="primary"
+                wide
+                :chips="apChips"
               />
             </div>
           </div>
