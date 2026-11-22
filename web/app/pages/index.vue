@@ -56,7 +56,6 @@ type Distribution = { field: string, label: string, total: number, items: DistIt
 
 const chassis = ref<{ value: string, count: number, parts: { label: string, count: number }[] }[]>([])
 const chassisTotal = ref(0)
-const chassisLabel = ref('Computer Chassis')
 const chassisState = ref<'loading' | 'ready' | 'error'>('loading')
 
 /** Resolved by slug, never by id: dev and prod databases number their entities differently. */
@@ -116,7 +115,6 @@ watch(pcLedgerId, async (id) => {
     }
     chassis.value = mergeChassis(mix.items, factoryMix?.items ?? [])
     chassisTotal.value = chassis.value.reduce((n, i) => n + i.count, 0)
-    chassisLabel.value = mix.label
     chassisState.value = 'ready'
   }
   catch {
@@ -168,17 +166,6 @@ watch(pcLedgerId, async (id) => {
   activeState.value = 'ready'
 }, { immediate: true })
 
-/**
- * "PC per Model" treemap: active PCs grouped by computer_model.
- *
- * Same active predicate as the Active PC's doughnut, so the two cards always agree on what "active"
- * means - only the grouping field differs. The endpoint's split is used rather than a filtered count
- * because the API groups in SQL; the browser just adds up the active part of each model's split.
- *
- * Values are NOT merged across spellings: the data really does contain "OptiPlex 7010" and "Optiplex
- * 7010", "Surface Go 4" and "Surface GO  4", and the table shows them separately - merging here would
- * make the card disagree with the register it is drawn from.
- */
 const models = ref<{ label: string, value: number }[]>([])
 const modelsTotal = ref(0)
 const modelsState = ref<'loading' | 'ready' | 'error'>('loading')
@@ -256,10 +243,11 @@ const apChips = computed(() =>
             <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-4 @min-[520px]:grid-cols-2 @min-[700px]:grid-cols-3 @min-[860px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
                 class="col-span-1"
-                title="All Capacitor PC"
+                title="Registered PC"
+                label="Overall PC"
+                source="By Form Factor"
                 :items="chassis"
                 :total="chassisTotal"
-                :label="chassisLabel"
                 :state="chassisState"
               />
 

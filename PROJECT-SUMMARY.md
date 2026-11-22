@@ -7410,3 +7410,14 @@ HIRO: "ok bagus, balikan lagi. pastikan scroll ini muncul jika list melebihi tin
 - Terukur: 10 baris = 165px, body 336px -> scroll 0. Dipaksa 120px -> scroll 45px dan
   scrollTop jalan (dulu `scroll-behavior: smooth` bikin scrollTop 0 saat dites; properti itu dibuang,
   smooth scroll pada list 176px tidak ada gunanya dan bikin scroll "loncat").
+### Dashboard: subtitle card Registered PC (2026-11-22)
+
+HIRO: "Ganti subtitle Registered PC card jadi Overall PC · By Form Factor".
+
+- Card pertama: `label="Overall PC"` + `source="By Form Factor"` -> header card menampilkan
+  "Overall PC · By Form Factor" (digabung middot di ChassisMixCard).
+- `chassisLabel` ref + assignment `chassisLabel.value = mix.label` DIHAPUS (jadi dead code begitu label
+  di-hardcode; grep 0 sisa). Nilai dari API (`mix.label` = "Computer Chassis") tidak dipakai lagi di card ini.
+- Card Active PC tidak disentuh: masih "By Chassis · PC Ledger".
+
+CATATAN FILE: index.vue pakai CRLF - patch yang猫粮 menyertakan newline harus pakai \r\n.
