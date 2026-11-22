@@ -2815,12 +2815,12 @@ let accentPoll = 0
       </div>
 
       <!-- TAB 1: HARDWARE, SWITCH CONFIG & UPS MANAGEMENT -->
-      <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-3">
+      <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-1.5">
         <!-- Add Switch Action - above the editor on purpose: adding a switch is the primary thing to
              do with an empty rack, and with the editor card first the button sat below a card that is
              hidden until something is selected. -->
         <div class="flex items-center justify-between gap-2">
-          <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition flex items-center justify-center gap-1.5">
+          <button id="btn-add-switch" class="w-full py-1.5 px-3 rounded-xl text-xs font-semibold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition flex items-center justify-center gap-1.5">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
             </svg>
@@ -2829,7 +2829,7 @@ let accentPoll = 0
         </div>
 
         <!-- Selected Switch Editor Card -->
-        <div id="switch-editor-card" class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-2.5">
+        <div id="switch-editor-card" class="relative overflow-hidden p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-1.5">
           <div class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-primary to-amber-400"></div>
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-mono font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
@@ -2841,7 +2841,7 @@ let accentPoll = 0
             </button>
           </div>
 
-          <div class="grid grid-cols-1 gap-2">
+          <div class="grid grid-cols-1 gap-1.5">
             <!-- Brand/Model first, and required: the register stores it and both the hover card and
                  the 3D label quote it. The id sits on the wrapper because SuggestInput keeps its
                  <input> inside its own root, so #input-model input is how the caret is claimed. -->
@@ -2849,7 +2849,7 @@ let accentPoll = 0
               <!-- The field's title row carries the "where this came from" trace, right-aligned - it used
                    to sit under the box and cost a line. The required state is the red outline alone:
                    HIRO - "hapus saja notif required nya, box bewarna merah sudah cukup". -->
-              <div class="mb-1 flex items-baseline justify-between gap-2">
+              <div class="mb-0.5 flex items-baseline justify-between gap-2">
                 <label class="text-[10px] uppercase tracking-wider text-slate-400">Brand/Model</label>
                 <span v-if="modelHint" class="anim-fade-in inline-flex max-w-[62%] items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium leading-none text-primary ring-1 ring-inset ring-primary/20">
                   <span class="truncate">{{ modelHint }}</span>
@@ -2867,24 +2867,27 @@ let accentPoll = 0
                 @fill="onModelFill"
               />
             </div>
-            <div>
-              <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Switch Hostname</label>
-              <input id="input-hostname" type="text" maxlength="18" placeholder="SW-CORE-01"
-                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-white focus:outline-none focus:border-primary transition" />
-            </div>
+            <!-- Hostname and Rack Slot share a row, Management IP takes the full width: four stacked
+                 rows pushed the panel past its height and raised a scrollbar (HIRO: "saya tidak mau ada
+                 scrollbar di bagian controls & telemetry"). The ids the scene script drives are unchanged. -->
             <div class="grid grid-cols-3 gap-2">
               <div class="col-span-2">
-                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Management IP</label>
-                <input id="input-ip" type="text" maxlength="18" placeholder="10.10.1.11"
-                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-amber-300 focus:outline-none focus:border-primary transition" />
+                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">Switch Hostname</label>
+                <input id="input-hostname" type="text" maxlength="18" placeholder="SW-CORE-01"
+                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-white focus:outline-none focus:border-primary transition" />
               </div>
               <div>
-                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Rack Slot</label>
+                <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">Rack Slot</label>
                 <select id="select-slot" class="w-full px-1.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-primary focus:outline-none focus:border-primary transition"></select>
               </div>
             </div>
             <div>
-              <div class="flex items-center justify-between mb-1">
+              <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-0.5">Management IP</label>
+              <input id="input-ip" type="text" maxlength="18" placeholder="10.10.1.11"
+                class="w-full px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-slate-700/90 text-xs font-mono text-amber-300 focus:outline-none focus:border-primary transition" />
+            </div>
+            <div>
+              <div class="flex items-center justify-between mb-0.5">
                 <label class="text-[10px] uppercase tracking-wider text-slate-400 flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -2907,7 +2910,7 @@ let accentPoll = 0
 
 
         <!-- Bottom UPS Selector & Serial Number (Always Bottom U's) -->
-        <div class="p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-emerald-500/25 space-y-2.5">
+        <div class="p-2.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-emerald-500/25 space-y-1.5">
           <div class="flex items-center justify-between">
             <span class="text-[11px] font-semibold text-slate-200 flex items-center gap-1.5">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2922,20 +2925,20 @@ let accentPoll = 0
             </span>
           </div>
           <div class="grid grid-cols-3 gap-1.5">
-            <button data-ups="none" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
+            <button data-ups="none" class="ups-btn py-1 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
               None
             </button>
-            <button data-ups="3000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-primary/25 text-primary border border-primary/50 transition">
+            <button data-ups="3000" class="ups-btn py-1 px-2 rounded-lg text-[11px] font-semibold bg-primary/25 text-primary border border-primary/50 transition">
               3000VA
             </button>
-            <button data-ups="5000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
+            <button data-ups="5000" class="ups-btn py-1 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
               5000VA
             </button>
           </div>
 
           <!-- UPS Serial Number Input (Shown when UPS is installed) -->
-          <div id="ups-sn-wrapper" class="pt-1">
-            <div class="flex items-center justify-between mb-1">
+          <div id="ups-sn-wrapper" class="pt-0.5">
+            <div class="flex items-center justify-between mb-0.5">
               <label class="text-[10px] uppercase tracking-wider text-slate-400">UPS Serial Number (S/N)</label>
               <button id="btn-copy-ups-sn" type="button" class="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 transition">
                 Copy S/N
@@ -3143,5 +3146,21 @@ input[type=range]::-webkit-slider-runnable-track {
 #input-model :deep(input)::placeholder {
   color: rgb(100 116 139);
   opacity: 1;
+}
+
+/* "Controls & telemetry" tab panes. HIRO: "saya tidak mau ada scrollbar di bagian controls & telemetry".
+   The content was one row taller than the pane at 900px, so a bar appeared next to the fields; the
+   spacing above is tightened so it fits at that size, and on a shorter window the pane still scrolls
+   with the wheel but draws no bar. */
+#view-hardware,
+#view-rack {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+#view-hardware::-webkit-scrollbar,
+#view-rack::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 </style>

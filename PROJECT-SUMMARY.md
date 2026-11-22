@@ -7864,3 +7864,25 @@ muncul saat tidak fokus (terverifikasi oklch(0.704 0.191 22.216) 0 0 0 2px inset
 VERIFIKASI (browser, D-B1): idle -> height 30px = hostname, radius 8px = hostname, fontSize 12px = hostname,
 bg rgba(2,6,23,0.9), border rgba(51,65,85,0.9); fokus -> border rgb(0,220,130) shadow none; invalid+blur ->
 ring merah 2px inset. Build web 0 error.
+### Panel "Controls & telemetry": scrollbar dihilangkan (2026-11-22)
+
+HIRO: "saya tidak mau ada scrollbar di bagian controls & telemetry. lu atur yang bagus"
+
+Panel kanan dialog rack (judul "Controls & telemetry", tab Hardware + Telemetry) isinya 497px sedangkan
+tinggi pane 458px pada viewport 900 -> selalu ada scrollbar 39px di sebelah field.
+
+Dua hal dilakukan:
+1. KONTEN DIPADATKAN supaya benar-benar pas, bukan cuma disembunyikan:
+   -ritme panel `space-y-3` -> `space-y-1.5`, Add button `py-2` -> `py-1.5`
+   -switch card `p-3.5` -> `p-2.5`, `space-y-2.5` -> `space-y-1.5`, grid `gap-2` -> `gap-1.5`
+   -label field `mb-1` -> `mb-0.5`
+   - Hostname + Rack Slot SATU BARIS (col-span-2 + 1), Management IP pindah ke baris penuh sendiri
+     -> satu baris (44px) hilang
+   -UPS card `p-3.5` -> `p-2.5`, `space-y-2.5` -> `space-y-1.5`, tombol model `py-1.5` -> `py-1`
+   Hasil: 497 -> 435px. Di 1600x1000 (526/526) dan 1440x900 (458/458) TIDAK ada overflow sama sekali.
+2. SCROLLBAR PANE TIDAK DIGAMBAR (overflow tetap ada, tetap bisa di-scroll pakai wheel):
+   `#view-hardware, #view-rack { scrollbar-width: none }` + `::-webkit-scrollbar { display: none }`.
+   Perlu karena di window pendek (1280x800 -> pane 358px) isinya masih 435px; tanpa ini bar-nya muncul lagi.
+
+Terverifikasi: 1600x1000 over=0 barPx=0; 1440x900 over=0 barPx=0 (Hardware & Telemetry); 1280x800 over=77
+tapi barPx=0 (tidak ada bar, konten masih tergulir). Add switch + toast masih normal (card 259px).
