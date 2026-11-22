@@ -90,8 +90,8 @@ defineProps<{
 .metric-ico {
   display: grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 2.2rem;
+  height: 2.2rem;
   border-radius: 0.5rem;
   color: var(--ui-primary);
   transition: transform 0.25s ease;
@@ -102,8 +102,8 @@ defineProps<{
 }
 
 .ico-glyph {
-  width: 1.3rem;
-  height: 1.3rem;
+  width: 1.62rem;
+  height: 1.62rem;
 }
 
 .ico-notebook {

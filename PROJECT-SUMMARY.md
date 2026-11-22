@@ -7474,3 +7474,10 @@ HIRO: "iconya tidak usah pakai box".
   box-shadow none, `::after` ring + keyframes ico-ring dibuang.
 - Animasi glyph TETAP: fleet (notebook nudge), domain (centang menggambar), treemap (4 petak breathe).
 - Header tetap `items-center`, badge 30x30 di dalam header 36px, pageOverflow 0 @1920.
+### Dashboard: badge icon diperbesar (2026-11-22)
+
+HIRO: "perbesar ikon nya dong".
+
+- Glyph 1.3rem (21px) -> 1.62rem (26px); hover area 1.9rem (30px) -> 2.2rem (35px).
+- Header TIDAK ikut naik: teks (h2 + subtitle) 36px > badge 35px, jadi `items-center` tetap 36px dan card
+  tidak berubah tinggi. pageOverflow 0 @1920 dan @1280.
