@@ -7502,3 +7502,21 @@ lum 125), warna celah (223,219,208) lum 219. Sebelum fix, band itu berisi oklch(
 
 CATATAN: preset lain bisa saja punya tokenShades aneh (border-inverted, bg-accented, dst). Kalau nanti ada
 laporan serupa di objek lain, cari token yang dipakai objek itu, jangan tebak.
+### Dashboard: cincin doughnut jadi per-slice (2026-11-22)
+
+HIRO: "bisa buat cincin itu mengikuti bentuk perubahan masing masing slice nya?" -> dipilih: cincin per-slice
+(bukan satu lingkaran), tiap slice punya seam sendiri yang geometri + animasinya sama dengan slice-nya.
+
+- Track bundar `<circle r=40 stroke-width=14>` DIHAPUS. Gantinya tiap slice punya `seamD` = sektor penuh
+  slice itu (slice + sliver 0.7% yang ditinggalkan), digambar sebelum path slice di dalam `<g>` yang sama,
+  pakai class animasi & `animationDelay` yang sama, `pointer-events: none`.
+- Sudut tajam (r=0) disengaja: seam membulat akan meninggalkan lubang lensa di tengah tiap celah.
+- Efeknya: hover slice membengkak 2 unit -> seam ikut membengkak (slice 60x105 -> 63x110, seam 60x108 ->
+  63x113), dan saat animasi masuk keduanya tumbuh bareng.
+
+BUG YANG SEMPAT LOLOS (dicatat, bukan fatal tapi bikin salah): `acc += pct` jalan sebelum seamD dihitung,
+jadi tiap seam tergeser satu slice ke depan dan menimpa tetangganya. Caranya ketemu: histogram band ring
+dari screenshot - seam 21,5% dari band (harusnya ~1,6% = celah + sudut). Jangan percaya "kelihatan oke".
+
+VERIFIKASI: dark mode seam 1,6% band, warna (44,44,47) rata (tidak ada bercak putih); light carbon token
+dipasang manual -> celah (223,219,208) lum 219, nol pixel gelap (paling gelap = hijau slice lum 125).
