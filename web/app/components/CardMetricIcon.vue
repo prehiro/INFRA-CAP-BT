@@ -85,37 +85,25 @@ defineProps<{
 </template>
 
 <style scoped>
+/* Bare glyph, no plate: the size is almost all hover padding, so the drawing sits on the card like the
+   title's own text instead of inside a coloured square. */
 .metric-ico {
-  position: relative;
   display: grid;
   place-items: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border-radius: 0.65rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 0.5rem;
   color: var(--ui-primary);
-  background: color-mix(in oklab, var(--ui-primary) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ui-primary) 24%, transparent);
-  transition: transform 0.25s ease, background-color 0.25s ease;
+  transition: transform 0.25s ease;
 }
 
 .metric-ico:hover {
-  transform: translateY(-1px) scale(1.06);
-  background: color-mix(in oklab, var(--ui-primary) 20%, transparent);
+  transform: translateY(-1px) scale(1.08);
 }
 
-/* One slow ring per beat: enough to read as alive, slow enough not to compete with the chart. */
-.metric-ico::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  animation: ico-ring 3.8s ease-out infinite;
-}
-
-.glyph,
 .ico-glyph {
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.3rem;
+  height: 1.3rem;
 }
 
 .ico-notebook {
@@ -138,11 +126,6 @@ defineProps<{
 .ico-tile:nth-child(3) { animation-delay: 0.36s; }
 .ico-tile:nth-child(4) { animation-delay: 0.54s; }
 
-@keyframes ico-ring {
-  0%, 62% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--ui-primary) 34%, transparent); }
-  100% { box-shadow: 0 0 0 7px transparent; }
-}
-
 @keyframes ico-nudge {
   0%, 100% { transform: translateX(0); opacity: 0.65; }
   45% { transform: translateX(1.1px); opacity: 1; }
@@ -161,7 +144,6 @@ defineProps<{
 
 /* The badge is decoration; users who ask for less motion get a still icon, not a frozen half-state. */
 @media (prefers-reduced-motion: reduce) {
-  .metric-ico::after,
   .ico-notebook,
   .ico-tick,
   .ico-tile {

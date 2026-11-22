@@ -7465,3 +7465,12 @@ bisa ubah ini jadi sebuah icon yang merepresentasikan masing-masing card? buat y
 
 TERUKUR: 3 badge 34x34 di dalam header 36px, pageOverflow 0 @1280 dan 1440; coverage SVG 25/26/34%
 (bukan kosong), tooltip "477 unit" muncul saat hover.
+### Dashboard: badge icon tanpa box (2026-11-22)
+
+HIRO: "iconya tidak usah pakai box".
+
+- Plate 34px (bg accent 12% + inset ring + cincin berdenyut) DIHAPUS. Sekarang glyphnya langsung di atas
+  card: box hover 30x30 (padding untuk target hover), glyph 21x21 (naik dari 18px), background transparan,
+  box-shadow none, `::after` ring + keyframes ico-ring dibuang.
+- Animasi glyph TETAP: fleet (notebook nudge), domain (centang menggambar), treemap (4 petak breathe).
+- Header tetap `items-center`, badge 30x30 di dalam header 36px, pageOverflow 0 @1920.
