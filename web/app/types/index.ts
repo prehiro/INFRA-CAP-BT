@@ -1,6 +1,8 @@
 export type AccessPointType = 'primary' | 'bcp'
 export interface AccessPoint {
   id: number
+  /** Brand/Model exactly as typed, e.g. "Aruba AP-515". Offered as a suggestion on the next add. */
+  brandModel: string
   hostname: string
   ipAddress: string
   position: string

@@ -7593,3 +7593,40 @@ Verifikasi: 4 warna di ribbon == 4 warna di bar (urutan sama); hover 2200AP -> r
 baris [0.35,0.35,1,0.35]; tooltip "2200AP 20.0% 4 unit · PowerPlus Dipasang di 2 lokasi"; 0 label
 terpotong di 1920/1600/1440; page 1080/900/900 px tanpa scrollbar; 0 console error; light carbon: 4 warna
 tetap kebaca di atas track abu muda.
+### Access Point: field Brand/Model + smart-fill (2026-11-22)
+
+HIRO: "pada saat register/add access point saya mau ada kolom Brand/Model, posisikan text box sebagai yang
+pertama di isi oleh user. pastikan bisa smartfill berdasar record yang sebelumnya pernah di isi user".
+
+DB: kolom baru `NetworkAccessPoints.BrandModel` nvarchar(120) NOT NULL default '' + migration
+`20261122101723_AddApBrandModel` (Data/Migrations). Sudah di-apply ke DB dev (dotnet ef database update);
+API apply otomatis lewat MigrateAsync saat boot.
+
+API (NetworkFloorMapsController):
+- `AccessPointInput` + `BrandModel`, `Copy`, `ToDto`, `Get` projection ikut.
+- Validate: Brand/Model WAJIB diisi (maks 120). Sengaja required - kalau opsional, field-nya cuma hiasan.
+- Endpoint baru `GET /api/network/floor-maps/access-points/values` -> `[{value, count}]` distinct Brand/Model
+  seluruh register, terbanyak dulu. Sengaja server-side: page cuma pegang AP satu floor, sedangkan kolam
+  saran yang berguna = semua AP yang pernah dibuat. 0 dependency ke record EAV.
+
+Web:
+- `types/index.ts` AccessPoint += brandModel (AccessPointInput ikut karena Omit).
+- `useApi.ts`: `apiAccessPointValues()`.
+- `pages/networks/access-point.vue`: draft.brandModel; field Brand/Model pakai SuggestInput (suggestion
+  dari endpoint, meta "used N times", chip "Selected from existing records") ditaruh PALING ATAS di dialog
+  (di atas radio type), draft prefill saat edit, payload + validasi client, pool di-refresh setelah save.
+- Focus: SuggestInput menyimpan <input> di dalam root-nya sendiri, jadi id di komponen mendarat di wrapper
+  -> helper baru `focusSuggest(id)` yang query `#id input`. Watch showEditor sekarang fokus ke #ap-brand.
+- Modal details: baris Brand/Model.
+
+VERIFIKASI (browser, AP di BUILDING 1):
+- Dialog add: urutan label = Brand/Model, Access point type, Hostname, IP address, Position; caret sudah di
+  field Brand/Model (placeholder "e.g. Aruba AP-515") saat dialog dibuka.
+- Isi "Aruba AP-515" + hostname + IP -> save -> "Access point added", API balik brandModel "Aruba AP-515".
+- Tambah AP kedua, ketik "Aru" -> saran "Aruba AP-515 used once" muncul; /values balik
+  [{"value":"Aruba AP-515","count":1}].
+- Modal details AP lama -> baris "Brand/Model = —" (record lama memang kosong).
+- Test AP (AP-TEST-01) sudah DIHAPUS lagi: register balik 4 AP / 5 marker. 0 console error.
+
+CATATAN: 4 AP yang sudah ada (Ap001, AP002, Wwww, 1 lagi) brand-nya masih kosong. Karena field-nya
+required, AP lama harus diedit sekali dan diisi - setelah itu nilainya masuk kolam saran.

@@ -18,6 +18,17 @@ const uploadPreviewUrl = ref('')
 const uploadError = ref('')
 const showUpload = ref(false)
 const replacingId = ref<number | null>(null)
+// SuggestInput keeps its <input> inside its own root element, so an id on the component lands on the
+// wrapper - the caret has to be claimed through it.
+function focusSuggest(id: string) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`#${id} input`) as HTMLInputElement | null
+    if (!el) return
+    el.focus()
+    const end = el.value.length
+    el.setSelectionRange?.(end, end)
+  })
+}
 // Opening an add/edit dialog should land the caret in the first text box, no extra click.
 function focusField(id: string) {
   // The modal grabs focus while it mounts, so wait a frame and then claim it back.
@@ -85,13 +96,31 @@ function selectFloor(id: number) {
 }
 const showEditor = ref(false)
 const showDetails = ref(false)
-watch(showEditor, async (open) => { if (open) { await nextTick(); focusField('ap-hostname') } })
+watch(showEditor, async (open) => { if (open) { await nextTick(); focusSuggest('ap-brand') } })
 const detailError = ref('')
 const copiedIpId = ref<number | null>(null)
 let copyFeedbackTimer: ReturnType<typeof setTimeout> | null = null
 const editingId = ref<number | null>(null)
 const editorError = ref('')
-const draft = reactive<AccessPointInput>({ hostname: '', ipAddress: '', position: '', apType: 'primary', x: 0.5, y: 0.5 })
+const draft = reactive<AccessPointInput>({ brandModel: '', hostname: '', ipAddress: '', position: '', apType: 'primary', x: 0.5, y: 0.5 })
+
+/**
+ * Brand/Model already used across the whole register, most used first - the suggestion pool for the
+ * first field of this dialog. Server-side grouped query, not a distinct over the current floor: the
+ * page only holds one floor's access points, and the useful pool is every AP anyone has registered.
+ */
+const brandValues = ref<{ value: string, count: number }[]>([])
+async function loadBrandValues() {
+  brandValues.value = await apiAccessPointValues().catch(() => [])
+}
+const brandSuggestions = computed(() => brandValues.value.map(v => ({
+  value: v.value,
+  label: v.value,
+  meta: v.count === 1 ? 'used once' : `used ${v.count} times`,
+  // The chip under the box says where the value came from, like the register's own smart-fill.
+  hint: 'Selected from existing records'
+})))
+loadBrandValues()
 const mapEl = ref<HTMLElement | null>(null)
 const mapStageEl = ref<HTMLElement | null>(null)
 const mapNatural = ref<{ w: number; h: number } | null>(null)
@@ -377,16 +406,17 @@ function openEdit(point: AccessPoint) {
   if (!isAdmin.value || busy.value) return
   showDetails.value = false
   editingId.value = point.id
-  Object.assign(draft, { hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, apType: point.apType, x: point.x, y: point.y })
+  Object.assign(draft, { brandModel: point.brandModel ?? '', hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, apType: point.apType, x: point.x, y: point.y })
   editorError.value = ''; showEditor.value = true
 }
 async function savePoint() {
   if (!isAdmin.value || !floor.value || busy.value) return
+  if (!draft.brandModel.trim()) { editorError.value = 'Brand/Model is required.'; return }
   if (!draft.hostname.trim() || !draft.ipAddress.trim()) { editorError.value = 'Hostname and IP address are required.'; return }
   const id = floor.value.id
   busy.value = true; editorError.value = ''
   try {
-    const payload = { ...draft, hostname: draft.hostname.trim(), ipAddress: draft.ipAddress.trim(), position: draft.position.trim() }
+    const payload = { ...draft, brandModel: draft.brandModel.trim(), hostname: draft.hostname.trim(), ipAddress: draft.ipAddress.trim(), position: draft.position.trim() }
     const saved = editingId.value === null ? await apiCreateAccessPoint(id, payload)
       : await apiUpdateAccessPoint(id, editingId.value, payload)
     if (floor.value?.id === id) {
@@ -397,6 +427,8 @@ async function savePoint() {
     }
     floors.value = floors.value.map(f => f.id === id ? { ...f, accessPointCount: floor.value?.accessPoints.length ?? 0 } : f)
     showEditor.value = false
+    // The value just saved becomes a suggestion for the next access point.
+    loadBrandValues()
     toast.add({ title: editingId.value === null ? 'Access point added' : 'Access point updated', color: 'primary' })
   } catch (e) { editorError.value = message(e) }
   finally { busy.value = false }
@@ -600,6 +632,22 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <span v-else class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showEditor }"><UIcon name="i-lucide-wifi" class="size-5" /></span>
               <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p><p class="text-xs text-muted">Position: {{ Math.round(draft.x * 100) }}% across · {{ Math.round(draft.y * 100) }}% down</p></div>
             </div>
+            <!-- FIRST thing in the dialog: the pair is what identifies the unit, and the suggestion
+                 list means an existing spelling is one keystroke away instead of retyped by hand.
+                 id on the wrapper, not on SuggestInput: that component keeps its <input> inside its own
+                 root, so `#ap-brand input` is how the caret gets claimed on open. -->
+            <div id="ap-brand">
+              <label class="mb-1.5 block text-sm font-medium text-highlighted">Brand/Model</label>
+              <SuggestInput
+                v-model="draft.brandModel"
+                :suggestions="brandSuggestions"
+                :invalid="busy"
+                placeholder="e.g. Aruba AP-515"
+                header="Brand/Model already in the register"
+                header-bottom-gap
+              />
+            </div>
+
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Access point type</legend>
               <div class="grid grid-cols-2 gap-2">
@@ -648,6 +696,10 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
             </div>
             <dl class="divide-y divide-default overflow-hidden rounded-xl border border-default bg-elevated/40 text-sm">
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3"><dt class="text-muted">Type</dt><dd class="font-semibold" :class="selectedPoint.apType === 'bcp' ? 'text-amber-700 dark:text-amber-400' : 'text-primary'">{{ selectedPoint.apType === 'bcp' ? 'BCP · Backup' : 'Primary · Main network' }}</dd></div>
+              <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3">
+                <dt class="text-muted">Brand/Model</dt>
+                <dd class="min-w-0 break-words font-semibold text-highlighted">{{ selectedPoint.brandModel || '—' }}</dd>
+              </div>
               <div class="grid grid-cols-[105px_minmax(0,1fr)] gap-3 px-3 py-3">
                 <dt class="text-muted">IP address</dt>
                 <dd class="flex min-w-0 items-center gap-2">

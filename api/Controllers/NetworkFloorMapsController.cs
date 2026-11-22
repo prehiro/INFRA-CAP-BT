@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
-public record AccessPointInput(string? Hostname, string? IpAddress, string? Position, double X, double Y, string ApType = "primary");
+public record AccessPointInput(string? Hostname, string? IpAddress, string? Position, double X, double Y, string ApType = "primary", string? BrandModel = null);
 public record AccessPointPosition(double X, double Y);
 
 [ApiController]
@@ -46,7 +46,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     {
         var floor = await db.NetworkFloorMaps.AsNoTracking().Where(x => x.Id == id)
             .Select(x => new { x.Id, x.Name, x.CreatedAt, AccessPoints = x.AccessPoints
-                .OrderBy(a => a.Hostname).Select(a => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y }).ToList() })
+                .OrderBy(a => a.Hostname).Select(a => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y, a.BrandModel }).ToList() })
             .SingleOrDefaultAsync(ct);
         return floor is null ? NotFound() : Ok(floor);
     }
@@ -182,6 +182,25 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         return NoContent();
     }
 
+    /// <summary>Every Brand/Model the register has ever used, most used first.</summary>
+    /// <remarks>
+    /// The add dialog offers these as suggestions so the same access point is not spelled three ways.
+    /// A grouped query, not a client-side distinct over the record list: the page only ever holds one
+    /// floor's access points, while the useful suggestion pool is the whole register.
+    /// </remarks>
+    [HttpGet("access-points/values")]
+    public async Task<IActionResult> AccessPointValues(CancellationToken ct)
+    {
+        var rows = await db.NetworkAccessPoints.AsNoTracking()
+            .Where(x => x.BrandModel != null && x.BrandModel != "")
+            .GroupBy(x => x.BrandModel)
+            .Select(g => new { Value = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ThenBy(x => x.Value)
+            .ToListAsync(ct);
+        return Ok(rows);
+    }
+
     [HttpPost("{id:int}/access-points")]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> AddAccessPoint(int id, AccessPointInput input, CancellationToken ct)
@@ -237,8 +256,11 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     private static bool ValidCoordinate(double n) => double.IsFinite(n) && n >= 0 && n <= 1;
     private static string? Validate(AccessPointInput input)
     {
+        var brand = input.BrandModel?.Trim();
         var host = input.Hostname?.Trim();
         var ip = input.IpAddress?.Trim();
+        if (string.IsNullOrWhiteSpace(brand) || brand.Length > 120)
+            return "Brand/Model is required (maximum 120 characters).";
         if (string.IsNullOrWhiteSpace(host) || host.Length > 160)
             return "Hostname is required (maximum 160 characters).";
         if (string.IsNullOrWhiteSpace(ip) || ip.Length > 45 || !IPAddress.TryParse(ip, out _))
@@ -252,6 +274,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
     }
     private static void Copy(AccessPointInput source, NetworkAccessPoint target)
     {
+        target.BrandModel = source.BrandModel!.Trim();
         target.Hostname = source.Hostname!.Trim();
         target.IpAddress = source.IpAddress!.Trim();
         target.Position = source.Position?.Trim() ?? string.Empty;
@@ -259,7 +282,7 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         target.X = source.X;
         target.Y = source.Y;
     }
-    private static object ToDto(NetworkAccessPoint a) => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y };
+    private static object ToDto(NetworkAccessPoint a) => new { a.Id, a.Hostname, a.IpAddress, a.Position, a.ApType, a.X, a.Y, a.BrandModel };
     private static string? ImageType(byte[] b)
     {
         if (b.Length >= 8 && b.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })) return "image/png";

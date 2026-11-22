@@ -83,6 +83,12 @@ export const apiUpdateNetworkFloor = (id: number, name: string | null, image: Fi
 }
 export const apiDeleteNetworkFloor = (id: number, scope?: FloorScope) =>
   request<void>(`/network/floor-maps/${id}${scope ? `?scope=${scope}` : ''}`, { method: 'DELETE' })
+export type AccessPointValue = { value: string, count: number }
+
+/** Every Brand/Model already in the register, most used first - the add dialog's suggestion pool. */
+export const apiAccessPointValues = () =>
+  request<AccessPointValue[]>('/network/floor-maps/access-points/values')
+
 export const apiCreateAccessPoint = (floorId: number, point: AccessPointInput) =>
   request<AccessPoint>(`/network/floor-maps/${floorId}/access-points`, { method: 'POST', body: point })
 export const apiUpdateAccessPoint = (floorId: number, id: number, point: AccessPointInput) =>

@@ -21,6 +21,10 @@ public class NetworkAccessPoint
     public NetworkFloorMap FloorMap { get; set; } = null!;
     public string Hostname { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
+    // Brand/Model as the user typed it, e.g. "Aruba AP-515" - one free-text column rather than two,
+    // because the register is small and the pair is always read together. The add dialog offers the
+    // values already used as suggestions so the spelling does not drift.
+    public string BrandModel { get; set; } = string.Empty;
     public string Position { get; set; } = string.Empty;
     // Existing access points are primary; BCP units are standby/failover devices.
     public string ApType { get; set; } = "primary";

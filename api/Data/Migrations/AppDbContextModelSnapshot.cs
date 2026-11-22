@@ -297,6 +297,13 @@ namespace Api.Data.Migrations
                         .HasColumnType("nvarchar(12)")
                         .HasDefaultValue("primary");
 
+                    b.Property<string>("BrandModel")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasDefaultValue("");
+
                     b.Property<int>("FloorMapId")
                         .HasColumnType("int");
 

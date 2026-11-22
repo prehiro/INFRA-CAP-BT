@@ -98,6 +98,8 @@ public class AppDbContext : DbContext
             e.HasIndex(x => x.FloorMapId);
             e.Property(x => x.Hostname).HasMaxLength(160).IsRequired();
             e.Property(x => x.IpAddress).HasMaxLength(45).IsRequired();
+            // Default '' so the migration can add the column to rows that predate it.
+            e.Property(x => x.BrandModel).HasMaxLength(120).IsRequired().HasDefaultValue(string.Empty);
             e.Property(x => x.Position).HasMaxLength(200).IsRequired();
             e.Property(x => x.ApType).HasMaxLength(12).HasDefaultValue("primary").IsRequired();
         });
