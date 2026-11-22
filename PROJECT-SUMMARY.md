@@ -7420,4 +7420,4 @@ HIRO: "Ganti subtitle Registered PC card jadi Overall PC · By Form Factor".
   di-hardcode; grep 0 sisa). Nilai dari API (`mix.label` = "Computer Chassis") tidak dipakai lagi di card ini.
 - Card Active PC tidak disentuh: masih "By Chassis · PC Ledger".
 
-CATATAN FILE: index.vue pakai CRLF - patch yang猫粮 menyertakan newline harus pakai \r\n.
+CATATAN FILE: index.vue pakai CRLF - patch yang mencakup newline harus pakai \r\n (kalau \n saja, matcher gagal padahal teksnya kelihatan sama).
