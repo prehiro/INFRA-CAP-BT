@@ -7700,3 +7700,23 @@ teks diukur: "U01-U03 (3U)" 86x21, "Not Installed" 92x21, "U01-U02 (2U)" 86x21 -
 melewati tepi card.
 
 CATATAN: tombol preset camera di dock bawah masih bernama "Bottom UPS" (data-cam="ups", bukan title).
+### Rack details: hover UPS - buang LOAD + status, title & SN center (2026-11-22)
+
+HIRO: "ketika hover ups, hapus informasi load, dan status dibawah SN juga hapus. title dan sn nya buat center".
+
+Tooltip hover (#hover-tooltip) sebelumnya untuk UPS menampilkan 4 baris:
+`U01-U02 | LOAD 92% | ONLINE` / `APC Smart-UPS 3000VA (2U)` / `S/N: AS2408190442` /
+`Battery 100% • 230V Pure Sinewave • ~20 min runtime`.
+
+- `LOAD 92%` (dipasang di slot `ip` userData) DIHAPUS - field `ip` tidak lagi dikirim untuk UPS.
+- baris status `Battery 100% • 230V ...` (di bawah SN) DIHAPUS - field `meta` tidak lagi dikirim.
+- Title + SN di-center lewat class `tt-ups` di root tooltip:
+  `#hover-tooltip.tt-ups #tt-name { text-align: center }`,
+  `#hover-tooltip.tt-ups #tt-sn-row { justify-content: center }`. SN row dapat id `tt-sn-row`.
+- Tooltip switch TIDAK diubah: `isUps` false -> `hidden` dilepas, name/SN rata kiri seperti semula.
+- `loadPct` & `runtimeMins` TETAP dipakai (texture LCD di 3D), jadi bukan dead code.
+
+VERIFIKASI (hover di canvas, D-B1):
+- UPS: tt-ip display none, tt-meta display none, tt-name text-align center, tt-sn-row justify center,
+  tinggi tooltip 265x100 (sebelumnya 4 baris), pasangan "S/N: xxx" center 389 == center box 389.
+- Switch (SW-EDGE-03): ip "10.10.10.13" TAMPIL, meta TAMPIL, name align start, tanpa class tt-ups.

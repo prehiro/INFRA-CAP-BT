@@ -1248,13 +1248,14 @@ onMounted(async () => {
         new THREE.MeshBasicMaterial({ visible: false })
       )
       upsHitbox.position.set(0, 0, 0.015)
+      // No `ip` and no `meta` on purpose: the hover card for the UPS shows identity only
+      // (slot, serial, name). The load figure and the battery/runtime status line were both
+      // removed from it, so carrying them here would be dead data.
       upsHitbox.userData = {
         kind: 'ups',
         slot: `U01–U0${upsU}`,
-        ip: `LOAD ${loadPct}%`,
         sn: upsSerial || 'UNASSIGNED',
-        name: `APC Smart-UPS ${upsModel}VA (${upsU}U)`,
-        meta: `Battery 100% • 230V Pure Sinewave • ~${runtimeMins} min runtime`
+        name: `APC Smart-UPS ${upsModel}VA (${upsU}U)`
       }
       upsGroup.add(upsHitbox)
       interactiveHitboxes.push(upsHitbox)
@@ -2366,11 +2367,17 @@ onMounted(async () => {
       const deviceHits = raycaster.intersectObjects(interactiveHitboxes, false)
       if (deviceHits.length > 0) {
         const data = deviceHits[0].object.userData
+        const isUps = data.kind === 'ups'
         ttSlot.textContent = data.slot
-        ttIp.textContent = data.ip
+        ttIp.textContent = data.ip || ''
         ttSn.textContent = data.sn || 'UNASSIGNED'
         ttName.textContent = data.name
-        ttMeta.textContent = data.meta
+        ttMeta.textContent = data.meta || ''
+        // A switch card keeps its address, port count and status line; a UPS card is an identity
+        // plate: no load figure, no battery/runtime line, name and serial centred.
+        ttIp.classList.toggle('hidden', isUps)
+        ttMeta.classList.toggle('hidden', isUps)
+        tooltip.classList.toggle('tt-ups', isUps)
         const local = toLocal(e)
         tooltip.style.left = `${local.x}px`
         tooltip.style.top = `${local.y}px`
@@ -2679,7 +2686,7 @@ let accentPoll = 0
           </span>
         </div>
         <div id="tt-name" class="text-xs font-semibold text-white mt-1">SW-CORE-01 — Catalyst 9300-48P</div>
-        <div class="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-700/80">
+        <div id="tt-sn-row" class="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-slate-300 bg-slate-900/90 px-2 py-0.5 rounded border border-slate-700/80">
           <span class="text-slate-500">S/N:</span>
           <span id="tt-sn" class="text-primary font-semibold tracking-wider">FCW2419L08A</span>
         </div>
@@ -2957,6 +2964,8 @@ let accentPoll = 0
 .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
+#hover-tooltip.tt-ups #tt-name { text-align: center; }
+#hover-tooltip.tt-ups #tt-sn-row { justify-content: center; }
 #canvas-container {
   position: absolute;
   inset: 0;
