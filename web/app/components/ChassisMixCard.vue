@@ -40,8 +40,8 @@ const props = withDefaults(defineProps<{
   state?: 'loading' | 'ready' | 'error'
 }>(), {
   title: 'Chassis Mix',
-  label: 'Computer Chassis',
-  source: 'All registers',
+  label: 'By Chassis',
+  source: 'All registered PC',
   state: 'ready'
 })
 

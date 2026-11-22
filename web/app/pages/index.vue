@@ -140,13 +140,6 @@ const activeState = ref<'loading' | 'ready' | 'error'>('loading')
  *  pages/device/pcledger.vue filters its default table on. */
 const isActive = (v: string) => v === '' || v === '(kosong)' || v === 'Active'
 
-/**
- * Chassis rows -> active rows only: the PC Ledger list filtered the way its page filters its default
- * table, so a chassis slice is 189 / 164 / 94 and the card totals 447 instead of 453.
- *
- * There is deliberately no register breakdown on this card: a slice already IS one register (active),
- * and "where are the rest" is the question the All Capacitor PC's card next to it answers.
- */
 function activeOnly(rows: DistItem[]) {
   return rows
     .map(row => ({
@@ -263,7 +256,7 @@ const apChips = computed(() =>
             <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-4 @min-[520px]:grid-cols-2 @min-[700px]:grid-cols-3 @min-[860px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
                 class="col-span-1"
-                title="All Capacitor PC's"
+                title="All Capacitor PC"
                 :items="chassis"
                 :total="chassisTotal"
                 :label="chassisLabel"
@@ -274,7 +267,7 @@ const apChips = computed(() =>
                    One column wide, like its neighbours. -->
               <ChassisMixCard
                 class="col-span-1"
-                title="Active PC's"
+                title="Active PC"
                 source="PC Ledger"
                 to="/device/pcledger"
                 :items="activeChassis"

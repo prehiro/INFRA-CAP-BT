@@ -234,7 +234,7 @@ const tiles = computed<Tile[]>(() => {
            height its neighbours already set. -->
       <!-- No space-y-* here: 10 rows x 17px + 9 gaps = 179 > the 172px cap, which left a 2px
            scroll - a scrollbar with nothing to scroll. Rows sit flush; the hover fill separates them. -->
-      <ul class="model-list w-full shrink-0 @min-[420px]:max-h-[172px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
+      <ul class="model-list w-full shrink-0 @min-[420px]:max-h-[118px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
         <li v-for="tile in tiles" :key="tile.label">
           <button
             type="button"
