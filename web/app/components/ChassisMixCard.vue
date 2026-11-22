@@ -114,12 +114,7 @@ const segments = computed(() => {
     const pct = (it.count / sum) * 100
     // A sliver of each slice is left empty so neighbouring segments do not bleed into one another.
     const len = Math.max(pct - 0.7, 0.3)
-    // Captured BEFORE acc advances: the seam is this slice's FULL sector (slice + the sliver it
-    // leaves empty) so it fills the gap and its own rounded-corner notches, and stops exactly where
-    // the next slice's seam starts. Sharp corners on purpose - a rounded seam would leave a
-    // lens-shaped hole in the middle of every gap.
-    const start = acc / 100
-    const t0 = start
+    const t0 = acc / 100
     const t1 = (acc + len) / 100
     acc += pct
 
@@ -129,15 +124,12 @@ const segments = computed(() => {
     const ri = R_IN - (hot ? 2 : 0)
     // Never let the corner radius eat more than a quarter of the inner edge.
     const r = Math.min(CORNER, (t1 - t0) * TAU * ri * 0.25)
-    // Built after ro/ri so the seam swells with the slice on hover instead of staying put.
-    const seamD = ringPath(start, start + pct / 100, ro, ri, 0)
 
     return {
       ...it,
       pct,
       color: COLORS[i % COLORS.length],
       d: ringPath(t0, t1, ro, ri, r),
-      seamD,
       index: i,
       parts: (it.parts ?? []).map(p => ({
         label: p.label,
@@ -267,14 +259,6 @@ function clearTip() {
               class="transition-opacity duration-200"
               :opacity="hovered !== null && hovered !== seg.index ? 0.3 : 1"
             >
-              <!-- The seam is drawn FIRST and animates on the same delay, so it grows with its own
-                   slice: on hover the slice swells 2 units and the seam swells with it, and during the
-                   entrance both scale from the centre together instead of the ring sitting still. -->
-              <path
-                :d="seg.seamD"
-                class="slice-seam"
-                :style="{ animationDelay: `${seg.index * 90}ms` }"
-              />
               <path
                 :d="seg.d"
                 :fill="seg.color"
@@ -364,19 +348,10 @@ function clearTip() {
 <style scoped>
 /* Staggered entrance. This replaces the old dash-array sweep: an annular path has no dash to grow, so
    each slice scales up from the doughnut centre instead. `both` keeps it collapsed during its delay. */
-.slice,
-.slice-seam {
+.slice {
   transform-box: view-box;
   transform-origin: 50px 50px;
   animation: slice-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-/* The seam is what shows through the gap between two slices. Derived from --ui-bg, never from a
-   border token: the carbon preset points --ui-border at shade 950 (near-black) in light mode, which
-   drew every gap as a black line. */
-.slice-seam {
-  fill: color-mix(in oklab, var(--ui-bg) 88%, var(--ui-text) 12%);
-  pointer-events: none;
 }
 
 @keyframes slice-in {
@@ -391,8 +366,7 @@ function clearTip() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .slice,
-  .slice-seam {
+  .slice {
     animation: none;
   }
 }

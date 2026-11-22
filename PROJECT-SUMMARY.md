@@ -7520,3 +7520,19 @@ dari screenshot - seam 21,5% dari band (harusnya ~1,6% = celah + sudut). Jangan 
 
 VERIFIKASI: dark mode seam 1,6% band, warna (44,44,47) rata (tidak ada bercak putih); light carbon token
 dipasang manual -> celah (223,219,208) lum 219, nol pixel gelap (paling gelap = hijau slice lum 125).
+### Dashboard: gap antar slice transparan (2026-11-22)
+
+HIRO: "saya mau tiap gap antar slice transparant bro".
+
+- Semua track di belakang slice DIHAPUS: `seamD`, path `.slice-seam`, CSS-nya, dan variabel `start` yang
+  cuma dipakai seam. Grep: 0 sisa.
+- Celah = background card (SVG transparan), bukan warna grey/cream. Sudut membulat slice jadi benar-benar
+  potongan, bukan "notch yang diisi warna lain".
+- Ini penutup dari tiga iterasi: (1) circle track -> celah hitam di tema terang carbon, (2) seam per-slice
+  -> celah jadi grey yang tetap terbaca sebagai "object", (3) tanpa track -> celah = card.
+
+VERIFIKASI (screenshot + histogram band ring 0.33w..0.47w, scale 3):
+- Dark: 3 warna slice = 97,1% band, sisanya (24,24,27) = warna card, 849 px. Tidak ada warna seam.
+- Light carbon (token preset dipasang manual): celah (255,250,238) = bg card, nol pixel gelap
+  (paling gelap = hijau slice, lum 125).
+- Elemen di SVG: 6 path.slice, 0 .slice-seam, 0 circle.
