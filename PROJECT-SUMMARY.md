@@ -7368,3 +7368,18 @@ Ini efek yang sama dengan animasi CSS yang beku di tab background.
 
 SCROLLBAR: 1920x1080 dan 1440x900 bersih (nol scrollbar, nol clip). 1280x800 dan 1366x768 masih scroll
 (konten 1456 vs 736) - treemap 2 kolom menambah satu baris kartu di lebar segitu.
+### Data: +20 dummy PC aktif ProBook 440 G10 (2026-11-22)
+
+HIRO: "tambah 20 dummy data pc aktif model ProBook 440 G10".
+
+Dibuat lewat POST /api/records/10 (body {"values": {...}}) mengikuti konvensi batch dummy yang sudah ada
+(batch 535720): staff_name "DUMMY Staff 0401..0420", email dummy.535721.0401..@infra.test,
+gid DMY-535721-0401.., computer_sn DMY-535721-SN0401.., remark2 "Synthetic test data - batch 535721".
+nomor 458..477 (lanjut dari max 457, field unik). chassis Notebook, manufacturer HP, lokasi QA Warehouse,
+asset_status NULL (= aktif, sama seperti baris dummy lama).
+
+Hasil terverifikasi di dashboard: PC per Model 461 unit, ProBook 440 G10 100 (21,7%) jadi terbesar,
+Active PC's 461 unit - kedua card konsisten. pageOverflow 0.
+
+Catatan data: ada model "G11" 1 unit - kelihatannya typo (bukan salah script ini, rows itu sudah ada
+sebelum seeding; script hanya menyentuh computer_model "ProBook 440 G10").
