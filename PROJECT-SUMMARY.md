@@ -7668,3 +7668,22 @@ VERIFIKASI (browser):
   #ap-brand, alert "Brand/Model is required - pick one from the list or type a new one."
 - Ketik nilai -> ring-error langsung hilang. Cancel -> tertutup, 0 console error.
 - Data tidak berubah: Ap001 dibiarkan kosong, Wwww tetap "Ubiquiti UniFi".
+### Rack details: tombol Add Cisco 1U Switch dipindah ke atas (2026-11-22)
+
+HIRO: "sekarang ke modal rack details, tolong pindahkan tombol + Add Cisco 1U switch ke atas section
+switch asset".
+
+- Blok `<!-- Add Switch Action -->` (wrapper div + `#btn-add-switch`) dipindah dari BAWAH
+  `#switch-editor-card` ke ATAS card itu, jadi urutan di `#view-hardware`:
+  Add Cisco 1U Switch -> Switch Asset (editor) -> Bottom UPS.
+- Aman: semua kontrol panel ini di-wire lewat `getElementById` (btn-add-switch, switch-editor-card, dst),
+  dan tidak ada `nextElementSibling`/`children[n]` di kolom itu (satu-satunya `children[0]` milik
+  THREE.Group). Jadi memindah markup tidak bisa memutus listener.
+
+VERIFIKASI (modal D-B1 di /networks/network-rack):
+- Urutan terukur: Add Cisco 1U Switch (y=309, 277x34) -> switch-editor-card (y=355, 228) ->
+  Bottom UPS (y=595, 186). Tombol terlihat (height>0, visibility visible).
+- Klik tombol -> benar-benar nambah switch: toast "Adding SW-EDGE-13 (10.10.10.23) at U17...",
+  free 28U -> 27U. Lalu dihapus lagi lewat konfirmasi "Delete this switch?" -> free balik 28U,
+  editor balik U41, API: D-B1 punya 12 switch (SW-EDGE-01..12), tidak ada SW-EDGE-13.
+- Data BRO TIDAK berubah.

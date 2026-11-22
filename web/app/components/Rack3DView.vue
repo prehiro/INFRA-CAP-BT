@@ -2736,6 +2736,18 @@ let accentPoll = 0
 
       <!-- TAB 1: HARDWARE, SWITCH CONFIG & UPS MANAGEMENT -->
       <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-3">
+        <!-- Add Switch Action - above the editor on purpose: adding a switch is the primary thing to
+             do with an empty rack, and with the editor card first the button sat below a card that is
+             hidden until something is selected. -->
+        <div class="flex items-center justify-between gap-2">
+          <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition flex items-center justify-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Cisco 1U Switch
+          </button>
+        </div>
+
         <!-- Selected Switch Editor Card -->
         <div id="switch-editor-card" class="relative overflow-hidden p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/95 to-slate-950/95 border border-primary/35 shadow-lg shadow-primary/10 space-y-2.5">
           <div class="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-primary via-primary to-amber-400"></div>
@@ -2787,15 +2799,7 @@ let accentPoll = 0
           </div>
         </div>
 
-        <!-- Add Switch Action -->
-        <div class="flex items-center justify-between gap-2">
-          <button id="btn-add-switch" class="w-full py-2 px-3 rounded-xl text-xs font-semibold bg-primary/20 text-primary border border-primary/40 hover:bg-primary/30 transition flex items-center justify-center gap-1.5">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Cisco 1U Switch
-          </button>
-        </div>
+
 
         <!-- Bottom UPS Selector & Serial Number (Always Bottom U's) -->
         <div class="p-3.5 rounded-2xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 border border-emerald-500/25 space-y-2.5">
