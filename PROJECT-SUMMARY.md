@@ -7304,3 +7304,15 @@ HIRO: "pindahkan server metrics jadi di sebelah kanan halaman. atur juga supaya 
 HASIL (diukur, bukan dilihat): 1920x1080, 1600x900, 1440x900 -> nol scrollbar, nol clip, tiga chart
 CPU/MEMORY/DISK utuh, 7 kartu semua muat. 1366x768 MASIH scroll: 3 kolom x 306px = 952px sementara
 viewport cuma menyediakan ~430px setelah banner - tidak mungkin muat tanpa memotong isi kartu.
+### Dashboard: hapus tile Factory PC + UPS Register (2026-11-22)
+
+HIRO: "card 10 factory pc dan 20 ups register hapus saja" (sebelum treemap baru dipasang di slot 2 kolom
+kanan card Active PC's).
+
+- Dua entri DashboardCard dibuang dari v-for di index.vue.
+- Kode yang jadi mati ikut dihapus: useFetch('/ups') + `ups`, dan `countOf()` (cuma dipakai tile Factory PC).
+  Grep: tidak ada sisa referensi countOf/ups di index.vue.
+- Doc header diupdate. Console bersih, pageOverflow 0.
+
+Grid sementara: 4 kartu (All Capacitor PC's, Active PC's, Network Racks, Access Points 2 kolom) -> di 4 kolom
+baris 1 isi 3 + 1 slot kosong, baris 2 Access Points. Slot kosong itulah tempat treemap 2 kolom.

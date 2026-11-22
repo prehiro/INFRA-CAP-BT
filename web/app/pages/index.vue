@@ -4,9 +4,11 @@
  *
  * WHAT IS ON IT
  * Welcome banner, the module tiles, and the live Server Metrics rail down the right edge - one tile
- * per module that has a page, each
- * carrying its real record count - plus two chassis doughnuts: "All Capacitor PC's" for the whole fleet
- * and "Active PC's" for the PC Ledger list on its own.
+ * per module that has a page, each carrying its real record count - plus two chassis doughnuts
+ * ("All Capacitor PC's" for the whole fleet, "Active PC's" for the active PC Ledger list).
+ *
+ * Factory PC and UPS Register tiles were removed: both were single-number counts of registers that
+ * already have their own pages, and the two chassis doughnuts answer the question better.
  *
  * WHY TWO DOUGHNUTS AND NOT ONE
  * They answer different questions and count different populations: All Capacitor PC's is pc_ledger +
@@ -32,12 +34,6 @@ const { data: entities } = await useFetch<EntityMeta[]>('/entities', {
   default: () => []
 })
 
-const { data: ups } = await useFetch<UpsUnit[]>('/ups', {
-  baseURL: useRuntimeConfig().public.apiBase,
-  headers: authHeaders,
-  default: () => []
-})
-
 const { data: rackFloors } = await useFetch<FloorMapSummary[]>('/network/floor-maps?scope=rack', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
@@ -51,9 +47,6 @@ const { data: apFloors } = await useFetch<FloorMapSummary[]>('/network/floor-map
 })
 
 const list = computed(() => (entities.value as EntityMeta[]) ?? [])
-
-/** Record count for a dynamic entity, straight from the /entities payload. */
-const countOf = (slug: string) => list.value.find(e => e.slug === slug)?.recordCount ?? 0
 
 /** Resolved by slug, never by id: dev and prod databases number their entities differently. */
 const pcLedgerId = computed(() => list.value.find(e => e.slug === 'pc_ledger')?.id ?? null)
@@ -253,8 +246,6 @@ const apChips = computed(() =>
 
               <DashboardCard
                 v-for="card in [
-                  { to: '/device/factorypc', label: 'Factory PC', value: countOf('factory_pc'), icon: 'i-lucide-laptop', tone: 'rose' },
-                  { to: '/device/ups', label: 'UPS Register', value: (ups as UpsUnit[] ?? []).length, icon: 'i-lucide-battery-charging', tone: 'amber' },
                   { to: '/networks/network-rack', label: 'Network Racks', value: rackCount, sub: `${rackFloorCount} floor`, icon: 'i-lucide-server', tone: 'cyan' },
                   { to: '/networks/access-point', label: 'Access Points', value: apCount, sub: `${apFloorCount} floor`, icon: 'i-lucide-wifi', tone: 'primary', wide: true, chips: apChips }
                 ]"
