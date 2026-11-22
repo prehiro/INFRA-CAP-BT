@@ -109,6 +109,14 @@ const draft = reactive<AccessPointInput>({ brandModel: '', hostname: '', ipAddre
  * first field of this dialog. Server-side grouped query, not a distinct over the current floor: the
  * page only holds one floor's access points, and the useful pool is every AP anyone has registered.
  */
+/**
+ * True only when THIS field is the thing that failed validation - not while a save is running.
+ * It used to be wired to `busy`, which painted the box red for the whole request: on the cold remote
+ * SQL server that is seconds of red on a field that is perfectly fine.
+ */
+const brandInvalid = ref(false)
+watch(() => draft.brandModel, (v) => { if (v.trim()) brandInvalid.value = false })
+
 const brandValues = ref<{ value: string, count: number }[]>([])
 async function loadBrandValues() {
   brandValues.value = await apiAccessPointValues().catch(() => [])
@@ -358,8 +366,8 @@ function openAdd(x = 0.5, y = 0.5) {
   if (!isAdmin.value || !floor.value || busy.value) return
   showDetails.value = false
   editingId.value = null
-  Object.assign(draft, { hostname: '', ipAddress: '', position: '', apType: 'primary', x, y })
-  editorError.value = ''; showEditor.value = true
+  Object.assign(draft, { brandModel: '', hostname: '', ipAddress: '', position: '', apType: 'primary', x, y })
+  editorError.value = ''; brandInvalid.value = false; showEditor.value = true
 }
 function openDetails(point: AccessPoint) {
   if (point.id === suppressMarkerClickId && performance.now() < suppressMarkerClickUntil) return
@@ -407,11 +415,16 @@ function openEdit(point: AccessPoint) {
   showDetails.value = false
   editingId.value = point.id
   Object.assign(draft, { brandModel: point.brandModel ?? '', hostname: point.hostname, ipAddress: point.ipAddress, position: point.position, apType: point.apType, x: point.x, y: point.y })
-  editorError.value = ''; showEditor.value = true
+  editorError.value = ''; brandInvalid.value = false; showEditor.value = true
 }
 async function savePoint() {
   if (!isAdmin.value || !floor.value || busy.value) return
-  if (!draft.brandModel.trim()) { editorError.value = 'Brand/Model is required.'; return }
+  if (!draft.brandModel.trim()) {
+    brandInvalid.value = true
+    editorError.value = 'Brand/Model is required - pick one from the list or type a new one.'
+    focusSuggest('ap-brand')
+    return
+  }
   if (!draft.hostname.trim() || !draft.ipAddress.trim()) { editorError.value = 'Hostname and IP address are required.'; return }
   const id = floor.value.id
   busy.value = true; editorError.value = ''
@@ -430,7 +443,10 @@ async function savePoint() {
     // The value just saved becomes a suggestion for the next access point.
     loadBrandValues()
     toast.add({ title: editingId.value === null ? 'Access point added' : 'Access point updated', color: 'primary' })
-  } catch (e) { editorError.value = message(e) }
+  } catch (e) {
+    editorError.value = message(e)
+    if (/brand\/model/i.test(editorError.value)) brandInvalid.value = true
+  }
   finally { busy.value = false }
 }
 async function deletePoint() {
@@ -658,7 +674,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 <SuggestInput
                   v-model="draft.brandModel"
                   :suggestions="brandSuggestions"
-                  :invalid="busy"
+                  :invalid="brandInvalid"
                   placeholder="e.g. Aruba AP-515"
                   header="Brand/Model already in the register"
                   header-bottom-gap

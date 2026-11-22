@@ -7644,3 +7644,27 @@ VERIFIKASI (1440x900): legend type y=198; Brand/Model (146,302,221x86) + Hostnam
 IP address (146,430) + Position (383,430); grid 220.5px x2; urutan label = Access point type, Primary, BCP,
 Brand/Model, Hostname, IP address, Position / location. Caret tetap otomatis ke #ap-brand saat dialog buka.
 Di 1024x800 dialog 512px -> 2 kolom 228px, tanpa overflow horizontal. 0 console error.
+### Access Point: kotak Brand/Model merah saat save (2026-11-22)
+
+HIRO: "kenapa box brand/model merah ketika saya save change edit bcp AP".
+
+INI BUG SAYA. `:invalid="busy"` - artinya kotak itu merah SELAMA request save jalan, bukan karena
+datanya salah. Di SQL remote yang cold, satu request bisa 5 detik -> merah 5 detik di field yang
+sebenarnya valid, dan itu kebaca sebagai error validasi.
+
+FIX: flag `brandInvalid` sendiri.
+- `:invalid="brandInvalid"` (bukan busy).
+- Set kalau guard client kena (brand kosong) ATAU server balas pesan yang menyebut Brand/Model.
+- Clear otomatis begitu user menulis nilai (watch draft.brandModel), dan reset setiap dialog dibuka.
+- Guard client sekarang juga mengembalikan caret ke #ap-brand + pesan "Brand/Model is required - pick
+  one from the list or type a new one."
+
+BUG KEDUA yang ketemu sambil jalan: `openAdd()` tidak me-reset `brandModel`, jadi Add AP berikutnya
+mewarisi brand AP sebelumnya. Sekarang Object.assign-nya mengosongkan brandModel.
+
+VERIFIKASI (browser):
+- Edit AP BCP (Wwww, brand "Ubiquiti UniFi") -> Save -> "Access point updated", TIDAK ada ring-error.
+- Edit Ap001 (brand kosong) -> Save -> dialog tetap terbuka, input punya ring-error, caret balik ke
+  #ap-brand, alert "Brand/Model is required - pick one from the list or type a new one."
+- Ketik nilai -> ring-error langsung hilang. Cancel -> tertutup, 0 console error.
+- Data tidak berubah: Ap001 dibiarkan kosong, Wwww tetap "Ubiquiti UniFi".
