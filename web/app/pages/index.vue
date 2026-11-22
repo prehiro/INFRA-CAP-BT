@@ -245,7 +245,7 @@ const apChips = computed(() =>
                 class="col-span-1"
                 title="Registered PC"
                 label="Overall PC"
-                source="By Form Factor"
+                source="By form factor"
                 :items="chassis"
                 :total="chassisTotal"
                 :state="chassisState"
@@ -255,8 +255,9 @@ const apChips = computed(() =>
                    One column wide, like its neighbours. -->
               <ChassisMixCard
                 class="col-span-1"
-                title="Active PC"
-                source="PC Ledger"
+                title="Active Domain Devices"
+                label="Assigned to users"
+                source="By form factor"
                 to="/device/pcledger"
                 :items="activeChassis"
                 :total="activeTotal"

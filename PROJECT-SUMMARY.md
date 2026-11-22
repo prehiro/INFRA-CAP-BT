@@ -7421,3 +7421,12 @@ HIRO: "Ganti subtitle Registered PC card jadi Overall PC · By Form Factor".
 - Card Active PC tidak disentuh: masih "By Chassis · PC Ledger".
 
 CATATAN FILE: index.vue pakai CRLF - patch yang mencakup newline harus pakai \r\n (kalau \n saja, matcher gagal padahal teksnya kelihatan sama).
+### Dashboard: title + subtitle card Active PC (2026-11-22)
+
+HIRO: "Ganti title active pc jadi Active Domain Devices, subtitle nya Assigned to users · By form factor".
+
+- title="Active Domain Devices", label="Assigned to users", source="By form factor".
+  Sebelumnya title="Active PC" + source="PC Ledger" (label default "By Chassis").
+- `to="/device/pcledger"` TETAP - judul card masih diklik ke PC Ledger.
+- Card Registered PC tidak disentuh (subtitle-nya "Overall PC · By form factor"; huruf kecil di "form factor"
+  sudah ada di file sebelum perubahan ini).
