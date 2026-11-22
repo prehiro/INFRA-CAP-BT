@@ -7720,3 +7720,17 @@ VERIFIKASI (hover di canvas, D-B1):
 - UPS: tt-ip display none, tt-meta display none, tt-name text-align center, tt-sn-row justify center,
   tinggi tooltip 265x100 (sebelumnya 4 baris), pasangan "S/N: xxx" center 389 == center box 389.
 - Switch (SW-EDGE-03): ip "10.10.10.13" TAMPIL, meta TAMPIL, name align start, tanpa class tt-ups.
+### Rack details: hover UPS - lebar kartu dikecilin (2026-11-22)
+
+HIRO: "lebar nya kecilin lagi terlalu banyak space kosong di kanan kiri".
+
+Penyebab: `.glass-panel` di #hover-tooltip punya `min-w-[265px]` - floor itu ada untuk switch inspector
+(baris meta "48x RJ45 PoE+ | 4x 10G SFP+ | Click to Edit"). Kartu UPS tidak punya baris itu, jadi 265px
+tinggal jadi padding.
+
+Fix (CSS, hanya untuk UPS): `#hover-tooltip.tt-ups > .glass-panel { min-width: 0; width: auto; }` -> kartu
+mengecil ke lebar kontennya.
+
+VERIFIKASI (hover UPS, D-B1): 265x100 -> **202x88**, padding 15px tiap sisi, nama 1 baris, SN tetap center.
+Switch TIDAK berubah: 265px, minW 265px, meta 1 baris (nama 1 baris) - floor 265 sengaja dipertahankan
+supaya meta switch yang panjang tidak membungkus jadi 2 baris.

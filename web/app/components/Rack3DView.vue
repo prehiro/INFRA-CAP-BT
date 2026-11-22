@@ -2966,6 +2966,10 @@ let accentPoll = 0
 }
 #hover-tooltip.tt-ups #tt-name { text-align: center; }
 #hover-tooltip.tt-ups #tt-sn-row { justify-content: center; }
+/* The card carries min-w-[265px] for the switch inspector's port meta line. A UPS card has none
+   of that, so the 265px floor was mostly padding either side of a short name; let it size to its
+   content instead. */
+#hover-tooltip.tt-ups > .glass-panel { min-width: 0; width: auto; }
 #canvas-container {
   position: absolute;
   inset: 0;
