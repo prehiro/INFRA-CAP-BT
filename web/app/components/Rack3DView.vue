@@ -2808,9 +2808,11 @@ let accentPoll = 0
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Bottom UPS (APC Smart-UPS)
+              Rack UPS
             </span>
-            <span id="ups-slot-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <!-- shrink-0 + whitespace-nowrap: the badge text is "U01–U02 (2U)" once a model is picked,
+                 and without both it wrapped to two lines inside the 320px panel. -->
+            <span id="ups-slot-badge" class="shrink-0 whitespace-nowrap text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
               U01–U02
             </span>
           </div>

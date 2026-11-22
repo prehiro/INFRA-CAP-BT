@@ -7687,3 +7687,16 @@ VERIFIKASI (modal D-B1 di /networks/network-rack):
   free 28U -> 27U. Lalu dihapus lagi lewat konfirmasi "Delete this switch?" -> free balik 28U,
   editor balik U41, API: D-B1 punya 12 switch (SW-EDGE-01..12), tidak ada SW-EDGE-13.
 - Data BRO TIDAK berubah.
+### Rack details: title "Rack UPS" + badge 1 baris (2026-11-22)
+
+HIRO: "title bottom UPS ganti jadi Rack UPS. atur label sebelah kanan nya jadi 1 line saja".
+
+- Title card UPS: "Bottom UPS (APC Smart-UPS)" -> "Rack UPS" (icon lightning tetap).
+- Badge `#ups-slot-badge` (U01-U02 / "U01-U02 (2U)" / "Not Installed") dapat `shrink-0 whitespace-nowrap`.
+  Sebelumnya teks membungkus jadi 2 baris di panel 320px.
+
+VERIFIKASI (modal D-B1): title "Rack UPS"; badge U01-U02 (2U) = 86x21 (1 baris, tidak terpotong). Tiga varian
+teks diukur: "U01-U03 (3U)" 86x21, "Not Installed" 92x21, "U01-U02 (2U)" 86x21 - semua 1 baris, tidak
+melewati tepi card.
+
+CATATAN: tombol preset camera di dock bawah masih bernama "Bottom UPS" (data-cam="ups", bukan title).
