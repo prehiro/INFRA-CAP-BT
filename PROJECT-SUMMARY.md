@@ -7439,3 +7439,11 @@ HIRO: "Ganti title active pc per model jadi Model Treemap. subtitle nya Active f
   tidak ada nilai lama yang terbaca sebagai default.
 - Card lain tidak disentuh. Catatan: title card kedua sekarang "Domain-Joined PC" - itu editan HIRO
   sendiri di file (sebelumnya "Active Domain Devices").
+### Dashboard: subtitle Model Treemap (2026-11-22)
+
+HIRO: "Model Treemap subtitle nya Domain-Joined PC · By brand/model".
+
+- label="Domain-Joined PC" + source="By brand/model" (dulu "Active fleet" / "By form factor").
+- Default prop TreemapCard ikut diselaraskan.
+- CATATAN: teks subtitle ini sekarang sama dengan TITLE card di sebelah kirinya ("Domain-Joined PC").
+  Kalau memang niatnya menunjuk populasi yang sama, tidak masalah; kalau bukan, tinggal bilang.

@@ -270,8 +270,8 @@ const apChips = computed(() =>
               <TreemapCard
                 class="col-span-1 @min-[560px]:col-span-2"
                 title="Model Treemap"
-                label="Active fleet"
-                source="By form factor"
+                label="Domain-Joined PC"
+                source="By brand/model"
                 :items="models"
                 :total="modelsTotal"
                 :state="modelsState"
