@@ -7846,3 +7846,21 @@ VERIFIKASI (browser, rack D-B1):
 DATA: row uji 82 (SW-EDGE-11 U21) dan 83 (SW-EDGE-12 U19) SUDAH DIHAPUS (createdAt 2026-11-22 13:11 & 13:13,
 dibandingkan 2026-11-16 untuk row asli). Rack balik 10 switch, 4 di antaranya 'Catalyst 9200L',
 pool "Catalyst 9200L" x4. (SW-EDGE-13/14 yang sempat ada sudah dihapus HIRO sendiri.)
+### Switch Asset: warna textbox Brand/Model disamakan dengan textbox lain (2026-11-22)
+
+HIRO: "WARNA TEXTBOX BRAND MODEL SAMAKAN DENGAN TEXBOX SWITCH ASSET LAINNYA"
+
+Brand/Model satu-satunya field di card yang BUKAN `<input>` handmade - dia SuggestInput (UInput) karena harus
+membawa daftar smart-fill. Dibiarkan sendiri, dia digambar pakai surface tema app: bg okoklch(0.21 ...),
+border 0, radius 6px, 16px Inter, tinggi 36px - terlihat beda di sebelah Hostname/IP/SN.
+
+Diperbaiki lewat CSS scoped `#input-model :deep(input)` supaya nilainya sama dengan hasil computed
+textbox tetangga: bg slate-950/90 (rgb(2 6 23 / .9)), border 1px slate-700/90 (rgb(51 65 85 / .9)),
+radius 8px, 12px JetBrains Mono, tinggi 30px, teks putih, placeholder slate-500.
+`:focus` = border primary saja (textbox lain juga cuma ganti warna border) - ring inset 2px bawaan UInput
+dimatikan supaya box fokus tidak lebih berat dari tetangganya. State invalid TETAP: ring error 2px inset
+muncul saat tidak fokus (terverifikasi oklch(0.704 0.191 22.216) 0 0 0 2px inset).
+
+VERIFIKASI (browser, D-B1): idle -> height 30px = hostname, radius 8px = hostname, fontSize 12px = hostname,
+bg rgba(2,6,23,0.9), border rgba(51,65,85,0.9); fokus -> border rgb(0,220,130) shadow none; invalid+blur ->
+ring merah 2px inset. Build web 0 error.

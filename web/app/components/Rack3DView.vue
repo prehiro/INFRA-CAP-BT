@@ -70,7 +70,7 @@ const modelOptions = computed(() => props.modelSuggestions.map(v => ({
   value: v.value,
   label: v.value,
   meta: v.count === 1 ? 'used once' : `used ${v.count} times`,
-  hint: 'Selected from existing records'
+  hint: 'Smartfill'
 })))
 
 // Panel messages float over the page instead of being a strip inside the form, HIRO: "buat jadi toast
@@ -2156,7 +2156,7 @@ onMounted(async () => {
         id: newId,
         u: chosenU,
         model: '',
-        hostname: `SW-EDGE-${String(seq).padStart(2, '0')}`,
+        hostname: `NEW-SW-${String(seq).padStart(2, '0')}`,
         ip: `10.10.10.${hostOctet}`,
         sn: `FCW26${String(10 + seq).padStart(2, '0')}X${String(seq).padStart(2, '0')}Z`,
         activePorts: 36 + (seq % 11)
@@ -3116,5 +3116,32 @@ input[type=range]::-webkit-slider-runnable-track {
   cursor: pointer;
   background: #1e293b;
   border-radius: 999px;
+}
+
+/* Brand/Model is the only field in this card that is not a hand-rolled <input>: it is a SuggestInput
+   (UInput) because it has to carry the smart-fill list. Left to itself it paints with the app theme's
+   surface - lighter slate, 6px corners, 16px Inter - which reads as a different control next to its
+   neighbours. HIRO: "WARNA TEXTBOX BRAND MODEL SAMAKAN DENGAN TEXBOX SWITCH ASSET LAINNYA".
+   The values below are the computed ones of the sibling inputs (bg-slate-950/90, border-slate-700/90,
+   rounded-lg, text-xs font-mono), stated literally because the siblings state them literally too. */
+#input-model :deep(input) {
+  height: 30px;
+  border: 1px solid rgb(51 65 85 / 0.9);
+  border-radius: 0.5rem;
+  background-color: rgb(2 6 23 / 0.9);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1rem;
+}
+#input-model :deep(input):focus {
+  border-color: var(--ui-primary);
+  /* The siblings change the border colour on focus and nothing else; UInput also draws a 2px inset
+     ring, which made the focused box a shade heavier than its neighbours. */
+  box-shadow: none;
+  outline: none;
+}
+#input-model :deep(input)::placeholder {
+  color: rgb(100 116 139);
+  opacity: 1;
 }
 </style>
