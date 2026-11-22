@@ -7316,3 +7316,32 @@ kanan card Active PC's).
 
 Grid sementara: 4 kartu (All Capacitor PC's, Active PC's, Network Racks, Access Points 2 kolom) -> di 4 kolom
 baris 1 isi 3 + 1 slot kosong, baris 2 Access Points. Slot kosong itulah tempat treemap 2 kolom.
+### Dashboard: treemap "PC per Model" 2 kolom (2026-11-22)
+
+HIRO: "buat chart tree map seperti attachment, posisikan 2 col disebelah kanan card active pc" ->
+saat ditanya datanya: "jumlah PC per model, based on active pc ya".
+
+FILE BARU: web/app/components/TreemapCard.vue - treemap squarified tanpa library (offline).
+- Layout dihitung di JS (squarify Bruls et al.) dalam SPACE PIXEL, bukan viewBox 0..100: squarify butuh
+  aspect ratio nyata, kalau tidak "kotak" nya jadi gepeng. ResizeObserver -> box {w,h} -> tiles.
+- Tile = div absolute (left/top/width/height px) + UTooltip, BUKAN <rect> SVG: label HTML bisa truncate
+  sendiri, dan UTooltip bisa dipakai (SVG butuh tooltip custom).
+- Label hanya muncul kalau tile.h >= 28 && tile.w >= 50; 6 tile kecil (2-5 unit) cuma tampil angkanya,
+  detailnya di tooltip. Warna dari COLORS yang sama dengan ChassisMixCard, diindeks per rank.
+
+DUA BUG YANG KEMARIN TERJADI (dan sebabnya):
+1. `v-else-if="!tiles.length"` -> "Belum ada data model". DEADLOCK: tiles kosong sampai div treemap
+   ter-mount, tapi div treemap tidak pernah ter-mount karena guard-nya. Perbaikannya: guard pakai
+   `!items.length` (props), bukan `tiles.length` (turunan).
+2. `onMounted` + `if (!el) return`: saat mount, state masih 'loading' jadi yang render skeleton, ref
+   root masih null -> early return -> ResizeObserver tidak pernah dipasang -> box 0x0 selamanya, body
+   kosong tanpa error. Perbaikannya: `watch(root, ..., { flush: 'post', immediate: true })`.
+
+DATA: GET /api/records/10/distribution?field=computer_model&splitBy=asset_status, ambil bagian aktif.
+12 model, 447 unit: OptiPlex 7010 85, ThinkCentre M70s 80, Latitude 5440 80, ProBook 440 G10 80,
+Surface Go 4 80, OptiPlex 7060 19, lalu 5/5/5/4/2/2. TIDAK digabung antar ejaan ("Optiplex" vs
+"OptiPlex", "Surface GO  4" vs "Surface Go 4") karena tabel PC Ledger juga tidak menggabung.
+
+GRID: 7 sel (All 1 + Active 1 + Treemap 2 + Racks 1 + AP 2). 4 kolom: baris 1 penuh (1+1+2), baris 2
+isi 3 (racks + AP) -> 1 slot kosong. 2 kolom: 2/2/1/2 -> 1 slot kosong sebelah Network Racks.
+pageOverflow 0 di 1920/1440/1280, 12 tile ter-render di semuanya.

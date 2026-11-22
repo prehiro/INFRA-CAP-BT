@@ -175,6 +175,44 @@ watch(pcLedgerId, async (id) => {
   activeState.value = 'ready'
 }, { immediate: true })
 
+/**
+ * "PC per Model" treemap: active PCs grouped by computer_model.
+ *
+ * Same active predicate as the Active PC's doughnut, so the two cards always agree on what "active"
+ * means - only the grouping field differs. The endpoint's split is used rather than a filtered count
+ * because the API groups in SQL; the browser just adds up the active part of each model's split.
+ *
+ * Values are NOT merged across spellings: the data really does contain "OptiPlex 7010" and "Optiplex
+ * 7010", "Surface Go 4" and "Surface GO  4", and the table shows them separately - merging here would
+ * make the card disagree with the register it is drawn from.
+ */
+const models = ref<{ label: string, value: number }[]>([])
+const modelsTotal = ref(0)
+const modelsState = ref<'loading' | 'ready' | 'error'>('loading')
+
+watch(pcLedgerId, async (id) => {
+  if (!id) return
+  modelsState.value = 'loading'
+  const res = await $fetch<Distribution>(
+    `/records/${id}/distribution?field=computer_model&splitBy=asset_status`,
+    { baseURL: useRuntimeConfig().public.apiBase, headers: authHeaders.value }
+  ).catch(() => null)
+
+  if (!res) {
+    modelsState.value = 'error'
+    return
+  }
+  models.value = res.items
+    .map(row => ({
+      label: row.value,
+      value: (row.split ?? []).filter(s => isActive(s.value)).reduce((n, s) => n + s.count, 0)
+    }))
+    .filter(i => i.value > 0)
+  // Summed from the tiles, not res.total: that one counts all 453 records, active or not.
+  modelsTotal.value = models.value.reduce((n, i) => n + i.value, 0)
+  modelsState.value = 'ready'
+}, { immediate: true })
+
 const rackCount = computed(() =>
   (rackFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.rackCount ?? 0), 0)
 )
@@ -242,6 +280,16 @@ const apChips = computed(() =>
                 :items="activeChassis"
                 :total="activeTotal"
                 :state="activeState"
+              />
+
+              <!-- Treemap of the active PCs per model, two columns wide: twelve categories is too many
+                   for a pie but reads fine as tiles, and the width gives the small models a readable
+                   block instead of a sliver. -->
+              <TreemapCard
+                class="col-span-1 @min-[560px]:col-span-2"
+                :items="models"
+                :total="modelsTotal"
+                :state="modelsState"
               />
 
               <DashboardCard
