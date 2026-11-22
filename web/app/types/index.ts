@@ -59,6 +59,8 @@ export interface NetworkSwitch {
   ipAddress: string
   hostname: string
   position: string
+  /** Brand/Model as the register holds it (e.g. "Catalyst 9300-48P"). Required by the API. */
+  model: string
   createdAt: string
 }
 export type NetworkSwitchInput = Omit<NetworkSwitch, 'id' | 'createdAt'>

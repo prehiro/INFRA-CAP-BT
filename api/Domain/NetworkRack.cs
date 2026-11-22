@@ -32,5 +32,8 @@ public class NetworkSwitch
     public string IpAddress { get; set; } = string.Empty;  // Switch management IP
     public string Hostname { get; set; } = string.Empty;   // Optional hostname/label
     public string Position { get; set; } = string.Empty;   // Optional position within rack (e.g., "U1-U4")
+    // Brand/Model as the register holds it (e.g. "Catalyst 9300-48P"). Required: the 3D faceplate
+    // and the hover card both quote it, and a switch with no model has nothing to show.
+    public string Model { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

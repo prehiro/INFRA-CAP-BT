@@ -7734,3 +7734,55 @@ mengecil ke lebar kontennya.
 VERIFIKASI (hover UPS, D-B1): 265x100 -> **202x88**, padding 15px tiap sisi, nama 1 baris, SN tetap center.
 Switch TIDAK berubah: 265px, minW 265px, meta 1 baris (nama 1 baris) - floor 265 sengaja dipertahankan
 supaya meta switch yang panjang tidak membungkus jadi 2 baris.
+### Switch: kolom Brand/Model (required) + smart-fill (2026-11-22)
+
+HIRO: "sekarang bagaimana cara saya add atau rename brand/model switch nya? ada saran?" -> "kerjakan required".
+
+SEBELUMNYA: switch TIDAK punya brand/model sama sekali. `NetworkSwitch` (api/Domain/NetworkRack.cs) cuma
+IpAddress/Hostname/Position/CreatedAt. Model di layar adalah string HARDCODED: 'Catalyst 9300' untuk row
+register (seedSwitches) dan 'Catalyst 9300-48P' untuk switch baru dari tombol Add. Tooltip = `${hostname} — ${model}`.
+Jadi "rename" dulu = edit kode.
+
+DB: kolom `NetworkSwitches.Model` nvarchar(120) NOT NULL default '' + migration `20261122114524_AddSwitchModel`,
+SUDAH di-apply ke DB dev (dotnet ef database update -> "Applying migration ... Done.").
+
+API (NetworkRacksController):
+- `RackSwitchInput(..., string? Model = null)`; Add/Update nulis Model; `ValidateSwitch` mewajibkan Model
+  (kosong -> 400 "Brand/Model is required - pick one from the list or type a new one.", maks 120).
+- `ToSwitchDto` + KEDUA projection switch (list `Get` dan detail `Get{id}`) ikut `s.Model`. Sempat lupa yang
+  projection -> GET detail tidak mengembalikan model; ketahuan waktu verifikasi.
+- Endpoint baru `GET /api/network/floor-maps/switch-values` (route absolut `~/`, Authorize) -> distinct Model
+  + count, terbanyak dulu. Sengaja server-side: dialog rack cuma pegang 1 rack, kolam saran = seluruh register.
+
+Web:
+- `types`: NetworkSwitch.model (NetworkSwitchInput ikut karena Omit).
+- `useApi`: `apiSwitchValues()`.
+- `network-rack.vue`: `switchModels` + `loadSwitchModels()` (dipanggil saat mount, setelah save 3D, dan setelah
+  save dialog), `:model-suggestions` ke Rack3DView, body save ikut `model`, guard + `switchInvalid` + fokus
+  `#switch-model` (focusSuggest: id di wrapper, `#id input`).
+- `Rack3DView.vue`: prop `modelSuggestions`; field Brand/Model PALING ATAS di Switch Asset card (SuggestInput +
+  note "Required - pick one from the list or type a new one."); `seedSwitches` pakai `sw.model` (bukan
+  'Catalyst 9300'); tooltip/label 3D: `cfg.model ? hostname — model : hostname` (tidak mengarang);
+  `persistSwitch` menolak kirim kalau model kosong; tombol Add bikin switch lokal DULU (id negatif) dan
+  row-nya baru dikirim ke register begitu Brand/Model diisi.
+
+BUG YANG KETAHUAN: watcher `switchModel` awalnya saya taruh di top-level setup, padahal `persistSwitch` dan
+`updateSingleSwitch3DLabel` dideklarasikan di DALAM onMounted -> watcher melempar ReferenceError tiap ketikan
+(kelihatan seperti "field tidak bereaksi", ring merah tidak hilang, tanpa error di console). Watcher dipindah
+ke dalam onMounted.
+
+VERIFIKASI (browser + API, rack D-B1 floor 3 / rack 11):
+- Urutan field di card: BRAND/MODEL -> SWITCH HOSTNAME -> Management IP / Rack Slot -> S/N.
+- Guard: switch lama (model '') diedit hostname -> TIDAK tersimpan (API tetap SW-EDGE-01), ring merah +
+  note muncul.
+- Add switch: SW-EDGE-14 muncul dengan toast "pick a Brand/Model to save it", belum ada row di DB; setelah
+  model diisi -> POST -> row 75 SW-EDGE-14 U13 model 'Catalyst 9300-48P'. Tooltip: "SW-EDGE-14 — Catalyst
+  9300-48P". Edit model -> PUT -> row 75 model 'Catalyst 9300'. `/switch-values` -> [{"value":"Catalyst 9300","count":1}].
+- Test switch (75 dan 76) SUDAH DIHAPUS: rack balik 13 switch, tidak ada yang punya model, pool balik [].
+  Data HIRO tidak berubah.
+
+CATATAN: dialog "Add switch"/"Edit switch" di page (openAddSwitch/openEditSwitch) TIDAK punya pemanggil -
+dead code yang sudah ada sebelum ini. Field-nya tetap saya isi biar konsisten, tapi tidak dipakai.
+
+BUILD: web `npx nuxt build` 0 error; api `dotnet build` 0 error. API dev jalan dari build terisolasi
+(C:/Users/HIRO/AppData/Local/Temp/apirun/Api.dll) di :5099.

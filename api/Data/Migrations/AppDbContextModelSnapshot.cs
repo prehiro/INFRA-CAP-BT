@@ -437,6 +437,13 @@ namespace Api.Data.Migrations
                         .HasMaxLength(45)
                         .HasColumnType("nvarchar(45)");
 
+                    b.Property<string>("Model")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)")
+                        .HasDefaultValue("");
+
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasMaxLength(100)

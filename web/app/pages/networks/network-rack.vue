@@ -25,7 +25,28 @@ const RACK_SIZES = [19, 22, 27, 42] as const
 const U_HEIGHT_M = 0.04445
 const rackSizeHeight = (u: number) => `${(u * U_HEIGHT_M + 0.16).toFixed(2)} m`
 const rackDraft = reactive<NetworkRackInput>({ name: '', x: 0.5, y: 0.5, sizeU: 42 })
-const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '' })
+const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '', model: '' })
+// True only when the Brand/Model field is the thing that failed - never while a save is running.
+const switchInvalid = ref(false)
+watch(() => switchDraft.model, (v) => { if (v.trim()) switchInvalid.value = false })
+// Every Brand/Model the register already uses, most used first. Small payload, so it is read once
+// the page is up and again after a save, which is what makes a freshly typed model suggest itself
+// next time. A failure here is not fatal: the field still accepts free text.
+const switchModels = ref<{ value: string, count: number }[]>([])
+async function loadSwitchModels() {
+  try { switchModels.value = await apiSwitchValues() } catch { /* suggestions are a convenience */ }
+}
+// SuggestInput keeps its <input> inside its own root element, so an id on the component lands on
+// the wrapper - the caret has to be claimed through it.
+function focusSuggest(id: string) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`#${id} input`) as HTMLInputElement | null
+    if (!el) return
+    el.focus()
+    const end = el.value.length
+    el.setSelectionRange?.(end, end)
+  })
+}
 const mapEl = ref<HTMLElement | null>(null)
 const mapStageEl = ref<HTMLElement | null>(null)
 const mapNatural = ref<{ w: number; h: number } | null>(null)
@@ -269,7 +290,7 @@ async function refresh(preferFloorId?: number) {
   } catch (e) { error.value = message(e) }
   finally { loading.value = false }
 }
-onMounted(() => { void refresh() })
+onMounted(() => { void refresh(); void loadSwitchModels() })
 onBeforeUnmount(() => { disposed = true; ++loadVersion; floorImages.clear(); pendingFloorImages.clear(); mapResizeObserver?.disconnect(); setImageUrl(''); setUploadPreviewUrl(''); })
 
 function pickImage(event: Event) {
@@ -509,18 +530,24 @@ function openAddSwitch() {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
   showRackDetails.value = false
   editingSwitchId.value = null
-  Object.assign(switchDraft, { ipAddress: '', hostname: '', position: '' })
-  switchError.value = ''; showSwitchEditor.value = true
+  Object.assign(switchDraft, { ipAddress: '', hostname: '', position: '', model: '' })
+  switchError.value = ''; switchInvalid.value = false; showSwitchEditor.value = true
 }
 function openEditSwitch(sw: NetworkSwitch) {
   if (!isAdmin.value || busy.value) return
   showRackDetails.value = false
   editingSwitchId.value = sw.id
-  Object.assign(switchDraft, { ipAddress: sw.ipAddress, hostname: sw.hostname, position: sw.position })
-  switchError.value = ''; showSwitchEditor.value = true
+  Object.assign(switchDraft, { ipAddress: sw.ipAddress, hostname: sw.hostname, position: sw.position, model: sw.model ?? '' })
+  switchError.value = ''; switchInvalid.value = false; showSwitchEditor.value = true
 }
 async function saveSwitch() {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
+  if (!switchDraft.model.trim()) {
+    switchInvalid.value = true
+    switchError.value = 'Brand/Model is required - pick one from the list or type a new one.'
+    focusSuggest('switch-model')
+    return
+  }
   if (!switchDraft.ipAddress.trim()) { switchError.value = 'IP address is required.'; return }
   const floorId = floor.value!.id
   const rackId = selectedRackDetail.value.id
@@ -539,6 +566,7 @@ async function saveSwitch() {
     const rackIdx = racks.value.findIndex(r => r.id === rackId)
     if (rackIdx >= 0) racks.value[rackIdx].switchCount = selectedRackDetail.value?.switchCount ?? 0
     showSwitchEditor.value = false
+    void loadSwitchModels()
     toast.add({ title: editingSwitchId.value === null ? 'Switch added' : 'Switch updated', color: 'primary' })
   } catch (e) { switchError.value = message(e) }
   finally { busy.value = false }
@@ -592,11 +620,12 @@ async function saveSwitchFromRack3D(payload: { id: number | null; ipAddress: str
   const rackId = selectedRackDetail.value.id
   busy.value = true
   try {
-    const body = { ipAddress: payload.ipAddress, hostname: payload.hostname, position: payload.position }
+    const body = { ipAddress: payload.ipAddress, hostname: payload.hostname, position: payload.position, model: payload.model }
     if (payload.id === null) await apiAddNetworkSwitch(floorId, rackId, body)
     else await apiUpdateNetworkSwitch(floorId, rackId, payload.id, body)
     const detail = await apiGetNetworkRack(floorId, rackId)
     selectedRackDetail.value = detail
+    void loadSwitchModels()   // a newly typed model joins the suggestion pool
     const idx = racks.value.findIndex(r => r.id === rackId)
     if (idx >= 0) racks.value[idx].switchCount = detail.switches.length
   } catch (e) {
@@ -703,7 +732,7 @@ function focusField(id: string) {
 }
 watch(showUpload, async (open) => { if (open) { await nextTick(); focusField('floor-name') } })
 watch(showRackEditor, async (open) => { if (open) { await nextTick(); focusField('rack-name') } })
-watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusField('switch-ip') } })
+watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusSuggest('switch-model') } })
 </script>
 
 <template>
@@ -921,6 +950,20 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
               <span class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><UIcon name="i-lucide-cpu" class="size-5" /></span>
               <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ selectedRackDetail?.name }}</p><p class="text-xs text-muted">Rack on {{ floor?.name }}</p></div>
             </div>
+            <!-- Brand/Model first: it is the pair that identifies the unit, and the suggestion list
+                 means an existing spelling is one keystroke away instead of retyped by hand. The id
+                 sits on the wrapper because SuggestInput keeps its <input> inside its own root. -->
+            <div id="switch-model">
+              <label class="mb-1.5 block text-sm font-medium text-highlighted">Brand/Model</label>
+              <SuggestInput
+                v-model="switchDraft.model"
+                :suggestions="switchModels"
+                :invalid="switchInvalid"
+                placeholder="e.g. Catalyst 9300-48P"
+                header="Brand/Model already in the register"
+                header-bottom-gap
+              />
+            </div>
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">IP address</legend>
               <UInput id="switch-ip" v-model="switchDraft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.1" :disabled="busy" />
@@ -982,6 +1025,7 @@ watch(showSwitchEditor, async (open) => { if (open) { await nextTick(); focusFie
           </div>
           <div v-else>
             <LazyRack3DView :key="`rack3d-${selectedRackDetail.id}-${selectedRackDetail.sizeU}`" :switches="selectedRackDetail.switches"
+              :model-suggestions="switchModels"
               :total-u="selectedRackDetail.sizeU" :hud-settings="selectedRackDetail.hudSettings || ''"
               @delete-switch="deleteSwitchFromRack3D" @save-switch="saveSwitchFromRack3D"
               @save-settings="saveHudSettingsFromRack3D"

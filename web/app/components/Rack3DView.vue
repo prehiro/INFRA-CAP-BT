@@ -21,7 +21,14 @@ import type { NetworkSwitch } from '~/types'
 // The rack's real switches are the only source of hardware in this scene. `totalU` is the cabinet
 // height in rack units, stored per rack by the register: 19U/22U/27U/42U all render from the same
 // geometry spec, so a smaller cabinet is simply a shorter one with fewer numbered slots.
-const props = withDefaults(defineProps<{ switches: NetworkSwitch[]; totalU?: number; hudSettings?: string }>(), { totalU: 42, hudSettings: '' })
+const props = withDefaults(defineProps<{
+  switches: NetworkSwitch[]
+  totalU?: number
+  hudSettings?: string
+  // Every Brand/Model the register already uses, most used first. The page owns the fetch: this
+  // component already receives its hardware as a prop and only ever asks the page to write.
+  modelSuggestions?: { value: string, count: number }[]
+}>(), { totalU: 42, hudSettings: '', modelSuggestions: () => [] })
 
 // Deleting a switch is not a local edit: it has to reach the register, or the next load of the
 // rack detail simply re-reads the row and the device reappears. The parent page owns that API
@@ -30,11 +37,19 @@ const emit = defineEmits<{
   (e: 'delete-switch', id: number): void
   // Anything invented or edited inside this panel is a REGISTER row: the page owns the API call,
   // otherwise the change only lives in this component and vanishes when the modal is reopened.
-  (e: 'save-switch', payload: { id: number | null; ipAddress: string; hostname: string; position: string }): void
+  (e: 'save-switch', payload: { id: number | null; ipAddress: string; hostname: string; position: string, model: string }): void
 }>()
 
 const root = ref<HTMLElement | null>(null)
 const $ = (id: string) => root.value?.querySelector(`#${id}`)
+
+// Brand/Model of the switch open in the editor card. Two-way bound to the SuggestInput, mirrored
+// into switchesData so the 3D label and the hover card follow while typing.
+const switchModel = ref('')
+// True only when this field is the thing that failed - never while a save is running.
+const modelInvalid = ref(false)
+// SuggestInput keeps its <input> inside its own root, so the id lands on the wrapper.
+const modelInputEl = () => root.value?.querySelector('#input-model input') as HTMLInputElement | null
 
 // Both drawers can fold down to a narrow rail so the 3D rack gets the whole canvas. The panels are
 // only hidden with v-show, never unmounted: the scene script drives them by id (hud-toast, tab-*,
@@ -962,10 +977,10 @@ onMounted(async () => {
           // Distinguishes a real register row from a device invented by the Add button below.
           fromRegister: true,
           u,
-          // The register has no model or serial column: the faceplate badge shows the series,
-          // the tooltip prints UNASSIGNED, and the port-count line is omitted rather than
-          // inventing telemetry that the database does not hold.
-          model: 'Catalyst 9300',
+          // Model comes from the register (NetworkSwitch.Model). It used to be the hardcoded
+          // string 'Catalyst 9300' on every row, which meant the hover card quoted a model nobody
+          // had entered. Serial is still absent from the register, so the tooltip says UNASSIGNED.
+          model: (sw.model || '').trim(),
           hostname: (sw.hostname || '').trim() || sw.ipAddress || `SW-${String(out.length + 1).padStart(2, '0')}`,
           ip: sw.ipAddress || '',
           sn: '',
@@ -1454,7 +1469,7 @@ onMounted(async () => {
           slot: `U${String(cfg.u).padStart(2, '0')}`,
           ip: cfg.ip,
           sn: cfg.sn || 'UNASSIGNED',
-          name: `${cfg.hostname} — ${cfg.model}`,
+          name: cfg.model ? `${cfg.hostname} — ${cfg.model}` : cfg.hostname,
           meta: cfg.meta || `${cfg.activePorts}/48 Active Ports • 4x 10G SFP+ • Click to Edit`
         }
         switchGroup.add(hitbox)
@@ -1734,7 +1749,7 @@ onMounted(async () => {
       if (hb) {
         hb.userData.ip = sw.ip
         hb.userData.sn = sw.sn || 'UNASSIGNED'
-        hb.userData.name = `${sw.hostname} — ${sw.model}`
+        hb.userData.name = sw.model ? `${sw.hostname} — ${sw.model}` : sw.hostname
       }
     }
 
@@ -1803,6 +1818,7 @@ onMounted(async () => {
       if (selected) {
         editorCard.classList.remove('hidden')
         editorTitle.textContent = `Switch Asset (U${String(selected.u).padStart(2, '0')})`
+        if (document.activeElement !== modelInputEl()) switchModel.value = selected.model || ''
         if (document.activeElement !== inputHostname) inputHostname.value = selected.hostname
         if (document.activeElement !== inputIp) inputIp.value = selected.ip
         if (document.activeElement !== inputSwitchSn) inputSwitchSn.value = selected.sn || ''
@@ -1972,11 +1988,15 @@ onMounted(async () => {
     let persistTimer: ReturnType<typeof setTimeout> | null = null
     function persistSwitch(sw: any, immediate = false) {
       if (!sw || typeof sw.id !== 'number' || sw.id < 0) return // creation still in flight
+      // Brand/Model is required by the register, so a switch without one is never sent. The field
+      // shows the ring and says why; typing a model is what lets the save go out again.
+      if (!String(sw.model ?? '').trim()) { modelInvalid.value = true; return }
       const payload = {
         id: sw.id as number,
         ipAddress: sw.ip,
         hostname: sw.hostname,
-        position: `U${String(sw.u).padStart(2, '0')}`
+        position: `U${String(sw.u).padStart(2, '0')}`,
+        model: sw.model.trim()
       }
       const send = () => emit('save-switch', payload)
       if (persistTimer) clearTimeout(persistTimer)
@@ -2005,6 +2025,31 @@ onMounted(async () => {
       showToast(`Removed ${target.hostname} from U${String(target.u).padStart(2, '0')}.`)
       rebuildRackEquipment()
     }
+
+    // Brand/Model changed in the editor card. Registered here rather than at the top of setup
+    // because it calls persistSwitch() and updateSingleSwitch3DLabel(), which are declared inside
+    // this mount - a watcher registered outside could not see them and threw on every keystroke.
+    watch(switchModel, (v) => {
+      const sw = switchesData.find(s => s.id === selectedSwitchId)
+      if (!sw) return
+      sw.model = v.trim()
+      if (!v.trim()) return
+      modelInvalid.value = false
+      updateSingleSwitch3DLabel(sw)
+      if (sw.id < 0) {
+        // A device invented by the Add button is created only once it has a model: the register
+        // requires one, so sending it empty would come straight back as a validation error.
+        emit('save-switch', {
+          id: null,
+          ipAddress: sw.ip,
+          hostname: sw.hostname,
+          position: `U${String(sw.u).padStart(2, '0')}`,
+          model: sw.model
+        })
+        return
+      }
+      persistSwitch(sw)
+    })
 
     // Live Hostname, IP & Serial Number Input Listeners
     inputHostname.addEventListener('input', (e) => {
@@ -2092,16 +2137,13 @@ onMounted(async () => {
       }
       switchesData.push(newSwitch)
       selectedSwitchId = newId
-      showToast(`Adding ${newSwitch.hostname} (${newSwitch.ip}) at U${String(chosenU).padStart(2, '0')}…`)
+      switchModel.value = ''
       rebuildRackEquipment()
-      // Persist through the page: a switch that only lives in this list disappears as soon as the
-      // modal is closed and the rack detail is re-read.
-      emit('save-switch', {
-        id: null,
-        ipAddress: newSwitch.ip,
-        hostname: newSwitch.hostname,
-        position: `U${String(chosenU).padStart(2, '0')}`
-      })
+      // The row reaches the register through the switchModel watcher, as soon as a Brand/Model is
+      // filled in - sending it now would be rejected, the model is required. Until then this device
+      // only lives in this list, which is why the message says what is still missing.
+      modelInvalid.value = true
+      showToast(`${newSwitch.hostname} at U${String(chosenU).padStart(2, '0')} - pick a Brand/Model to save it.`)
     })
 
     // UPS Model Selection Buttons (None / 3000VA / 5000VA)
@@ -2769,6 +2811,21 @@ let accentPoll = 0
           </div>
 
           <div class="grid grid-cols-1 gap-2">
+            <!-- Brand/Model first, and required: the register stores it and both the hover card and
+                 the 3D label quote it. The id sits on the wrapper because SuggestInput keeps its
+                 <input> inside its own root, so #input-model input is how the caret is claimed. -->
+            <div id="input-model">
+              <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Brand/Model</label>
+              <SuggestInput
+                v-model="switchModel"
+                :suggestions="modelSuggestions"
+                :invalid="modelInvalid"
+                placeholder="e.g. Catalyst 9300-48P"
+                header="Brand/Model already in the register"
+                header-bottom-gap
+              />
+              <span v-if="modelInvalid" class="mt-1 block text-[10px] text-rose-300">Required - pick one from the list or type a new one.</span>
+            </div>
             <div>
               <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Switch Hostname</label>
               <input id="input-hostname" type="text" maxlength="18" placeholder="SW-CORE-01"

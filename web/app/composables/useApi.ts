@@ -89,6 +89,10 @@ export type AccessPointValue = { value: string, count: number }
 export const apiAccessPointValues = () =>
   request<AccessPointValue[]>('/network/floor-maps/access-points/values')
 
+/** Every Brand/Model already used by a switch in any rack, most used first. */
+export const apiSwitchValues = () =>
+  request<AccessPointValue[]>('/network/floor-maps/switch-values')
+
 export const apiCreateAccessPoint = (floorId: number, point: AccessPointInput) =>
   request<AccessPoint>(`/network/floor-maps/${floorId}/access-points`, { method: 'POST', body: point })
 export const apiUpdateAccessPoint = (floorId: number, id: number, point: AccessPointInput) =>

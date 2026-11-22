@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Api.Controllers;
 
 public record RackInput(string? Name, string? Description, double X, double Y, int? SizeU = null);
-public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position);
+public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position, string? Model = null);
 public record SwitchPosition(string? IpAddress, string? Hostname, string? Position);
 public record RackHudSettingsInput(string? Settings);
 
@@ -18,6 +18,7 @@ public record RackHudSettingsInput(string? Settings);
 public class NetworkRacksController(AppDbContext db) : ControllerBase
 {
     private const int MaxNameLength = 60;
+    private const int MaxModelLength = 120;
     private const int MaxDescriptionLength = 300;
     private const int MaxIpLength = 45;
     private const int MaxHostnameLength = 160;
@@ -54,6 +55,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                     s.IpAddress,
                     s.Hostname,
                     s.Position,
+                    s.Model,
                     s.CreatedAt
                 }).ToList()
             })
@@ -84,6 +86,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                     s.IpAddress,
                     s.Hostname,
                     s.Position,
+                    s.Model,
                     s.CreatedAt
                 }).ToList()
             })
@@ -197,7 +200,8 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
             RackId = rackId,
             IpAddress = input.IpAddress!.Trim(),
             Hostname = input.Hostname?.Trim() ?? string.Empty,
-            Position = input.Position?.Trim() ?? string.Empty
+            Position = input.Position?.Trim() ?? string.Empty,
+            Model = input.Model!.Trim()
         };
         db.NetworkSwitches.Add(sw);
         await db.SaveChangesAsync(ct);
@@ -217,6 +221,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         sw.IpAddress = input.IpAddress!.Trim();
         sw.Hostname = input.Hostname?.Trim() ?? string.Empty;
         sw.Position = input.Position?.Trim() ?? string.Empty;
+        sw.Model = input.Model!.Trim();
         await db.SaveChangesAsync(ct);
         return Ok(ToSwitchDto(sw));
     }
@@ -251,6 +256,14 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
 
     private static string? ValidateSwitch(RackSwitchInput input)
     {
+        // Required, like the access point's Brand/Model: the faceplate badge and the hover card
+        // both quote this string, so an empty one is a device with nothing to identify it.
+        var model = input.Model?.Trim();
+        if (string.IsNullOrWhiteSpace(model))
+            return "Brand/Model is required - pick one from the list or type a new one.";
+        if (model.Length > MaxModelLength)
+            return $"Brand/Model is too long (maximum {MaxModelLength} characters).";
+
         var ip = input.IpAddress?.Trim();
         if (string.IsNullOrWhiteSpace(ip) || ip.Length > MaxIpLength || !IPAddress.TryParse(ip, out _))
             return "Enter a valid IP address.";
@@ -261,6 +274,27 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         return null;
     }
 
+    /// <summary>
+    /// Every Brand/Model already used by a switch in any rack, most used first. Grouped here rather
+    /// than in the browser: the rack dialog only holds one rack's switches, while the useful pool is
+    /// every model the register has ever seen.
+    /// </summary>
+    [HttpGet("~/api/network/floor-maps/switch-values")]
+    [Authorize]
+    public async Task<IActionResult> SwitchValues(CancellationToken ct)
+    {
+        var rows = await db.NetworkSwitches
+            .Where(x => x.Model != null && x.Model != "")
+            .GroupBy(x => x.Model)
+            .Select(g => new { Value = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ThenBy(x => x.Value)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return Ok(rows);
+    }
+
     private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.SizeU, r.HudSettings, r.CreatedAt, SwitchCount = r.Switches.Count };
-    private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.CreatedAt };
+    private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.Model, s.CreatedAt };
 }
