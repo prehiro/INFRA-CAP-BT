@@ -632,22 +632,6 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
               <span v-else class="ap-modal-icon grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary" :class="{ 'ap-modal-icon-active': showEditor }"><UIcon name="i-lucide-wifi" class="size-5" /></span>
               <div class="min-w-0"><p class="text-sm font-medium text-highlighted">{{ floor?.name }}</p><p class="text-xs text-muted">Position: {{ Math.round(draft.x * 100) }}% across · {{ Math.round(draft.y * 100) }}% down</p></div>
             </div>
-            <!-- FIRST thing in the dialog: the pair is what identifies the unit, and the suggestion
-                 list means an existing spelling is one keystroke away instead of retyped by hand.
-                 id on the wrapper, not on SuggestInput: that component keeps its <input> inside its own
-                 root, so `#ap-brand input` is how the caret gets claimed on open. -->
-            <div id="ap-brand">
-              <label class="mb-1.5 block text-sm font-medium text-highlighted">Brand/Model</label>
-              <SuggestInput
-                v-model="draft.brandModel"
-                :suggestions="brandSuggestions"
-                :invalid="busy"
-                placeholder="e.g. Aruba AP-515"
-                header="Brand/Model already in the register"
-                header-bottom-gap
-              />
-            </div>
-
             <fieldset :disabled="busy">
               <legend class="mb-1.5 text-sm font-medium text-highlighted">Access point type</legend>
               <div class="grid grid-cols-2 gap-2">
@@ -663,11 +647,27 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
                 </label>
               </div>
             </fieldset>
-            <div class="grid gap-4 sm:grid-cols-2">
+            <!-- 2x2: Brand/Model + Hostname on the first row, IP address + Position on the second.
+                 Brand/Model leads because it is the pair that identifies the unit, and the suggestion
+                 list means an existing spelling is one keystroke away instead of retyped by hand.
+                 id on the wrapper, not on SuggestInput: that component keeps its <input> inside its own
+                 root, so `#ap-brand input` is how the caret gets claimed on open. -->
+            <div class="grid items-start gap-4 sm:grid-cols-2">
+              <div id="ap-brand">
+                <label class="mb-1.5 block text-sm font-medium text-highlighted">Brand/Model</label>
+                <SuggestInput
+                  v-model="draft.brandModel"
+                  :suggestions="brandSuggestions"
+                  :invalid="busy"
+                  placeholder="e.g. Aruba AP-515"
+                  header="Brand/Model already in the register"
+                  header-bottom-gap
+                />
+              </div>
               <div><label for="ap-hostname" class="mb-1.5 block text-sm font-medium text-highlighted">Hostname</label><UInput id="ap-hostname" v-model="draft.hostname" class="w-full" maxlength="160" placeholder="e.g. AP-L2-01" :disabled="busy" /></div>
               <div><label for="ap-ip" class="mb-1.5 block text-sm font-medium text-highlighted">IP address</label><UInput id="ap-ip" v-model="draft.ipAddress" class="w-full" maxlength="45" placeholder="e.g. 192.168.1.10" :disabled="busy" /></div>
+              <div><label for="ap-position" class="mb-1.5 block text-sm font-medium text-highlighted">Position / location</label><UInput id="ap-position" v-model="draft.position" class="w-full" maxlength="200" placeholder="e.g. North corridor ceiling" :disabled="busy" /></div>
             </div>
-            <div><label for="ap-position" class="mb-1.5 block text-sm font-medium text-highlighted">Position / location</label><UInput id="ap-position" v-model="draft.position" class="w-full" maxlength="200" placeholder="e.g. North corridor ceiling" :disabled="busy" /></div>
             <p class="text-xs text-muted">You can drag the marker on the plan to adjust its position later.</p>
             <p role="alert" class="min-h-5 text-sm text-error">{{ editorError }}</p>
             <div class="flex justify-end gap-2 border-t border-default pt-4">

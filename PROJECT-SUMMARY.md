@@ -7630,3 +7630,17 @@ VERIFIKASI (browser, AP di BUILDING 1):
 
 CATATAN: 4 AP yang sudah ada (Ap001, AP002, Wwww, 1 lagi) brand-nya masih kosong. Karena field-nya
 required, AP lama harus diedit sekali dan diisi - setelah itu nilainya masuk kolam saran.
+### Access Point: form Brand/Model dipindah ke bawah type, 2x2 (2026-11-22)
+
+HIRO: "posisinya posisi formnya dibawah access point type / Brand/Model  Hostname / IP Address  Position/Location".
+
+- Field Brand/Model dipindah dari paling atas ke BAWAH fieldset "Access point type".
+- 4 field sekarang satu grid 2 kolom (`sm:grid-cols-2 items-start`):
+  baris 1 = Brand/Model | Hostname, baris 2 = IP address | Position / location.
+- `items-start` supaya sel brand (tinggi 86px karena baris hint 20px yang memang direservasi
+  SuggestInput) tidak menarik sel Hostname ikut melar.
+
+VERIFIKASI (1440x900): legend type y=198; Brand/Model (146,302,221x86) + Hostname (383,328,221x32);
+IP address (146,430) + Position (383,430); grid 220.5px x2; urutan label = Access point type, Primary, BCP,
+Brand/Model, Hostname, IP address, Position / location. Caret tetap otomatis ke #ap-brand saat dialog buka.
+Di 1024x800 dialog 512px -> 2 kolom 228px, tanpa overflow horizontal. 0 console error.
