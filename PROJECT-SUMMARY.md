@@ -7447,3 +7447,21 @@ HIRO: "Model Treemap subtitle nya Domain-Joined PC · By brand/model".
 - Default prop TreemapCard ikut diselaraskan.
 - CATATAN: teks subtitle ini sekarang sama dengan TITLE card di sebelah kirinya ("Domain-Joined PC").
   Kalau memang niatnya menunjuk populasi yang sama, tidak masalah; kalau bukan, tinggal bilang.
+### Dashboard: icon beranimasi gantikan teks total (2026-11-22)
+
+HIRO: "pada card registered pc, domain-joined pc, model treemap, ada teks total count di pojok kanan atas,
+bisa ubah ini jadi sebuah icon yang merepresentasikan masing-masing card? buat yang kreatif dan beranimasi".
+
+- Komponen BARU `web/app/components/CardMetricIcon.vue`, prop `kind`: 'fleet' | 'domain' | 'treemap'.
+  Angka total PINDAH ke tooltip + aria-label, jadi tidak hilang (hover badge -> "477 unit").
+- Icon digambar INLINE SVG, bukan <UIcon name>: Nuxt Icon di app ini provider 'none' + fallbackToApi
+  false, jadi nama yang tidak ada di clientBundle = span KOSONG tanpa error sama sekali.
+- Animasi per icon (semua berhenti di prefers-reduced-motion):
+  fleet = monitor + notebook yang meluncur halus (ico-nudge), domain = centang yang menggambar dirinya
+  (stroke-dashoffset, ico-draw), treemap = 4 tile yang "bernapas" bergiliran (ico-breathe).
+  Semua dapat cincin accent yang mengembang sekali tiap 3.8s (ico-ring) + hover: naik 1px & scale 1.06.
+- Header card diubah `items-baseline` -> `items-center` (badge 34px tidak enak kalau ikut baseline).
+- ChassisMixCard dapat prop `icon` (default 'fleet'); TreemapCard memakai 'treemap' langsung.
+
+TERUKUR: 3 badge 34x34 di dalam header 36px, pageOverflow 0 @1280 dan 1440; coverage SVG 25/26/34%
+(bukan kosong), tooltip "477 unit" muncul saat hover.

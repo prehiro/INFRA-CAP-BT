@@ -161,12 +161,12 @@ const tiles = computed<Tile[]>(() => {
 <template>
   <UCard :ui="{ header: 'px-4 py-3', body: 'p-0 min-h-0 flex-1' }" class="anim-fade-up @container flex flex-col overflow-hidden">
     <template #header>
-      <header class="flex items-baseline justify-between gap-3">
+      <header class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <h2 class="truncate text-sm font-semibold">{{ title }}</h2>
           <p class="truncate text-xs text-muted">{{ label }} · {{ source }}</p>
         </div>
-        <span class="shrink-0 text-[11px] text-muted tabular-nums">{{ total }} unit</span>
+        <CardMetricIcon kind="treemap" :total="total" />
       </header>
     </template>
 

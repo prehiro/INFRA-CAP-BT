@@ -244,6 +244,7 @@ const apChips = computed(() =>
               <ChassisMixCard
                 class="col-span-1"
                 title="Registered PC"
+                icon="fleet"
                 label="Overall PC"
                 source="By form factor"
                 :items="chassis"
@@ -256,6 +257,7 @@ const apChips = computed(() =>
               <ChassisMixCard
                 class="col-span-1"
                 title="Domain-Joined PC"
+                icon="domain"
                 label="Assigned to users"
                 source="By form factor"
                 to="/device/pcledger"

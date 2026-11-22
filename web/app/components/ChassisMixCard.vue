@@ -37,11 +37,14 @@ const props = withDefaults(defineProps<{
   label?: string
   /** Where the numbers come from, e.g. "All registers". */
   source?: string
+  /** Which top-right badge to draw. 'fleet' = the whole registered fleet, 'domain' = assigned PCs. */
+  icon?: 'fleet' | 'domain'
   state?: 'loading' | 'ready' | 'error'
 }>(), {
   title: 'Chassis Mix',
   label: 'By Chassis',
   source: 'All registered PC',
+  icon: 'fleet',
   state: 'ready'
 })
 
@@ -186,7 +189,7 @@ function clearTip() {
     :ui="{ body: 'p-0 sm:p-0', header: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }"
   >
     <div class="flex flex-1 flex-col justify-center gap-4 p-5">
-      <header class="flex items-baseline justify-between gap-3">
+      <header class="flex items-center justify-between gap-3">
         <div class="min-w-0">
           <!-- The title links to the page when `to` is given, so a chart card can still be the way
                into its list without wrapping the whole card in an <a> (the legend rows are buttons
@@ -201,7 +204,9 @@ function clearTip() {
           </h2>
           <p class="truncate text-xs text-muted">{{ label }} · {{ source }}</p>
         </div>
-        <span class="shrink-0 text-[11px] text-muted tabular-nums">{{ total }} unit</span>
+        <!-- The count moved into the badge's tooltip/aria-label; the corner shows what the card
+             counts instead of a third identical grey "467 unit". -->
+        <CardMetricIcon :kind="icon" :total="total" />
       </header>
 
       <div v-if="state === 'error'" class="py-6 text-center text-xs text-muted">
