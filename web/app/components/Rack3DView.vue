@@ -48,8 +48,20 @@ const $ = (id: string) => root.value?.querySelector(`#${id}`)
 const switchModel = ref('')
 // True only when this field is the thing that failed - never while a save is running.
 const modelInvalid = ref(false)
+// Where the picked value came from. SuggestInput can render this itself, but here it belongs on the
+// field's title row (HIRO), so the component's own copy is switched off with hide-hint.
+const modelHint = ref('')
+// Which switch the trace belongs to. The trace is cleared when a DIFFERENT device is opened, not on
+// every re-seed: picking a suggestion creates the register row, the page refetches and the editor is
+// re-seeded from props - clearing on that pass erased the trace the pick had just set.
+let hintSwitchId: number | null = null
 // SuggestInput keeps its <input> inside its own root, so the id lands on the wrapper.
 const modelInputEl = () => root.value?.querySelector('#input-model input') as HTMLInputElement | null
+
+// A pick announces its own trace; typing clears it (SuggestInput emits an empty source-hint then).
+function onModelFill(s: { hint?: string, value?: string }) {
+  modelHint.value = s?.hint || s?.value || ''
+}
 
 // The pool the page sends only carries the value, but SuggestInput renders `label` and `meta` - handed
 // the raw rows it drew a dropdown of dashes, which read as an empty popup (HIRO: "pop up smartfill nya
@@ -1832,6 +1844,7 @@ onMounted(async () => {
         editorCard.classList.remove('hidden')
         editorTitle.textContent = `Switch Asset (U${String(selected.u).padStart(2, '0')})`
         if (document.activeElement !== modelInputEl()) switchModel.value = selected.model || ''
+        if (hintSwitchId !== selectedSwitchId) { hintSwitchId = selectedSwitchId; modelHint.value = '' }
         if (document.activeElement !== inputHostname) inputHostname.value = selected.hostname
         if (document.activeElement !== inputIp) inputIp.value = selected.ip
         if (document.activeElement !== inputSwitchSn) inputSwitchSn.value = selected.sn || ''
@@ -2833,19 +2846,25 @@ let accentPoll = 0
                  the 3D label quote it. The id sits on the wrapper because SuggestInput keeps its
                  <input> inside its own root, so #input-model input is how the caret is claimed. -->
             <div id="input-model">
-              <!-- The "required" line sits on the title row, right-aligned: under the box it cost a
-                   whole line and pushed the form around exactly when the warning appeared. -->
+              <!-- The field's title row carries the "where this came from" trace, right-aligned - it used
+                   to sit under the box and cost a line. The required state is the red outline alone:
+                   HIRO - "hapus saja notif required nya, box bewarna merah sudah cukup". -->
               <div class="mb-1 flex items-baseline justify-between gap-2">
                 <label class="text-[10px] uppercase tracking-wider text-slate-400">Brand/Model</label>
-                <span v-if="modelInvalid" class="text-right text-[10px] leading-tight text-rose-300">Required - pick one from the list or type a new one.</span>
+                <span v-if="modelHint" class="anim-fade-in inline-flex max-w-[62%] items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium leading-none text-primary ring-1 ring-inset ring-primary/20">
+                  <span class="truncate">{{ modelHint }}</span>
+                </span>
               </div>
               <SuggestInput
                 v-model="switchModel"
                 :suggestions="modelOptions"
                 :invalid="modelInvalid"
+                :hide-hint="true"
                 placeholder="e.g. Catalyst 9300-48P"
                 header="Brand/Model already in the register"
                 header-bottom-gap
+                @update:source-hint="modelHint = $event"
+                @fill="onModelFill"
               />
             </div>
             <div>
@@ -2907,10 +2926,10 @@ let accentPoll = 0
               None
             </button>
             <button data-ups="3000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-semibold bg-primary/25 text-primary border border-primary/50 transition">
-              3000VA (2U)
+              3000VA
             </button>
             <button data-ups="5000" class="ups-btn py-1.5 px-2 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition">
-              5000VA (3U)
+              5000VA
             </button>
           </div>
 
@@ -2923,9 +2942,9 @@ let accentPoll = 0
               </button>
             </div>
             <div class="relative">
-              <input id="input-ups-sn" type="text" maxlength="24" placeholder="AS2408190442"
+              <input id="input-ups-sn" type="text" maxlength="24" placeholder="UPS Serial Number (S/N)"
                 class="w-full pl-2.5 pr-12 py-1.5 rounded-lg bg-slate-950/90 border border-emerald-500/30 text-xs font-mono uppercase tracking-wider text-emerald-300 focus:outline-none focus:border-emerald-400 transition" />
-              <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">UPS S/N</span>
+              <!--<span class="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-mono px-1 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">UPS S/N</span>-->
             </div>
           </div>
         </div>

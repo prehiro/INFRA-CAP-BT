@@ -64,7 +64,10 @@ const props = withDefaults(defineProps<{
   showOnSuggestionsUpdate?: boolean
   /** Explicit opt-in: accept the highlighted suggestion on plain forward Tab. */
   selectOnTab?: boolean
-}>(), { placeholder: '', header: '', context: () => [], invalid: false, type: 'text', showOnSuggestionsUpdate: false, selectOnTab: false })
+  /** Render the "filled from" trace under the box. Turn it off when the parent places that trace
+   *  somewhere else (the switch card puts it on the field's title row) - otherwise it appears twice. */
+  hideHint?: boolean
+}>(), { placeholder: '', header: '', context: () => [], invalid: false, type: 'text', showOnSuggestionsUpdate: false, selectOnTab: false, hideHint: false })
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void
@@ -337,7 +340,7 @@ onBeforeUnmount(() => {
          Filled from..dibawah box ganti yang bagus".
          The row is reserved (h-5) whether or not there is a chip, so applying a suggestion never moves
          the form, and the chip fades in with the existing anim-fade-in instead of appearing abruptly. -->
-    <p class="mt-1 flex h-5 items-center">
+    <p v-if="!hideHint" class="mt-1 flex h-5 items-center">
       <span
         class="inline-flex max-w-full items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium leading-none text-primary ring-1 ring-inset ring-primary/20"
         :class="visibleHint ? 'anim-fade-in' : 'invisible'"

@@ -7819,3 +7819,30 @@ sebagai ProjectReference). SW-EDGE-01 kemudian diisi HIRO sendiri 'Catalyst 9200
 
 CATATAN TERBUKA: autosave field Brand/Model masih menyimpan tiap jeda ketikan, jadi mengetik "Cat" sebentar
 tersimpan sebagai "Cat". Kalau mau diubah jadi simpan saat blur/Enter/pilih saran, itu perubahan terpisah.
+### Switch Brand/Model: note required dihapus, chip smart-fill pindah ke title (2026-11-22)
+
+HIRO: "hapus saja notif required nya, box bewarna merah sudah cukup memberitahu user. lalu pindahkan
+label note 'Selected from existing records' ke posisi note required (samping kkanan title brand/model)"
+
+1. NOTE "Required - pick one from the list or type a new one." DIHAPUS dari card. State invalid tetap ada:
+   `:invalid="modelInvalid"` -> `ring-2 ring-error` pada input. Tidak ada teks peringatan lagi di form.
+
+2. TRACE "Selected from existing records" PINDAH KE TITLE ROW. SuggestInput merender chip itu sendiri di
+   bawah box (dipakai 6 halaman lain: factorypc, pcledger, issuedform, cctvacc, handover) - jadi TIDAK
+   diubah perilakunya. Ditambah prop opt-in `hideHint` (default false, jadi halaman lain tidak terpengaruh)
+   dan Rack3DView merender chip sendiri di kanan label Brand/Model, diisi dari `@fill` (Suggestion.hint)
+   dan dikosongkan oleh `@update:source-hint` (SuggestInput mengirim '' setiap ketikan).
+   PENTING: trace awalnya selalu hilang - pick membuat row register, page refetch, editor di-seed ulang,
+   dan `syncHudUI` mengosongkan modelHint. Sekarang hanya dikosongkan kalau switch yang dibuka BERBEDA
+   (`hintSwitchId`), bukan setiap re-seed.
+
+VERIFIKASI (browser, rack D-B1):
+- Add switch: red ring muncul, TIDAK ada teks "Required", tidak ada chip di bawah box.
+- Ketik -> popup 2 baris ("C used once", "Catalyst 9200L used 5 times") -> klik baris kedua ->
+  model='Catalyst 9200L', title row "BRAND/MODEL  Selected from existing records",
+  chip di kanan label (chipRight=true, sameRow=true), chip di bawah box kosong.
+- Build web 0 error.
+
+DATA: row uji 82 (SW-EDGE-11 U21) dan 83 (SW-EDGE-12 U19) SUDAH DIHAPUS (createdAt 2026-11-22 13:11 & 13:13,
+dibandingkan 2026-11-16 untuk row asli). Rack balik 10 switch, 4 di antaranya 'Catalyst 9200L',
+pool "Catalyst 9200L" x4. (SW-EDGE-13/14 yang sempat ada sudah dihapus HIRO sendiri.)
