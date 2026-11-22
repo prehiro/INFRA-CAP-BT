@@ -232,9 +232,15 @@ const tiles = computed<Tile[]>(() => {
            comfortable 21px made the card 397px tall, which is what pushed the 1440px layout from two
            rows to three and brought the page scrollbar back. Bounded here, the card stays at the row
            height its neighbours already set. -->
-      <!-- No space-y-* here: 10 rows x 17px + 9 gaps = 179 > the 172px cap, which left a 2px
+      <!-- No space-y-* here: 10 rows x 17px + 9 gaps = 179 > the cap, which would leave a 2px
            scroll - a scrollbar with nothing to scroll. Rows sit flush; the hover fill separates them. -->
-      <ul class="model-list w-full shrink-0 @min-[420px]:max-h-[118px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
+      <!-- Height is the CARD's, not a magic number: max-h-full + min-h-0 means the list is as tall as
+           its rows, but never taller than the card body, so it scrolls exactly when the rows stop
+           fitting. The earlier 172px was hardcoded - at 1920x1080 the card body is 336px, so 10 rows
+           would have scrolled for no reason. min-h-0 is what keeps the list out of the card's
+           min-content height (without it 9 rows once made the card 397px and pushed the 1440px layout
+           to three rows). -->
+      <ul class="model-list w-full shrink-0 @min-[420px]:max-h-full @min-[420px]:min-h-0 @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
         <li v-for="tile in tiles" :key="tile.label">
           <button
             type="button"
@@ -261,7 +267,8 @@ const tiles = computed<Tile[]>(() => {
 .model-list {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--ui-primary) 55%, transparent) transparent;
-  scroll-behavior: smooth;
+  /* No scroll-behavior: smooth - it animates programmatic scrolls, so a test that sets scrollTop
+     reads 0 and a scrollbar that jumps is worse than one that does not. */
   overscroll-behavior: contain;
 }
 

@@ -7398,3 +7398,15 @@ muncul ketika hover di chart treemap. lalu redesign scroll bar nya yang keren da
 
 CATATAN: dengan 10 model saat ini list-nya pas, jadi scrollbar belum terlihat - gayanya baru tampil kalau
 model > 10. Kalau mau scrollbar-nya kelihatan sekarang, turunkan max-h list (mis. 148px).
+### Dashboard: tinggi list treemap ikut tinggi card (2026-11-22)
+
+HIRO: "ok bagus, balikan lagi. pastikan scroll ini muncul jika list melebihi tinggi card ya".
+
+- Preview 118px (commit bc018b2, TEMPORARY) sudah dicabut. Sebelumnya 172px, sekarang TIDAK ada angka
+  hardcode lagi: `@min-[420px]:max-h-full @min-[420px]:min-h-0 ... overflow-y-auto`.
+- Efeknya: list setinggi body card (276px @1920x1080, 186px @1440x900 / 307px card) dan menggulung
+  tepat saat barisnya tidak lagi muat. `min-h-0` yang menjaga list tidak menyumbang min-content card
+  (tanpa itu 9 baris pernah bikin card 397px dan layout 1440 jadi 3 baris).
+- Terukur: 10 baris = 165px, body 336px -> scroll 0. Dipaksa 120px -> scroll 45px dan
+  scrollTop jalan (dulu `scroll-behavior: smooth` bikin scrollTop 0 saat dites; properti itu dibuang,
+  smooth scroll pada list 176px tidak ada gunanya dan bikin scroll "loncat").
