@@ -232,7 +232,9 @@ const tiles = computed<Tile[]>(() => {
            comfortable 21px made the card 397px tall, which is what pushed the 1440px layout from two
            rows to three and brought the page scrollbar back. Bounded here, the card stays at the row
            height its neighbours already set. -->
-      <ul class="w-full shrink-0 space-y-px @min-[420px]:max-h-[172px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
+      <!-- No space-y-* here: 10 rows x 17px + 9 gaps = 179 > the 172px cap, which left a 2px
+           scroll - a scrollbar with nothing to scroll. Rows sit flush; the hover fill separates them. -->
+      <ul class="model-list w-full shrink-0 @min-[420px]:max-h-[172px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
         <li v-for="tile in tiles" :key="tile.label">
           <button
             type="button"
@@ -244,11 +246,39 @@ const tiles = computed<Tile[]>(() => {
           >
             <span class="size-2 shrink-0 rounded-sm" :style="{ backgroundColor: tile.color }" />
             <span class="min-w-0 flex-1 truncate">{{ tile.label }}</span>
-            <span class="w-6 shrink-0 text-right text-muted tabular-nums">{{ tile.value }}</span>
-            <span class="w-10 shrink-0 text-right font-medium tabular-nums">{{ tile.pct.toFixed(1) }}%</span>
+            <span class="w-8 shrink-0 text-right font-medium tabular-nums">{{ tile.value }}</span>
           </button>
         </li>
       </ul>
     </div>
   </UCard>
 </template>
+<style scoped>
+/* Ranked list scrollbar: thin, rounded, accent-tinted. Firefox only needs the two properties;
+   Chromium/WebKit ignore them and need the pseudo-elements. The 4px thumb is a rounded pill, so its
+   track is transparent and there is no border to clip the radius. Default app scrollbars are 15-17px
+   and read as a grey bar next to a 176px list. */
+.model-list {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--ui-primary) 55%, transparent) transparent;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+.model-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.model-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.model-list::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--ui-primary) 45%, transparent);
+  border-radius: 9999px;
+}
+
+.model-list::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--ui-primary) 80%, transparent);
+}
+</style>

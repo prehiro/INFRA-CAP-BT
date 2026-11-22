@@ -7383,3 +7383,18 @@ Active PC's 461 unit - kedua card konsisten. pageOverflow 0.
 
 Catatan data: ada model "G11" 1 unit - kelihatannya typo (bukan salah script ini, rows itu sudah ada
 sebelum seeding; script hanya menyentuh computer_model "ProBook 440 G10").
+### Dashboard: list treemap tanpa persen + scrollbar tipis (2026-11-22)
+
+HIRO: "hapus persentase pada baris list model treemap, jadi hanya model dan jumlah saja tapi tetap
+muncul ketika hover di chart treemap. lalu redesign scroll bar nya yang keren dan agak tipis".
+
+- Kolom persen dihapus dari list; sisa swatch + nama + jumlah. Tooltip di tile treemap TIDAK diubah,
+  jadi hover chart tetap menampilkan "ProBook 440 G10 · 100 unit · 21,7%". aria-label row juga masih
+  memuat persen (untuk screen reader).
+- Scrollbar list: 4px, rounded pill, warna accent 45% -> 80% saat hover, track transparan
+  (`scrollbar-width: thin` + `scrollbar-color` untuk Firefox, `::-webkit-scrollbar*` 4px untuk Chromium).
+- `space-y-px` dihapus: 10 baris x 17px + 9 gap = 179 > cap 172px -> sisa scroll 2px (scrollbar tanpa isi).
+  Sekarang 10 baris pas 172px, scroll 0.
+
+CATATAN: dengan 10 model saat ini list-nya pas, jadi scrollbar belum terlihat - gayanya baru tampil kalau
+model > 10. Kalau mau scrollbar-nya kelihatan sekarang, turunkan max-h list (mis. 148px).
