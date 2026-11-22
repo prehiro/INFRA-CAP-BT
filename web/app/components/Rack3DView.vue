@@ -51,9 +51,25 @@ const modelInvalid = ref(false)
 // SuggestInput keeps its <input> inside its own root, so the id lands on the wrapper.
 const modelInputEl = () => root.value?.querySelector('#input-model input') as HTMLInputElement | null
 
+// The pool the page sends only carries the value, but SuggestInput renders `label` and `meta` - handed
+// the raw rows it drew a dropdown of dashes, which read as an empty popup (HIRO: "pop up smartfill nya
+// kosong"). Same mapping the register's other smart-fill fields use (access-point.vue).
+const modelOptions = computed(() => props.modelSuggestions.map(v => ({
+  value: v.value,
+  label: v.value,
+  meta: v.count === 1 ? 'used once' : `used ${v.count} times`,
+  hint: 'Selected from existing records'
+})))
+
+// Panel messages float over the page instead of being a strip inside the form, HIRO: "buat jadi toast
+// aja jangan di form". NOT the app toaster: it renders behind the modal's backdrop, so the message was
+// in the DOM but covered - measured with elementFromPoint, which returned the dismissable layer.
+const toastMsg = ref('')
+let toastTimer: ReturnType<typeof setTimeout> | undefined
+
 // Both drawers can fold down to a narrow rail so the 3D rack gets the whole canvas. The panels are
-// only hidden with v-show, never unmounted: the scene script drives them by id (hud-toast, tab-*,
-// view-*, the inputs), so removing them from the DOM would break every one of those lookups.
+// only hidden with v-show, never unmounted: the scene script drives them by id (tab-*, view-*, the
+// inputs), so removing them from the DOM would break every one of those lookups.
 const leftCollapsed = ref(false)
 const rightCollapsed = ref(false)
 const DRAWER_KEY = 'rack3d.drawers'
@@ -1034,12 +1050,9 @@ onMounted(async () => {
     // UPS front badge/screen accent: blue, not the red APC brand colour (HIRO asked for blue).
 
     function showToast(msg) {
-      const toast = $('hud-toast')
-      if (!toast) return
-      toast.textContent = msg
-      toast.classList.remove('hidden')
-      clearTimeout(toast._timer)
-      toast._timer = setTimeout(() => toast.classList.add('hidden'), 3600)
+      toastMsg.value = msg
+      clearTimeout(toastTimer)
+      toastTimer = setTimeout(() => { toastMsg.value = '' }, 5000)
     }
 
     // Helper: find free U slots above the UPS
@@ -2129,7 +2142,7 @@ onMounted(async () => {
       const newSwitch = {
         id: newId,
         u: chosenU,
-        model: 'Catalyst 9300-48P',
+        model: '',
         hostname: `SW-EDGE-${String(seq).padStart(2, '0')}`,
         ip: `10.10.10.${hostOctet}`,
         sn: `FCW26${String(10 + seq).padStart(2, '0')}X${String(seq).padStart(2, '0')}Z`,
@@ -2704,6 +2717,14 @@ let accentPoll = 0
 
 <template>
   <div ref="root" class="rack3d-host">
+    <!-- A real toast: fixed to the viewport, above the modal backdrop (z-[999]), so the message that
+         used to sit inside the form is now seen and not part of the layout. -->
+    <Teleport to="body">
+      <div
+        v-if="toastMsg"
+        class="pointer-events-none fixed bottom-5 right-5 z-[999] max-w-xs rounded-xl border border-amber-500/35 bg-amber-500/15 px-3.5 py-2.5 text-[11px] leading-snug text-amber-100 shadow-lg backdrop-blur-sm anim-fade-in"
+      >{{ toastMsg }}</div>
+    </Teleport>
     <!-- 3D WebGL Viewport Container -->
     <div
       id="canvas-container"
@@ -2780,9 +2801,6 @@ let accentPoll = 0
         </button>
       </div>
 
-      <!-- Notification Banner (for auto-shifts / slot warnings) -->
-      <div id="hud-toast" class="hidden mb-2.5 px-3 py-2 rounded-xl bg-amber-500/15 border border-amber-500/35 text-[11px] text-amber-200 shrink-0"></div>
-
       <!-- TAB 1: HARDWARE, SWITCH CONFIG & UPS MANAGEMENT -->
       <div id="view-hardware" class="flex-1 overflow-y-auto custom-scroll pr-1 space-y-3">
         <!-- Add Switch Action - above the editor on purpose: adding a switch is the primary thing to
@@ -2815,16 +2833,20 @@ let accentPoll = 0
                  the 3D label quote it. The id sits on the wrapper because SuggestInput keeps its
                  <input> inside its own root, so #input-model input is how the caret is claimed. -->
             <div id="input-model">
-              <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Brand/Model</label>
+              <!-- The "required" line sits on the title row, right-aligned: under the box it cost a
+                   whole line and pushed the form around exactly when the warning appeared. -->
+              <div class="mb-1 flex items-baseline justify-between gap-2">
+                <label class="text-[10px] uppercase tracking-wider text-slate-400">Brand/Model</label>
+                <span v-if="modelInvalid" class="text-right text-[10px] leading-tight text-rose-300">Required - pick one from the list or type a new one.</span>
+              </div>
               <SuggestInput
                 v-model="switchModel"
-                :suggestions="modelSuggestions"
+                :suggestions="modelOptions"
                 :invalid="modelInvalid"
                 placeholder="e.g. Catalyst 9300-48P"
                 header="Brand/Model already in the register"
                 header-bottom-gap
               />
-              <span v-if="modelInvalid" class="mt-1 block text-[10px] text-rose-300">Required - pick one from the list or type a new one.</span>
             </div>
             <div>
               <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1">Switch Hostname</label>

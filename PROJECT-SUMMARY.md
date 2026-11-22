@@ -7786,3 +7786,36 @@ dead code yang sudah ada sebelum ini. Field-nya tetap saya isi biar konsisten, t
 
 BUILD: web `npx nuxt build` 0 error; api `dotnet build` 0 error. API dev jalan dari build terisolasi
 (C:/Users/HIRO/AppData/Local/Temp/apirun/Api.dll) di :5099.
+### Switch Brand/Model: popup smart-fill, letak note, notif jadi toast (2026-11-22)
+
+HIRO: "pop up smartfill nya kosong bro. lalu label smartfill yang dibawah textbox pindahkan ke atas
+posisinya di sebelah kanan title brand/model. lalu ubah posisi notif ketika tambah switch, buat jadi
+toast aja jangan di form"
+
+1. POPUP KOSONG. `network-rack.vue` mengirim `{ value, count }` mentah ke Rack3DView, dan Rack3DView
+   meneruskan prop itu apa adanya ke `:suggestions`. SuggestInput menggambar baris dari `label` + `meta`,
+   jadi yang dirender hanya tanda "-": popup terbuka tapi isinya kosong. Sekarang dipetakan lewat computed
+   `modelOptions` -> `{ value, label, meta: 'used once' | 'used N times', hint: 'Selected from existing records' }`,
+   sama seperti access-point.vue. Terverifikasi: 2-3 baris berisi teks, klik baris mengisi field + chip
+   "Selected from existing records".
+
+2. NOTE REQUIRED PINDAH KE JUDUL. "Required - pick one from the list or type a new one." tidak lagi di bawah
+   textbox (satu baris terpisah yang mendorong form); sekarang sebaris di kanan label Brand/Model.
+   Terukur: label x=81 y=273, note x=168 y=274 (sebaris, di kanan), keduanya di atas input y=303.
+
+3. NOTIF TAMBAH SWITCH JADI TOAST. Banner amber `#hud-toast` di dalam form DIHAPUS (0 referensi).
+   Percobaan pertama pakai toast bawaan app (`useToast`) GAGAL: toast ada di DOM tapi tertutup backdrop
+   modal - `elementFromPoint` mengembalikan dismissable layer, jadi pesan tidak terlihat. Sekarang toast
+   sendiri: Teleport ke body, `fixed bottom-5 right-5 z-[999]`, auto-hilang 5s, pointer-events-none.
+   Terverifikasi elemen toast yang teratas di koordinatnya (456,372,288,37 pada viewport 764x429) dan
+   tidak lagi bagian dari layout form.
+
+Ikut: switch baru dari tombol Add tidak lagi membawa model hardcoded 'Catalyst 9300-48P'.
+
+DATA: ditemukan nilai sampah 'Cat' (SW-EDGE-01) dan 'C' (SW-EDGE-10) - efek autosave yang menyimpan tiap
+jeda ketikan. Dibersihkan jadi '' lewat update langsung DB (console kecil di %TEMP%\sqlfix, Api.csproj
+sebagai ProjectReference). SW-EDGE-01 kemudian diisi HIRO sendiri 'Catalyst 9200L'. Row uji SW-EDGE-15
+(id 80) sudah dihapus: rack balik 14 switch, pool "Catalyst 9200L" x4.
+
+CATATAN TERBUKA: autosave field Brand/Model masih menyimpan tiap jeda ketikan, jadi mengetik "Cat" sebentar
+tersimpan sebagai "Cat". Kalau mau diubah jadi simpan saat blur/Enter/pilih saran, itu perubahan terpisah.
