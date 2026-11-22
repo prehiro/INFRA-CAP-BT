@@ -255,7 +255,7 @@ const apChips = computed(() =>
                    One column wide, like its neighbours. -->
               <ChassisMixCard
                 class="col-span-1"
-                title="Active Domain Devices"
+                title="Domain-Joined PC"
                 label="Assigned to users"
                 source="By form factor"
                 to="/device/pcledger"
@@ -269,6 +269,9 @@ const apChips = computed(() =>
                    block instead of a sliver. -->
               <TreemapCard
                 class="col-span-1 @min-[560px]:col-span-2"
+                title="Model Treemap"
+                label="Active fleet"
+                source="By form factor"
                 :items="models"
                 :total="modelsTotal"
                 :state="modelsState"

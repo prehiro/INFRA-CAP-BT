@@ -7430,3 +7430,12 @@ HIRO: "Ganti title active pc jadi Active Domain Devices, subtitle nya Assigned t
 - `to="/device/pcledger"` TETAP - judul card masih diklik ke PC Ledger.
 - Card Registered PC tidak disentuh (subtitle-nya "Overall PC · By form factor"; huruf kecil di "form factor"
   sudah ada di file sebelum perubahan ini).
+### Dashboard: title + subtitle card treemap (2026-11-22)
+
+HIRO: "Ganti title active pc per model jadi Model Treemap. subtitle nya Active fleet · By form factor".
+
+- TreemapCard: title="Model Treemap", label="Active fleet", source="By form factor".
+- Default prop di TreemapCard ikut diselaraskan ('Model Treemap' / 'Active fleet' / 'By form factor') supaya
+  tidak ada nilai lama yang terbaca sebagai default.
+- Card lain tidak disentuh. Catatan: title card kedua sekarang "Domain-Joined PC" - itu editan HIRO
+  sendiri di file (sebelumnya "Active Domain Devices").

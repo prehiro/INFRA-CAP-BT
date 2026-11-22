@@ -32,9 +32,9 @@ const props = withDefaults(defineProps<{
   source?: string
   state?: 'loading' | 'ready' | 'error'
 }>(), {
-  title: 'PC per Model',
-  label: 'Computer Model',
-  source: 'PC aktif',
+  title: 'Model Treemap',
+  label: 'Active fleet',
+  source: 'By form factor',
   state: 'ready'
 })
 
