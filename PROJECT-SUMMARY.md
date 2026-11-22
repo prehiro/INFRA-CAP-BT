@@ -7345,3 +7345,26 @@ Surface Go 4 80, OptiPlex 7060 19, lalu 5/5/5/4/2/2. TIDAK digabung antar ejaan 
 GRID: 7 sel (All 1 + Active 1 + Treemap 2 + Racks 1 + AP 2). 4 kolom: baris 1 penuh (1+1+2), baris 2
 isi 3 (racks + AP) -> 1 slot kosong. 2 kolom: 2/2/1/2 -> 1 slot kosong sebelah Network Racks.
 pageOverflow 0 di 1920/1440/1280, 12 tile ter-render di semuanya.
+### Dashboard: treemap + daftar model (2026-11-22)
+
+HIRO: "data sudah sy perbaiki. ada 4 bar memanjang vertikal bisa variasikan?" -> pilihan: treemap + list
+di dalam card yang sama.
+
+CAUSANYA BUKAN ALGORITMA: box treemap 640x198 (3,2:1) + 4 model terbesar yang ukurannya hampir sama
+(85/84/80/80) = 4 kotak 124x198. Sudah diuji: squarify optimal (DP), binary split, dan transpose - di box
+selebar itu 4 item ~19% memang tidak bisa jadi kotak; yang bisa mengubah hanya menaikkan box (card 2x2)
+atau mengecilkan lebar box. Makanya box-nya dipersempit: treemap 1 kolom + list 176px di kanan.
+
+- Treemap+list dalam satu card: box jadi 428x186 @1280 -> 164x93 / 156x93 (landscape, tak ada bar tinggi);
+  404x276 @1920 -> 155x139 / 124x163.
+- List 9 baris: swatch + nama + jumlah + persen, hover baris -> tile-nya menyala (satu state `hovered`).
+- List DI BATASI `max-h-[172px]` + overflow-y-auto: tanpa batas, 9 baris @21px bikin min-content card
+  397px, itu yang mendorong layout 1440 dari 2 baris jadi 3 baris dan memunculkan scrollbar lagi.
+
+CATATAN HARNESS: ResizeObserver TIDAK MENYALA di tab background - `Emulation.setDeviceMetricsOverride`
+mengubah layout tapi callback RO tidak jalan (rocKu 0), jadi pengukuran pertama stale (coverage 65%,
+maxBottom 131). Wajib `Page.bringToFront` sebelum resize + ukur; sesudah itu coverage 100%.
+Ini efek yang sama dengan animasi CSS yang beku di tab background.
+
+SCROLLBAR: 1920x1080 dan 1440x900 bersih (nol scrollbar, nol clip). 1280x800 dan 1366x768 masih scroll
+(konten 1456 vs 736) - treemap 2 kolom menambah satu baris kartu di lebar segitu.

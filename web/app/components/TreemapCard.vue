@@ -193,34 +193,62 @@ const tiles = computed<Tile[]>(() => {
       Belum ada data model.
     </div>
 
-    <!-- Measured pixel box: every tile is absolutely positioned in it. -->
-    <div v-else ref="root" class="relative h-full min-h-24 w-full p-3 pt-0">
-      <div
-        v-for="tile in tiles"
-        :key="tile.label"
-        class="absolute p-px"
-        :style="{ left: `${tile.x}px`, top: `${tile.y}px`, width: `${tile.w}px`, height: `${tile.h}px` }"
-      >
-        <UTooltip :text="`${tile.label} · ${tile.value} unit · ${tile.pct.toFixed(1)}%`">
-          <div
-            class="flex h-full w-full flex-col justify-between overflow-hidden rounded-[3px] p-1.5 transition-opacity duration-200"
-            :style="{ backgroundColor: tile.color, opacity: hovered !== null && hovered !== tile.index ? 0.35 : 1 }"
+    <div v-else class="flex h-full min-h-0 flex-col gap-3 p-3 pt-0 @min-[420px]:flex-row">
+      <!-- Measured pixel box: every tile is absolutely positioned in it. -->
+      <div ref="root" class="relative min-h-24 min-w-0 flex-1">
+        <div
+          v-for="tile in tiles"
+          :key="tile.label"
+          class="absolute p-px"
+          :style="{ left: `${tile.x}px`, top: `${tile.y}px`, width: `${tile.w}px`, height: `${tile.h}px` }"
+        >
+          <UTooltip :text="`${tile.label} · ${tile.value} unit · ${tile.pct.toFixed(1)}%`">
+            <div
+              class="flex h-full w-full flex-col justify-between overflow-hidden rounded-[3px] p-1.5 transition-opacity duration-200"
+              :style="{ backgroundColor: tile.color, opacity: hovered !== null && hovered !== tile.index ? 0.35 : 1 }"
+              @mouseenter="hovered = tile.index"
+              @mouseleave="hovered = null"
+            >
+              <!-- A 20-unit tile in a 12-tile treemap is ~1.5% of the area; the label would be a
+                   clipped stub, so the label only appears where it can actually be read. -->
+              <span
+                v-if="tile.h >= 28 && tile.w >= 50"
+                class="truncate text-[11px] font-medium leading-tight text-zinc-900/80"
+              >{{ tile.label }}</span>
+              <span
+                v-if="tile.h >= 18"
+                class="text-[13px] font-semibold leading-none tabular-nums text-zinc-900"
+              >{{ tile.value }}</span>
+            </div>
+          </UTooltip>
+        </div>
+      </div>
+
+      <!-- Ranked list beside the treemap. Two reasons it is here and not a legend row under each tile:
+           the five 80-unit models are all the same size, so in a wide short box they pack into four
+           identical tall bars (124x198 at a 640px card) and the chart says nothing the list does not -
+           and this is the only place a 2-unit tile can show its name. Hovering a row highlights its tile. -->
+      <!-- max-h + overflow: the list must not set the card's min-content height. Nine rows at a
+           comfortable 21px made the card 397px tall, which is what pushed the 1440px layout from two
+           rows to three and brought the page scrollbar back. Bounded here, the card stays at the row
+           height its neighbours already set. -->
+      <ul class="w-full shrink-0 space-y-px @min-[420px]:max-h-[172px] @min-[420px]:w-[176px] @min-[420px]:overflow-y-auto">
+        <li v-for="tile in tiles" :key="tile.label">
+          <button
+            type="button"
+            class="flex w-full items-center gap-2 rounded-md px-1.5 py-0 text-left text-[11px] transition-colors"
+            :class="hovered === tile.index ? 'bg-elevated/70' : 'hover:bg-elevated/50'"
+            :aria-label="`${tile.label}: ${tile.value} unit, ${tile.pct.toFixed(1)} persen`"
             @mouseenter="hovered = tile.index"
             @mouseleave="hovered = null"
           >
-            <!-- A 20-unit tile in a 12-tile treemap is ~1.5% of the area; the label would be a
-                 clipped stub, so the label only appears where it can actually be read. -->
-            <span
-              v-if="tile.h >= 28 && tile.w >= 50"
-              class="truncate text-[11px] font-medium leading-tight text-zinc-900/80"
-            >{{ tile.label }}</span>
-            <span
-              v-if="tile.h >= 18"
-              class="text-[13px] font-semibold leading-none tabular-nums text-zinc-900"
-            >{{ tile.value }}</span>
-          </div>
-        </UTooltip>
-      </div>
+            <span class="size-2 shrink-0 rounded-sm" :style="{ backgroundColor: tile.color }" />
+            <span class="min-w-0 flex-1 truncate">{{ tile.label }}</span>
+            <span class="w-6 shrink-0 text-right text-muted tabular-nums">{{ tile.value }}</span>
+            <span class="w-10 shrink-0 text-right font-medium tabular-nums">{{ tile.pct.toFixed(1) }}%</span>
+          </button>
+        </li>
+      </ul>
     </div>
   </UCard>
 </template>
