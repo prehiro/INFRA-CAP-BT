@@ -8697,3 +8697,51 @@ Satu class, lima pemakai: PC Ledger, Standby PC, Dispose, Factory PC, UPS.
 - Sway 3.6s (`pc-add-sway`) masih jalan di kelima glyph - ini yang sempat mati kalau ignite dipasang di SVG.
 - Reduced motion (ups): plate/wrap/glyph `animationName: none`, plate opacity 1, pseudo opacity 0/0.
 - Build `npx nuxt build` rc=0, 0 ERROR. File berubah: main.css, pcledger.vue, factorypc.vue, ups.vue.
+
+### Access Point: boot icon title + animasi Wi-Fi yang baru (2026-11-22)
+
+HIRO: "ok implementn juga ke icon title access point, tapi perbaiki animasi wifinya yang kreatif dan keren"
+
+## 1. Boot icon title
+
+Plate judul Access Point sekarang pakai class `title-boot` yang sama (dari main.css) + wrapper
+`.pl-title-glyph`, jadi ikut boot: plate spring, ring ping, scanline, dan glyph ignite - sway 3.6s
+(`pc-add-tilt`) tetap jalan karena ignite ada di wrapper, bukan di SVG.
+
+## 2. Animasi Wi-Fi: dari "level meter" jadi ripple emission
+
+Yang lama: tiga arc fade-in berurutan (inner 20%, mid 42%, outer 62%) lalu fade balik - bentuknya
+seperti bar signal strength, bukan seperti gelombang.
+
+Yang baru:
+- Tiap arc TUMBUH dari titik dot (transform-origin `12px 19px` di viewBox 24) - scale 0.62 -> 1,
+  tahan di penuh, lalu turun lagi. Jadi kelihatan seperti gelombang yang memancar keluar.
+- Delay 0 / 0.26s / 0.52s -> inner dulu, lalu mid, lalu outer (satu keyframe bersama + delay,
+  jadi ketiga fase tidak bisa drift sendiri-sendiri).
+- Dot jadi transmitter: pulse scale 1 -> 1.9 + opacity 0.6 -> 1, puncaknya pas arc inner mendarat.
+- Arc TIDAK pernah turun di bawah opacity 0.45, dot minimal 0.6 - jadi mark masih terbaca sebagai
+  Wi-Fi di antara gelombang, tidak berkedip hilang. Penekanan dari scale, bukan dari menghilang.
+
+## Dua hal yang ketemu saat implementasi
+
+1. Arc ketiga di icon header (`<path d="M8.5 15.2a5 5 0 0 1 7 0" />`) TIDAK punya class - jadi
+   selama ini cuma 2 arc yang animasi di header (di modal & marker sudah ada class-nya). Sekarang
+   `.ap-wifi-inner` -> ketiga arc animasi.
+2. `animation-delay` positif + fill-mode default (none) = arc tampil dengan style NORMAL selama masa
+   tunggunya. Efeknya: saat page load, seluruh mark sempat muncul penuh dulu (~0.5s) sebelum ripple
+   mulai - kebalikan dari yang dimau. Diperbaiki dengan `animation-fill-mode: backwards` supaya arc
+   menahan frame 0% (opacity .45 / scale .62) selama delay.
+
+## VERIFIKASI
+
+- Boot AP: plate `title-boot-in`, ::before `title-boot-ping`, ::after `title-boot-scan`, wrap
+  `title-boot-ignite`, glyph `pc-add-sway-62bb9124`, plate 48x48.
+- Ripple (pause semua animasi, currentTime=0, play, sampling 35ms selama 3.9s):
+  - t=0 ketiga arc = opacity 0.45 + matrix(0.62) -> TIDAK ada flash penuh ✓
+  - opacity tiap arc 0.45..1.00, scale 0.620..1.000
+  - first-full: 293ms / 530ms / 780ms -> jarak ~250ms, sesuai delay 0.26s ✓ (inner -> mid -> outer)
+  - dot: opacity 0.60..1.00, scale 1.000..1.900
+- Jumlah arc beranimasi: 12 (header + 3 varian modal) - sebelumnya 8 (arc ketiga header mati).
+- Reduced motion (AP): plate/wrap/glyph `animationName: none`, arcs `none` + opacity 1, dot `none` +
+  opacity 1, plate opacity 1 ✓.
+- Build `npx nuxt build` rc=0, 0 ERROR.

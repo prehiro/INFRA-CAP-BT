@@ -509,14 +509,19 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
       <div class="ap-page-enter mx-auto flex min-h-0 w-full max-w-[1500px] flex-1 flex-col gap-5">
         <div class="ap-header-row flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border border-default bg-elevated p-4">
           <div class="flex w-full min-w-0 items-center gap-3 xl:max-w-[320px]">
-            <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+            <!-- title-boot: the shared boot sequence (plate spring + ring ping + scanline) from
+                 assets/css/main.css; .pl-title-glyph carries the ignition so the SVG below keeps its
+                 own 3.6s pc-add-tilt sway. -->
+            <span class="title-boot grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
               <RecordAddIcon size="lg" random-halo>
-                <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                  <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
-                  <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
-                  <path d="M8.5 15.2a5 5 0 0 1 7 0" />
-                  <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
-                </svg>
+                <span class="pl-title-glyph">
+                  <svg class="pc-add-tilt size-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                    <path class="ap-wifi-outer" d="M2 8.8a15 15 0 0 1 20 0" />
+                    <path class="ap-wifi-mid" d="M5 12a10 10 0 0 1 14 0" />
+                    <path class="ap-wifi-inner" d="M8.5 15.2a5 5 0 0 1 7 0" />
+                    <circle class="ap-wifi-dot" cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
               </RecordAddIcon>
             </span>
             <div class="min-w-0">
@@ -935,24 +940,44 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
   .ap-bcp-orbit, .ap-bcp-core { animation: none; }
 }
 
-/* Wifi builds up from the dot alone: dot → 1 bar → 2 bars → 3 bars, then fades back to the dot. */
-.ap-wifi-inner { animation: ap-wifi-inner 2.7s ease-in-out infinite; }
-.ap-wifi-mid { animation: ap-wifi-middle 2.7s ease-in-out infinite; }
-.ap-wifi-outer { animation: ap-wifi-outer 2.7s ease-in-out infinite; }
-@keyframes ap-wifi-inner {
-  0%, 8% { opacity: .12; }
-  20%, 88% { opacity: 1; }
-  100% { opacity: .12; }
+/* Wi-Fi emission. The old version faded whole arcs in one after another, which read as a level
+   meter rather than a signal. Each arc now GROWS OUT OF THE DOT - transform-origin sits on the dot
+   at 12,19 in the 24-unit viewBox - holds at full strength, then settles back, with each arc
+   offset by 0.26s so the wave ripples outward: inner, middle, outer.
+
+   The arcs never fall below .45 opacity and the dot keeps a steady .6, so the mark still reads as
+   Wi-Fi between waves instead of blinking out; the emphasis comes from scale, not from disappearing.
+   All three arcs move on one shared keyframe plus a delay, so the three phases cannot drift. */
+.ap-wifi-inner,
+.ap-wifi-mid,
+.ap-wifi-outer {
+  transform-box: view-box;
+  transform-origin: 12px 19px;
+  animation: ap-wifi-emit 3.4s cubic-bezier(.25, .9, .3, 1) infinite;
+  /* backwards, not the shorthand's default: without it an arc renders at its NORMAL style for the
+     0.26s / 0.52s it waits, so the whole mark flashes fully drawn before the ripple starts. */
+  animation-fill-mode: backwards;
 }
-@keyframes ap-wifi-middle {
-  0%, 30% { opacity: .12; }
-  42%, 80% { opacity: 1; }
-  92%, 100% { opacity: .12; }
+.ap-wifi-mid { animation-delay: .26s; }
+.ap-wifi-outer { animation-delay: .52s; }
+@keyframes ap-wifi-emit {
+  0%   { opacity: .45; transform: scale(.62); }
+  22%  { opacity: 1;   transform: scale(1); }
+  62%  { opacity: 1;   transform: scale(1); }
+  100% { opacity: .45; transform: scale(.62); }
 }
-@keyframes ap-wifi-outer {
-  0%, 52% { opacity: .12; }
-  62%, 72% { opacity: 1; }
-  84%, 100% { opacity: .12; }
+/* The dot is the transmitter, so it pulses on the same beat - brightest exactly when the inner arc
+   lands. fill-box keeps the origin on the dot itself, which is r=1. */
+.ap-wifi-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ap-wifi-beacon 3.4s cubic-bezier(.25, .9, .3, 1) infinite;
+}
+@keyframes ap-wifi-beacon {
+  0%   { opacity: .6;  transform: scale(1); }
+  20%  { opacity: 1;   transform: scale(1.9); }
+  55%  { opacity: .85; transform: scale(1.15); }
+  100% { opacity: .6;  transform: scale(1); }
 }
 .ap-marker-ping {
   border-color: var(--ui-primary);
@@ -967,6 +992,7 @@ async function pointerUp(event: PointerEvent, point: AccessPoint, cancelled = fa
 }
 @media (prefers-reduced-motion: reduce) {
   .ap-wifi-inner, .ap-wifi-mid, .ap-wifi-outer { animation: none; opacity: 1; }
+  .ap-wifi-dot { animation: none; opacity: 1; transform: none; }
   .ap-marker-ping { animation: none; opacity: 0; }
   .ap-page-enter { animation: none; }
 }
