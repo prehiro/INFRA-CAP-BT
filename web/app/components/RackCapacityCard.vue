@@ -121,8 +121,17 @@ function pointAt(ev: Event) {
   }
 }
 
-const enterRow = (i: number, ev: Event) => { hover.value = i; pointAt(ev) }
-const moveTip = (ev: Event) => { pointAt(ev) }
+// Both are no-ops while a drag is running: the pointer is sweeping across cells on its way somewhere,
+// and a tooltip for each one it crosses is noise, not information.
+const enterRow = (i: number, ev: Event) => {
+  if (dragging.value) return
+  hover.value = i
+  pointAt(ev)
+}
+const moveTip = (ev: Event) => {
+  if (dragging.value) return
+  pointAt(ev)
+}
 const clearTip = () => { hover.value = null; tip.value = null }
 
 /* ------------------------------------------------------------------ paging */
@@ -159,7 +168,20 @@ function goToPage(i: number) {
   const el = strip.value
   if (!el) return
   const target = Math.max(0, Math.min(pageCount.value - 1, i))
-  el.scrollTo({ left: target * step(), behavior: 'smooth' })
+  // A smooth scroll is motion, so it is dropped for anyone who asked the system for less of it.
+  const smooth = !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  el.scrollTo({ left: target * step(), behavior: smooth ? 'smooth' : 'auto' })
+}
+
+/** Arrow keys page the strip while a cell inside it has focus. */
+function onStripKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    goToPage(pageIndex.value + 1)
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault()
+    goToPage(pageIndex.value - 1)
+  }
 }
 
 const canSwipe = computed(() => pageCount.value > 1)
@@ -178,26 +200,44 @@ let moved = false
 let startX = 0
 let startLeft = 0
 
+// The move/up listeners live on the WINDOW for the duration of a drag, not on the strip. A listener on
+// the strip can only see the pointer while it is over the strip, so a fast sweep that crosses the edge
+// ended the drag mid-flight and left the strip wherever it happened to be (a `pointerleave` handler does
+// the same). Capturing the pointer instead was worse: Chrome fires `pointerleave` on the strip the moment
+// capture is set, which ended the drag before it started. Window listeners have no edge to cross, and a
+// `pointercancel` or a window `blur` (alt-tab) finishes the drag the same way a release does.
 function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'touch' || !strip.value) return
   moved = false
   startX = e.clientX
   startLeft = strip.value.scrollLeft
+  window.addEventListener('pointermove', onDragMove)
+  window.addEventListener('pointerup', endDrag)
+  window.addEventListener('pointercancel', endDrag)
+  window.addEventListener('blur', endDrag)
 }
 
-function onPointerMove(e: PointerEvent) {
+function onDragMove(e: PointerEvent) {
   const el = strip.value
-  if (!el || e.buttons === 0) return
+  if (!el) return
   const dx = e.clientX - startX
-  if (!moved && Math.abs(dx) < 6) return
   if (!moved) {
+    if (Math.abs(dx) < 6) return
     moved = true
     dragging.value = true
+    // The tooltip would otherwise pop up for every cell the sweep crosses on its way past.
+    clearTip()
   }
+  // Stops the sweep from selecting the labels it passes over.
+  e.preventDefault()
   el.scrollLeft = startLeft - dx
 }
 
-function onPointerUp() {
+function endDrag() {
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
+  window.removeEventListener('blur', endDrag)
   if (!moved) {
     dragging.value = false
     return
@@ -214,7 +254,14 @@ onMounted(() => {
   window.addEventListener('resize', syncStrip)
 })
 
-onBeforeUnmount(() => window.removeEventListener('resize', syncStrip))
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', syncStrip)
+  // A drag that is still in progress when the card unmounts would otherwise keep listening forever.
+  window.removeEventListener('pointermove', onDragMove)
+  window.removeEventListener('pointerup', endDrag)
+  window.removeEventListener('pointercancel', endDrag)
+  window.removeEventListener('blur', endDrag)
+})
 
 // A page added or removed by a data refresh changes the scrollable width, so re-measure once the DOM
 // has the new cells.
@@ -315,9 +362,7 @@ watch([rows, pageCount], async () => {
         :class="[canSwipe ? 'cursor-grab' : '', dragging ? 'rack-strip--dragging' : '']"
         @scroll.passive="syncStrip"
         @pointerdown="onPointerDown"
-        @pointermove="onPointerMove"
-        @pointerup="onPointerUp"
-        @pointerleave="onPointerUp"
+        @keydown="onStripKeydown"
       >
         <section
           v-for="(page, pi) in pages"
@@ -328,7 +373,7 @@ watch([rows, pageCount], async () => {
           <div
             v-for="row in page"
             :key="row.rackId"
-            class="group flex h-full flex-col justify-center rounded-md px-2 py-1 transition-opacity duration-200 hover:bg-elevated/50"
+            class="group flex h-full flex-col justify-center rounded-md px-2 py-1 outline-none transition-opacity duration-200 hover:bg-elevated/50 focus-visible:ring-2 focus-visible:ring-primary"
             :class="rowDim(row) ? 'opacity-40' : ''"
             tabindex="0"
             @mouseenter="enterRow(row.index, $event)"
@@ -342,9 +387,11 @@ watch([rows, pageCount], async () => {
                  it had failed to fill its page. -->
             <!-- Name and count share one line: at four cells per row the count has to sit beside the
                  name, because a bar with no number next to it is a guess. -->
-            <div class="flex items-baseline gap-1">
+            <div class="flex items-center gap-1.5">
               <span class="min-w-0 flex-1 truncate text-xs font-semibold leading-tight">{{ row.rackName }}</span>
-              <span class="shrink-0 text-xs font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
+              <!-- The count wears a badge rather than sitting bare next to the name: the name can be
+                   any length, and a bare number beside it reads as part of the name. -->
+              <span class="shrink-0 rounded bg-elevated/80 px-1.5 text-[11px] font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
             </div>
             <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
             <div class="mt-0.5 h-2 overflow-hidden rounded-full bg-elevated/80">
@@ -356,6 +403,10 @@ watch([rows, pageCount], async () => {
           </div>
         </section>
       </div>
+
+      <!-- The visual indicator is "1/2"; this is the same fact for a screen reader, announced when
+           the page changes by any means (arrow, key, swipe, drag). -->
+      <p class="sr-only" aria-live="polite">{{ canSwipe ? `Page ${pageIndex + 1} of ${pageCount}` : '' }}</p>
 
       <p v-if="state === 'ready' && rows.length" class="border-t border-default pt-2 text-[11px] text-muted">
         <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> racks

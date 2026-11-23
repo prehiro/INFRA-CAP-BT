@@ -8155,3 +8155,35 @@ Dead code yang ikut dihapus (bukan cuma teksnya):
 
 Verifikasi: grep `avgSwitches|floorId|avg ` di RackCapacityCard.vue -> 0 hasil. Build web 0 error. Di browser
 footer "10 racks · 32 switches", tidak ada kata "avg" di seluruh card, tinggi card tetap 332px, 2 page.
+### Card switch: enhance UI/UX (2026-11-22)
+
+HIRO: "enhance ui/ux nya"
+
+Yang diperbaiki, semuanya ada bukti terukurnya:
+
+1. Drag tidak lagi mati kalau mouse keluar dari area strip.
+   Penyebab: handler `pointerleave` di strip mengakhiri drag begitu pointer melewati batas strip - sweep cepat
+   yang melewati tepi langsung berhenti. "Diperbaiki" dengan setPointerCapture malah lebih buruk: Chrome
+   menembakkan `pointerleave` di detik yang sama saat capture dipasang (setelah pointerdown, koordinat sama),
+   jadi drag tamat sebelum bergerak. Solusi: listener `pointermove`/`pointerup`/`pointercancel` dipasang di
+   WINDOW selama drag, dilepas saat selesai; `blur` window (alt-tab) juga mengakhiri drag.
+2. Tooltip tidak muncul selama drag. Sebelumnya sapuan mouse di atas cell memunculkan tooltip untuk setiap
+   cell yang dilewati - itu noise. `enterRow`/`moveTip` sekarang no-op saat `dragging`.
+3. Drag tidak lagi menyeleksi teks (preventDefault saat drag mulai + `user-select: none`).
+4. Page bisa diganti dengan keyboard: ArrowRight/ArrowLeft saat cell di dalam strip punya fokus.
+5. Focus ring kelihatan: cell dapat `focus-visible:ring-2 ring-primary` (terukur box-shadow rgb(0,220,130) 2px).
+6. `prefers-reduced-motion` dihormati: `goToPage` pakai behavior 'auto' kalau user minta reduce motion.
+7. Jumlah switch jadi badge (bg-elevated/80, rounded, px-1.5) supaya angka tidak terbaca sebagai bagian nama.
+8. `aria-live="polite"` + sr-only: "Page 1 of 2" diumumkan ke screen reader setiap page ganti.
+
+VERIFIKASI (1500x950, 10 rack):
+- Drag 360px melewati tepi kiri strip: scrollLeft 0/90/135/180/225/270/315/360 (1:1), class `dragging` aktif,
+  tooltip TIDAK muncul, tidak ada text selection; dilepas -> 425 (2/2).
+- Hover normal (bukan drag): tooltip "C-B2 · 5 · BUILDING 2 · Rank 2 of 10 racks" muncul, cell lain 0.4.
+- Focus cell -> ArrowRight -> 2/2 + aria-live "Page 2 of 2"; ArrowLeft -> 1/2.
+- Focus ring: box-shadow `rgb(0, 220, 130) 0 0 0 2px`.
+- Badge: text "8", radius 4px, padding 0 6px.
+- Footer "10 racks · 32 switches", card 332px, page tidak scroll. Build web 0 error.
+
+CATATAN: hover tooltip harus diuji dengan DUA kali mouseMoved (dari luar lalu ke dalam cell). Satu gerakan
+langsung ke titik cell kadang tidak memicu mouseenter di harness ini, dan hasilnya tampak seperti fitur rusak.
