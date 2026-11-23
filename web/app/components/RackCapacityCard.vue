@@ -52,9 +52,9 @@ const props = withDefaults(defineProps<{
   source?: string
   state?: 'loading' | 'ready' | 'error'
 }>(), {
-  title: 'Switch per Rack',
-  label: 'Switch count',
-  source: 'By rack',
+  title: 'Switches per Rack',
+  label: 'Installed',
+  source: 'Ranked by count',
   state: 'ready'
 })
 

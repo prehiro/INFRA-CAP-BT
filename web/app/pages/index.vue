@@ -5,7 +5,7 @@
  * WHAT IS ON IT
  * Welcome banner, the module tiles, and the live Server Metrics rail down the right edge - one tile
  * per module that has a page - plus two chassis doughnuts ("All Capacitor PC's" for the whole fleet,
- * "Active PC's" for the active PC Ledger list) and the Switch per Rack card (how many switches sit
+ * "Active PC's" for the active PC Ledger list) and the Switches per Rack card (how many switches sit
  * in each rack, ranked).
  *
  * Factory PC and UPS Register tiles were removed: both were single-number counts of registers that
@@ -18,7 +18,7 @@
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
- * Every doughnut is one column and Switch per Rack is the only double-width card, so the grid holds
+ * Every doughnut is one column and Switches per Rack is the only double-width card, so the grid holds
  * seven cells: 4+3 at four columns, 3+3+1 at three and 2+2+2+1 at two, where the double-width card
  * takes the last row by itself.
  *
@@ -334,15 +334,15 @@ const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value
                 :state="upsState"
               />
 
-              <!-- Switch per Rack, two columns wide like the Access Points tile it replaces: one row
+              <!-- Switches per Rack, two columns wide like the Access Points tile it replaces: one row
                    per rack, the bar is how many switches sit in it, ranked. It deliberately carries
                    switch counts only - a second track with U usage made every row a comparison of two
                    different units, and the rack page is where capacity is looked at properly. -->
               <RackCapacityCard
                 class="col-span-1 @min-[560px]:col-span-2"
-                title="Switch per Rack"
-                label="Switch count"
-                source="By rack"
+                title="Switches per Rack"
+                label="Installed"
+                source="Ranked by count"
                 to="/networks/network-rack"
                 :racks="(rackRows as RackRow[] ?? [])"
                 :state="rackState"

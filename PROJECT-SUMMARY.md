@@ -8201,3 +8201,22 @@ Pakai satu helper `rackLabel(name)` supaya cell dan tooltip tidak bisa berbeda, 
 Verifikasi di browser: 10 nama tampil "Rack D-B1 / Rack C-B2 / Rack E1 / Rack C / Rack B / Rack B-B2 / Rack F /
 Rack G / Rack Mez / Rack S"; tooltip "Rack C-B2 | 5 | BUILDING 2 | Rank 2 of 10 racks" (200x87px, tidak terpotong).
 Build web 0 error.
+### Card switch: title diganti (2026-11-22)
+
+HIRO: "ganti title nya yang bagus"
+
+Title: "Switch per Rack" -> "Switches per Rack". Dua alasan objektif:
+1. Grammar - "Switch" itu singular, padahal yang dihitung banyak switch dan pembacaannya plural ("switches" sudah
+   dipakai di footer dan tooltip).
+2. Subjudul lama "Switch count · By rack" mengulang kata yang sama dengan title - title dan subjudul jadi
+   mengatakan hal yang sama dua kali.
+
+Subjudul ikut disesuaikan jadi "Installed · Ranked by count": menyebut apa yang ditampilkan (installed) dan
+bagaimana urutannya (ranked by count, list memang diurutkan dari terbanyak), mengikuti pola card lain
+("Overall PC · By form factor", "Registered units · By model") tanpa mengulang kata "switch".
+
+Terverifikasi: title "Switches per Rack", subjudul "Installed · Ranked by count", tidak terpotong di 1500x950
+(149px dalam card 454px) maupun 1280x800 (card 688px), header tidak overflow. Build web 0 error.
+
+Kalau yang dimaksud cuma title-nya saja dan subjudul mau dikembalikan, subjudul lama adalah "Switch count ·
+By rack".
