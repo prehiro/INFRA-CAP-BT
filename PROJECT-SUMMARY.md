@@ -8116,3 +8116,27 @@ PC / Model Treemap / UPS Fleet semuanya Inggris):
 Terverifikasi di browser: title "Switch per Rack", subtitle "Switch count · By rack", footer "10 racks · 32 switches ·
 avg 3.2 per rack", tooltip "C-B2 · 5 · BUILDING 2 · Rank 2 of 10 racks", aria "Previous page"/"Next page"/"Racks page 1".
 Tinggi card tetap 332px (tidak ada scrollbar page di 1500x950). Build web 0 error.
+### Card switch: drag swipe beneran (2026-11-22)
+
+HIRO: "buat bisa drag swipe juga"
+
+Drag dengan mouse sudah ada sebelumnya, tapi ada dua hal yang membuatnya tidak terasa drag:
+
+1. `scroll-snap-type: x mandatory` masih aktif saat drag. Setiap `scrollLeft = ...` di-snap ulang oleh browser
+   sebelum frame berikutnya, jadi strip melompat antar batas page dan tidak mengikuti pointer - terasa "macet".
+   Efek yang sama juga bikin cursor di area cell `default` (class `cursor-default` di cell menimpa
+   `cursor-grab` dari strip), jadi tidak ada petunjuk visual bahwa area itu bisa digeser.
+
+Perbaikan:
+- State `dragging` -> class `rack-strip--dragging` -> `scroll-snap-type: none` + `user-select: none` selama
+  drag. Snap dinyalakan lagi saat pointer dilepas, lalu `goToPage()` -> mendarat di page terdekat.
+- `cursor-default` di cell dihapus, jadi cursor `grab` dari strip diwarisi ke seluruh area (termasuk cell).
+- Threshold 6px tetap: klik di cell tidak berubah jadi drag.
+
+VERIFIKASI pakai CDP Input.dispatchMouseEvent (event mouse ASLI, bukan PointerEvent sintetis - sintetis
+tidak membawa `buttons` sehingga handler `e.buttons === 0` langsung return dan hasilnya seolah drag mati):
+- Drag 150px: scrollLeft 0 -> 50 -> 75 -> 100 -> 125 -> 150 (mengikuti pointer 1:1), class
+  `rack-strip--dragging` aktif, dilepas -> snap balik ke 0 (1/2) karena 150 < setengah page.
+- Drag 330px: during 330, dilepas -> 425 (2/2), page 2 = Mez + S.
+- Drag balik 330px -> 0 (1/2).
+- Cursor cell = "grab", strip = "grab". Build web 0 error.

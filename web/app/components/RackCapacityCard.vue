@@ -135,6 +135,8 @@ const strip = ref<HTMLElement | null>(null)
 const pageIndex = ref(0)
 const atStart = ref(true)
 const atEnd = ref(false)
+/** True while a mouse drag is in progress. The strip drops its scroll-snap for the duration. */
+const dragging = ref(false)
 
 /** One page wide plus the gap between pages: the distance the strip travels per arrow press. */
 const step = () => {
@@ -170,14 +172,18 @@ const canSwipe = computed(() => pageCount.value > 1)
 
 // A mouse cannot swipe a scroller, so the strip is draggable. The 6px threshold is what keeps a click
 // on a cell from turning into a drag: below it the pointer never moved, above it the strip takes over.
-let dragging = false
+//
+// SNAP IS DROPPED FOR THE DURATION (`.rack-strip--dragging`). With `scroll-snap-type: x mandatory` left
+// on, every assignment to scrollLeft is re-snapped by the browser before the next frame, so the strip
+// jumps between page boundaries instead of following the pointer - the drag reads as "stuck". Turning the
+// snap back on when the pointer is released lands it on the nearest page, which is what a touch swipe
+// does on its own.
 let moved = false
 let startX = 0
 let startLeft = 0
 
 function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'touch' || !strip.value) return
-  dragging = true
   moved = false
   startX = e.clientX
   startLeft = strip.value.scrollLeft
@@ -185,17 +191,25 @@ function onPointerDown(e: PointerEvent) {
 
 function onPointerMove(e: PointerEvent) {
   const el = strip.value
-  if (!dragging || !el) return
+  if (!el || e.buttons === 0) return
   const dx = e.clientX - startX
   if (!moved && Math.abs(dx) < 6) return
-  moved = true
+  if (!moved) {
+    moved = true
+    dragging.value = true
+  }
   el.scrollLeft = startLeft - dx
 }
 
 function onPointerUp() {
-  dragging = false
-  // Snap to the nearest page once the drag ends, the way a touch swipe does.
-  if (moved && strip.value) goToPage(Math.round(strip.value.scrollLeft / step()))
+  if (!moved) {
+    dragging.value = false
+    return
+  }
+  const landed = strip.value ? Math.round(strip.value.scrollLeft / step()) : 0
+  // Snap back on first, then glide: with the snap still off the scrollTo would be re-snapped anyway.
+  dragging.value = false
+  goToPage(landed)
   moved = false
 }
 
@@ -302,7 +316,7 @@ watch([rows, pageCount], async () => {
         v-else
         ref="strip"
         class="rack-strip flex flex-1 items-stretch"
-        :class="canSwipe ? 'cursor-grab' : ''"
+        :class="[canSwipe ? 'cursor-grab' : '', dragging ? 'rack-strip--dragging' : '']"
         @scroll.passive="syncStrip"
         @pointerdown="onPointerDown"
         @pointermove="onPointerMove"
@@ -318,7 +332,7 @@ watch([rows, pageCount], async () => {
           <div
             v-for="row in page"
             :key="row.rackId"
-            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-1 transition-opacity duration-200 hover:bg-elevated/50"
+            class="group flex h-full flex-col justify-center rounded-md px-2 py-1 transition-opacity duration-200 hover:bg-elevated/50"
             :class="rowDim(row) ? 'opacity-40' : ''"
             tabindex="0"
             @mouseenter="enterRow(row.index, $event)"
@@ -393,6 +407,13 @@ watch([rows, pageCount], async () => {
 
 .rack-strip::-webkit-scrollbar {
   display: none;
+}
+
+/* While a mouse drag is in progress: no snap (it would yank the strip back to a boundary under the
+   pointer), and no text selection inside the cells the pointer is sweeping over. */
+.rack-strip--dragging {
+  scroll-snap-type: none;
+  user-select: none;
 }
 
 /* One page per view: two columns by four rows, always the full width of the strip. Four `auto` rows
