@@ -8467,3 +8467,44 @@ remote seperti ini tidak terjadi di sana.
 
 API sekarang jalan dari `scratch/apibuild2/Api.dll` (port 5099) - build terisolasi, karena bin/Debug
 terkunci. Perubahan SqlWarmup ada di source; `dotnet run` biasa akan build sendiri.
+
+### 3D rack view: "tergeser ke atas tiap pindah switch" (2026-11-22)
+
+HIRO: "setelah saya zoom/geser view lau pindah pindahkan switch ke U lain, 3d view tergeser ke atas tiap pindah switch"
+
+## Penyebab
+
+`Rack3DView.vue` -> `applySwitches()` (dipanggil SETIAP kali `props.switches` berubah, termasuk saat switch
+dipindah U) memanggil `applyViewport()`. Fungsi itu menghitung ulang `camera.setViewOffset(...)` memakai
+kamera POSISI SEKARANG (hasil zoom/geser user), jadi rack selalu di-centre ulang -> view "melompat".
+`rebuildRackEquipment()` sendiri TIDAK menggeser kamera; yang menggeser cuma fit itu.
+
+Kenapa hanya terasa setelah zoom/geser: kalau kamera masih di posisi default, hasil fit identik dengan
+offset yang sudah ada, jadi tidak ada yang bergerak. Begitu user zoom/pan, fit menghasilkan offset yang
+berbeda -> lompatan.
+
+## Perbaikan
+
+`applyViewport()` dihapus dari `applySwitches()`, diganti komentar yang menjelaskan kenapa. Re-fit itu untuk
+viewport yang BERUBAH, bukan untuk data yang berubah. Yang masih boleh re-fit:
+- ResizeObserver di `container` (2590) - dipakai saat canvas benar-benar berubah ukuran
+- init (2592) dan setelah scene dibangun (2688)
+- watcher collapse panel kiri/kanan (baris 97) - area bebasnya memang berubah
+
+## VERIFIKASI (probe sementara `window.__r3d` = camera + controls + applyViewport, dihapus lagi setelah ukur)
+
+1. Zoom pakai WheelEvent di canvas: posisi kamera (2.396,1.899,3.221) -> (2.923,1.404,2.114), target ikut
+   bergeser (0.75,0.845,-0.57). view.offsetY masih 42.
+2. `applyViewport()` (persis panggilan lama di applySwitches): offsetY 42 -> **25**. Itu lompatan 17px -
+   inilah yang dilihat user.
+3. Dengan perbaikan: zoom lagi (deltaY -900), lalu pindahkan switch U14 -> U25 lewat #select-slot + event
+   change (jalur UI asli, tersimpan ke DB + refetch):
+
+       before: pos [2.619,1.049,1.532]  target [0.75,0.605,-0.75]  view {ox:-16, oy:25}
+       after : pos [2.619,1.049,1.532]  target [0.75,0.605,-0.75]  view {ox:-16, oy:25}
+       yang berubah: hanya title (SWITCH ASSET U14 -> U25)
+
+4. Dikembalikan lagi U25 -> U14: view tetap oy 25, tidak ada lompatan kedua.
+5. Switch dikembalikan ke posisi semula (U14) - rack persis seperti sebelum tes.
+
+Build `npx nuxt build` rc=0, 0 ERROR. Probe `__r3d` sudah dihapus (grep = 0).

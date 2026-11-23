@@ -2700,7 +2700,12 @@ let accentPoll = 0
         selectedSwitchId = sameHost?.id ?? switchesData[0]?.id ?? null
       }
       rebuildRackEquipment()
-      applyViewport()
+      // Deliberately NO applyViewport() here. A switch edit arrives as a new props.switches array, and
+      // re-fitting on it recomputed the frustum shift from the camera AS THE USER LEFT IT - so once he
+      // had zoomed or panned, every saved move re-centred the enclosure and the view jumped (reported as
+      // "3d view tergeser ke atas tiap pindah switch"). Moving a switch does not change the canvas size,
+      // and the ResizeObserver above already re-fits when it really does; the collapse watcher owns the
+      // other case. Re-fitting is for a different viewport, not for a different data set.
       syncHudUI()
     }
 
