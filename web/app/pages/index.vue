@@ -257,9 +257,16 @@ const upsLocations = computed(() =>
 /** The card shows its own error line rather than an empty chart. */
 const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value ? 'error' : 'ready'))
 
-/** Floor plans with the access points on them. GET /api/network/floor-maps projects AccessPointCount
- *  and RackCount onto every floor, so the AP card costs exactly one call and never walks the floors. */
-type ApFloor = { id: number, name: string, accessPointCount: number, rackCount: number }
+/** Floor plans with the access points on them. GET /api/network/floor-maps projects the counts onto every
+ *  floor - total, primary and BCP - so the AP card costs exactly one call and never walks the floors. */
+type ApFloor = {
+  id: number
+  name: string
+  accessPointCount: number
+  primaryAccessPointCount: number
+  bcpAccessPointCount: number
+  rackCount: number
+}
 
 const { data: apFloors, error: apError, pending: apPending } = await useFetch<ApFloor[]>('/network/floor-maps', {
   baseURL: useRuntimeConfig().public.apiBase,
@@ -273,12 +280,21 @@ const apRows = computed(() =>
       id: f.id,
       name: f.name,
       aps: f.accessPointCount ?? 0,
+      // Fall back to the total when the API does not send the split: the SPA and the API deploy as two
+      // separate IIS applications, and a card that read "0 primary · 0 BCP" against an older API would
+      // look like every access point had vanished. Everything that is not BCP is a main AP.
+      main: f.primaryAccessPointCount ?? f.accessPointCount ?? 0,
+      bcp: f.bcpAccessPointCount ?? 0,
       racks: f.rackCount ?? 0
     }))
 )
 
 /** Summed from the floors, so the card's denominator is the sum of what it draws. */
 const apTotal = computed(() => apRows.value.reduce((n, f) => n + f.aps, 0))
+
+/** The split the card's legend shows. Also summed from the rows, for the same reason. */
+const apMain = computed(() => apRows.value.reduce((n, f) => n + f.main, 0))
+const apBcp = computed(() => apRows.value.reduce((n, f) => n + f.bcp, 0))
 
 /** Pending, not "empty": before the first answer the card must show its skeleton, not "No access
  *  points yet." - a flash of the empty state on every load reads as data loss. useFetch's own `pending`
@@ -385,7 +401,8 @@ const apState = computed<'loading' | 'ready' | 'error'>(() => {
               <!-- Access Points, one column: the last cell of the second row, the one the rack card
                    leaves free. It is a COLUMN chart on purpose - every other card in this row runs
                    horizontally, so this is the only shape that reads as "per floor" without repeating
-                   the rack card's rows. -->
+                   the rack card's rows. Each column is stacked: main APs in the accent, BCP units in
+                   amber on top, because a BCP unit is standby capacity rather than another AP. -->
               <AccessPointCard
                 class="col-span-1"
                 title="Access Points"
@@ -394,6 +411,8 @@ const apState = computed<'loading' | 'ready' | 'error'>(() => {
                 to="/networks/access-point"
                 :floors="apRows"
                 :total="apTotal"
+                :main="apMain"
+                :bcp="apBcp"
                 :state="apState"
               />
             </div>

@@ -3,9 +3,17 @@
  * Access Points card for the dashboard - the last cell of the tile grid, right of Switches per Rack.
  *
  * WHAT IT ANSWERS
- * How the access points are spread across the floor plans: one column per floor, the column's height is
- * that floor's share of the busiest one, and the number above it is the count itself. A floor with none
- * still gets its column, because "this floor has no AP" is an answer, not a gap.
+ * 1. How the access points are spread across the floor plans: one column per floor, the column's height is
+ *    that floor's share of the busiest one, and the number above it is the count itself. A floor with none
+ *    still gets its column, because "this floor has no AP" is an answer, not a gap.
+ * 2. How many are MAIN and how many are BCP. That answer is printed, not left to the bars: a legend under
+ *    the header carries both totals, every column is stacked (main at the bottom, BCP on top) and the
+ *    tooltip repeats the pair for the floor under the pointer.
+ *
+ * WHY A BCP UNIT IS NOT JUST ANOTHER ACCESS POINT
+ * A BCP unit is standby/failover capacity - amber diamond on the floor plan, amber band here - so it is
+ * counted apart from the main network. A total that folded them together would disagree with the page
+ * this card links to.
  *
  * WHY COLUMNS AND NOT ANOTHER ROW OF BARS
  * Every other card in this row is horizontal - the UPS ribbon, the rack card's rows. A column chart is
@@ -16,18 +24,24 @@
  * The height already carries the comparison; the number carries the value. Without it the reader has to
  * measure against the tallest column to know whether a floor holds 3 APs or 30.
  *
- * ONE COLOUR, NO LEGEND
- * There is a single series, so a legend would be a second name for the same thing. The only second
- * dimension in the data - primary vs BCP access point - is per AP and would need a call per floor to
- * split, which is a second source of truth for a card this size.
+ * ONE COLOUR PER TYPE, AND THE LEGEND CARRIES THE COUNTS
+ * The two series are the two types, so the legend is doing work: it prints the pair of numbers instead of
+ * being a second name for something already spelled out. The split is projected by
+ * GET /api/network/floor-maps (primaryAccessPointCount / bcpAccessPointCount), so it still costs ONE call
+ * - walking the floors to count them client-side would be N calls for two numbers.
  *
  * The tooltip is hand-rolled and teleported so the card's own overflow cannot clip it.
  */
-type FloorRow = { id: number, name: string, aps: number, racks: number }
+type FloorRow = { id: number, name: string, aps: number, main: number, bcp: number, racks: number }
 
 const props = withDefaults(defineProps<{
   floors: FloorRow[]
+  /** Every access point in the register - the denominator the columns are shares of. */
   total: number
+  /** How many of `total` are main-network APs (the legend's first number). */
+  main: number
+  /** How many of `total` are BCP/standby units (the legend's second number). */
+  bcp: number
   title?: string
   to?: string
   label?: string
@@ -52,7 +66,22 @@ const columns = computed(() => {
   const rows = [...props.floors].sort((a, b) => b.aps - a.aps || a.name.localeCompare(b.name))
   const shown = rows.slice(0, MAX_COLUMNS)
   const peak = shown.reduce((n, f) => Math.max(n, f.aps), 0) || 1
-  return shown.map((f, i) => ({ ...f, index: i, pct: (f.aps / peak) * 100 }))
+  return shown.map((f, i) => {
+    const aps = Math.max(0, f.aps)
+    // Never let the parts exceed the whole: one bad row must not push the BCP band outside its column.
+    const main = Math.max(0, Math.min(f.main, aps))
+    const bcp = Math.max(0, Math.min(f.bcp, aps - main))
+    return {
+      ...f,
+      aps,
+      main,
+      bcp,
+      index: i,
+      pct: (aps / peak) * 100,
+      // The band is drawn INSIDE the fill, so its height is a share of its own column, not of the tallest.
+      bcpPct: aps ? (bcp / aps) * 100 : 0
+    }
+  })
 })
 
 /** Floors beyond the sixth: the footer says how many, so the chart never lies about the total. */
@@ -67,12 +96,12 @@ const activeFloor = computed(() =>
 
 const rowDim = (row: { index: number }) => hover.value !== null && hover.value !== row.index
 
-/** Share of every access point in the register - the tooltip's second line. */
+/** Share of every access point in the register - the tooltip's third line. */
 const shareOf = (aps: number) =>
   ((aps / (props.total || 1)) * 100).toFixed(0)
 
-const TIP_W = 200
-const TIP_H = 118
+const TIP_W = 208
+const TIP_H = 124
 
 /** Follow the pointer; flip to the other side rather than run off the edge of the window. */
 const tipStyle = computed(() => {
@@ -123,6 +152,20 @@ const clearTip = () => { hover.value = null; tip.value = null }
         <CardMetricIcon kind="ap" :total="total" unit="access point" unit-plural="access points" />
       </header>
 
+      <!-- The answer to "how many main, how many BCP", printed rather than left to the bars: these two
+           numbers are what the register is run on, and a reader should not have to measure a band to get
+           them. The swatches wear the same colours as the columns. -->
+      <div class="flex items-center gap-3 text-[10px] leading-none text-muted">
+        <span class="inline-flex items-center gap-1">
+          <span class="size-2 shrink-0 rounded-[2px] bg-primary/75" aria-hidden="true" />
+          Primary <b class="font-semibold tabular-nums text-default">{{ main }}</b>
+        </span>
+        <span class="inline-flex items-center gap-1">
+          <span class="size-2 shrink-0 rounded-[2px] bg-amber-400/80" aria-hidden="true" />
+          BCP <b class="font-semibold tabular-nums text-default">{{ bcp }}</b>
+        </span>
+      </div>
+
       <div v-if="state === 'error'" class="py-6 text-center text-xs text-muted">
         Access point data could not be loaded.
       </div>
@@ -131,7 +174,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
         <!-- One column-shaped skeleton per slot, so a slow load does not change the card's height. -->
         <div v-for="n in 4" :key="`sk-${n}`" class="flex flex-1 flex-col items-center gap-1">
           <span class="h-3 w-4 animate-pulse rounded bg-elevated/60" />
-          <span class="w-full max-w-9 flex-1 animate-pulse rounded-md bg-elevated/50" />
+          <span class="w-full flex-1 animate-pulse rounded-md bg-elevated/50" />
           <span class="h-2.5 w-full animate-pulse rounded bg-elevated/60" />
         </div>
       </div>
@@ -167,6 +210,14 @@ const clearTip = () => { hover.value = null; tip.value = null }
               class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-primary/75"
               :style="{ height: `${f.pct}%`, animationDelay: `${90 + f.index * 70}ms` }"
             >
+              <!-- The BCP band sits ON TOP of the main units: standby capacity stacked over the
+                   network's own access points, in the same order the legend reads. Amber, like the BCP
+                   marker on the floor plan, so the two never look like the same thing. -->
+              <span
+                v-if="f.bcp > 0"
+                class="absolute inset-x-0 top-0 bg-amber-400/80"
+                :style="{ height: `${f.bcpPct}%` }"
+              />
               <!-- The lit top edge: the "signal" line, so a short column still reads as a live one. -->
               <span class="ap-cap" />
             </div>
@@ -205,8 +256,9 @@ const clearTip = () => { hover.value = null; tip.value = null }
         No access points on this floor
       </p>
       <p v-else class="mt-0.5 text-[10px] text-muted tabular-nums">
-        {{ activeFloor.aps }} access point<span v-if="activeFloor.aps !== 1">s</span> ·
-        {{ shareOf(activeFloor.aps) }}% of all
+        {{ activeFloor.main }} primary
+        <span class="mx-1">·</span>{{ activeFloor.bcp }} BCP
+        <span class="mx-1">·</span>{{ shareOf(activeFloor.aps) }}% of all
       </p>
       <p class="mt-1.5 border-t border-default/70 pt-1.5 text-[10px] text-muted">
         <b class="font-semibold text-default tabular-nums">{{ activeFloor.racks }}</b>

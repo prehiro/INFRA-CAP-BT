@@ -28,8 +28,23 @@ public class NetworkFloorMapsController(AppDbContext db, FloorImageCache imageCa
         var query = db.NetworkFloorMaps.AsNoTracking();
         if (ScopeFilter(scope) is { } wanted)
             query = query.Where(x => x.Scope == wanted || x.Scope == "both");
+        // One row per plan, already carrying how many access points of each type sit on it. The split is
+        // projected here rather than in the browser because it is the question the dashboard card asks
+        // ("how many main, how many BCP") and the alternative is one request per floor plan. A BCP unit is
+        // standby capacity, not another AP on the same network, so it is counted separately instead of
+        // being folded into the total.
         return Ok(await query.OrderBy(x => x.Name).ThenBy(x => x.Id)
-            .Select(x => new { x.Id, x.Name, x.CreatedAt, x.Scope, AccessPointCount = x.AccessPoints.Count, RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id) })
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.CreatedAt,
+                x.Scope,
+                AccessPointCount = x.AccessPoints.Count,
+                PrimaryAccessPointCount = x.AccessPoints.Count(a => a.ApType != "bcp"),
+                BcpAccessPointCount = x.AccessPoints.Count(a => a.ApType == "bcp"),
+                RackCount = db.NetworkRacks.Count(r => r.FloorMapId == x.Id)
+            })
             .ToListAsync(ct));
     }
 

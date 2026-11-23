@@ -8265,3 +8265,41 @@ VERIFIKASI (1500x950, data 3 floor: BUILDING 1=3 AP, BUILDING 2=1, P=0):
 
 CATATAN: tidak ada model vision di provider ini (vision_analyze -> 404 "No endpoints found that support image
 input"), jadi tampilan TIDAK bisa dilihat langsung - semua verifikasi di atas lewat pengukuran DOM/computed style.
+### Access Points card: split Primary vs BCP (2026-11-22)
+
+HIRO: "saya mau tampilanya memberitahu user berapa jumlah main ap dan bcp ap"
+
+Card sekarang menjawab dua hal, bukan satu: sebaran per floor DAN jumlah main vs BCP.
+
+API (perubahan yang diperlukan): `GET /api/network/floor-maps` sebelumnya cuma memproyeksikan AccessPointCount +
+RackCount. Sekarang ikut memproyeksikan `PrimaryAccessPointCount` (ApType != "bcp") dan `BcpAccessPointCount`
+(ApType == "bcp") per floor. alasannya: split ini yang ditanyakan card, dan alternatifnya (jalan floor-per-floor
+di browser) adalah N request untuk dua angka. Satu call tetap cukup. API sudah di-build (0 error) dan di-restart
+di :5099 dari build baru; response terverifikasi: BUILDING 1 = 4 (3 primary + 1 bcp), BUILDING 2 = 5 (4 + 1).
+
+Kenapa BCP dipisah, bukan cuma bagian dari total: unit BCP itu kapasitas standby/failover (diamond amber di floor
+plan), jadi angka total yang menggabungkannya akan berbeda dengan page yang dituju card ini.
+
+Card:
+- Legend di bawah header: "Primary 7" dan "BCP 2" (swatch warna sama dengan kolom). Ini yang menjawab pertanyaan
+  HIRO secara eksplisit - angkanya dicetak, tidak disuruh mengukur band.
+- Kolom jadi STACKED: bagian bawah accent (main), band amber di atas (BCP). Tinggi band = porsi terhadap
+  kolomnya sendiri (bukan terhadap kolom tertinggi), karena band digambar DI DALAM fill.
+- Tooltip per floor: "4 primary · 1 BCP · 56% of all" + "6 racks on this floor". Floor 0 AP tetap "No access
+  points on this floor".
+- `columns` mem-clamp bagian supaya tidak pernah melebihi total (payload buruk tidak boleh mendorong band keluar).
+- index.vue: `main: f.primaryAccessPointCount ?? f.accessPointCount ?? 0` - fallback ke total kalau API lama
+  (SPA dan API deploy sebagai dua IIS application terpisah; tanpa fallback, card akan bilang "0 primary" seolah
+  semua AP hilang).
+
+VERIFIKASI (1500x950, data live: BUILDING 2 = 5 AP, BUILDING 1 = 4 AP):
+- Legend "Primary 7 BCP 2", 179x10px, tidak terpotong, masih di dalam card.
+- Kolom: BUILDING 2 fill 153px dengan band 31px (20% = 1/5), BUILDING 1 fill 122px band 31px (25% = 1/4).
+- Tooltip "BUILDING 2 | 5 | 4 primary · 1 BCP · 56% of all | 6 racks on this floor" (208x87, di dalam layar).
+- Footer "2 floors · 9 access points", card 219x332 (tidak berubah), page tidak scroll (886/886).
+- Build web 0 error.
+
+CATATAN TEST: `node --test tests/*.test.mjs` -> 74 pass, 1 fail. Yang gagal `tests/recordSnapshot.test.mjs`,
+karena file itu membaca `app/pages/pcledger.vue` yang sudah tidak ada (page-nya sekarang
+`app/pages/device/pcledger.vue`). Ini bug test lama, bukan dari perubahan ini - path-nya belum ikut diperbaiki
+waktu page dipindah.
