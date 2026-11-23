@@ -159,9 +159,14 @@ onMounted(load)
         <div class="anim-fade-up rounded-lg border border-default bg-elevated p-4">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div class="flex min-w-0 items-center gap-3">
-              <span class="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+              <!-- title-boot: shared boot sequence (plate spring + ring ping + scanline) and the
+                   .pl-title-glyph wrapper that carries the ignition, so the icon below keeps its own
+                   3.6s pc-add-tilt sway. Defined once in assets/css/main.css. -->
+              <span class="title-boot grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
                 <RecordAddIcon size="lg" random-halo>
-                  <UpsIcon class="pc-add-tilt size-8" />
+                  <span class="pl-title-glyph">
+                    <UpsIcon class="pc-add-tilt size-8" />
+                  </span>
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">

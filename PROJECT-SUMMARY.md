@@ -8656,3 +8656,44 @@ ini komponen yang sama, bukan halaman lain.
 - Reduced motion (standbypc): plate/wrap/glyph `animationName: none`, plate opacity 1, wrap filter none,
   pseudo opacity 0/0, mq restore -> false ✓.
 - Build `npx nuxt build` rc=0, 0 ERROR.
+
+### Boot icon title: Factory PC, Dispose, UPS - satu definisi bersama (2026-11-22)
+
+HIRO: "ok implementn juga ke icon title factory pc, dispose, ups"
+
+## Status sebelum ini
+
+- Dispose (`/device/dispose`) SUDAH ikut boot sejak perubahan sebelumnya - dia `pcledger.vue` yang sama
+  dengan prop `ledger-view="dispose"`, dan wrapper `.pl-title-glyph` ada di komponen itu. Sudah saya
+  verifikasi ulang: plate/wrap/glyph semua aktif.
+- Factory PC (`factorypc.vue`) dan UPS (`ups.vue`) adalah halaman SENDIRI, jadi belum dapat apa-apa.
+
+## Yang saya ubah: dari 3 salinan CSS jadi 1 definisi bersama
+
+Kalau boot-nya dicopy ke factorypc.vue dan ups.vue, hasilnya tiga salinan ~97 baris yang akan drift
+sendiri saat ada perubahan nanti. Jadi:
+
+- CSS boot dipindah ke `app/assets/css/main.css` sebagai `.title-boot` + `.pl-title-glyph`
+  (+ keyframe `title-boot-in` / `-ping` / `-scan` / `-ignite`, + blok reduced-motion).
+- `pcledger.vue` memakai class itu dan blok lokalnya (97 baris) DIHAPUS - tidak ada perubahan visual,
+  animationName-nya identik dengan sebelumnya (sudah diverifikasi).
+- `factorypc.vue` dan `ups.vue`: tambah class `title-boot` di plate + bungkus icon-nya dengan
+  `<span class="pl-title-glyph">` (sama seperti pcledger - supaya ignite tidak menimpa sway 3.6s).
+
+Satu class, lima pemakai: PC Ledger, Standby PC, Dispose, Factory PC, UPS.
+
+## VERIFIKASI (lima route, probe sama)
+
+    pcledger   : plate title-boot-in | before -ping | after -scan | wrap -ignite | glyph pc-add-sway | loop pc-line-travel
+    standbypc  : plate title-boot-in | before -ping | after -scan | wrap -ignite | glyph pc-add-sway | loop st-line-travel
+    dispose    : plate title-boot-in | before -ping | after -scan | wrap -ignite | glyph pc-add-sway | loop dispose-line-travel
+    factorypc  : plate title-boot-in | before -ping | after -scan | wrap -ignite | glyph pc-add-sway | loop factory-spin/factory-sweep/factory-gear-wave
+    ups        : plate title-boot-in | before -ping | after -scan | wrap -ignite | glyph pc-add-sway | loop ups-charge
+
+- Plate 48x48 di kelima route. centreDelta glyph terhadap plate = [0, 0] di factorypc & ups -> wrapper
+  tidak menggeser posisi icon.
+- Loop internal tiap glyph masih hidup (factory-spin, factory-sweep, factory-gear-wave, ups-charge) ->
+  ignite di wrapper tidak mengganggu animasi anak.
+- Sway 3.6s (`pc-add-sway`) masih jalan di kelima glyph - ini yang sempat mati kalau ignite dipasang di SVG.
+- Reduced motion (ups): plate/wrap/glyph `animationName: none`, plate opacity 1, pseudo opacity 0/0.
+- Build `npx nuxt build` rc=0, 0 ERROR. File berubah: main.css, pcledger.vue, factorypc.vue, ups.vue.
