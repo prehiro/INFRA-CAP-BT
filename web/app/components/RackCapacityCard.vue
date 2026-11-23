@@ -5,27 +5,30 @@
  * ONE QUESTION, ONE CHART
  * "Which rack is the crowded one, and by how much." Every cell is a rack, the bar is how many switches
  * sit in it, and the number is printed beside the name so the ranking never has to be read off a scale.
- * Cells are dealt in order of that count, left to right, so the busiest rack is always the first one.
+ * Cells are dealt in order of that count, left to right, top to bottom, so the busiest rack is first.
  *
- * WHY FOUR PER ROW
- * The first version put every rack on its own full-width row, which made the card as tall as the rack
- * count: 6 racks already pushed the card past its neighbours and any further rack made the whole page
- * scroll (HIRO: "kalau rack bertambah, user jadi harus scroll page untuk melihat kebawah. bisa bagi
- * jadi 2 section? masing-masing row max 4 rack"). Four cells per row with the list split into sections
- * of four keeps the card at two bands - about 160px for eight racks - so ten racks cost 40px instead of
- * another 250px, and the page keeps its no-scroll grid.
+ * FOUR BY TWO, THEN SWIPE
+ * Racks are laid out four per row and two rows per page, and the card shows one page at a time:
+ * HIRO: "buat 4x2 dan card bisa di swipe untuk menampilkan sisanya". The rack count can no longer make
+ * the card taller - the eighth rack used to add a third row and push the whole dashboard into
+ * scrolling, and now it starts a second page instead. The strip scrolls horizontally (touch swipe,
+ * trackpad, shift+wheel, the arrow buttons, or drag with the mouse) and snaps to a page boundary.
  *
- * WHAT THE COMPACT CELL KEEPS: name and count on one line, the floor under it, and the bar. Four cells
- * per row would have been too narrow for the floor at the width the card had when this was a one-column
- * list, but a double-width card gives each cell ~230px, so the floor stays - two buildings can hold a
- * rack with the same name and dropping it would make two different racks look identical.
+ * WHY PAGES AND NOT ONE LONG STRIP: a CSS grid with two rows and no explicit column count can only fill
+ * column by column, so a single strip would read 1,2 down the first column and 3,4 down the second -
+ * wrong order for a ranking. Chunking the sorted list into pages of eight and laying the pages out in a
+ * flex row keeps the reading order row by row and gives the snap points something meaningful to land on.
+ *
+ * WHAT THE CELL CARRIES: name and count on one line, the floor under it, and the bar. Two buildings can
+ * hold a rack with the same name, so the floor is not decoration - it is the only thing that says which
+ * rack a cell is talking about.
  *
  * THE SCALE IS RELATIVE TO THE BUSIEST RACK, so the longest bar is always full. That is deliberate: the
  * comparison between racks is what the card is read for, and a fixed 0..N scale would leave every bar
  * looking alike when no rack is close to full. The count is printed, so no value is hidden by the
  * rescaling.
  *
- * WHY THERE IS NO U FILL: the first version drew a second track with how much U each rack uses. HIRO:
+ * WHY THERE IS NO U FILL: an earlier version drew a second track with how much U each rack uses. HIRO:
  * "hapus saja grafik u nya pada dashboard jadi fokus ke jumlah switch per rack." Two units in one cell
  * (buah and slot) made it answer two questions and neither quickly. GET /api/network/racks/summary
  * still returns sizeU/usedU - this card simply stops drawing them.
@@ -59,8 +62,8 @@ const props = withDefaults(defineProps<{
 // grid column span passed from index.vue is dropped.
 defineOptions({ inheritAttrs: false })
 
-/** Racks per section. Four keeps a section to one row at any card width above ~430px. */
-const PER_SECTION = 4
+const PER_ROW = 4
+const PER_PAGE = PER_ROW * 2
 
 const rows = computed<Row[]>(() => {
   const max = Math.max(1, ...props.racks.map(r => r.switchCount))
@@ -74,11 +77,10 @@ const rows = computed<Row[]>(() => {
     }))
 })
 
-/** Sections of four. The boundary is also the visual break, so a rack count of 5-8 reads as two bands
- *  rather than one long list that happens to wrap. */
-const sections = computed<Row[][]>(() => {
+/** Pages of eight (four by two). The last page holds the remainder, so 9-16 racks still read cleanly. */
+const pages = computed<Row[][]>(() => {
   const out: Row[][] = []
-  for (let i = 0; i < rows.value.length; i += PER_SECTION) out.push(rows.value.slice(i, i + PER_SECTION))
+  for (let i = 0; i < rows.value.length; i += PER_PAGE) out.push(rows.value.slice(i, i + PER_PAGE))
   return out
 })
 
@@ -124,14 +126,101 @@ function pointAt(ev: Event) {
 const enterRow = (i: number, ev: Event) => { hover.value = i; pointAt(ev) }
 const moveTip = (ev: Event) => { pointAt(ev) }
 const clearTip = () => { hover.value = null; tip.value = null }
+
+/* ------------------------------------------------------------------ paging */
+
+const strip = ref<HTMLElement | null>(null)
+const pageIndex = ref(0)
+const atStart = ref(true)
+const atEnd = ref(false)
+
+/** One page wide plus the gap between pages: the distance the strip travels per arrow press. */
+const step = () => {
+  const el = strip.value
+  if (!el) return 0
+  const first = el.firstElementChild as HTMLElement | null
+  const gap = Number.parseFloat(getComputedStyle(el).columnGap || '0') || 0
+  return (first?.offsetWidth ?? el.clientWidth) + gap
+}
+
+const pageCount = computed(() => Math.max(1, pages.value.length))
+
+/** Recomputed from the scroll position rather than tracked, so a trackpad swipe stays in step. */
+function syncStrip() {
+  const el = strip.value
+  if (!el) return
+  const s = step()
+  atStart.value = el.scrollLeft <= 2
+  atEnd.value = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2
+  pageIndex.value = s > 0 ? Math.min(pageCount.value - 1, Math.round(el.scrollLeft / s)) : 0
+}
+
+function goToPage(i: number) {
+  const el = strip.value
+  if (!el) return
+  const target = Math.max(0, Math.min(pageCount.value - 1, i))
+  el.scrollTo({ left: target * step(), behavior: 'smooth' })
+}
+
+const canSwipe = computed(() => pageCount.value > 1)
+
+/* ------------------------------------------------------------------ drag */
+
+// A mouse cannot swipe a scroller, so the strip is draggable. The 6px threshold is what keeps a click
+// on a cell from turning into a drag: below it the pointer never moved, above it the strip takes over.
+let dragging = false
+let moved = false
+let startX = 0
+let startLeft = 0
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'touch' || !strip.value) return
+  dragging = true
+  moved = false
+  startX = e.clientX
+  startLeft = strip.value.scrollLeft
+}
+
+function onPointerMove(e: PointerEvent) {
+  const el = strip.value
+  if (!dragging || !el) return
+  const dx = e.clientX - startX
+  if (!moved && Math.abs(dx) < 6) return
+  moved = true
+  el.scrollLeft = startLeft - dx
+}
+
+function onPointerUp() {
+  dragging = false
+  // Snap to the nearest page once the drag ends, the way a touch swipe does.
+  if (moved && strip.value) goToPage(Math.round(strip.value.scrollLeft / step()))
+  moved = false
+}
+
+onMounted(() => {
+  syncStrip()
+  window.addEventListener('resize', syncStrip)
+})
+
+onBeforeUnmount(() => window.removeEventListener('resize', syncStrip))
+
+// A page added or removed by a data refresh changes the scrollable width, so re-measure once the DOM
+// has the new cells.
+watch([rows, pageCount], async () => {
+  await nextTick()
+  syncStrip()
+})
 </script>
 
 <template>
   <UCard
     v-bind="$attrs"
-    class="@container flex flex-col"
+    class="flex flex-col"
     :ui="{ body: 'p-0 sm:p-0 flex-1', header: 'p-0 sm:p-0', footer: 'p-0 sm:p-0' }"
   >
+    <!-- No `@container` on this card: the four-column page is a fixed repeat(4, …), not a container
+         query, so nothing inside asks for one - and the col-span the parent passes still resolves
+         against the dashboard's own container. -->
     <!-- h-full so the body really fills the card; the grid's row height is set by the tallest
          neighbour, and without it the content sits at the top with dead space underneath. -->
     <div class="flex h-full flex-1 flex-col gap-3 p-5">
@@ -143,7 +232,46 @@ const clearTip = () => { hover.value = null; tip.value = null }
           </h2>
           <p class="truncate text-xs text-muted">{{ label }} · {{ source }}</p>
         </div>
-        <CardMetricIcon kind="rack" :total="totalSwitches" unit="switch" />
+
+        <!-- The arrows live in the header rather than floating over the strip: a control that covers a
+             cell hides the one piece of data the user is swiping towards. They appear only when there
+             is a second page, so a card with eight racks carries no dead buttons. -->
+        <div class="flex shrink-0 items-center gap-1.5">
+          <div v-if="canSwipe" class="flex items-center gap-1">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              class="rack-arrow"
+              :disabled="atStart"
+              aria-label="Rack sebelumnya"
+              @click="goToPage(pageIndex - 1)"
+            >
+              <!-- Inline SVG, not <UIcon name="i-lucide-chevron-left">: this build runs Nuxt Icon with
+                   provider 'none' and no API fallback, and only the icons named in nuxt.config's
+                   clientBundle exist - chevron-LEFT is not in that list (chevron-right is), so the icon
+                   form would have rendered as an empty span with no error anywhere. -->
+              <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </UButton>
+            <span class="w-8 text-center text-[10px] tabular-nums text-muted">{{ pageIndex + 1 }}/{{ pageCount }}</span>
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="xs"
+              class="rack-arrow"
+              :disabled="atEnd"
+              aria-label="Rack berikutnya"
+              @click="goToPage(pageIndex + 1)"
+            >
+              <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </UButton>
+          </div>
+          <CardMetricIcon kind="rack" :total="totalSwitches" unit="switch" />
+        </div>
       </header>
 
       <div v-if="state === 'error'" class="py-6 text-center text-xs text-muted">
@@ -151,16 +279,16 @@ const clearTip = () => { hover.value = null; tip.value = null }
       </div>
 
       <div v-else-if="state === 'loading' && !rows.length" class="space-y-2 py-2">
-        <!-- The skeleton keeps the two-band shape, so a slow load does not change the card's height. -->
-        <div class="rack-band grid gap-1.5">
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
-        </div>
-        <div class="rack-band grid gap-1.5">
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+        <!-- One page-shaped skeleton, so a slow load does not change the card's height. -->
+        <div class="grid grid-cols-4 grid-rows-2 gap-1.5">
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
         </div>
       </div>
 
@@ -168,18 +296,27 @@ const clearTip = () => { hover.value = null; tip.value = null }
         Belum ada rack.
       </div>
 
-      <!-- One band per section: four cells, then a break, then the next four. The break is the gap
-           between sections, which is what makes 5-8 racks read as two groups instead of one wrap. -->
-      <div v-else class="flex flex-1 flex-col justify-center gap-3">
-        <div
-          v-for="(section, si) in sections"
-          :key="si"
-          class="rack-band grid gap-1.5"
+      <div
+        v-else
+        ref="strip"
+        class="rack-strip flex flex-1 items-stretch"
+        :class="canSwipe ? 'cursor-grab' : ''"
+        @scroll.passive="syncStrip"
+        @pointerdown="onPointerDown"
+        @pointermove="onPointerMove"
+        @pointerup="onPointerUp"
+        @pointerleave="onPointerUp"
+      >
+        <section
+          v-for="(page, pi) in pages"
+          :key="pi"
+          class="rack-page"
+          :aria-label="`Rack per halaman ${pi + 1}`"
         >
           <div
-            v-for="row in section"
+            v-for="row in page"
             :key="row.rackId"
-            class="group cursor-default rounded-md px-2 py-2 transition-opacity duration-200 hover:bg-elevated/50"
+            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-2 transition-opacity duration-200 hover:bg-elevated/50"
             :class="rowDim(row) ? 'opacity-40' : ''"
             tabindex="0"
             @mouseenter="enterRow(row.index, $event)"
@@ -188,14 +325,15 @@ const clearTip = () => { hover.value = null; tip.value = null }
             @focus="enterRow(row.index, $event)"
             @blur="clearTip"
           >
+            <!-- The cell centres its three lines: the strip is twice as tall as one cell's content, and
+                 top-aligning them would leave a dead band under every bar and make the grid look like
+                 it had failed to fill its page. -->
             <!-- Name and count share one line: at four cells per row the count has to sit beside the
                  name, because a bar with no number next to it is a guess. -->
             <div class="flex items-baseline gap-1">
               <span class="min-w-0 flex-1 truncate text-xs font-semibold leading-tight">{{ row.rackName }}</span>
               <span class="shrink-0 text-xs font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
             </div>
-            <!-- The floor came back once the cells got wider: two buildings can hold a rack with the same
-                 name, and at four per row this line is the only place that says which one it is. -->
             <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
             <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-elevated/80">
               <div
@@ -204,7 +342,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
               />
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       <p v-if="state === 'ready' && rows.length" class="border-t border-default pt-2 text-[11px] text-muted">
@@ -238,18 +376,32 @@ const clearTip = () => { hover.value = null; tip.value = null }
 </template>
 
 <style scoped>
-/* Two cells per row on a narrow card, four once the card itself is wide enough. Hand-written rather
-   than a Tailwind variant on purpose: a variant class only exists in the CSS if the scanner finds that
-   exact string in the source, and a breakpoint used in exactly one component is the one that gets
-   missed - the grid then silently stays at two columns and the card grows a row taller. */
-.rack-band {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+/* The strip: pages side by side, one page visible, snapping to the page boundary so a swipe lands on a
+   whole page instead of cutting a cell in half. */
+.rack-strip {
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* The bar is hidden rather than styled: a 6px scrollbar across the card would sit right under the
+     cells and read as a divider. Swipe, trackpad, shift+wheel and the arrows all still work. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-@container (min-width: 460px) {
-  .rack-band {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+.rack-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* One page per view: four columns by two rows, always the full width of the strip. */
+.rack-page {
+  display: grid;
+  flex: 0 0 100%;
+  min-width: 100%;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(2, auto);
+  gap: 0.375rem;
+  scroll-snap-align: start;
 }
 
 /* The bar grows from its left edge: the width is the data, the animation is the entrance, so they never

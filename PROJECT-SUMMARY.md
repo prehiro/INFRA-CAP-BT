@@ -8017,3 +8017,38 @@ variant yang paling gampang kena. Catatan: `@container` butuh card sebagai conta
 Tinggi cell 58px, lebar 111px pada card 496px; nama dan floor tidak terpotong (dicek scrollWidth vs clientWidth).
 Verifikasi lain: 10 rack -> 3 band (4/4/2), bar proporsional 95/60/48/36/24x6 dari track 95px, hover meredupkan
 9 cell lain ke 0.4, tooltip "E1 | 4 | BUILDING 2 | Peringkat 3 dari 10 rack" (200x87). Build web 0 error.
+### Card switch: 4x2 per halaman + swipe (2026-11-22)
+
+HIRO: "buat 4x2 dan card bisa di swipe untuk menampilkan sisanya"
+
+Card switch sekarang fixed 4 kolom x 2 baris per halaman. Kalau rack lebih dari 8, sisanya jadi halaman
+berikutnya dan card digeser horizontal (swipe di touch, trackpad, shift+wheel, tombol panah, atau drag
+pakai mouse). Tinggi card jadi konstan - jumlah rack tidak bisa lagi menambah tinggi card atau bikin page
+scroll.
+
+Kenapa dipaginasi, bukan satu strip panjang: CSS grid dengan 2 baris dan tanpa jumlah kolom eksplisit
+hanya bisa mengisi kolom demi kolom - jadi satu strip panjang akan membaca 1,2 menurun di kolom pertama
+dan 3,4 di kolom kedua, urutan yang salah untuk ranking. Dengan data dipecah per 8 (4x2) lalu page-nya
+disejajarkan dalam flex row, urutan baca tetap baris demi baris dan snap point-nya jatuh di batas page.
+
+Yang dikerjakan:
+- `.rack-strip` = flex row, `overflow-x auto`, `scroll-snap-type: x mandatory`, scrollbar DISEMBUNYIKAN
+  (bukan di-style tipis - bar 6px melintang di bawah cell malah terbaca sebagai garis pembatas).
+- `.rack-page` = grid 4 kolom x 2 baris, `flex: 0 0 100%`, `scroll-snap-align: start`.
+- Panah di header (bukan mengapung di atas strip - kontrol yang menutupi cell menyembunyikan data yang
+  sedang dituju). Hanya muncul kalau page > 1, jadi card dengan <= 8 rack tidak punya tombol mati.
+  Indikator "1/2" di antara panah.
+- Drag pakai mouse: threshold 6px supaya klik di cell tidak berubah jadi drag; setelah dilepas snap ke
+  page terdekat.
+- Chevron pakai inline SVG, BUKAN UIcon: build ini jalan dengan provider 'none' + tanpa API fallback, dan
+  'lucide:chevron-left' tidak ada di clientBundle nuxt.config (yang ada 'lucide:chevron-right') - bentuk
+  icon akan jadi span kosong tanpa error sama sekali.
+- Cell center vertikal: strip 2x tinggi isi cell, kalau di-align atas akan ada dead band di bawah tiap bar.
+- `@container` di root card dihapus (sudah tidak ada container query di komponen ini); col-span dari
+  index.vue tetap resolve ke container dashboard.
+
+VERIFIKASI (1600x1000, data live 10 rack): 2 page (8 + 2 cell), tiap page 4 kolom x 111px, tinggi cell
+113px, tinggi strip 232px, strip scrollWidth 939 vs clientWidth 464 (bisa digeser), indikator "1/2",
+2 tombol panah. Klik panah kanan -> indikator "2/2", scrollLeft 475 (464 + gap 12), panah kiri aktif,
+panah kanan disabled, page kedua menampilkan Mez + S. Drag 260px -> midScroll 475 lalu snap ke 2/2,
+tanpa text selection. Card 357px, page tidak scroll (936/936), card tetap span 2 kolom. Build web 0 error.
