@@ -8328,3 +8328,28 @@ VERIFIKASI (1500x950, BUILDING 2 = 4 primary + 1 bcp, BUILDING 1 = 3 + 1):
 - 1600x1000 (card 244, bar 47px) dan 1440x900 (card 272, bar 54px): tidak ada label terpotong.
 - Page Access Point (/BFCP Access Point Map) masih normal setelah API diubah: H1 "Access Point", H2
   "BTCAP Access Point Map", 1 gambar plan, tanpa error alert.
+### Card Switches per Rack: warna bar divariasikan (2026-11-22)
+
+HIRO: "variasikan warna bar switch per rack"
+
+Bar yang tadinya seragam accent sekarang satu warna per rack.
+
+Caranya: `COLORS` (7 warna standar dashboard - dipakai ChassisMixCard/TreemapCard/UpsFleetCard - ditambah 3 lagi
+supaya 10 rack masih 10 warna berbeda), lalu tiap row menyimpan `color` di computed `rows`, dan `barStyle(row)`
+mengirimnya sebagai custom property `--bar`. CSS `.rack-bar` memakai `var(--bar, var(--ui-primary))`, jadi
+GRADIENT dan hairline ring yang sudah ada tetap sama - hanya hue-nya yang pindah. Bukan ganti ke warna flat:
+treatment-nya tidak berubah, jadi card tetap satu bahasa dengan card lain.
+
+Kenapa warna ikut RANK (bukan id): kalau warna terikat urutan render, rack yang tergeser ke page 2 tetap punya
+warna yang sama. Kalau terikat id, warnanya bisa pindah tempat setiap kali ada rack baru.
+
+Catatan: warna di sini tidak mengkodekan apa pun (nama rack + jumlah ada di row yang sama), jadi kalau rack
+lebih dari 10 warnanya berulang - itu tetap terbaca "rak lain", bukan "rak yang sama".
+
+VERIFIKASI (1500x950, 10 rack):
+- 10 bar, 10 warna berbeda: D-B1 primary, C-B2 #38BDF8, E1 #A78BFA, C #F59E0B, B #F472B6, B-B2 #2DD4BF,
+  F #F87171, G #818CF8, Mez #4ADE80, S #E879F9. Gradient ter-render per warna (oklab + rgb endpoint).
+- Ring inset ikut warna row (`oklab(... / 0.45) 0 0 0 1px inset`).
+- Hover: row hovered opacity 1 + filter brightness(1.15), row lain 0.4, tooltip "Rack E1 | 4 | BUILDING 2 | Rank 3
+  of 10 racks" - tidak ada yang berubah selain warna.
+- Card tetap 332px, page tidak scroll (886/886). Build web 0 error.

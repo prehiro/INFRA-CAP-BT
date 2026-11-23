@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
 /**
  * Switch-per-rack card for the dashboard (replaces the Access Points tile).
  *
@@ -41,8 +42,8 @@ type RackRow = {
   switchCount: number
 }
 
-/** A rack with its rank and its bar width worked out, so the template does no arithmetic. */
-type Row = RackRow & { index: number, barPct: number }
+/** A rack with its rank, its bar width and its colour worked out, so the template does no arithmetic. */
+type Row = RackRow & { index: number, barPct: number, color: string }
 
 const props = withDefaults(defineProps<{
   racks: RackRow[]
@@ -66,6 +67,23 @@ const PER_ROW = 2
 const PER_ROW_COUNT = 4
 const PER_PAGE = PER_ROW * PER_ROW_COUNT
 
+/** The dashboard's own categorical set (ChassisMixCard / TreemapCard / UpsFleetCard use these seven), plus
+ *  three more so a full card of ten racks is still one colour each. Past ten it cycles: colour encodes
+ *  nothing here - the rack name and the count sit on the same row - so a repeat reads as "another rack",
+ *  never as "the same rack". */
+const COLORS = [
+  'var(--ui-primary)',
+  '#38BDF8',
+  '#A78BFA',
+  '#F59E0B',
+  '#F472B6',
+  '#2DD4BF',
+  '#F87171',
+  '#818CF8',
+  '#4ADE80',
+  '#E879F9'
+]
+
 /** Rack names in the data are bare ("C-B2"), so the card writes the word "Rack" itself. The guard
  *  stops "Rack Rack C-B2" if the source ever starts prefixing the name. */
 const rackLabel = (name: string) => (/^rack\b/i.test(name.trim()) ? name : `Rack ${name}`)
@@ -78,7 +96,10 @@ const rows = computed<Row[]>(() => {
       ...r,
       index: i,
       // A rack that has a switch still draws a sliver: an invisible bar reads as a missing rack.
-      barPct: Math.max(r.switchCount > 0 ? 6 : 0, (r.switchCount / max) * 100)
+      barPct: Math.max(r.switchCount > 0 ? 6 : 0, (r.switchCount / max) * 100),
+      // By RANK, so the colour follows the row wherever paging puts it: a rack keeps its colour when a
+      // newer rack pushes it to page two.
+      color: COLORS[i % COLORS.length]
     }))
 })
 
@@ -87,6 +108,13 @@ const pages = computed<Row[][]>(() => {
   const out: Row[][] = []
   for (let i = 0; i < rows.value.length; i += PER_PAGE) out.push(rows.value.slice(i, i + PER_PAGE))
   return out
+})
+
+/** The bar's width is the data and its colour is the rack's, so both travel in one style object. */
+const barStyle = (row: Row): CSSProperties => ({
+  width: `${row.barPct}%`,
+  animationDelay: `${60 + row.index * 70}ms`,
+  ['--bar' as string]: row.color
 })
 
 const totalSwitches = computed(() => props.racks.reduce((n, r) => n + r.switchCount, 0))
@@ -399,10 +427,7 @@ watch([rows, pageCount], async () => {
             </div>
             <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
             <div class="mt-0.5 h-2 overflow-hidden rounded-full bg-elevated/80">
-              <div
-                class="rack-bar h-full rounded-full"
-                :style="{ width: `${row.barPct}%`, animationDelay: `${60 + row.index * 70}ms` }"
-              />
+              <div class="rack-bar h-full rounded-full" :style="barStyle(row)" />
             </div>
           </div>
         </section>
@@ -486,8 +511,10 @@ watch([rows, pageCount], async () => {
    fight. `both` holds it collapsed during its stagger delay. */
 .rack-bar {
   transform-origin: left center;
-  background-image: linear-gradient(90deg, color-mix(in oklab, var(--ui-primary) 72%, transparent), var(--ui-primary));
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ui-primary) 45%, transparent) inset;
+  /* --bar is set per row by barStyle(); --ui-primary is the fallback for a row that arrives without one.
+     The gradient and the hairline ring are the same treatment as before, only the hue moves. */
+  background-image: linear-gradient(90deg, color-mix(in oklab, var(--bar, var(--ui-primary)) 72%, transparent), var(--bar, var(--ui-primary)));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--bar, var(--ui-primary)) 45%, transparent) inset;
   animation: rack-grow 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
 }
