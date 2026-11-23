@@ -7,16 +7,17 @@
  * sit in it, and the number is printed beside the name so the ranking never has to be read off a scale.
  * Cells are dealt in order of that count, left to right, top to bottom, so the busiest rack is first.
  *
- * FOUR BY TWO, THEN SWIPE
- * Racks are laid out four per row and two rows per page, and the card shows one page at a time:
- * HIRO: "buat 4x2 dan card bisa di swipe untuk menampilkan sisanya". The rack count can no longer make
- * the card taller - the eighth rack used to add a third row and push the whole dashboard into
- * scrolling, and now it starts a second page instead. The strip scrolls horizontally (touch swipe,
- * trackpad, shift+wheel, the arrow buttons, or drag with the mouse) and snaps to a page boundary.
+ * TWO BY FOUR, THEN SWIPE
+ * Racks are laid out two per row and four rows per page, and the card shows one page at a time:
+ * HIRO asked for "4x2", then "buat 2x4" - two cells across, four down, eight per page. That is the
+ * shape that keeps a cell wide enough to read (about 225px in this card, against 111px at four across)
+ * while holding the page to the same 232px of strip, so the card still cannot be pushed taller by the
+ * rack count. The strip scrolls horizontally (touch swipe, trackpad, shift+wheel, the arrow buttons, or
+ * drag with the mouse) and snaps to a page boundary.
  *
- * WHY PAGES AND NOT ONE LONG STRIP: a CSS grid with two rows and no explicit column count can only fill
- * column by column, so a single strip would read 1,2 down the first column and 3,4 down the second -
- * wrong order for a ranking. Chunking the sorted list into pages of eight and laying the pages out in a
+ * WHY PAGES AND NOT ONE LONG STRIP: a CSS grid with four rows and no explicit column count can only fill
+ * column by column, so a single strip would read 1,2,3,4 down the first column and 5,6,7,8 down the
+ * second - wrong order for a ranking. Chunking the sorted list into pages of eight and laying the pages out in a
  * flex row keeps the reading order row by row and gives the snap points something meaningful to land on.
  *
  * WHAT THE CELL CARRIES: name and count on one line, the floor under it, and the bar. Two buildings can
@@ -62,8 +63,9 @@ const props = withDefaults(defineProps<{
 // grid column span passed from index.vue is dropped.
 defineOptions({ inheritAttrs: false })
 
-const PER_ROW = 4
-const PER_PAGE = PER_ROW * 2
+const PER_ROW = 2
+const PER_ROW_COUNT = 4
+const PER_PAGE = PER_ROW * PER_ROW_COUNT
 
 const rows = computed<Row[]>(() => {
   const max = Math.max(1, ...props.racks.map(r => r.switchCount))
@@ -77,7 +79,7 @@ const rows = computed<Row[]>(() => {
     }))
 })
 
-/** Pages of eight (four by two). The last page holds the remainder, so 9-16 racks still read cleanly. */
+/** Pages of eight (two across, four down). The last page holds the remainder, so 9-16 racks read cleanly. */
 const pages = computed<Row[][]>(() => {
   const out: Row[][] = []
   for (let i = 0; i < rows.value.length; i += PER_PAGE) out.push(rows.value.slice(i, i + PER_PAGE))
@@ -280,15 +282,15 @@ watch([rows, pageCount], async () => {
 
       <div v-else-if="state === 'loading' && !rows.length" class="space-y-2 py-2">
         <!-- One page-shaped skeleton, so a slow load does not change the card's height. -->
-        <div class="grid grid-cols-4 grid-rows-2 gap-1.5">
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
-          <span class="block h-[58px] animate-pulse rounded-md bg-elevated/60" />
+        <div class="grid grid-cols-2 grid-rows-4 gap-1.5">
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-full min-h-[52px] animate-pulse rounded-md bg-elevated/60" />
         </div>
       </div>
 
@@ -316,7 +318,7 @@ watch([rows, pageCount], async () => {
           <div
             v-for="row in page"
             :key="row.rackId"
-            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-2 transition-opacity duration-200 hover:bg-elevated/50"
+            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-1.5 transition-opacity duration-200 hover:bg-elevated/50"
             :class="rowDim(row) ? 'opacity-40' : ''"
             tabindex="0"
             @mouseenter="enterRow(row.index, $event)"
@@ -335,7 +337,7 @@ watch([rows, pageCount], async () => {
               <span class="shrink-0 text-xs font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
             </div>
             <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
-            <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-elevated/80">
+            <div class="mt-1 h-2 overflow-hidden rounded-full bg-elevated/80">
               <div
                 class="rack-bar h-full rounded-full"
                 :style="{ width: `${row.barPct}%`, animationDelay: `${60 + row.index * 70}ms` }"
@@ -393,13 +395,15 @@ watch([rows, pageCount], async () => {
   display: none;
 }
 
-/* One page per view: four columns by two rows, always the full width of the strip. */
+/* One page per view: two columns by four rows, always the full width of the strip. Four `auto` rows
+   share the strip's height, so the page is exactly as tall as the strip no matter how many rows the
+   rack count needs - that is what keeps the card a fixed height. */
 .rack-page {
   display: grid;
   flex: 0 0 100%;
   min-width: 100%;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: repeat(2, auto);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(4, auto);
   gap: 0.375rem;
   scroll-snap-align: start;
 }

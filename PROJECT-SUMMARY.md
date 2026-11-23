@@ -8052,3 +8052,27 @@ VERIFIKASI (1600x1000, data live 10 rack): 2 page (8 + 2 cell), tiap page 4 kolo
 2 tombol panah. Klik panah kanan -> indikator "2/2", scrollLeft 475 (464 + gap 12), panah kiri aktif,
 panah kanan disabled, page kedua menampilkan Mez + S. Drag 260px -> midScroll 475 lalu snap ke 2/2,
 tanpa text selection. Card 357px, page tidak scroll (936/936), card tetap span 2 kolom. Build web 0 error.
+### Card switch: layout diubah ke 2x4 (2026-11-22)
+
+HIRO: "buat 2x4"
+
+Dari 4 kolom x 2 baris jadi 2 kolom x 4 baris per halaman, tetap 8 rack per page. Efeknya: cell jadi
+jauh lebih lebar (229px vs 111px) tanpa menaikkan tinggi card - strip tetap 232px, 4 baris `auto`
+membagi tinggi strip (53px per baris).
+
+Yang berubah:
+- `.rack-page`: `grid-template-columns: repeat(2, minmax(0,1fr))`, `grid-template-rows: repeat(4, auto)`.
+- PER_ROW 2, PER_ROW_COUNT 4, PER_PAGE tetap 8.
+- Padding cell `py-2` -> `py-1.5`, margin bar `mt-1.5` -> `mt-1`: 4 baris berbagi tinggi strip, jadi cell
+  harus lebih pendek dari sebelumnya supaya tidak menyembul keluar strip.
+- Skeleton mengikuti bentuk baru (2 kolom x 4 baris).
+
+PITFALL yang dicek: `overflow-x: auto` membuat `overflow-y` ikut jadi `auto` menurut spec, jadi kalau
+page butuh tinggi lebih dari strip, strip akan scroll VERTIKAL tanpa bar yang kelihatan. Diukur:
+strip scrollHeight 232 == clientHeight 232, jadi tidak terjadi. Ini wajib dicek setiap kali jumlah baris
+per page diubah - bukan cukup memastikan tidak ada scrollbar horizontal.
+
+VERIFIKASI (1600x1000, 10 rack): 2 page (8 + 2), kolom 228.75px x 2, baris 53.375px x 4, cell 229x53,
+strip 232px (scrollHeight == clientHeight, scrollWidth 939 vs clientWidth 464), indikator "1/2", 2 panah,
+bar 213/133/106/80/53x4 dari track 213px (proporsional 8/5/4/3/2). Panah kanan -> "2/2", scrollLeft 475,
+panah kanan disabled, page 2 = Mez + S. Card 357px, page tidak scroll (936/936). Build web 0 error.
