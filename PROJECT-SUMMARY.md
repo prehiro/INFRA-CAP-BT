@@ -8563,3 +8563,51 @@ Card grid: start card 1..6 di 961/1069/1141/1230/1323/1411ms -> langkah ~90ms, t
 (Benar: 90ms per card, bukan 60ms).
 
 Build `npx nuxt build` rc=0, 0 ERROR.
+
+### PC Ledger: animasi boot untuk icon title (2026-11-22)
+
+HIRO: "sekarang ke page pc ledger, tolong buat animasi icon title yang keren dan bagus"
+
+## Yang ditambah
+
+Plate 48px di sheet header PC Ledger (`.pc-ledger-title-icon`, sebelah h1 "Domain Joined PC Ledger")
+sekarang punya urutan BOOT sekali jalan saat halaman dibuka - bukan loop, bukan hover:
+
+1. Plate masuk dengan spring: scale 0.9 -> 1.045 -> 0.992 -> 1, translateY -5px -> 0, opacity 0 -> 1
+   (720ms, `cubic-bezier(0.34, 1.42, 0.64, 1)` - overshoot memang benar di sini: 48px, elemen dekoratif,
+   tidak ada lain yang bergerak. Beda dengan dialog yang butuh easing monoton.)
+2. `::before` - satu ring accent memancar keluar lalu hilang (scale 1 -> 1.22, opacity 0.85 -> 0).
+   Sengaja berakhir invisible supaya tidak meninggalkan glow permanen di plate.
+3. `::after` - satu scanline 2px melintasi plate dari atas ke bawah (translateY 0 -> 32px), 760ms.
+4. `:deep(.pc-ledger-glyph)` - "ignite" layar: brightness 2.6 -> 1.55 -> 1 dan opacity 0.25 -> 1 (620ms),
+   jadi ikonnya menyala, bukan langsung muncul.
+
+Semua warna dari `var(--ui-primary)` (gradient + box-shadow pakai color-mix), jadi ikut accent picker.
+
+## Kenapa berlapis, bukan satu elemen
+
+Satu elemen tidak bisa punya dua animasi `transform` - deklarasi `animation` kedua menang dan yang pertama
+tidak pernah jalan (tanpa error). Jadi: plate untuk pop, `::before` untuk ping, `::after` untuk scanline,
+dan glyph untuk ignite (opacity + filter saja). Loop idle glyph yang sudah ada (`.pc-trace` ->
+`pc-line-travel` 6.4s, `.pc-scan`, `.pc-vent`, `.pc-power`) TIDAK disentuh - aturan ignite ada di elemen
+`.pc-ledger-glyph` sedangkan loop-nya di anak-anaknya.
+
+`.pc-ledger-title-icon` juga TIDAK diikat ke flag `loading` - kalau diikat, animasi boot akan mengulang
+setiap kali user simpan/hapus row.
+
+## VERIFIKASI
+
+- Transform plate (sampling 35ms, dinormalkan): 0.9/-5px/opacity 0 -> 1.052/+1.29px -> 1.0076 -> 0.9979 -> 1
+  (720ms, overshoot nyata 1.052 lalu balik).
+- `::after` (scanline): translateY 0 -> 25.3 -> 32px ✓ bergerak.
+- `::before` (ping): scale 1 -> 1.2165 -> 1.22, opacity 0.85 -> 0.01 -> 0 ✓ memudar habis.
+- Freeze test ignite: currentTime 40ms -> brightness(2.6)/opacity 0.25 ; currentTime 400ms ->
+  brightness(1.469)/opacity 1 ; duration 620ms ✓ keyframe benar-benar menganimasi filter (bukan cuma nama).
+- Loop lama masih hidup: `.pc-trace` -> `pc-line-travel-d609eca0` ✓ (21 elemen anak di dalam glyph).
+- `animationName`: plate `pl-title-boot-f70d3803`, before `pl-title-ping-f70d3803`, after
+  `pl-title-scan-f70d3803`, glyph `pl-title-ignite-f70d3803` (suffix hash dari scoped CSS - normal).
+- Ukuran plate 48x48 tetap (animasi transform-only, tidak ada layout shift).
+- Reduced motion (`Emulation.setEmulatedMedia` reduce): plate/pseudos/glyph semua `animationName: none`,
+  plate opacity 1 + transform none, pseudo opacity 0, glyph filter none ✓ (tidak ada frame beku yang
+  tertinggal). Mediaorestore -> mq false ✓.
+- Build `npx nuxt build` rc=0, 0 ERROR.

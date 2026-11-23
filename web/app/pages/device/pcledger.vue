@@ -2454,6 +2454,101 @@ async function exportExcel() {
   .copy-pill::after { animation: none; opacity: 0; }
 }
 
+/* ---------------------------------------------------------------------------
+   Title-plate boot sequence (the PC Ledger sheet header's 48px plate).
+
+   The glyph inside already runs its own 6.4s idle loop, so this block owns only the
+   ENTRANCE - one shot on mount, on the plate itself, and deliberately NOT keyed to the
+   loading flag: bound to that, every save would replay the boot under the user's cursor.
+
+   Three layers, because one element cannot host two transform animations (the second
+   declaration would win and the first would never run):
+     .pc-ledger-title-icon        the plate springs in            (transform)
+     .pc-ledger-title-icon::before one accent ring pings out      (transform)
+     .pc-ledger-title-icon::after  one scanline crosses the plate (transform)
+     :deep(.pc-ledger-glyph)      the screen "ignites"            (opacity + brightness)
+   Overshoot is right here and wrong on a dialog: at 48px this is a decorative mark with
+   nothing else moving, so a spring reads as alive. Every colour is --ui-primary, so the
+   sequence follows the accent picker instead of pinning a hue.
+--------------------------------------------------------------------------- */
+.pc-ledger-title-icon {
+  position: relative;
+  animation: pl-title-boot 720ms cubic-bezier(0.34, 1.42, 0.64, 1) both;
+}
+
+@keyframes pl-title-boot {
+  0%   { opacity: 0; transform: translateY(-5px) scale(0.9); }
+  55%  { opacity: 1; transform: translateY(1px) scale(1.045); }
+  78%  { transform: translateY(0) scale(0.992); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* The ring leaves no permanent glow behind: it is a one-shot ping that ends invisible. */
+.pc-ledger-title-icon::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  border: 1px solid color-mix(in oklab, var(--ui-primary) 70%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: pl-title-ping 900ms cubic-bezier(0.2, 0.8, 0.2, 1) 120ms both;
+}
+
+@keyframes pl-title-ping {
+  0%   { opacity: 0.85; transform: scale(1); }
+  70%  { opacity: 0; transform: scale(1.22); }
+  100% { opacity: 0; transform: scale(1.22); }
+}
+
+/* A 2px accent bar crossing the plate once - the "screen refresh" beat of the boot. */
+.pc-ledger-title-icon::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  top: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--ui-primary), transparent);
+  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--ui-primary) 55%, transparent);
+  pointer-events: none;
+  opacity: 0;
+  animation: pl-title-scan 760ms cubic-bezier(0.4, 0, 0.2, 1) 160ms both;
+}
+
+@keyframes pl-title-scan {
+  0%   { opacity: 0; transform: translateY(0); }
+  14%  { opacity: 1; }
+  72%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(32px); }
+}
+
+/* The screen itself: brief over-bright ignition that settles to the normal glyph. The glyph's
+   own loop lives on its CHILDREN (.pc-trace, .pc-scan, ...), so this cannot cancel it. */
+.pc-ledger-title-icon :deep(.pc-ledger-glyph) {
+  animation: pl-title-ignite 620ms ease-out 90ms both;
+}
+
+@keyframes pl-title-ignite {
+  0%   { opacity: 0.25; filter: brightness(2.6); }
+  45%  { opacity: 1; filter: brightness(1.55); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-ledger-title-icon,
+  .pc-ledger-title-icon::before,
+  .pc-ledger-title-icon::after,
+  .pc-ledger-title-icon :deep(.pc-ledger-glyph) {
+    animation: none !important;
+  }
+  .pc-ledger-title-icon::before,
+  .pc-ledger-title-icon::after {
+    opacity: 0;
+  }
+}
+
 </style>
 
 <!-- NON-SCOPED, and it has to be. UModal teleports its content to <body>, so a scoped rule - which
