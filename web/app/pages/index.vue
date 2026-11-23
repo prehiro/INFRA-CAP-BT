@@ -341,8 +341,8 @@ const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value
               <RackCapacityCard
                 class="col-span-1 @min-[560px]:col-span-2"
                 title="Switch per Rack"
-                label="Jumlah switch"
-                source="Urut terbanyak"
+                label="Switch count"
+                source="By rack"
                 to="/networks/network-rack"
                 :racks="(rackRows as RackRow[] ?? [])"
                 :state="rackState"

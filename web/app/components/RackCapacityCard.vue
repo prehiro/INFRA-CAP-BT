@@ -54,8 +54,8 @@ const props = withDefaults(defineProps<{
   state?: 'loading' | 'ready' | 'error'
 }>(), {
   title: 'Switch per Rack',
-  label: 'Jumlah switch',
-  source: 'Urut terbanyak',
+  label: 'Switch count',
+  source: 'By rack',
   state: 'ready'
 })
 
@@ -246,7 +246,7 @@ watch([rows, pageCount], async () => {
               size="xs"
               class="rack-arrow"
               :disabled="atStart"
-              aria-label="Rack sebelumnya"
+              aria-label="Previous page"
               @click="goToPage(pageIndex - 1)"
             >
               <!-- Inline SVG, not <UIcon name="i-lucide-chevron-left">: this build runs Nuxt Icon with
@@ -264,7 +264,7 @@ watch([rows, pageCount], async () => {
               size="xs"
               class="rack-arrow"
               :disabled="atEnd"
-              aria-label="Rack berikutnya"
+              aria-label="Next page"
               @click="goToPage(pageIndex + 1)"
             >
               <svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -277,7 +277,7 @@ watch([rows, pageCount], async () => {
       </header>
 
       <div v-if="state === 'error'" class="py-6 text-center text-xs text-muted">
-        Data rack tidak bisa dimuat.
+        Rack data could not be loaded.
       </div>
 
       <div v-else-if="state === 'loading' && !rows.length" class="space-y-2 py-2">
@@ -295,7 +295,7 @@ watch([rows, pageCount], async () => {
       </div>
 
       <div v-else-if="!rows.length" class="py-6 text-center text-xs text-muted">
-        Belum ada rack.
+        No racks yet.
       </div>
 
       <div
@@ -313,7 +313,7 @@ watch([rows, pageCount], async () => {
           v-for="(page, pi) in pages"
           :key="pi"
           class="rack-page"
-          :aria-label="`Rack per halaman ${pi + 1}`"
+          :aria-label="`Racks page ${pi + 1}`"
         >
           <div
             v-for="row in page"
@@ -348,9 +348,9 @@ watch([rows, pageCount], async () => {
       </div>
 
       <p v-if="state === 'ready' && rows.length" class="border-t border-default pt-2 text-[11px] text-muted">
-        <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> rack
-        <span class="mx-1">·</span><b class="font-semibold text-default tabular-nums">{{ totalSwitches }}</b> switch
-        <span class="mx-1">·</span>rata-rata <b class="font-semibold text-default tabular-nums">{{ avgSwitches }}</b> per rack
+        <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> racks
+        <span class="mx-1">·</span><b class="font-semibold text-default tabular-nums">{{ totalSwitches }}</b> switches
+        <span class="mx-1">·</span>avg <b class="font-semibold text-default tabular-nums">{{ avgSwitches }}</b> per rack
       </p>
     </div>
   </UCard>
@@ -370,8 +370,8 @@ watch([rows, pageCount], async () => {
       </p>
       <p class="mt-0.5 text-[10px] text-muted">{{ activeRow.floorName }}</p>
       <p class="mt-1.5 border-t border-default/70 pt-1.5 text-[10px] text-muted">
-        Peringkat <b class="font-semibold text-default tabular-nums">{{ activeRow.index + 1 }}</b>
-        dari <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> rack
+        Rank <b class="font-semibold text-default tabular-nums">{{ activeRow.index + 1 }}</b>
+        of <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> racks
       </p>
     </div>
   </Teleport>

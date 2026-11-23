@@ -8101,3 +8101,18 @@ kolom (7 card jadi 3-4 baris) - bukan karena card switch. Di 1440 card switch cu
 
 VERIFIKASI lain: strip scrollHeight == clientHeight (207) jadi page 4 baris tidak menyembul keluar strip
 (kalau menyembul, `overflow-x: auto` bikin strip scroll vertikal tanpa bar yang kelihatan). Build web 0 error.
+### Card switch: semua teks jadi bahasa Inggris (2026-11-22)
+
+HIRO: "pkai bhs ingris teks nya"
+
+Teks card switch diubah ke bahasa Inggris, mengikuti pola card lain di dashboard (Registered PC / Domain-Joined
+PC / Model Treemap / UPS Fleet semuanya Inggris):
+- Subjudul: "Jumlah switch · Urut terbanyak" -> "Switch count · By rack" (pola sama dengan "Registered units · By model")
+- Footer: "10 rack · 32 switch · rata-rata 3.2 per rack" -> "10 racks · 32 switches · avg 3.2 per rack"
+- Tooltip: "Peringkat 2 dari 10 rack" -> "Rank 2 of 10 racks"
+- State kosong/gagal: "Belum ada rack." -> "No racks yet." / "Data rack tidak bisa dimuat." -> "Rack data could not be loaded."
+- aria-label: "Rack sebelumnya"/"Rack berikutnya" -> "Previous page"/"Next page"; "Rack per halaman N" -> "Racks page N"
+
+Terverifikasi di browser: title "Switch per Rack", subtitle "Switch count · By rack", footer "10 racks · 32 switches ·
+avg 3.2 per rack", tooltip "C-B2 · 5 · BUILDING 2 · Rank 2 of 10 racks", aria "Previous page"/"Next page"/"Racks page 1".
+Tinggi card tetap 332px (tidak ada scrollbar page di 1500x950). Build web 0 error.
