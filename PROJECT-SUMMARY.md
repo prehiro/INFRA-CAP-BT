@@ -8745,3 +8745,34 @@ Yang baru:
 - Reduced motion (AP): plate/wrap/glyph `animationName: none`, arcs `none` + opacity 1, dot `none` +
   opacity 1, plate opacity 1 ✓.
 - Build `npx nuxt build` rc=0, 0 ERROR.
+
+### Network Rack: boot icon title (2026-11-22)
+
+HIRO: "ok implementn juga ke icon title network rack"
+
+Plate judul Network Rack (`/networks/network-rack`) sekarang pakai class `title-boot` + wrapper
+`.pl-title-glyph` yang sama, jadi ikut boot: plate spring, ring ping, scanline, glyph ignite.
+
+SVG-nya (viewBox 512, `fill="currentColor"`) berisi tiga lapis animasi sendiri yang semuanya tetap jalan:
+- `.nr-rack-line-1/2/3` -> animasi 2.7s (bay panel menyala berurutan)
+- `.ap-rack-led` -> `ap-led-blink` (LED dirender dari rackLeds(7), seed tetap)
+- `.pc-add-tilt` -> sway 3.6s dari RecordAddIcon
+
+Wrapper `.pl-title-glyph` yang membungkus SVG, jadi ignite (opacity + brightness) tidak menimpa sway di
+elemen SVG - kalau dipasang langsung di SVG, deklarasi `animation` ignite akan menang dan sway mati
+(sudah pernah kejadian di PC Ledger).
+
+## VERIFIKASI
+
+- Boot: plate `title-boot-in`, ::before `title-boot-ping`, ::after `title-boot-scan`, wrap
+  `title-boot-ignite`, glyph `pc-add-sway-62bb9124`, plate 48x48.
+- Animasi bawaan glyph masih hidup: rackLines = `nr-rack-line-1-ce057709` / `-2` / `-3`,
+  LED = `ap-led-blink-ce057709` (bay = none, memang statis).
+- centreDelta glyph terhadap plate = [0, -1] -> 1px hanya pembulatan (posisi plate pecah), bukan
+  pergeseran; ukuran plate tetap 48x48.
+- Reduced motion: plate/wrap/glyph `animationName: none`, plate opacity 1, pseudo 0/0, ketiga
+  nr-rack-line `none`, LED `none` ✓.
+- Build `npx nuxt build` rc=0, 0 ERROR. File berubah: network-rack.vue (satu file, CSS sudah global).
+
+Catatan: ini caller ketujuh `title-boot` (PC Ledger, Standby PC, Dispose, Factory PC, UPS, Access
+Point, Network Rack).
