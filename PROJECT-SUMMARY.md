@@ -8140,3 +8140,18 @@ tidak membawa `buttons` sehingga handler `e.buttons === 0` langsung return dan h
 - Drag 330px: during 330, dilepas -> 425 (2/2), page 2 = Mez + S.
 - Drag balik 330px -> 0 (1/2).
 - Cursor cell = "grab", strip = "grab". Build web 0 error.
+### Card switch: avg per rack dihapus + dead code dibersihkan (2026-11-22)
+
+HIRO: "hapus avg per rack. hapus dead code"
+
+Footer jadi "10 racks · 32 switches" saja - "avg 3.2 per rack" dibuang.
+
+Dead code yang ikut dihapus (bukan cuma teksnya):
+1. `const avgSwitches = computed(...)` - tidak ada lagi yang memanggilnya setelah teks footer hilang.
+2. `floorId` di type `RackRow` milik komponen - cuma 1 kemunculan (deklarasi type), tidak pernah dibaca:
+   tooltip memakai `floorName`, bukan id. Field-nya tetap dikirim API dan tetap ada di type `RackRow`
+   milik index.vue (di sana yang mendeskripsikan bentuk response GET /api/network/racks/summary), tapi
+   komponen card tidak butuh.
+
+Verifikasi: grep `avgSwitches|floorId|avg ` di RackCapacityCard.vue -> 0 hasil. Build web 0 error. Di browser
+footer "10 racks · 32 switches", tidak ada kata "avg" di seluruh card, tinggi card tetap 332px, 2 page.

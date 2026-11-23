@@ -37,7 +37,6 @@
 type RackRow = {
   rackId: number
   rackName: string
-  floorId: number
   floorName: string
   switchCount: number
 }
@@ -87,9 +86,6 @@ const pages = computed<Row[][]>(() => {
 })
 
 const totalSwitches = computed(() => props.racks.reduce((n, r) => n + r.switchCount, 0))
-const avgSwitches = computed(() => (
-  rows.value.length ? totalSwitches.value / rows.value.length : 0
-).toFixed(1))
 
 /** Which cell the pointer is on; every other one steps back. */
 const hover = ref<number | null>(null)
@@ -364,7 +360,6 @@ watch([rows, pageCount], async () => {
       <p v-if="state === 'ready' && rows.length" class="border-t border-default pt-2 text-[11px] text-muted">
         <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> racks
         <span class="mx-1">·</span><b class="font-semibold text-default tabular-nums">{{ totalSwitches }}</b> switches
-        <span class="mx-1">·</span>avg <b class="font-semibold text-default tabular-nums">{{ avgSwitches }}</b> per rack
       </p>
     </div>
   </UCard>
