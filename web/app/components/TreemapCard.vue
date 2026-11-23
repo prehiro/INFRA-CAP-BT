@@ -196,11 +196,19 @@ const tiles = computed<Tile[]>(() => {
     <div v-else class="flex h-full min-h-0 flex-col gap-3 p-3 pt-0 @min-[420px]:flex-row">
       <!-- Measured pixel box: every tile is absolutely positioned in it. -->
       <div ref="root" class="relative min-h-24 min-w-0 flex-1">
+        <!-- The entrance sits on the OUTER box and the hover dim on the inner one: an animation with
+             fill-mode both holds opacity:1 at its end, which would beat the inline opacity the dim uses. -->
         <div
           v-for="tile in tiles"
           :key="tile.label"
-          class="absolute p-px"
-          :style="{ left: `${tile.x}px`, top: `${tile.y}px`, width: `${tile.w}px`, height: `${tile.h}px` }"
+          class="tm-tile absolute p-px"
+          :style="{
+            left: `${tile.x}px`,
+            top: `${tile.y}px`,
+            width: `${tile.w}px`,
+            height: `${tile.h}px`,
+            animationDelay: `${tile.index * 40}ms`
+          }"
         >
           <UTooltip :text="`${tile.label} · ${tile.value} unit · ${tile.pct.toFixed(1)}%`">
             <div
@@ -264,6 +272,30 @@ const tiles = computed<Tile[]>(() => {
    Chromium/WebKit ignore them and need the pseudo-elements. The 4px thumb is a rounded pill, so its
    track is transparent and there is no border to clip the radius. Default app scrollbars are 15-17px
    and read as a grey bar next to a 176px list. */
+/* The treemap had no entrance at all: the chart simply appeared once its data landed, while every other
+   card on the dashboard grew in. Each tile scales up from its own centre, staggered by rank, so the
+   biggest tile leads and the slivers follow. */
+.tm-tile {
+  animation: tm-tile-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes tm-tile-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-tile {
+    animation: none;
+  }
+}
+
 .model-list {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--ui-primary) 55%, transparent) transparent;

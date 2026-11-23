@@ -303,20 +303,34 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     [Authorize]
     public async Task<IActionResult> Summary(CancellationToken ct)
     {
+        // A PROJECTION, not Include(). The dashboard reads counts, so materialising whole NetworkRack and
+        // NetworkSwitch entities - every column of every switch, hostname and serial and notes included -
+        // only to count them made this the slowest call on the dashboard (11.4s against 13-235ms for every
+        // other endpoint, repeatedly, with a 1KB response). The only per-switch field the arithmetic below
+        // needs is Position, and the floor's name is one column away.
         var racks = await db.NetworkRacks
             .AsNoTracking()
-            .Include(x => x.FloorMap)
-            .Include(x => x.Switches)
             .OrderBy(x => x.FloorMap!.Name)
             .ThenBy(x => x.Name)
+            .Select(x => new
+            {
+                x.Id,
+                x.Name,
+                x.FloorMapId,
+                FloorName = x.FloorMap!.Name,
+                x.SizeU,
+                x.HudSettings,
+                SwitchCount = x.Switches.Count,
+                Positions = x.Switches.Select(s => s.Position).ToList()
+            })
             .ToListAsync(ct);
 
         var rows = racks.Select(r =>
         {
             var used = new HashSet<int>();
-            foreach (var sw in r.Switches)
+            foreach (var position in r.Positions)
             {
-                var span = ParseUnitSpan(sw.Position);
+                var span = ParseUnitSpan(position);
                 if (span is null) continue;
                 for (var u = span.Value.start; u <= span.Value.end; u++) used.Add(u);
             }
@@ -330,9 +344,9 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                 rackId = r.Id,
                 rackName = r.Name,
                 floorId = r.FloorMapId,
-                floorName = r.FloorMap?.Name ?? string.Empty,
+                floorName = r.FloorName ?? string.Empty,
                 sizeU = r.SizeU,
-                switchCount = r.Switches.Count,
+                switchCount = r.SwitchCount,
                 usedU = used.Count
             };
         }).ToList();

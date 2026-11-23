@@ -40,7 +40,11 @@ const token = useToken()
 
 const authHeaders = computed(() => (token.value ? { Authorization: `Bearer ${token.value}` } : {}))
 
-const { data: entities } = await useFetch<EntityMeta[]>('/entities', {
+// Deliberately NOT awaited. Four awaits in a row made the dashboard's own requests run one after
+// another, so every card after the first paid for the one before it. useFetch starts the request the
+// moment it is called and the refs below fill in on their own - nothing here needs the value at setup
+// time, only in the template and in the watchers further down.
+const { data: entities } = useFetch<EntityMeta[]>('/entities', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
@@ -57,7 +61,7 @@ type RackRow = {
   switchCount: number
 }
 
-const { data: rackRows, error: rackError } = await useFetch<RackRow[]>('/network/racks/summary', {
+const { data: rackRows, error: rackError } = useFetch<RackRow[]>('/network/racks/summary', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
@@ -68,7 +72,7 @@ type UpsUnit = { id: number, brand: string, model: string, serialNumber: string,
 
 // The register is 20 rows, not the EAV record table, so one list call is the whole population - no
 // distribution endpoint needed and nothing to aggregate server-side.
-const { data: upsUnits, error: upsError } = await useFetch<UpsUnit[]>('/ups', {
+const { data: upsUnits, error: upsError } = useFetch<UpsUnit[]>('/ups', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
@@ -268,7 +272,7 @@ type ApFloor = {
   rackCount: number
 }
 
-const { data: apFloors, error: apError, pending: apPending } = await useFetch<ApFloor[]>('/network/floor-maps', {
+const { data: apFloors, error: apError, pending: apPending } = useFetch<ApFloor[]>('/network/floor-maps', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []

@@ -287,7 +287,12 @@ function clearTip() {
              content and sits centred under the doughnut, so name and numbers read as one line. -->
         <div class="mx-auto w-fit min-w-0">
           <ul class="space-y-0.5">
-            <li v-for="seg in segments" :key="seg.value">
+            <li
+              v-for="seg in segments"
+              :key="seg.value"
+              class="legend-row"
+              :style="{ animationDelay: `${120 + seg.index * 60}ms` }"
+            >
               <button
                 type="button"
                 class="flex items-center gap-2.5 rounded-md px-2 py-0.5 text-left text-[13px] transition-colors"
@@ -365,8 +370,26 @@ function clearTip() {
   }
 }
 
+/* The rows used to pop in fully formed while the doughnut was still drawing itself. They now follow it,
+   one step behind each slice, so the card reads as one object instead of two arrivals. */
+.legend-row {
+  animation: legend-row-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes legend-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .slice {
+  .slice,
+  .legend-row {
     animation: none;
   }
 }

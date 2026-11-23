@@ -8353,3 +8353,71 @@ VERIFIKASI (1500x950, 10 rack):
 - Hover: row hovered opacity 1 + filter brightness(1.15), row lain 0.4, tooltip "Rack E1 | 4 | BUILDING 2 | Rank 3
   of 10 racks" - tidak ada yang berubah selain warna.
 - Card tetap 332px, page tidak scroll (886/886). Build web 0 error.
+
+### Optimasi page load dashboard + animasi tiap grafik (2026-11-22)
+
+HIRO: "optimasi page load dasboard, kadang lama loadnya. berikan juga smooth animation pada tiap grafik saat page load"
+
+## Penyebab utama: satu endpoint 11.4 detik (diukur, bukan ditebak)
+
+Saya ukur dulu semua endpoint yang dipakai dashboard, dua putaran berturut-turut:
+
+    /api/network/racks/summary                 11.405 s   (putaran 1)
+    /api/network/racks/summary                 11.404 s   (putaran 2)  <- identik, tidak ada yang "warming up"
+    /api/network/floor-maps                     0.017 s
+    /api/ups                                    0.014 s
+    /api/records/10/distribution?...            0.138 s
+    /api/records/10/distribution?...computer_model 0.235 s
+    /api/entities                               0.025 s
+
+Angka yang berulang PERSIS menunjukkan ini bukan cold-SQL (yang memang ada di project ini, ~5s sekali) -
+ini kerjaan endpoint itu sendiri. Penyebabnya: Summary() memakai Include(FloorMap) + Include(Switches),
+yaitu menarik SELURUH kolom setiap rack dan setiap switch (hostname, model, serial, catatan) hanya untuk
+MENGHITUNG. Response-nya cuma 1 KB.
+
+Perbaikan: diubah jadi projection - hanya kolom yang benar-benar dibutuhkan (Id, Name, FloorMapId,
+FloorMap.Name, SizeU, HudSettings, Switches.Count, dan Positions = daftar Position saja, karena hitungan
+usedU butuh itu). Hasil:
+
+    11.405 s  ->  0.144 s (request pertama setelah API restart)  ->  0.017 s (warm)
+
+Response tetap IDENTIK: 1044 byte, 10 row, 7 key yang sama (floorId, floorName, rackId, rackName, sizeU,
+switchCount, usedU), total 32 switch. Jadi tidak ada perubahan kontrak.
+
+## Optimasi kedua: 4 request dashboard tidak lagi berurutan
+
+index.vue memakai await useFetch(...) empat kali berurutan (entities -> racks -> ups -> floor-maps), jadi
+request kedua baru mulai setelah yang pertama selesai. useFetch sudah mengirim request saat dipanggil;
+await-nya cuma menunggu. Sekarang keempatnya langsung jalan bersama - tidak ada nilai yang dibutuhkan saat
+setup, semua cuma dipakai di template dan watcher.
+
+## Animasi grafik saat page load
+
+Yang sudah ada sebelumnya: card masuk bertahap (.anim-stagger 60ms/card), doughnut (slice-in 700ms),
+bar UPS (bar-grow), bar rack (rack-grow), kolom AP (ap-rise 640ms).
+
+Yang belum ada / ditambah:
+1. Treemap - TIDAK punya animasi sama sekali (chart-nya muncul begitu saja). Sekarang tiap tile
+   tm-tile-in (scale 0.94 -> 1 + fade, 420ms, stagger 40ms per rank).
+   PENTING: animasi dipasang di wrapper (posisi absolute) dan hover-dim tetap di div dalamnya. Kalau
+   digabung di satu elemen, fill-mode: both menahan opacity:1 di akhir animasi dan hover-dim (opacity
+   inline) akan mati - ini jebakan yang sudah pernah kena di ChassisMixCard.
+2. Legend ChassisMix - row-nya muncul mendadak. Sekarang legend-row-in (translateY 4px + fade, 320ms,
+   delay 120ms + 60ms per row, menyusul slice-nya).
+   Semua tetap patuh prefers-reduced-motion (animation: none).
+
+## VERIFIKASI
+
+- API: 11.405s -> 0.144s (cold, request pertama setelah restart) -> 0.017s (warm). Response 1044B, 10 row,
+  32 switch, key sama. Build API 0 error.
+- Browser: setelah Page.navigate, semua chart punya data dalam 0.56s (bar UPS, bar rack, kolom AP) dan
+  0.81s (treemap, doughnut) - sebelumnya card rack sendirian menunggu 11.4s.
+- Animasi terukur: .tm-tile -> tm-tile-in (opacity 0.47 -> 0.98 -> 1.00), .legend-row -> legend-row-in
+  (0.00 -> 0.89 -> 1.00), .slice -> slice-in, .rack-bar -> rack-grow, .ap-fill -> ap-rise 0.64s.
+- Hover treemap tetap normal: opacity 0.35 di tile lain, 1.0 di tile hovered - animasi tidak menimpa dim.
+- Test web: 74 pass, 1 fail (recordSnapshot.test.mjs, path lama app/pages/pcledger.vue - sudah ada sebelum
+  perubahan ini).
+
+CATATAN LINGKUNGAN: API sekarang dijalankan dari build terisolasi scratch/apibuild/Api.dll (port 5099),
+karena bin/Debug terkunci oleh proses yang jalan. Kalau API direstart, pakai dotnet run seperti biasa
+(akan build ke bin/Debug sendiri).
