@@ -7938,3 +7938,35 @@ Data (dev, 15 switch di 4 rack floor 3):
 VERIFIKASI: API `GET /api/network/floor-maps/3/racks/11` -> 8/8 switch punya serialNumber;
 rack 12 (3), 13 (2), 14 (2) juga penuh. UI: kartu menampilkan S/N (mis. FCW9666LBUN) dan inventory
 list "S/N: FCW..." bukan N/A. Build web 0 error, API 0 error.
+### Dashboard: card Rack Capacity (combo) menggantikan card Access Points (2026-11-22)
+
+HIRO: "ok buat combo dengan u. hapus card 4 access point dan ganti dengan grafik combo ini. design yang keren"
+
+Card Access Points (satu angka + chips per lantai) dihapus dari dashboard; card itu sudah dihapus, tidak
+cuma di-hide. Gantinya `RackCapacityCard.vue`: satu baris per rack, batang = jumlah switch, track kedua =
+persentase U terpakai, diurutkan dari switch terbanyak.
+
+Kenapa dua track, bukan satu: "8 switch" dan "24% U" beda satuan (buah vs slot). Kalau dipaksa satu lebar,
+"8" dan "24%" berdiri di skala yang sama dan diam-diam bohong. Jadi masing-masing punya track + warna
+sendiri (primary untuk switch, sky untuk U), dan legenda di atas daftar menyebut keduanya.
+
+Desain: mengikuti pola card lain di dashboard (UCard, CardMetricIcon, hover tooltip teleport) supaya
+setumpuk card terbaca sebagai satu set. CardMetricIcon dapat `kind="rack"` baru (kabinet + LED berkedip).
+Batang tumbuh dari kiri dengan stagger, hover menyorot bar, baris lain diredupkan.
+
+API BARU: `GET /api/network/racks/summary` -> satu baris per rack lintas lantai:
+`rackId, rackName, floorId, floorName, sizeU, switchCount, usedU`.
+- usedU = gabungan U yang dipakai switch (posisi "U41" atau "U41-U42", bisa en dash) + reservasi UPS
+  (3000VA -> U01..U02, 5000VA -> U01..U03, dibaca dari hudSettings). Tanpa UPS, rack yang isinya cuma UPS
+  akan tergambar 0%.
+- Satu call untuk seluruh gedung; kalau per lantai, dashboard harus request per lantai.
+
+PITFALL yang kena: dimming hover awalnya dipasang sebagai `opacity-40` di `.rack-bar`, tapi `.rack-bar`
+punya `animation: rack-grow ... both` yang menahan opacity:1 di akhir animasi - nilai animasi mengalahkan
+class. Class-nya benar-benar menempel (dicek di DOM) tapi computed opacity tetap 1. Diperbaiki dengan
+meredupkan BARIS (li), bukan batangnya, seperti UpsFleetCard.
+
+VERIFIKASI: card muncul dengan data nyata (D-B1 8 switch 10/42U, C 3 3/19U, S 2 4/19U, B 2 2/19U,
+footer "4 rack · 15 switch · 19% U terisi"); lebar batang proporsional (236/88/59/59 dari track 236px);
+tooltip 210x87 muncul di dalam viewport dengan rincian U terpakai/bebas; hover meredupkan baris lain
+(1 / 0.4 / 0.4 / 0.4). Build web 0 error.

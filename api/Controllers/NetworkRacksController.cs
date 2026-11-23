@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using Api.Data;
 using Api.Domain;
 using Microsoft.AspNetCore.Authorization;
@@ -291,6 +293,83 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     /// than in the browser: the rack dialog only holds one rack's switches, while the useful pool is
     /// every model the register has ever seen.
     /// </summary>
+    /// <summary>
+    /// One row per rack across every floor: how many switches sit in it and how many U they occupy.
+    /// The dashboard needs both in a single call - it draws switch count as the bar and U fill as the
+    /// marker - and walking floor by floor would be one request per floor for a picture of the whole
+    /// building. UsedU counts the UPS reservation too, so a rack with a 3000VA unit never reads empty.
+    /// </summary>
+    [HttpGet("~/api/network/racks/summary")]
+    [Authorize]
+    public async Task<IActionResult> Summary(CancellationToken ct)
+    {
+        var racks = await db.NetworkRacks
+            .AsNoTracking()
+            .Include(x => x.FloorMap)
+            .Include(x => x.Switches)
+            .OrderBy(x => x.FloorMap!.Name)
+            .ThenBy(x => x.Name)
+            .ToListAsync(ct);
+
+        var rows = racks.Select(r =>
+        {
+            var used = new HashSet<int>();
+            foreach (var sw in r.Switches)
+            {
+                var span = ParseUnitSpan(sw.Position);
+                if (span is null) continue;
+                for (var u = span.Value.start; u <= span.Value.end; u++) used.Add(u);
+            }
+            // The UPS is a device in the rack like any other: it holds U01..U02 (3000VA) or
+            // U01..U03 (5000VA), and without it a rack whose only occupant is the UPS draws 0% full.
+            var ups = UpsUnits(r.HudSettings);
+            for (var u = 1; u <= ups; u++) used.Add(u);
+
+            return new
+            {
+                rackId = r.Id,
+                rackName = r.Name,
+                floorId = r.FloorMapId,
+                floorName = r.FloorMap?.Name ?? string.Empty,
+                sizeU = r.SizeU,
+                switchCount = r.Switches.Count,
+                usedU = used.Count
+            };
+        }).ToList();
+
+        return Ok(rows);
+    }
+
+    /// <summary>
+    /// "U41" or "U41-U42" (the register writes both, with a plain or an en dash) to the inclusive unit
+    /// range it covers. Mirrors parseUnitRange in Rack3DView.vue so the card and the 3D view agree on
+    /// what a position means.
+    /// </summary>
+    private static (int start, int end)? ParseUnitSpan(string? raw)
+    {
+        var m = Regex.Match(raw ?? string.Empty, @"u\s*(\d+)\s*(?:[-\u2013]\s*(?:u\s*)?(\d+))?", RegexOptions.IgnoreCase);
+        if (!m.Success || !int.TryParse(m.Groups[1].Value, out var a)) return null;
+        var b = m.Groups[2].Success && int.TryParse(m.Groups[2].Value, out var parsed) ? parsed : a;
+        if (a < 1 || b < 1) return null;
+        return (Math.Min(a, b), Math.Max(a, b));
+    }
+
+    /// <summary>Units the UPS panel reserves, from the opaque hud-settings JSON the rack panel owns.</summary>
+    private static int UpsUnits(string? hudSettings)
+    {
+        if (string.IsNullOrWhiteSpace(hudSettings)) return 0;
+        try
+        {
+            using var doc = JsonDocument.Parse(hudSettings);
+            if (!doc.RootElement.TryGetProperty("upsModel", out var model)) return 0;
+            return model.GetString() switch { "3000" => 2, "5000" => 3, _ => 0 };
+        }
+        catch (JsonException)
+        {
+            return 0;
+        }
+    }
+
     [HttpGet("~/api/network/floor-maps/switch-values")]
     [Authorize]
     public async Task<IActionResult> SwitchValues(CancellationToken ct)

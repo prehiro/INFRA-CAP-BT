@@ -4,8 +4,9 @@
  *
  * WHAT IS ON IT
  * Welcome banner, the module tiles, and the live Server Metrics rail down the right edge - one tile
- * per module that has a page, each carrying its real record count - plus two chassis doughnuts
- * ("All Capacitor PC's" for the whole fleet, "Active PC's" for the active PC Ledger list).
+ * per module that has a page - plus two chassis doughnuts ("All Capacitor PC's" for the whole fleet,
+ * "Active PC's" for the active PC Ledger list) and the Rack Capacity combo (switch count per rack,
+ * with how much U each rack uses).
  *
  * Factory PC and UPS Register tiles were removed: both were single-number counts of registers that
  * already have their own pages, and the two chassis doughnuts answer the question better.
@@ -17,9 +18,15 @@
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
- * Both doughnuts are one column and Access Points is the only double-width card, so the grid holds
+ * Every doughnut is one column and Rack Capacity is the only double-width card, so the grid holds
  * seven cells: 4+3 at four columns, 3+3+1 at three and 2+2+2+1 at two, where the double-width card
  * takes the last row by itself.
+ *
+ * WHY RACK CAPACITY REPLACED THE ACCESS POINTS TILE
+ * The AP tile was one number plus per-floor chips - it answered "how many APs" and nothing else, and
+ * the count is already on the page's own header. A rack card can answer two questions in the same
+ * space (how many switches, and whether the rack still has room), which is what the network pages are
+ * actually used for.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -34,7 +41,20 @@ const { data: entities } = await useFetch<EntityMeta[]>('/entities', {
   default: () => []
 })
 
-const { data: apFloors } = await useFetch<FloorMapSummary[]>('/network/floor-maps?scope=ap', {
+/** One row per rack across every floor: switches it holds and how much U they occupy.
+ *  GET /api/network/racks/summary - one call for the whole building, so the card does not walk
+ *  floor by floor. usedU already includes the UPS reservation. */
+type RackRow = {
+  rackId: number
+  rackName: string
+  floorId: number
+  floorName: string
+  sizeU: number
+  switchCount: number
+  usedU: number
+}
+
+const { data: rackRows, error: rackError } = await useFetch<RackRow[]>('/network/racks/summary', {
   baseURL: useRuntimeConfig().public.apiBase,
   headers: authHeaders,
   default: () => []
@@ -231,19 +251,8 @@ const upsLocations = computed(() =>
   new Set(((upsUnits.value as UpsUnit[]) ?? []).map(u => u.location?.trim()).filter(Boolean)).size
 )
 
-const apCount = computed(() =>
-  (apFloors.value as FloorMapSummary[] ?? []).reduce((n, f) => n + (f.accessPointCount ?? 0), 0)
-)
-const apFloorCount = computed(() =>
-  (apFloors.value as FloorMapSummary[] ?? []).filter(f => (f.accessPointCount ?? 0) > 0).length
-)
-
-/** Per-floor AP breakdown for the wide tile. Empty floors are skipped: a "0" chip is noise. */
-const apChips = computed(() =>
-  (apFloors.value as FloorMapSummary[] ?? [])
-    .filter(f => (f.accessPointCount ?? 0) > 0)
-    .map(f => ({ label: f.name, value: f.accessPointCount }))
-)
+/** The card shows its own error line rather than an empty chart. */
+const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value ? 'error' : 'ready'))
 </script>
 
 <template>
@@ -325,16 +334,17 @@ const apChips = computed(() =>
                 :state="upsState"
               />
 
-              <!-- One tile left, so it is written out rather than looped over a one-item array. -->
-              <DashboardCard
-                to="/networks/access-point"
-                label="Access Points"
-                :value="apCount"
-                :sub="`${apFloorCount} floor`"
-                icon="i-lucide-wifi"
-                tone="primary"
-                wide
-                :chips="apChips"
+              <!-- Rack Capacity, two columns wide like the Access Points tile it replaces: one row per
+                   rack, the bar is the switch count and the marker is how much U that rack uses. The AP
+                   count moved into the page's own header, so the card no longer repeats it. -->
+              <RackCapacityCard
+                class="col-span-1 @min-[560px]:col-span-2"
+                title="Rack Capacity"
+                label="Switch per rack"
+                source="Titik = utilisasi U"
+                to="/networks/network-rack"
+                :racks="(rackRows as RackRow[] ?? [])"
+                :state="rackState"
               />
             </div>
           </div>

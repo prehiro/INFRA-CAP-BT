@@ -16,7 +16,7 @@
  * that lives in this file cannot go missing.
  */
 defineProps<{
-  kind: 'fleet' | 'domain' | 'treemap' | 'ups'
+  kind: 'fleet' | 'domain' | 'treemap' | 'ups' | 'rack'
   /** Shown in the tooltip and to screen readers; the number itself is no longer painted. */
   total: number
 }>()
@@ -81,6 +81,24 @@ defineProps<{
         <path class="ico-bolt" d="M11.6 8.2l-3.2 4.6h2.5l-1 3.4 3.4-4.7h-2.5z" />
       </svg>
 
+      <!-- rack: a cabinet seen from the front, one unit blinking - what a switch count is made of. -->
+      <svg
+        v-else-if="kind === 'rack'"
+        class="ico-glyph"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <rect x="5.4" y="2.6" width="13.2" height="18.8" rx="2" />
+        <path d="M5.4 8.4h13.2M5.4 13.6h13.2" />
+        <path d="M8.4 5.5h7.2M8.4 11h7.2M8.4 16.3h7.2" />
+        <circle class="ico-led" cx="15.9" cy="18.9" r="0.9" fill="currentColor" stroke="none" />
+      </svg>
+
       <!-- treemap: four tiles of different sizes, echoing the chart itself. -->
       <svg
         v-else
@@ -133,6 +151,13 @@ defineProps<{
   animation: ico-draw 3.8s ease-in-out infinite;
 }
 
+/* The rack's LED blinks: a slow heartbeat, like a switch's own status light. */
+.ico-led {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ico-led 2.8s ease-in-out infinite;
+}
+
 .ico-tile {
   transform-box: fill-box;
   transform-origin: center;
@@ -166,6 +191,11 @@ defineProps<{
   50% { transform: scale(1.14); opacity: 1; }
 }
 
+@keyframes ico-led {
+  0%, 100% { opacity: 0.25; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
 @keyframes ico-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(0.84); }
@@ -176,7 +206,8 @@ defineProps<{
   .ico-notebook,
   .ico-tick,
   .ico-tile,
-  .ico-bolt {
+  .ico-bolt,
+  .ico-led {
     animation: none;
   }
 
