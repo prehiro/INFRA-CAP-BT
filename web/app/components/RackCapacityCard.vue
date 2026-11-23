@@ -318,7 +318,7 @@ watch([rows, pageCount], async () => {
           <div
             v-for="row in page"
             :key="row.rackId"
-            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-1.5 transition-opacity duration-200 hover:bg-elevated/50"
+            class="group flex h-full cursor-default flex-col justify-center rounded-md px-2 py-1 transition-opacity duration-200 hover:bg-elevated/50"
             :class="rowDim(row) ? 'opacity-40' : ''"
             tabindex="0"
             @mouseenter="enterRow(row.index, $event)"
@@ -337,7 +337,7 @@ watch([rows, pageCount], async () => {
               <span class="shrink-0 text-xs font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
             </div>
             <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
-            <div class="mt-1 h-2 overflow-hidden rounded-full bg-elevated/80">
+            <div class="mt-0.5 h-2 overflow-hidden rounded-full bg-elevated/80">
               <div
                 class="rack-bar h-full rounded-full"
                 :style="{ width: `${row.barPct}%`, animationDelay: `${60 + row.index * 70}ms` }"
@@ -397,14 +397,17 @@ watch([rows, pageCount], async () => {
 
 /* One page per view: two columns by four rows, always the full width of the strip. Four `auto` rows
    share the strip's height, so the page is exactly as tall as the strip no matter how many rows the
-   rack count needs - that is what keeps the card a fixed height. */
+   rack count needs - that is what keeps the card a fixed height.
+   The rows are packed tightly (4px gap, py-1 cells, mt-0.5 bar) because a 4-row page needs ~30px more
+   strip than a 2-row page, and that difference is what pushed the whole dashboard past a 950px-tall
+   viewport: at 1500x950 the card went 332 -> 350px and an 11px page scrollbar appeared. */
 .rack-page {
   display: grid;
   flex: 0 0 100%;
   min-width: 100%;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: repeat(4, auto);
-  gap: 0.375rem;
+  gap: 0.25rem;
   scroll-snap-align: start;
 }
 

@@ -8076,3 +8076,28 @@ VERIFIKASI (1600x1000, 10 rack): 2 page (8 + 2), kolom 228.75px x 2, baris 53.37
 strip 232px (scrollHeight == clientHeight, scrollWidth 939 vs clientWidth 464), indikator "1/2", 2 panah,
 bar 213/133/106/80/53x4 dari track 213px (proporsional 8/5/4/3/2). Panah kanan -> "2/2", scrollLeft 475,
 panah kanan disabled, page 2 = Mez + S. Card 357px, page tidak scroll (936/936). Build web 0 error.
+### Fix: scrollbar page muncul gara-gara card 2x4 (2026-11-22)
+
+HIRO: "jadi muncul scroll bar page"
+
+Penyebabnya: page 2x4 butuh strip lebih tinggi daripada page 4x2 (4 baris vs 2 baris), dan itu membuat card
+switch jadi 350px - TERTINGGI di row-nya (card lain 332px). Akibatnya row grid ikut naik 350px dan dashboard
+lewat 11px dari viewport 1500x950 -> scrollbar page muncul.
+
+Cara saya buktikan (bukan tebakan): `git checkout HEAD~1 -- RackCapacityCard.vue` (versi 4x2) lalu ukur di
+1500x950 -> card 332px, scrollArea 886/886, TIDAK scroll. Versi 2x4 (HEAD) -> card 350px, 897/886, scroll 11px.
+Jadi memang perubahan 2x4 yang memicu, bukan hal lain.
+
+Perbaikan: rapatkan page 4 baris supaya tingginya tidak melebihi page 2 baris.
+- padding cell `py-1.5` -> `py-1` (4px lebih pendek per baris, 16px total)
+- margin bar `mt-1` -> `mt-0.5` (2px per baris, 8px total)
+- gap baris page `0.375rem` -> `0.25rem` (6px total)
+
+Hasil di 1500x950: card 332px (sama dengan versi 4x2), strip 207px, cell 49px, scrollArea 886/886 -> tidak scroll.
+Di 1600x1000: card 357px, 936/936 -> tidak scroll.
+
+Catatan: di 1440x900 dan 1280x800 page memang masih scroll, tapi itu karena grid dashboard turun ke 3 atau 2
+kolom (7 card jadi 3-4 baris) - bukan karena card switch. Di 1440 card switch cuma 320px.
+
+VERIFIKASI lain: strip scrollHeight == clientHeight (207) jadi page 4 baris tidak menyembul keluar strip
+(kalau menyembul, `overflow-x: auto` bikin strip scroll vertikal tanpa bar yang kelihatan). Build web 0 error.
