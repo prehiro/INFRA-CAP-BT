@@ -7994,3 +7994,26 @@ track 306px, tidak ada `.u-bar` tersisa (0), tidak ada teks "U terpakai/utilisas
 switch · rata-rata 3.3 per rack", tooltip 200x87 "B-B2 · BUILDING 2 · Peringkat 2 dari 6 rack", hover
 meredupkan baris lain (1 vs 0.4), badge "20 switch". 1600x1000: 4 kolom, semua card 407px, page tidak
 scroll (docScroll == docClient == 1000). Build web 0 error.
+### Card switch: 4 rack per row, dibagi section (2026-11-22)
+
+HIRO: "kalau rack bertambah, user jadi harus scroll page untuk melihat kebawah. bisa bagi jadi 2 section? masing-masing row max 4 rack"
+
+Card switch tidak lagi memakai satu baris penuh per rack. Rack dibagi jadi section berisi 4 cell, tiap cell =
+nama rack + jumlah switch + bar tipis, dengan nama floor di bawahnya. Section kedua dapat gap lebih besar,
+jadi 5-8 rack terbaca sebagai dua blok, bukan satu daftar yang membungkus.
+
+Kenapa 4 per row: versi satu baris per rack membuat tinggi card ikut jumlah rack - 6 rack sudah mendorong
+card melewati tetangganya, dan rack berikutnya membuat page scroll. Dengan 4 cell per row, 10 rack = 3
+section (4+4+2) dan card turun dari 449px ke 357px; di 1600x1000 area scroll jadi 936/936 (tidak scroll).
+
+Breakpoint ditulis tangan di scoped CSS, bukan variant Tailwind:
+`.rack-band { grid-template-columns: repeat(2, minmax(0,1fr)) }` + `@container (min-width: 460px) { ... repeat(4 ...) }`.
+Alasannya: class variant hanya ada di CSS kalau scanner menemukan string itu di source. `@min-[430px]:grid-cols-4`
+dan `md:grid-cols-4` dua-duanya TIDAK pernah muncul di CSSOM (dicek: hanya `@min-[860px]:grid-cols-4` dari
+index.vue yang ada), jadi card diam-diam tetap 2 kolom. Variant yang cuma dipakai di satu komponen adalah
+variant yang paling gampang kena. Catatan: `@container` butuh card sebagai container - sudah ada
+(`container-type: inline-size` dari class `@container` di UCard), dan query mengukur card (496px), bukan grid.
+
+Tinggi cell 58px, lebar 111px pada card 496px; nama dan floor tidak terpotong (dicek scrollWidth vs clientWidth).
+Verifikasi lain: 10 rack -> 3 band (4/4/2), bar proporsional 95/60/48/36/24x6 dari track 95px, hover meredupkan
+9 cell lain ke 0.4, tooltip "E1 | 4 | BUILDING 2 | Peringkat 3 dari 10 rack" (200x87). Build web 0 error.

@@ -3,23 +3,32 @@
  * Switch-per-rack card for the dashboard (replaces the Access Points tile).
  *
  * ONE QUESTION, ONE CHART
- * "Which rack is the crowded one, and by how much." Every row is a rack, the bar is how many switches
- * sit in it, and the number is printed at the end of the bar so the ranking never has to be read off a
- * scale. Rows are sorted by that count, so the busiest rack is always the first one.
+ * "Which rack is the crowded one, and by how much." Every cell is a rack, the bar is how many switches
+ * sit in it, and the number is printed beside the name so the ranking never has to be read off a scale.
+ * Cells are dealt in order of that count, left to right, so the busiest rack is always the first one.
  *
- * WHY THE U FILL IS GONE
- * The first version drew a second track with how much U each rack uses. HIRO: "hapus saja grafik u nya
- * pada dashboard jadi fokus ke jumlah switch per rack. refine teks nya agar sesuai." Two units in one
- * row (buah and slot) made the card answer two questions at once and neither of them quickly - a rack
- * with 3 switches in 42U drew a short bar next to an almost empty track, which reads as "nothing here"
- * when it actually means "plenty of room". One bar per rack is the question this card is for; capacity
- * belongs on the rack page, where the elevation is there to be looked at.
- * GET /api/network/racks/summary still returns sizeU/usedU - this card simply stops drawing them.
+ * WHY FOUR PER ROW
+ * The first version put every rack on its own full-width row, which made the card as tall as the rack
+ * count: 6 racks already pushed the card past its neighbours and any further rack made the whole page
+ * scroll (HIRO: "kalau rack bertambah, user jadi harus scroll page untuk melihat kebawah. bisa bagi
+ * jadi 2 section? masing-masing row max 4 rack"). Four cells per row with the list split into sections
+ * of four keeps the card at two bands - about 160px for eight racks - so ten racks cost 40px instead of
+ * another 250px, and the page keeps its no-scroll grid.
+ *
+ * WHAT THE COMPACT CELL KEEPS: name and count on one line, the floor under it, and the bar. Four cells
+ * per row would have been too narrow for the floor at the width the card had when this was a one-column
+ * list, but a double-width card gives each cell ~230px, so the floor stays - two buildings can hold a
+ * rack with the same name and dropping it would make two different racks look identical.
  *
  * THE SCALE IS RELATIVE TO THE BUSIEST RACK, so the longest bar is always full. That is deliberate: the
  * comparison between racks is what the card is read for, and a fixed 0..N scale would leave every bar
  * looking alike when no rack is close to full. The count is printed, so no value is hidden by the
  * rescaling.
+ *
+ * WHY THERE IS NO U FILL: the first version drew a second track with how much U each rack uses. HIRO:
+ * "hapus saja grafik u nya pada dashboard jadi fokus ke jumlah switch per rack." Two units in one cell
+ * (buah and slot) made it answer two questions and neither quickly. GET /api/network/racks/summary
+ * still returns sizeU/usedU - this card simply stops drawing them.
  */
 type RackRow = {
   rackId: number
@@ -28,6 +37,9 @@ type RackRow = {
   floorName: string
   switchCount: number
 }
+
+/** A rack with its rank and its bar width worked out, so the template does no arithmetic. */
+type Row = RackRow & { index: number, barPct: number }
 
 const props = withDefaults(defineProps<{
   racks: RackRow[]
@@ -47,29 +59,40 @@ const props = withDefaults(defineProps<{
 // grid column span passed from index.vue is dropped.
 defineOptions({ inheritAttrs: false })
 
-const rows = computed(() => {
+/** Racks per section. Four keeps a section to one row at any card width above ~430px. */
+const PER_SECTION = 4
+
+const rows = computed<Row[]>(() => {
   const max = Math.max(1, ...props.racks.map(r => r.switchCount))
   return [...props.racks]
     .sort((a, b) => b.switchCount - a.switchCount || a.rackName.localeCompare(b.rackName))
     .map((r, i) => ({
       ...r,
       index: i,
-      // A rack that has a switch still draws a sliver: an invisible bar reads as a missing row.
-      barPct: Math.max(r.switchCount > 0 ? 4 : 0, (r.switchCount / max) * 100)
+      // A rack that has a switch still draws a sliver: an invisible bar reads as a missing rack.
+      barPct: Math.max(r.switchCount > 0 ? 6 : 0, (r.switchCount / max) * 100)
     }))
 })
 
-const totalSwitches = computed(() => props.racks.reduce((n, r) => n + r.switchCount, 0))
-const avgSwitches = computed(() =>
-  (rows.value.length ? totalSwitches.value / rows.value.length : 0).toFixed(1)
-)
+/** Sections of four. The boundary is also the visual break, so a rack count of 5-8 reads as two bands
+ *  rather than one long list that happens to wrap. */
+const sections = computed<Row[][]>(() => {
+  const out: Row[][] = []
+  for (let i = 0; i < rows.value.length; i += PER_SECTION) out.push(rows.value.slice(i, i + PER_SECTION))
+  return out
+})
 
-/** Which row the pointer is on; every other row steps back. */
+const totalSwitches = computed(() => props.racks.reduce((n, r) => n + r.switchCount, 0))
+const avgSwitches = computed(() => (
+  rows.value.length ? totalSwitches.value / rows.value.length : 0
+).toFixed(1))
+
+/** Which cell the pointer is on; every other one steps back. */
 const hover = ref<number | null>(null)
 const tip = ref<{ x: number, y: number } | null>(null)
 
 const activeRow = computed(() => (hover.value !== null ? rows.value[hover.value] ?? null : null))
-const rowDim = (row: { index: number }) => hover.value !== null && hover.value !== row.index
+const rowDim = (row: Row) => hover.value !== null && hover.value !== row.index
 
 const TIP_W = 200
 const TIP_H = 88
@@ -127,50 +150,62 @@ const clearTip = () => { hover.value = null; tip.value = null }
         Data rack tidak bisa dimuat.
       </div>
 
-      <div v-else-if="state === 'loading' && !rows.length" class="space-y-3 py-2">
-        <span class="block h-6 w-full animate-pulse rounded-lg bg-elevated/60" />
-        <span class="block h-6 w-11/12 animate-pulse rounded-lg bg-elevated/60" />
-        <span class="block h-6 w-10/12 animate-pulse rounded-lg bg-elevated/60" />
+      <div v-else-if="state === 'loading' && !rows.length" class="space-y-2 py-2">
+        <!-- The skeleton keeps the two-band shape, so a slow load does not change the card's height. -->
+        <div class="rack-band grid gap-1.5">
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+        </div>
+        <div class="rack-band grid gap-1.5">
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+          <span class="block h-11 animate-pulse rounded-md bg-elevated/60" />
+        </div>
       </div>
 
       <div v-else-if="!rows.length" class="py-6 text-center text-xs text-muted">
         Belum ada rack.
       </div>
 
-      <ul v-else class="flex flex-1 flex-col justify-center gap-1">
-        <li
-          v-for="row in rows"
-          :key="row.rackId"
-          class="group cursor-default rounded-lg px-2 py-2 transition-opacity duration-200 hover:bg-elevated/50"
-          :class="rowDim(row) ? 'opacity-40' : ''"
-          tabindex="0"
-          @mouseenter="enterRow(row.index, $event)"
-          @mousemove="moveTip"
-          @mouseleave="clearTip"
-          @focus="enterRow(row.index, $event)"
-          @blur="clearTip"
+      <!-- One band per section: four cells, then a break, then the next four. The break is the gap
+           between sections, which is what makes 5-8 racks read as two groups instead of one wrap. -->
+      <div v-else class="flex flex-1 flex-col justify-center gap-3">
+        <div
+          v-for="(section, si) in sections"
+          :key="si"
+          class="rack-band grid gap-1.5"
         >
-          <div class="flex items-center gap-3">
-            <!-- Rack name, with the floor underneath: names repeat across buildings, so the floor is
-                 what makes a row unambiguous. -->
-            <div class="w-14 shrink-0 min-w-0">
-              <p class="truncate text-xs font-semibold leading-tight">{{ row.rackName }}</p>
-              <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
+          <div
+            v-for="row in section"
+            :key="row.rackId"
+            class="group cursor-default rounded-md px-2 py-2 transition-opacity duration-200 hover:bg-elevated/50"
+            :class="rowDim(row) ? 'opacity-40' : ''"
+            tabindex="0"
+            @mouseenter="enterRow(row.index, $event)"
+            @mousemove="moveTip"
+            @mouseleave="clearTip"
+            @focus="enterRow(row.index, $event)"
+            @blur="clearTip"
+          >
+            <!-- Name and count share one line: at four cells per row the count has to sit beside the
+                 name, because a bar with no number next to it is a guess. -->
+            <div class="flex items-baseline gap-1">
+              <span class="min-w-0 flex-1 truncate text-xs font-semibold leading-tight">{{ row.rackName }}</span>
+              <span class="shrink-0 text-xs font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
             </div>
-
-            <!-- The bar: the count against the busiest rack, with the count printed at its end so the
-                 relative scale never hides a value. -->
-            <div class="relative h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-elevated/80">
+            <!-- The floor came back once the cells got wider: two buildings can hold a rack with the same
+                 name, and at four per row this line is the only place that says which one it is. -->
+            <p class="truncate text-[10px] leading-tight text-muted">{{ row.floorName }}</p>
+            <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-elevated/80">
               <div
                 class="rack-bar h-full rounded-full"
                 :style="{ width: `${row.barPct}%`, animationDelay: `${60 + row.index * 70}ms` }"
               />
             </div>
-
-            <span class="w-5 shrink-0 text-right text-xs font-semibold tabular-nums">{{ row.switchCount }}</span>
           </div>
-        </li>
-      </ul>
+        </div>
+      </div>
 
       <p v-if="state === 'ready' && rows.length" class="border-t border-default pt-2 text-[11px] text-muted">
         <b class="font-semibold text-default tabular-nums">{{ rows.length }}</b> rack
@@ -203,6 +238,20 @@ const clearTip = () => { hover.value = null; tip.value = null }
 </template>
 
 <style scoped>
+/* Two cells per row on a narrow card, four once the card itself is wide enough. Hand-written rather
+   than a Tailwind variant on purpose: a variant class only exists in the CSS if the scanner finds that
+   exact string in the source, and a breakpoint used in exactly one component is the one that gets
+   missed - the grid then silently stays at two columns and the card grows a row taller. */
+.rack-band {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@container (min-width: 460px) {
+  .rack-band {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 /* The bar grows from its left edge: the width is the data, the animation is the entrance, so they never
    fight. `both` holds it collapsed during its stagger delay. */
 .rack-bar {
@@ -213,9 +262,9 @@ const clearTip = () => { hover.value = null; tip.value = null }
   transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
 }
 
-/* A row under the pointer brightens its own bar; nothing moves, so the pointer never loses it. */
-li:hover .rack-bar,
-li:focus-visible .rack-bar {
+/* A cell under the pointer brightens its own bar; nothing moves, so the pointer never loses it. */
+.group:hover .rack-bar,
+.group:focus-visible .rack-bar {
   filter: brightness(1.15) saturate(1.05);
 }
 
