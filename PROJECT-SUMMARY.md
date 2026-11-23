@@ -8421,3 +8421,49 @@ Yang belum ada / ditambah:
 CATATAN LINGKUNGAN: API sekarang dijalankan dari build terisolasi scratch/apibuild/Api.dll (port 5099),
 karena bin/Debug terkunci oleh proses yang jalan. Kalau API direstart, pakai dotnet run seperti biasa
 (akan build ke bin/Debug sendiri).
+
+### Grafik masih lama: tabel dashboard ikut di-warm (2026-11-22)
+
+HIRO: "barusan saya refresh page tapi load grafik nya tetal lama"
+
+## Diukur dulu di browser (bukan menebak)
+
+Saya pasang PerformanceObserver SEBELUM app boot, lalu navigate + ukur kapan tiap chart punya data:
+
+    load   marks: shell 513ms, bar UPS 562ms, bar rack 562ms, treemap 780ms, doughnut 780ms, AP 5282ms
+           api   : ... /api/network/floor-maps  4832ms   <- ini yang bikin card AP telat 4.5s
+
+Jadi bukan "semua grafik lambat" - SATU card (Access Points) yang telat, karena satu endpoint
+`/api/network/floor-maps` kena 4.8s. Itu pola cold-read SQL yang sudah ada di project ini
+(dev SQL remote 192.168.4.3), tapi tabelnya BEDA: yang di-warm oleh `SqlWarmup` cuma [Users] dan [Roles].
+
+## Perbaikan: SqlWarmup sekarang menghangatkan tabel dashboard juga
+
+`api/Services/SqlWarmup.cs` (jalan tiap 60s, fail-soft, tidak menyimpan apa pun) sekarang ikut menyentuh:
+
+    NetworkFloorMaps, NetworkAccessPoints, NetworkRacks, NetworkSwitches, UpsUnits,
+    Records, RecordValues
+
+Caranya sama seperti yang sudah ada: `SELECT COUNT(*) AS Value FROM [tabel]` - "the lightest shape that
+still touches the tables' data pages", bukan cache, jadi tidak ada data basi.
+
+## VERIFIKASI (API restart bersih, warmup sudah jalan, lalu dua kali refresh)
+
+    load A: shell 429ms, UPS 476ms, rack 476ms, AP 476ms, treemap 678ms, doughnut 678ms
+    load B: shell 456ms, UPS 526ms, rack 526ms, AP 526ms, treemap 729ms, doughnut 729ms
+
+Tidak ada request >1.2s di dua load itu. Sebelum perubahan, load yang sama menaruh card AP di 5282ms.
+Endpoint langsung dari san (curl, 2 putaran): racks/summary 0.097s -> 0.018s, floor-maps 0.052s -> 0.016s.
+
+## Catatan jujur: sisa "kadang lama" itu dev SQL, bukan code
+
+Saya sampling 30x / 2 detik (60 detik penuh) ke floor-maps + users + metrics: 12-156ms, TIDAK ada spike.
+Tapi ada momen di mana 3 request bersamaan (users, users/roles, auth/me) semuanya stuck ~4.8-5.2s lalu
+selesai BARENG - itu bukan query yang lambat, itu server/link dev yang stall sesaat dan menahan semua
+request yang sedang jalan. Di production SQL Server-nya LOKAL di Windows Server 10.89.6.237, jadi stall
+remote seperti ini tidak terjadi di sana.
+
+## CATATAN LINGKUNGAN
+
+API sekarang jalan dari `scratch/apibuild2/Api.dll` (port 5099) - build terisolasi, karena bin/Debug
+terkunci. Perubahan SqlWarmup ada di source; `dotnet run` biasa akan build sendiri.
