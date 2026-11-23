@@ -15,17 +15,19 @@
  * an icon that is not in the build-time bundle renders as an EMPTY span with no error at all. A drawing
  * that lives in this file cannot go missing.
  */
-defineProps<{
+const { unit = 'unit' } = defineProps<{
   kind: 'fleet' | 'domain' | 'treemap' | 'ups' | 'rack'
   /** Shown in the tooltip and to screen readers; the number itself is no longer painted. */
   total: number
+  /** What is being counted, so the tooltip reads "15 switch" instead of the bare "15 unit". */
+  unit?: string
 }>()
 </script>
 
 <template>
-  <UTooltip :text="`${total} unit`" :delay-duration="200">
+  <UTooltip :text="`${total} ${unit}`" :delay-duration="200">
     <!-- role=img + aria-label: the badge is the only carrier of the count now, so it has to announce it. -->
-    <span class="metric-ico" role="img" :aria-label="`${total} unit`">
+    <span class="metric-ico" role="img" :aria-label="`${total} ${unit}`">
       <!-- fleet: a desktop and a notebook - the two form factors this card counts. -->
       <svg
         v-if="kind === 'fleet'"

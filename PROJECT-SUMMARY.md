@@ -7970,3 +7970,27 @@ VERIFIKASI: card muncul dengan data nyata (D-B1 8 switch 10/42U, C 3 3/19U, S 2 
 footer "4 rack · 15 switch · 19% U terisi"); lebar batang proporsional (236/88/59/59 dari track 236px);
 tooltip 210x87 muncul di dalam viewport dengan rincian U terpakai/bebas; hover meredupkan baris lain
 (1 / 0.4 / 0.4 / 0.4). Build web 0 error.
+### Revisi: track U dihapus dari card dashboard (2026-11-22)
+
+HIRO: "hapus saja grafik u nya pada dashboard jadi fokus ke jumlah switch per rack. refine teks nya agar sesuai."
+
+Card dashboard sekarang fokus satu metrik: jumlah switch per rack. Track U (fill persen + teks "10/42U")
+dihapus dari baris, legend "U terpakai" dan total U dihapus, footer tidak lagi menyebut persen U terisi.
+
+Perubahan teks:
+- Judul card: "Rack Capacity" -> "Switch per Rack" (kapasitas = urusan halaman rack, bukan card ini)
+- Subjudul: "Switch per rack · Titik = utilisasi U" -> "Jumlah switch · Urut terbanyak"
+- Tooltip: dari "10 U terpakai · 32 U bebas · 24%" -> "Peringkat 2 dari 6 rack"
+- Footer: "6 rack · 20 switch · rata-rata 3.3 per rack" (dulu ada "19% U terisi")
+- CardMetricIcon dapat prop `unit` (default 'unit'); badge card ini menulis "20 switch", bukan "20 unit"
+
+Kenapa track U memang lemah di card ini: 3 switch di rack 42U menghasilkan bar pendek di sebelah track yang
+hampir kosong - terbaca "kosong", padahal artinya "masih banyak ruang". Dua satuan (buah vs slot) dalam satu
+baris memaksa pembaca membandingkan yang tidak sebanding. Endpoint /api/network/racks/summary tetap
+mengembalikan sizeU & usedU (dipakai halaman rack), card-nya saja yang berhenti menggambarnya.
+
+VERIFIKASI: 6 rack (D-B1 8, B-B2 3, C 3, B 2, C-B2 2, S 2), bar proporsional 306/115/115/77/77/77 dari
+track 306px, tidak ada `.u-bar` tersisa (0), tidak ada teks "U terpakai/utilisasi", footer "6 rack · 20
+switch · rata-rata 3.3 per rack", tooltip 200x87 "B-B2 · BUILDING 2 · Peringkat 2 dari 6 rack", hover
+meredupkan baris lain (1 vs 0.4), badge "20 switch". 1600x1000: 4 kolom, semua card 407px, page tidak
+scroll (docScroll == docClient == 1000). Build web 0 error.

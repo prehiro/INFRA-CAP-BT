@@ -5,8 +5,8 @@
  * WHAT IS ON IT
  * Welcome banner, the module tiles, and the live Server Metrics rail down the right edge - one tile
  * per module that has a page - plus two chassis doughnuts ("All Capacitor PC's" for the whole fleet,
- * "Active PC's" for the active PC Ledger list) and the Rack Capacity combo (switch count per rack,
- * with how much U each rack uses).
+ * "Active PC's" for the active PC Ledger list) and the Switch per Rack card (how many switches sit
+ * in each rack, ranked).
  *
  * Factory PC and UPS Register tiles were removed: both were single-number counts of registers that
  * already have their own pages, and the two chassis doughnuts answer the question better.
@@ -18,15 +18,17 @@
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
- * Every doughnut is one column and Rack Capacity is the only double-width card, so the grid holds
+ * Every doughnut is one column and Switch per Rack is the only double-width card, so the grid holds
  * seven cells: 4+3 at four columns, 3+3+1 at three and 2+2+2+1 at two, where the double-width card
  * takes the last row by itself.
  *
- * WHY RACK CAPACITY REPLACED THE ACCESS POINTS TILE
+ * WHY SWITCH PER RACK REPLACED THE ACCESS POINTS TILE
  * The AP tile was one number plus per-floor chips - it answered "how many APs" and nothing else, and
- * the count is already on the page's own header. A rack card can answer two questions in the same
- * space (how many switches, and whether the rack still has room), which is what the network pages are
- * actually used for.
+ * the count is already on the page's own header. The rack card has the same double-width footprint and
+ * a question worth the space: which rack holds the most switches. It first carried a second track with
+ * U usage as well, and that was cut (HIRO: "hapus saja grafik u nya pada dashboard jadi fokus ke jumlah
+ * switch per rack") - two units in one row forced the reader to compare buah against slot, and the
+ * rack page already shows capacity where it can be read against the elevation.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -49,9 +51,7 @@ type RackRow = {
   rackName: string
   floorId: number
   floorName: string
-  sizeU: number
   switchCount: number
-  usedU: number
 }
 
 const { data: rackRows, error: rackError } = await useFetch<RackRow[]>('/network/racks/summary', {
@@ -334,14 +334,15 @@ const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value
                 :state="upsState"
               />
 
-              <!-- Rack Capacity, two columns wide like the Access Points tile it replaces: one row per
-                   rack, the bar is the switch count and the marker is how much U that rack uses. The AP
-                   count moved into the page's own header, so the card no longer repeats it. -->
+              <!-- Switch per Rack, two columns wide like the Access Points tile it replaces: one row
+                   per rack, the bar is how many switches sit in it, ranked. It deliberately carries
+                   switch counts only - a second track with U usage made every row a comparison of two
+                   different units, and the rack page is where capacity is looked at properly. -->
               <RackCapacityCard
                 class="col-span-1 @min-[560px]:col-span-2"
-                title="Rack Capacity"
-                label="Switch per rack"
-                source="Titik = utilisasi U"
+                title="Switch per Rack"
+                label="Jumlah switch"
+                source="Urut terbanyak"
                 to="/networks/network-rack"
                 :racks="(rackRows as RackRow[] ?? [])"
                 :state="rackState"
