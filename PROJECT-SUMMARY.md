@@ -8611,3 +8611,48 @@ setiap kali user simpan/hapus row.
   plate opacity 1 + transform none, pseudo opacity 0, glyph filter none ✓ (tidak ada frame beku yang
   tertinggal). Mediaorestore -> mq false ✓.
 - Build `npx nuxt build` rc=0, 0 ERROR.
+
+### Standby PC + Dispose: boot yang sama, dan perbaikan regresi sway (2026-11-22)
+
+HIRO: "ok implementn juga ke icon title standby pc"
+
+## Yang ternyata sudah jalan vs yang belum
+
+Standby PC (`/device/standbypc`) adalah `pcledger.vue` yang sama dengan prop `ledger-view="standby"`
+(standbypc.vue cuma wrapper). Jadi plate, ping, dan scanline SUDAH jalan di sana - yang belum cuma
+ignite glyph, karena selectornya `:deep(.pc-ledger-glyph)` sedangkan StandbyIcon memakai class
+`.standby-glyph`. Dispose (`/device/dispose`) punya masalah yang sama.
+
+## Sekaligus menemukan regresi dari perubahan sebelumnya
+
+Ignite tadi dipasang di elemen SVG (`.pc-ledger-glyph`). Di situ sudah ada `pc-add-tilt` dari
+RecordAddIcon yang memakai `animation: pc-add-sway 3.6s infinite`. Dua deklarasi `animation` di satu
+elemen TIDAK digabung - shorthand yang menang, yang lain tidak pernah jalan. Efeknya: sway 3.6s yang
+sudah disetujui HIRO (dipakai CCTV Access, Handover, PC Ledger) MATI di icon PC Ledger tanpa error.
+
+Perbaikan: ignite dipindah ke `<span class="pl-title-glyph">` yang membungkus ketiga komponen icon di
+slot RecordAddIcon. Sekarang:
+- plate        -> pl-title-boot (spring pop)
+- ::before     -> pl-title-ping (ring memancar)
+- ::after      -> pl-title-scan (scanline)
+- .pl-title-glyph -> pl-title-ignite (opacity + brightness)
+- svg          -> pc-add-sway (sway 3.6s, PULIH)
+- anak svg     -> loop masing-masing (pc-line-travel / st-line-travel / dispose-line-travel)
+
+Satu wrapper untuk tiga view, jadi Standby PC dan Dispose ikut boot persis sama seperti PC Ledger -
+ini komponen yang sama, bukan halaman lain.
+
+## VERIFIKASI (tiga route, probe yang sama)
+
+    pcledger   : plate pl-title-boot | wrap pl-title-ignite | glyph pc-add-sway | loop pc-line-travel
+    standbypc  : plate pl-title-boot | wrap pl-title-ignite | glyph pc-add-sway | loop st-line-travel
+    dispose    : plate pl-title-boot | wrap pl-title-ignite | glyph pc-add-sway | loop dispose-line-travel
+
+- Freeze test ignite (currentTime 40ms vs 400ms): brightness(2.6)/opacity 0.25 -> brightness(1.469)/1.00
+  di ketiga route (duration 620ms) - keyframe benar-benar menganimasi filter.
+- Sway PULIH: glyph sekarang `pc-add-sway-62bb9124` di ketiga view (sebelumnya tertimpa pl-title-ignite).
+- Plate 48x48 di ketiga view, dan centreDelta glyph terhadap plate = [0, 0] -> wrapper tidak menggeser
+  posisi icon (inline-flex, trayek grid plate tetap center).
+- Reduced motion (standbypc): plate/wrap/glyph `animationName: none`, plate opacity 1, wrap filter none,
+  pseudo opacity 0/0, mq restore -> false ✓.
+- Build `npx nuxt build` rc=0, 0 ERROR.

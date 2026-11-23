@@ -1481,9 +1481,15 @@ async function exportExcel() {
             <div class="flex min-w-0 items-center gap-3">
               <span class="pc-ledger-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" :class="{ 'pc-ledger-title-icon--large': props.ledgerView !== 'standby' }" aria-hidden="true">
                 <RecordAddIcon size="lg" random-halo>
-                  <StandbyIcon v-if="props.ledgerView === 'standby'" class="pc-add-tilt size-7" />
-                  <DisposeIcon v-else-if="props.ledgerView === 'dispose'" class="pc-add-tilt size-8" />
-                  <PcLedgerIcon v-else class="pc-add-tilt size-8" />
+                  <!-- One wrapper for all three views: it carries the ignition so the glyph below keeps
+                       its own sway. Two `animation` declarations on the SAME element do not merge - the
+                       later shorthand wins and the earlier one never runs - which is how the first
+                       version of this boot silently stopped the plate's approved 3.6s sway. -->
+                  <span class="pl-title-glyph">
+                    <StandbyIcon v-if="props.ledgerView === 'standby'" class="pc-add-tilt size-7" />
+                    <DisposeIcon v-else-if="props.ledgerView === 'dispose'" class="pc-add-tilt size-8" />
+                    <PcLedgerIcon v-else class="pc-add-tilt size-8" />
+                  </span>
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">
@@ -2524,9 +2530,13 @@ async function exportExcel() {
   100% { opacity: 0; transform: translateY(32px); }
 }
 
-/* The screen itself: brief over-bright ignition that settles to the normal glyph. The glyph's
-   own loop lives on its CHILDREN (.pc-trace, .pc-scan, ...), so this cannot cancel it. */
-.pc-ledger-title-icon :deep(.pc-ledger-glyph) {
+/* The screen itself: brief over-bright ignition that settles back to the normal glyph. It sits on
+   the wrapper, not on the SVG, for two reasons: the SVG's own 3.6s sway (pc-add-tilt, from
+   RecordAddIcon) must keep running, and each view's loop lives on its children (.pc-trace / .st-trace /
+   .pc-scan) so it is untouched either way. All three views share this one wrapper, so the standby and
+   dispose sheets boot exactly like the ledger. */
+.pl-title-glyph {
+  display: inline-flex;
   animation: pl-title-ignite 620ms ease-out 90ms both;
 }
 
@@ -2540,7 +2550,7 @@ async function exportExcel() {
   .pc-ledger-title-icon,
   .pc-ledger-title-icon::before,
   .pc-ledger-title-icon::after,
-  .pc-ledger-title-icon :deep(.pc-ledger-glyph) {
+  .pl-title-glyph {
     animation: none !important;
   }
   .pc-ledger-title-icon::before,
