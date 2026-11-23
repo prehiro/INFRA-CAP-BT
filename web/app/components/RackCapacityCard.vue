@@ -66,6 +66,10 @@ const PER_ROW = 2
 const PER_ROW_COUNT = 4
 const PER_PAGE = PER_ROW * PER_ROW_COUNT
 
+/** Rack names in the data are bare ("C-B2"), so the card writes the word "Rack" itself. The guard
+ *  stops "Rack Rack C-B2" if the source ever starts prefixing the name. */
+const rackLabel = (name: string) => (/^rack\b/i.test(name.trim()) ? name : `Rack ${name}`)
+
 const rows = computed<Row[]>(() => {
   const max = Math.max(1, ...props.racks.map(r => r.switchCount))
   return [...props.racks]
@@ -388,7 +392,7 @@ watch([rows, pageCount], async () => {
             <!-- Name and count share one line: at four cells per row the count has to sit beside the
                  name, because a bar with no number next to it is a guess. -->
             <div class="flex items-center gap-1.5">
-              <span class="min-w-0 flex-1 truncate text-xs font-semibold leading-tight">{{ row.rackName }}</span>
+              <span class="min-w-0 flex-1 truncate text-xs font-semibold leading-tight">{{ rackLabel(row.rackName) }}</span>
               <!-- The count wears a badge rather than sitting bare next to the name: the name can be
                    any length, and a bare number beside it reads as part of the name. -->
               <span class="shrink-0 rounded bg-elevated/80 px-1.5 text-[11px] font-semibold leading-tight tabular-nums">{{ row.switchCount }}</span>
@@ -425,7 +429,7 @@ watch([rows, pageCount], async () => {
     >
       <p class="flex items-center gap-2 text-xs font-semibold">
         <span class="size-2.5 shrink-0 rounded-sm bg-primary" />
-        <span class="min-w-0 flex-1 truncate">{{ activeRow.rackName }}</span>
+        <span class="min-w-0 flex-1 truncate">{{ rackLabel(activeRow.rackName) }}</span>
         <span class="shrink-0 tabular-nums">{{ activeRow.switchCount }}</span>
       </p>
       <p class="mt-0.5 text-[10px] text-muted">{{ activeRow.floorName }}</p>

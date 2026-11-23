@@ -8187,3 +8187,17 @@ VERIFIKASI (1500x950, 10 rack):
 
 CATATAN: hover tooltip harus diuji dengan DUA kali mouseMoved (dari luar lalu ke dalam cell). Satu gerakan
 langsung ke titik cell kadang tidak memicu mouseenter di harness ini, dan hasilnya tampak seperti fitur rusak.
+### Card switch: prefix "Rack" di tiap nama (2026-11-22)
+
+HIRO: "beri teks Rack didepan tiap nama rack"
+
+Nama rack di data masih polos ("C-B2", "Mez"), jadi card yang menuliskan kata "Rack" di depannya:
+- Cell: "Rack D-B1", "Rack C-B2", dst.
+- Tooltip ikut (nama yang sama tampil di dua tempat, tidak boleh beda): "Rack C-B2 | 5 | BUILDING 2 | Rank 2 of 10 racks"
+
+Pakai satu helper `rackLabel(name)` supaya cell dan tooltip tidak bisa berbeda, dengan guard
+`/^rack\b/i` supaya tidak jadi "Rack Rack C-B2" kalau sumber data nanti sudah mengirim prefix.
+
+Verifikasi di browser: 10 nama tampil "Rack D-B1 / Rack C-B2 / Rack E1 / Rack C / Rack B / Rack B-B2 / Rack F /
+Rack G / Rack Mez / Rack S"; tooltip "Rack C-B2 | 5 | BUILDING 2 | Rank 2 of 10 racks" (200x87px, tidak terpotong).
+Build web 0 error.
