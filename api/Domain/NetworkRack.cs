@@ -35,5 +35,8 @@ public class NetworkSwitch
     // Brand/Model as the register holds it (e.g. "Catalyst 9300-48P"). Required: the 3D faceplate
     // and the hover card both quote it, and a switch with no model has nothing to show.
     public string Model { get; set; } = string.Empty;
+    // Serial number of the unit itself. Optional - not every site records it - but the switch card
+    // shows it and the 3D faceplate quotes it, so it is stored instead of living in the browser.
+    public string SerialNumber { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

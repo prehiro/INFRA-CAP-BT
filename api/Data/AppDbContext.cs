@@ -122,6 +122,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.Position).HasMaxLength(100);
             // Default '' so the migration can add the column to racks that predate it.
             e.Property(x => x.Model).HasMaxLength(120).IsRequired().HasDefaultValue(string.Empty);
+            e.Property(x => x.SerialNumber).HasMaxLength(32).IsRequired().HasDefaultValue(string.Empty);
         });
         b.Entity<AuditEntry>(e =>
         {

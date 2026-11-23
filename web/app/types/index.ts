@@ -61,6 +61,8 @@ export interface NetworkSwitch {
   position: string
   /** Brand/Model as the register holds it (e.g. "Catalyst 9300-48P"). Required by the API. */
   model: string
+  /** Serial number of the unit. Optional - empty when the site has not recorded one. */
+  serialNumber: string
   createdAt: string
 }
 export type NetworkSwitchInput = Omit<NetworkSwitch, 'id' | 'createdAt'>

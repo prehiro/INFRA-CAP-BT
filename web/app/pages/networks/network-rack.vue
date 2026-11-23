@@ -25,7 +25,7 @@ const RACK_SIZES = [19, 22, 27, 42] as const
 const U_HEIGHT_M = 0.04445
 const rackSizeHeight = (u: number) => `${(u * U_HEIGHT_M + 0.16).toFixed(2)} m`
 const rackDraft = reactive<NetworkRackInput>({ name: '', x: 0.5, y: 0.5, sizeU: 42 })
-const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '', model: '' })
+const switchDraft = reactive<NetworkSwitchInput>({ ipAddress: '', hostname: '', position: '', model: '', serialNumber: '' })
 // True only when the Brand/Model field is the thing that failed - never while a save is running.
 const switchInvalid = ref(false)
 watch(() => switchDraft.model, (v) => { if (v.trim()) switchInvalid.value = false })
@@ -530,14 +530,14 @@ function openAddSwitch() {
   if (!isAdmin.value || !selectedRackDetail.value || busy.value) return
   showRackDetails.value = false
   editingSwitchId.value = null
-  Object.assign(switchDraft, { ipAddress: '', hostname: '', position: '', model: '' })
+  Object.assign(switchDraft, { ipAddress: '', hostname: '', position: '', model: '', serialNumber: '' })
   switchError.value = ''; switchInvalid.value = false; showSwitchEditor.value = true
 }
 function openEditSwitch(sw: NetworkSwitch) {
   if (!isAdmin.value || busy.value) return
   showRackDetails.value = false
   editingSwitchId.value = sw.id
-  Object.assign(switchDraft, { ipAddress: sw.ipAddress, hostname: sw.hostname, position: sw.position, model: sw.model ?? '' })
+  Object.assign(switchDraft, { ipAddress: sw.ipAddress, hostname: sw.hostname, position: sw.position, model: sw.model ?? '', serialNumber: sw.serialNumber ?? '' })
   switchError.value = ''; switchInvalid.value = false; showSwitchEditor.value = true
 }
 async function saveSwitch() {
@@ -613,14 +613,14 @@ async function saveHudSettingsFromRack3D(settings: string) {
 // The 3D panel never writes to the database itself: it asks the page, which owns the API call and
 // the refreshed rack detail. Without this the added/edited switch only existed in the canvas and
 // disappeared on the next modal open.
-async function saveSwitchFromRack3D(payload: { id: number | null; ipAddress: string; hostname: string; position: string }) {
+async function saveSwitchFromRack3D(payload: { id: number | null; ipAddress: string; hostname: string; position: string; model: string; sn: string }) {
   if (!isAdmin.value || !floor.value || !selectedRackDetail.value) return
   if (busy.value) return
   const floorId = floor.value.id
   const rackId = selectedRackDetail.value.id
   busy.value = true
   try {
-    const body = { ipAddress: payload.ipAddress, hostname: payload.hostname, position: payload.position, model: payload.model }
+    const body = { ipAddress: payload.ipAddress, hostname: payload.hostname, position: payload.position, model: payload.model, serialNumber: payload.sn }
     if (payload.id === null) await apiAddNetworkSwitch(floorId, rackId, body)
     else await apiUpdateNetworkSwitch(floorId, rackId, payload.id, body)
     const detail = await apiGetNetworkRack(floorId, rackId)

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Api.Controllers;
 
 public record RackInput(string? Name, string? Description, double X, double Y, int? SizeU = null);
-public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position, string? Model = null);
+public record RackSwitchInput(string? IpAddress, string? Hostname, string? Position, string? Model = null, string? SerialNumber = null);
 public record SwitchPosition(string? IpAddress, string? Hostname, string? Position);
 public record RackHudSettingsInput(string? Settings);
 
@@ -56,6 +56,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                     s.Hostname,
                     s.Position,
                     s.Model,
+                    s.SerialNumber,
                     s.CreatedAt
                 }).ToList()
             })
@@ -87,6 +88,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
                     s.Hostname,
                     s.Position,
                     s.Model,
+                    s.SerialNumber,
                     s.CreatedAt
                 }).ToList()
             })
@@ -201,7 +203,8 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
             IpAddress = input.IpAddress!.Trim(),
             Hostname = input.Hostname?.Trim() ?? string.Empty,
             Position = input.Position?.Trim() ?? string.Empty,
-            Model = input.Model!.Trim()
+            Model = input.Model!.Trim(),
+            SerialNumber = NormalizeSerial(input.SerialNumber)
         };
         db.NetworkSwitches.Add(sw);
         await db.SaveChangesAsync(ct);
@@ -222,6 +225,7 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         sw.Hostname = input.Hostname?.Trim() ?? string.Empty;
         sw.Position = input.Position?.Trim() ?? string.Empty;
         sw.Model = input.Model!.Trim();
+        sw.SerialNumber = NormalizeSerial(input.SerialNumber);
         await db.SaveChangesAsync(ct);
         return Ok(ToSwitchDto(sw));
     }
@@ -252,6 +256,14 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         if (input.SizeU is not null && !AllowedSizes.Contains(input.SizeU.Value))
             return $"Rack size must be one of {string.Join(", ", AllowedSizes)}U.";
         return null;
+    }
+
+    // Serials are typed by hand and quoted on the 3D faceplate, so they are stored the way they are
+    // spoken: trimmed and upper-cased, inner spaces kept.
+    private static string NormalizeSerial(string? raw)
+    {
+        var s = (raw ?? string.Empty).Trim().ToUpperInvariant();
+        return s.Length > 32 ? s[..32] : s;
     }
 
     private static string? ValidateSwitch(RackSwitchInput input)
@@ -296,5 +308,5 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     }
 
     private static object ToDto(NetworkRack r) => new { r.Id, r.Name, r.Description, r.X, r.Y, r.SizeU, r.HudSettings, r.CreatedAt, SwitchCount = r.Switches.Count };
-    private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.Model, s.CreatedAt };
+    private static object ToSwitchDto(NetworkSwitch s) => new { s.Id, s.IpAddress, s.Hostname, s.Position, s.Model, s.SerialNumber, s.CreatedAt };
 }

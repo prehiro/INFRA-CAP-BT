@@ -7904,3 +7904,37 @@ lebih kecil dari isinya, pane menggulung kalau memang tidak cukup.
 TERUKUR: 1440x900 -> pane 458, over=0, barPx=0, card 281 (dari 259), UPS menempel dasar (gap 0).
 1600x1000 -> over=0, card 349, gap 0. 1280x800 -> over=77 (menggulung), card 259, semua field terlihat,
 barPx=0 (tidak ada bar).
+### Switch: Serial Number jadi field nyata + semua switch diisi (2026-11-22)
+
+HIRO: "ok fill semua switch rand dengan Catalyst 9200L, SN nya juga fill semua random"
+
+Masalahnya: SN belum pernah ada di database. `NetworkSwitch` tidak punya kolom serial, `ToSwitchDto`
+tidak mengirimnya, dan `persistSwitch` tidak pernah menulisnya - jadi kotak S/N di card hanya
+中转 (中转 = transien) di browser, selalu "N/A" setiap modal dibuka ulang. Jadi SN diisi tapi dulu
+tidak akan pernah kelihatan.
+
+Backend:
+- `NetworkSwitch.SerialNumber` (nvarchar(32) NOT NULL default '') + migration `20261122142722_AddSwitchSerialNumber`
+  (sudah di-apply ke DB dev)
+- `RackSwitchInput.SerialNumber` + `NormalizeSerial()` (trim, uppercase, maks 32)
+- DTO: `ToSwitchDto` DAN dua projection switch di list/detail rack (dua-duanya harus, kalau cuma ToSwitchDto
+  response GET rack detail tidak membawa serialNumber)
+- Add/Update switch ikut menulis serial
+
+Web:
+- type `NetworkSwitch.serialNumber`, `seedSwitches` membaca `sw.serialNumber`, payload `save-switch`
+  + `saveSwitchFromRack3D` mengirim `serialNumber`, switchDraft ikut membawa serial
+- DUA bug yang muncul saat verifikasi:
+  1. `sn` dobel di object literal seedSwitches - baris `sn: ''` yang lama berada SETELAH baris baru,
+     jadi yang kosong yang menang dan kartu selalu N/A. Baris lama dihapus.
+  2. `watch(switchModel)` ikut menyala saat seeding model dari register, dan saat itu `sw.sn` masih
+     kosong -> PUT balik SN kosong -> SN tersimpan (mis. #54) terhapus sendiri. Sekarang watcher
+     berhenti kalau nilai model sama dengan yang sudah ada (perubahan dari user saja yang di-save).
+
+Data (dev, 15 switch di 4 rack floor 3):
+- model = `Catalyst 9200L` untuk semua, SN random 11 char gaya Cisco (FCW####? + 3 alnum), unik
+- IP / hostname / posisi U tidak diubah; script `fillswitches.py` idempoten (bisa dijalankan ulang)
+
+VERIFIKASI: API `GET /api/network/floor-maps/3/racks/11` -> 8/8 switch punya serialNumber;
+rack 12 (3), 13 (2), 14 (2) juga penuh. UI: kartu menampilkan S/N (mis. FCW9666LBUN) dan inventory
+list "S/N: FCW..." bukan N/A. Build web 0 error, API 0 error.

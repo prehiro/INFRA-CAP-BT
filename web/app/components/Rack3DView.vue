@@ -37,7 +37,7 @@ const emit = defineEmits<{
   (e: 'delete-switch', id: number): void
   // Anything invented or edited inside this panel is a REGISTER row: the page owns the API call,
   // otherwise the change only lives in this component and vanishes when the modal is reopened.
-  (e: 'save-switch', payload: { id: number | null; ipAddress: string; hostname: string; position: string, model: string }): void
+  (e: 'save-switch', payload: { id: number | null; ipAddress: string; hostname: string; position: string, model: string, sn: string }): void
 }>()
 
 const root = ref<HTMLElement | null>(null)
@@ -1007,11 +1007,13 @@ onMounted(async () => {
           u,
           // Model comes from the register (NetworkSwitch.Model). It used to be the hardcoded
           // string 'Catalyst 9300' on every row, which meant the hover card quoted a model nobody
-          // had entered. Serial is still absent from the register, so the tooltip says UNASSIGNED.
+          // had entered.
           model: (sw.model || '').trim(),
+          // Serial of the unit itself (NetworkSwitch.SerialNumber). Empty only for rows written
+          // before the column existed, hence the || '' on every read of it.
+          sn: (sw.serialNumber || '').trim(),
           hostname: (sw.hostname || '').trim() || sw.ipAddress || `SW-${String(out.length + 1).padStart(2, '0')}`,
           ip: sw.ipAddress || '',
-          sn: '',
           meta: 'Click to Edit',
           // Port LEDs need a stable pattern per row; derived from the record id, never displayed.
           activePorts: 24 + ((Number(sw.id) * 7) % 25)
@@ -2022,7 +2024,8 @@ onMounted(async () => {
         ipAddress: sw.ip,
         hostname: sw.hostname,
         position: `U${String(sw.u).padStart(2, '0')}`,
-        model: sw.model.trim()
+        model: sw.model.trim(),
+        sn: String(sw.sn ?? '').trim()
       }
       const send = () => emit('save-switch', payload)
       if (persistTimer) clearTimeout(persistTimer)
@@ -2058,6 +2061,10 @@ onMounted(async () => {
     watch(switchModel, (v) => {
       const sw = switchesData.find(s => s.id === selectedSwitchId)
       if (!sw) return
+      // Seeding the card from the register also moves this ref, which used to fire a save with
+      // whatever the rest of the draft held at that instant - an empty serial, which then
+      // overwrote the stored one. Only a real edit by the user is worth persisting.
+      if (sw.model === v.trim()) return
       sw.model = v.trim()
       if (!v.trim()) return
       modelInvalid.value = false
@@ -2070,7 +2077,8 @@ onMounted(async () => {
           ipAddress: sw.ip,
           hostname: sw.hostname,
           position: `U${String(sw.u).padStart(2, '0')}`,
-          model: sw.model
+          model: sw.model,
+          sn: String(sw.sn ?? '').trim()
         })
         return
       }

@@ -452,6 +452,13 @@ namespace Api.Data.Migrations
                     b.Property<int>("RackId")
                         .HasColumnType("int");
 
+                    b.Property<string>("SerialNumber")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)")
+                        .HasDefaultValue("");
+
                     b.HasKey("Id");
 
                     b.HasIndex("RackId");
