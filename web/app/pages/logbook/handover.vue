@@ -577,9 +577,11 @@ onMounted(init)
                  halo and the travelling glyph inside it. The glyph is the clipboard, matching
                  the sidebar entry. -->
             <div class="flex min-w-0 items-center gap-3">
-              <span class="handover-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+              <span class="title-boot handover-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
                 <RecordAddIcon size="lg" random-halo>
-                  <HandoverIcon class="pc-add-tilt size-7" />
+                  <span class="pl-title-glyph">
+                    <HandoverIcon class="pc-add-tilt size-7" />
+                  </span>
                 </RecordAddIcon>
               </span>
               <div class="min-w-0">

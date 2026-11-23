@@ -8776,3 +8776,37 @@ elemen SVG - kalau dipasang langsung di SVG, deklarasi `animation` ignite akan m
 
 Catatan: ini caller ketujuh `title-boot` (PC Ledger, Standby PC, Dispose, Factory PC, UPS, Access
 Point, Network Rack).
+
+### CCTV Access, Handover, Issued Form, NOA: boot icon title (2026-11-22)
+
+HIRO: "ok implementn juga ke icon title cctv access,hanover, issued form,noa"
+
+Keempat halaman pakai class `title-boot` di plate + wrapper `.pl-title-glyph` di dalam slot
+RecordAddIcon. CSS-nya sudah global (main.css), jadi tidak ada CSS baru - cuma 1 class + 1 wrapper per
+halaman.
+
+## Catatan: animasi lokal yang TIDAK saya hapus
+
+`.cctv-title-icon-in` dan `.handover-title-icon-in` (320ms, translateY -6px) itu dipakai di
+`.cctv-modal-icon` / `.handover-modal-icon` - yaitu icon di header DIALOG, bukan plate halaman. Jadi
+tidak konflik dengan `title-boot` dan tidak saya sentuh (beda permukaan, beda animasi).
+
+## VERIFIKASI (empat route)
+
+    /logbook/cctvacc   : plate title-boot-in | wrap title-boot-ignite | glyph pc-add-sway | box 48x48
+                         loop glyph: cctv-lens-echo, cctv-line-travel, cctv-screen-scan, cctv-beam-load
+    /logbook/handover  : plate title-boot-in | wrap title-boot-ignite | glyph pc-add-sway | box 48x48
+                         loop glyph: handover-line-travel, handover-clip-lift, handover-board-scan,
+                                     handover-row-load
+    /form/issuedform   : plate title-boot-in | wrap title-boot-ignite | glyph pc-add-sway | box 48x48
+                         (glyph statis - memang tidak punya animasi internal)
+    /form/noa          : plate title-boot-in | wrap title-boot-ignite | glyph pc-add-sway | box 48x48
+                         (glyph statis)
+
+- centreDelta glyph terhadap plate: [0, 0] untuk cctvacc; [0, -1] untuk tiga lainnya (pembulatan posisi
+  plate pecah, bukan pergeseran - ukuran plate tetap 48x48).
+- Reduced motion (noa + handover): plate/wrap/glyph `animationName: none`, plate opacity 1, pseudo 0/0 ✓.
+- Build `npx nuxt build` rc=0, 0 ERROR.
+
+Caller `title-boot` sekarang 11: PC Ledger, Standby PC, Dispose, Factory PC, UPS, Access Point, Network
+Rack, CCTV Access, Handover, Issued Form, NOA.

@@ -665,9 +665,11 @@ onMounted(init)
              the accent-tinted rounded square, the RecordAddIcon halo and the travelling
              glyph inside it. The glyph is the CCTV camera, matching the sidebar entry. -->
         <div class="flex min-w-0 items-center gap-3">
-          <span class="cctv-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
+          <span class="title-boot cctv-title-icon grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20" aria-hidden="true">
             <RecordAddIcon size="lg" random-halo>
-              <CctvIcon class="pc-add-tilt size-7" />
+              <span class="pl-title-glyph">
+                <CctvIcon class="pc-add-tilt size-7" />
+              </span>
             </RecordAddIcon>
           </span>
           <div class="min-w-0">
