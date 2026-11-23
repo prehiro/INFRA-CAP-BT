@@ -218,7 +218,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
               <div class="relative w-full flex-1 overflow-hidden rounded-sm bg-elevated/50">
                 <div
                   class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-primary/75"
-                  :style="{ height: `${f.mainPct}%`, animationDelay: `${90 + f.index * 70}ms` }"
+                  :style="{ height: `${f.mainPct}%`, animationDelay: `${120 + f.index * 90}ms` }"
                 >
                   <span class="ap-cap" />
                 </div>
@@ -235,7 +235,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
               <div class="relative w-full flex-1 overflow-hidden rounded-sm bg-elevated/50">
                 <div
                   class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-amber-400/80"
-                  :style="{ height: `${f.bcpPct}%`, animationDelay: `${130 + f.index * 70}ms` }"
+                  :style="{ height: `${f.bcpPct}%`, animationDelay: `${170 + f.index * 90}ms` }"
                 >
                   <span class="ap-cap" />
                 </div>
@@ -294,7 +294,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
    each series passes its own `bg-*`, so the two can never fight over the same declaration. */
 .ap-fill {
   transform-origin: bottom center;
-  animation: ap-rise 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: ap-rise 1050ms cubic-bezier(0.4, 0, 0.2, 1) both;
   transition: height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

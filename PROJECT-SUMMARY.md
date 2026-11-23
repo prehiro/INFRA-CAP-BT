@@ -8508,3 +8508,58 @@ viewport yang BERUBAH, bukan untuk data yang berubah. Yang masih boleh re-fit:
 5. Switch dikembalikan ke posisi semula (U14) - rack persis seperti sebelum tes.
 
 Build `npx nuxt build` rc=0, 0 ERROR. Probe `__r3d` sudah dihapus (grep = 0).
+
+### Animasi dashboard dibuat lebih smooth (2026-11-22)
+
+HIRO: "animasi page dashboard sepertinya terlalu cepat, buat lebih smooth lagi animasi grafiknya"
+
+## Diagnosis: masalahnya KURVA, bukan cuma durasi
+
+Semua animasi pakai `cubic-bezier(0.22, 1, 0.36, 1)`. Saya hitung profilnya dulu:
+
+    10% durasi  -> 40% selesai
+    30% durasi  -> 83% selesai
+    50% durasi  -> 96% selesai
+
+Jadi dari animasi 700ms, 90% gerakan sudah lewat di ~230ms pertama, sisanya hampir tak terlihat. Itu
+sebabnya terasa "cepat" padahal durasinya sudah 0.7s - yang kelihatan cuma seperempat pertama.
+
+## Perubahan
+
+Semua kurva diganti `cubic-bezier(0.4, 0, 0.2, 1)` (Material standard): mulai dari kecepatan ~0,
+puncak di tengah, lalu melambat halus sampai berhenti - profil S yang benar-benar rata.
+
+    card / animasi         durasi lama -> baru    stagger lama -> baru
+    card masuk (grid)      340ms   -> 900ms        60ms  -> 90ms per card
+    doughnut slice         700ms   -> 1200ms       90ms  -> 110ms
+    legend chassis         320ms   -> 600ms        60ms  -> 80ms (delay 120 -> 400ms, menyusul slice)
+    bar UPS (bar-grow)     720ms   -> 1150ms       90ms  -> 110ms
+    bar rack (rack-grow)   680ms   -> 1050ms       70ms  -> 90ms
+    kolom AP (ap-rise)     640ms   -> 1050ms       70ms  -> 90ms
+    treemap tile           420ms   -> 850ms        40ms  -> 55ms
+
+## Kenapa stagger card ditaruh di index.vue, bukan di main.css
+
+`.anim-stagger` adalah utility bersama di `app/assets/css/main.css` yang dipakai TIGA halaman: index.vue
+(dashboard), logbook/cctvacc.vue, dan logbook/handover.vue. Kalau utility-nya diubah, dua halaman logbook
+ikut jadi lambat - itu perubahan yang tidak diminta. Jadi dashboard dapat class sendiri `.dash-grid`
+(atau `<style scoped>` di index.vue) dengan 900ms + 90ms, dan utility lama TIDAK disentuh.
+
+## VERIFIKASI (diukur, bukan dikira)
+
+Cara ukur: setInterval 24ms di halaman, baca `getBoundingClientRect()` tiap bar (rasio terhadap track),
+lalu normalkan ke 100%. Profil "ms:persen".
+
+Sebelum (rack-grow 680ms + delay 60ms):
+    0:2  194:27  290:69  434:93  649:100      -> 50% di ~34% durasi, 90% di ~55%
+
+Sesudah (1050ms + delay 80ms):
+    0:2  237:8  310:17  381:35  452:52  572:73  789:92  933:98  1004:99  1148:100
+    -> 50% di ~39%, 73% di ~50%, 92% di ~69%   (buntut jauh lebih panjang & terlihat)
+
+Bar UPS (1150ms): 52% di 43%, 83% di 60%, 97% di 82%.
+Kolom AP (1050ms): 43% di 41%, 87% di 63%, 99% di 88%.
+Card grid: start card 1..6 di 961/1069/1141/1230/1323/1411ms -> langkah ~90ms, tiap card ~780-880ms
+(Benar: 90ms per card, bukan 60ms).
+
+Build `npx nuxt build` rc=0, 0 ERROR.

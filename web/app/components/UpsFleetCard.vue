@@ -154,7 +154,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
           >
             <span
               class="ribbon-seg block h-full w-full"
-              :style="{ backgroundColor: row.color, animationDelay: `${row.index * 90}ms` }"
+              :style="{ backgroundColor: row.color, animationDelay: `${row.index * 110}ms` }"
             />
           </span>
         </div>
@@ -189,7 +189,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
             <div class="mt-0.5 h-1.5 w-full overflow-hidden rounded-full bg-elevated">
               <div
                 class="bar-fill h-full rounded-full"
-                :style="{ width: `${row.pct}%`, backgroundColor: row.color, animationDelay: `${120 + row.index * 90}ms` }"
+                :style="{ width: `${row.pct}%`, backgroundColor: row.color, animationDelay: `${160 + row.index * 110}ms` }"
               />
             </div>
           </li>
@@ -232,7 +232,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
 .ribbon-seg,
 .bar-fill {
   transform-origin: left center;
-  animation: bar-grow 720ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: bar-grow 1150ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* The bar's own width transition covers a data refresh without re-running the entrance. */

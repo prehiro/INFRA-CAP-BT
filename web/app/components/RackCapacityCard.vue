@@ -113,7 +113,7 @@ const pages = computed<Row[][]>(() => {
 /** The bar's width is the data and its colour is the rack's, so both travel in one style object. */
 const barStyle = (row: Row): CSSProperties => ({
   width: `${row.barPct}%`,
-  animationDelay: `${60 + row.index * 70}ms`,
+  animationDelay: `${80 + row.index * 90}ms`,
   ['--bar' as string]: row.color
 })
 
@@ -515,7 +515,7 @@ watch([rows, pageCount], async () => {
      The gradient and the hairline ring are the same treatment as before, only the hue moves. */
   background-image: linear-gradient(90deg, color-mix(in oklab, var(--bar, var(--ui-primary)) 72%, transparent), var(--bar, var(--ui-primary)));
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--bar, var(--ui-primary)) 45%, transparent) inset;
-  animation: rack-grow 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: rack-grow 1050ms cubic-bezier(0.4, 0, 0.2, 1) both;
   transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
 }
 

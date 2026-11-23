@@ -207,7 +207,7 @@ const tiles = computed<Tile[]>(() => {
             top: `${tile.y}px`,
             width: `${tile.w}px`,
             height: `${tile.h}px`,
-            animationDelay: `${tile.index * 40}ms`
+            animationDelay: `${tile.index * 55}ms`
           }"
         >
           <UTooltip :text="`${tile.label} · ${tile.value} unit · ${tile.pct.toFixed(1)}%`">
@@ -276,7 +276,7 @@ const tiles = computed<Tile[]>(() => {
    card on the dashboard grew in. Each tile scales up from its own centre, staggered by rank, so the
    biggest tile leads and the slivers follow. */
 .tm-tile {
-  animation: tm-tile-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: tm-tile-in 850ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes tm-tile-in {

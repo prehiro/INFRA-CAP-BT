@@ -334,7 +334,7 @@ const apState = computed<'loading' | 'ready' | 'error'>(() => {
                columns fit. 860px, not 1060: at 1060 a 1440-wide window only got three columns, which
                made three rows of cards and pushed the page past the viewport height. -->
           <div class="@container min-w-0 xl:h-full">
-            <div class="anim-stagger grid grid-cols-1 gap-4 sm:gap-4 @min-[520px]:grid-cols-2 @min-[700px]:grid-cols-3 @min-[860px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
+            <div class="dash-grid grid grid-cols-1 gap-4 sm:gap-4 @min-[520px]:grid-cols-2 @min-[700px]:grid-cols-3 @min-[860px]:grid-cols-4 xl:h-full xl:auto-rows-fr">
               <ChassisMixCard
                 class="col-span-1"
                 title="Registered PC"
@@ -430,3 +430,32 @@ const apState = computed<'loading' | 'ready' | 'error'>(() => {
     </template>
   </UDashboardPanel>
 </template>
+
+<style scoped>
+/* The shared .anim-stagger utility is tuned for dense list pages (340ms, 60ms steps) and two logbook
+   registers use it, so the dashboard carries its own slower stagger instead of changing theirs - a page
+   that shows eight cards is a different problem from a table with thirty rows. 900ms per card with 90ms
+   steps lets the eye follow the grid in; the shared curve (0.22, 1, 0.36, 1) is 90% spent in the first
+   third of its duration, which is why the old entrance read as a snap rather than a move. */
+.dash-grid > * {
+  animation: infra-fade-up 900ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+.dash-grid > *:nth-child(1) { animation-delay: 0ms; }
+.dash-grid > *:nth-child(2) { animation-delay: 90ms; }
+.dash-grid > *:nth-child(3) { animation-delay: 180ms; }
+.dash-grid > *:nth-child(4) { animation-delay: 270ms; }
+.dash-grid > *:nth-child(5) { animation-delay: 360ms; }
+.dash-grid > *:nth-child(6) { animation-delay: 450ms; }
+.dash-grid > *:nth-child(7) { animation-delay: 540ms; }
+.dash-grid > *:nth-child(8) { animation-delay: 630ms; }
+.dash-grid > *:nth-child(n + 9) { animation-delay: 720ms; }
+
+/* Cancel outright, the same way the shared utilities do: a partial fade still moves. */
+@media (prefers-reduced-motion: reduce) {
+  .dash-grid > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+</style>

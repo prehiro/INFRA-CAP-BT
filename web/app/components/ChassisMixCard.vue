@@ -264,7 +264,7 @@ function clearTip() {
                 :fill="seg.color"
                 class="slice cursor-pointer"
                 :filter="hovered === seg.index ? `url(#${glowId})` : undefined"
-                :style="{ animationDelay: `${seg.index * 90}ms` }"
+                :style="{ animationDelay: `${seg.index * 110}ms` }"
                 @mouseenter="hovered = seg.index"
                 @mousemove="moveTip(seg.index, $event)"
                 @mouseleave="clearTip"
@@ -291,7 +291,7 @@ function clearTip() {
               v-for="seg in segments"
               :key="seg.value"
               class="legend-row"
-              :style="{ animationDelay: `${120 + seg.index * 60}ms` }"
+              :style="{ animationDelay: `${400 + seg.index * 80}ms` }"
             >
               <button
                 type="button"
@@ -356,7 +356,7 @@ function clearTip() {
 .slice {
   transform-box: view-box;
   transform-origin: 50px 50px;
-  animation: slice-in 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: slice-in 1200ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes slice-in {
@@ -373,7 +373,7 @@ function clearTip() {
 /* The rows used to pop in fully formed while the doughnut was still drawing itself. They now follow it,
    one step behind each slice, so the card reads as one object instead of two arrivals. */
 .legend-row {
-  animation: legend-row-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: legend-row-in 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 @keyframes legend-row-in {
