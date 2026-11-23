@@ -15,19 +15,26 @@
  * an icon that is not in the build-time bundle renders as an EMPTY span with no error at all. A drawing
  * that lives in this file cannot go missing.
  */
-const { unit = 'unit' } = defineProps<{
-  kind: 'fleet' | 'domain' | 'treemap' | 'ups' | 'rack'
+const props = withDefaults(defineProps<{
+  kind: 'fleet' | 'domain' | 'treemap' | 'ups' | 'rack' | 'ap'
   /** Shown in the tooltip and to screen readers; the number itself is no longer painted. */
   total: number
   /** What is being counted, so the tooltip reads "15 switch" instead of the bare "15 unit". */
   unit?: string
-}>()
+  /** Plural of `unit`, because "32 switch" is not English. Defaults to `unit` - only pass it when
+   *  the plural is irregular ("switch" -> "switches", "access point" -> "access points"). */
+  unitPlural?: string
+}>(), { unit: 'unit' })
+
+/** "1 switch" / "32 switches" - the count is the only thing that decides which form is used. */
+const label = computed(() =>
+  `${props.total} ${props.total === 1 ? props.unit : props.unitPlural ?? props.unit}`)
 </script>
 
 <template>
-  <UTooltip :text="`${total} ${unit}`" :delay-duration="200">
+  <UTooltip :text="label" :delay-duration="200">
     <!-- role=img + aria-label: the badge is the only carrier of the count now, so it has to announce it. -->
-    <span class="metric-ico" role="img" :aria-label="`${total} ${unit}`">
+    <span class="metric-ico" role="img" :aria-label="label">
       <!-- fleet: a desktop and a notebook - the two form factors this card counts. -->
       <svg
         v-if="kind === 'fleet'"
@@ -101,6 +108,24 @@ const { unit = 'unit' } = defineProps<{
         <circle class="ico-led" cx="15.9" cy="18.9" r="0.9" fill="currentColor" stroke="none" />
       </svg>
 
+      <!-- ap: a broadcast - three arcs opening outward from a dot. The arcs light in sequence, so the
+           badge reads as "signal" rather than as a static drawing. -->
+      <svg
+        v-else-if="kind === 'ap'"
+        class="ico-glyph"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.7"
+        stroke-linecap="round"
+        aria-hidden="true"
+      >
+        <path class="ico-wave" d="M8.7 14.6a4.7 4.7 0 0 1 6.6 0" />
+        <path class="ico-wave" d="M5.8 11.6a9 9 0 0 1 12.4 0" />
+        <path class="ico-wave" d="M3 8.7a13.1 13.1 0 0 1 18 0" />
+        <circle cx="12" cy="18.2" r="1.7" fill="currentColor" stroke="none" />
+      </svg>
+
       <!-- treemap: four tiles of different sizes, echoing the chart itself. -->
       <svg
         v-else
@@ -166,6 +191,15 @@ const { unit = 'unit' } = defineProps<{
   animation: ico-breathe 3.4s ease-in-out infinite;
 }
 
+/* The waves light from the inside out, the way a broadcast reaches you - each arc a step behind the
+   one before it. */
+.ico-wave {
+  animation: ico-wave 2.9s ease-in-out infinite;
+}
+
+.ico-wave:nth-child(2) { animation-delay: 0.28s; }
+.ico-wave:nth-child(3) { animation-delay: 0.56s; }
+
 /* The bolt is the "power" half of the badge: it swells and dims on a slow loop, like a charge cycle. */
 .ico-bolt {
   transform-box: fill-box;
@@ -198,6 +232,11 @@ const { unit = 'unit' } = defineProps<{
   50% { opacity: 1; transform: scale(1.15); }
 }
 
+@keyframes ico-wave {
+  0%, 62%, 100% { opacity: 0.25; }
+  26% { opacity: 1; }
+}
+
 @keyframes ico-breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(0.84); }
@@ -209,8 +248,14 @@ const { unit = 'unit' } = defineProps<{
   .ico-tick,
   .ico-tile,
   .ico-bolt,
-  .ico-led {
+  .ico-led,
+  .ico-wave {
     animation: none;
+  }
+
+  /* Without the loop, the arcs must still be readable: hold them lit, not at the faded keyframe. */
+  .ico-wave {
+    opacity: 1;
   }
 
   .ico-tick {

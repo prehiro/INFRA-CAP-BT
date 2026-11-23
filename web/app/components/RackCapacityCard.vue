@@ -333,7 +333,7 @@ watch([rows, pageCount], async () => {
               </svg>
             </UButton>
           </div>
-          <CardMetricIcon kind="rack" :total="totalSwitches" unit="switch" />
+          <CardMetricIcon kind="rack" :total="totalSwitches" unit="switch" unit-plural="switches" />
         </div>
       </header>
 

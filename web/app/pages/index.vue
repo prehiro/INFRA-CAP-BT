@@ -18,17 +18,20 @@
  * purpose - one shared fetch is what made the two cards drift apart the last time they shared state.
  *
  * TILE SPANS
- * Every doughnut is one column and Switches per Rack is the only double-width card, so the grid holds
- * seven cells: 4+3 at four columns, 3+3+1 at three and 2+2+2+1 at two, where the double-width card
- * takes the last row by itself.
+ * Two doughnuts and two one-column cards up top, then a double-width treemap; the second row is UPS,
+ * Switches per Rack (double) and Access Points - so the grid holds eight cells and fills 4+4 at four
+ * columns. At three and two columns the two double-width cards each take a row of their own.
  *
- * WHY SWITCH PER RACK REPLACED THE ACCESS POINTS TILE
- * The AP tile was one number plus per-floor chips - it answered "how many APs" and nothing else, and
- * the count is already on the page's own header. The rack card has the same double-width footprint and
- * a question worth the space: which rack holds the most switches. It first carried a second track with
- * U usage as well, and that was cut (HIRO: "hapus saja grafik u nya pada dashboard jadi fokus ke jumlah
- * switch per rack") - two units in one row forced the reader to compare buah against slot, and the
- * rack page already shows capacity where it can be read against the elevation.
+ * WHY SWITCH PER RACK REPLACED THE ACCESS POINTS TILE, AND WHY THE TILE CAME BACK AS A CHART
+ * The old AP tile was one number plus per-floor chips - it answered "how many APs" and nothing else,
+ * and the count is already on the page's own header. The rack card has the same double-width footprint
+ * and a question worth the space: which rack holds the most switches. It first carried a second track
+ * with U usage as well, and that was cut (HIRO: "hapus saja grafik u nya pada dashboard jadi fokus ke
+ * jumlah switch per rack") - two units in one row forced the reader to compare buah against slot, and
+ * the rack page already shows capacity where it can be read against the elevation.
+ * The AP chart that came back is a different answer, not the old tile: how the APs are SPREAD (one
+ * column per floor, tallest first, a floor with none still drawn). It fills the cell the rack card
+ * leaves free, so the row still holds four columns.
  *
  * Audit Log and User Management are deliberately NOT here: they are admin/system pages, not data
  * modules, and both are role-gated - a tile would be a dead end for anyone without Admin.
@@ -253,6 +256,37 @@ const upsLocations = computed(() =>
 
 /** The card shows its own error line rather than an empty chart. */
 const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value ? 'error' : 'ready'))
+
+/** Floor plans with the access points on them. GET /api/network/floor-maps projects AccessPointCount
+ *  and RackCount onto every floor, so the AP card costs exactly one call and never walks the floors. */
+type ApFloor = { id: number, name: string, accessPointCount: number, rackCount: number }
+
+const { data: apFloors, error: apError, pending: apPending } = await useFetch<ApFloor[]>('/network/floor-maps', {
+  baseURL: useRuntimeConfig().public.apiBase,
+  headers: authHeaders,
+  default: () => []
+})
+
+const apRows = computed(() =>
+  ((apFloors.value as ApFloor[]) ?? [])
+    .map(f => ({
+      id: f.id,
+      name: f.name,
+      aps: f.accessPointCount ?? 0,
+      racks: f.rackCount ?? 0
+    }))
+)
+
+/** Summed from the floors, so the card's denominator is the sum of what it draws. */
+const apTotal = computed(() => apRows.value.reduce((n, f) => n + f.aps, 0))
+
+/** Pending, not "empty": before the first answer the card must show its skeleton, not "No access
+ *  points yet." - a flash of the empty state on every load reads as data loss. useFetch's own `pending`
+ *  is what tells the two apart; an empty list AFTER the answer is a real "no access points yet". */
+const apState = computed<'loading' | 'ready' | 'error'>(() => {
+  if (apError.value) return 'error'
+  return apPending.value ? 'loading' : 'ready'
+})
 </script>
 
 <template>
@@ -346,6 +380,21 @@ const rackState = computed<'loading' | 'ready' | 'error'>(() => (rackError.value
                 to="/networks/network-rack"
                 :racks="(rackRows as RackRow[] ?? [])"
                 :state="rackState"
+              />
+
+              <!-- Access Points, one column: the last cell of the second row, the one the rack card
+                   leaves free. It is a COLUMN chart on purpose - every other card in this row runs
+                   horizontally, so this is the only shape that reads as "per floor" without repeating
+                   the rack card's rows. -->
+              <AccessPointCard
+                class="col-span-1"
+                title="Access Points"
+                label="Per floor"
+                source="Ranked by count"
+                to="/networks/access-point"
+                :floors="apRows"
+                :total="apTotal"
+                :state="apState"
               />
             </div>
           </div>

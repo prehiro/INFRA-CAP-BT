@@ -8220,3 +8220,48 @@ Terverifikasi: title "Switches per Rack", subjudul "Installed · Ranked by count
 
 Kalau yang dimaksud cuma title-nya saja dan subjudul mau dikembalikan, subjudul lama adalah "Switch count ·
 By rack".
+### Card baru: Access Points (grafik per floor) di slot terakhir (2026-11-22)
+
+HIRO: "ok card terakhir disamping switces per rack buat grafik untuk page access point, design yang kreatif dan menarik dan keren boi"
+
+Slot terakhir itu memang kosong: row 2 grid berisi UPS (1 kolom) + Switches per Rack (2 kolom) = 3 dari 4 kolom.
+Card baru mengisinya, jadi grid sekarang 4+4 (8 sel), bukan 4+3.
+
+Komponen baru `web/app/components/AccessPointCard.vue`:
+- Kolom vertikal per floor, urut dari terbanyak. Tinggi kolom = porsi terhadap floor tersibuk, angka di atas
+  kolom = nilainya. Floor dengan 0 AP tetap dapat kolom ( Track kosong + angka 0 ) karena "floor ini tidak
+  punya AP" itu jawaban, bukan celah.
+- SENGAJA kolom, bukan bar horizontal: semua card lain di row itu horizontal (ribbon UPS, bar rack), jadi
+  kolom adalah satu-satunya bentuk yang membaca "per floor" tanpa mengulang bar chart rack.
+- Fill `bg-primary/75` + cap 2px (garis terang di puncak fill) - bukan slab solid, supaya tidak berat; warna
+  angka: floor tersibuk `text-primary`, floor 0 `text-muted`.
+- Columns `flex-1` tanpa max-width (di 3 kolom card 219px -> tiap kolom 54px, proporsi 1:3.2; kalau dibatasi
+  36px hasilnya seperti tabung).
+- Hover column: yang lain 0.4, tooltip berisi "3 access points · 75% of all" + "4 racks on this floor".
+  Floor 0 AP: "No access points on this floor" (bukan "0 access points · 0% of all" yang terbaca seperti
+  error pembulatan).
+- Cap 6 kolom: kalau floor lebih dari 6, kolom setelah itu tidak digambar dan footer menyebut "top 6 of N".
+- Entrance: fill tumbuh dari baseline (scaleY, 640ms, stagger 70ms), `prefers-reduced-motion` -> none.
+- Keyboard: tiap kolom tabindex + focus ring 2px accent. Tooltip di-teleport (fixed) supaya tidak terpotong.
+
+Perubahan pendukung:
+1. `CardMetricIcon`: kind baru `ap` (glyph wifi: dot + 3 arc, tiap arc menyala berurutan). Prop baru
+   `unitPlural` + computed `label` - tooltip sebelumnya selalu "4 access point"/"32 switch". Sekarang AP
+   badge "4 access points", switch badge "32 switches", card lain ("477 unit") tidak berubah.
+2. `index.vue`: fetch `GET /api/network/floor-maps` (satu call; payload-nya sudah membawa AccessPointCount +
+   RackCount per floor, jadi card tidak perlu jalan floor-per-floor). `apState` memakai `pending` dari
+   useFetch, BUKAN panjang array: kalau pakai array, load pertama tampil "No access points yet." sepersekian
+   detik (dan kalau user benar-benar punya 0 AP, skeleton-nya tidak akan pernah selesai).
+
+VERIFIKASI (1500x950, data 3 floor: BUILDING 1=3 AP, BUILDING 2=1, P=0):
+- Card 219x332 (sama tinggi dengan card lain -> page tidak scroll, scrollArea 886/886), kolom 54x175,
+  fill 175/58/0 px, cap 2px, nama tidak terpotong.
+- Tooltip "BUILDING 1 | 3 | 3 access points · 75% of all | 4 racks on this floor" (200x87, masih di dalam layar),
+  opacity kolom lain 0.4.
+- Badge "4 access points", glyph 3 arc dengan stroke rgb(0,220,130).
+- 1600x1000: card 244x357, nama tidak terpotong. 1440x900: 272x320, tidak terpotong.
+- Animasi `ap-rise` 640ms origin bottom terkonfirmasi jalan; focus ring rgb(0,220,130) 2px.
+- Build web 0 error.
+
+CATATAN: tidak ada model vision di provider ini (vision_analyze -> 404 "No endpoints found that support image
+input"), jadi tampilan TIDAK bisa dilihat langsung - semua verifikasi di atas lewat pengukuran DOM/computed style.
