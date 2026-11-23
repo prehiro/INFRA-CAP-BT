@@ -8303,3 +8303,28 @@ CATATAN TEST: `node --test tests/*.test.mjs` -> 74 pass, 1 fail. Yang gagal `tes
 karena file itu membaca `app/pages/pcledger.vue` yang sudah tidak ada (page-nya sekarang
 `app/pages/device/pcledger.vue`). Ini bug test lama, bukan dari perubahan ini - path-nya belum ikut diperbaiki
 waktu page dipindah.
+### Access Points card: 2 bar per gedung (2026-11-22)
+
+HIRO: "bagi jadi 2 bar per gedung"
+
+Card tidak lagi memakai satu kolom per gedung dengan band BCP di dalamnya. Sekarang tiap gedung punya DUA bar
+mendampingi (grouped bar): bar Primary (accent) dan bar BCP (amber), satu skala.
+
+Detail:
+- Skala = bar TERTINGGI TUNGGAL di seluruh card, bukan total tertinggi. Gedung yang AP-nya semua BCP tetap bisa
+  menggambar bar penuh (kalau skala pakai total, gedung 1+4 akan membuat gedung 4+0 terlihat pendek).
+- Angka di atas tiap bar (nama serinya di legenda): 4 / 1 untuk BUILDING 2, 3 / 1 untuk BUILDING 1.
+- `showValues` = jumlah gedung <= 4. Di atas itu group jadi <40px dan angka 2 digit tidak muat, jadi angka
+  dipindah ke tooltip (masih satu hover). `columns` juga mem-clamp nilai negatif ke 0.
+- Warna TIDAK lagi diset di `.ap-fill` - tiap seri mengirim `bg-*` sendiri (bg-primary/75 vs bg-amber-400/80),
+  supaya dua class bg tidak berebut di elemen yang sama.
+- Legenda tetap "Primary 7 · BCP 2" (sekarang jadi kunci seri, bukan cuma total), tooltip per gedung tidak berubah.
+
+VERIFIKASI (1500x950, BUILDING 2 = 4 primary + 1 bcp, BUILDING 1 = 3 + 1):
+- BUILDING 2: bar 154px (100%) + 39px (25%); BUILDING 1: 116px (75%) + 39px (25%). Track dua-duanya 154px,
+  bar 41px. build 0 error, tidak ada page scroll (886/886).
+- Tooltip "BUILDING 1 | 4 | 3 primary · 1 BCP · 44% of all | 4 racks on this floor" (208x87, di dalam layar),
+  opacity gedung lain 0.4.
+- 1600x1000 (card 244, bar 47px) dan 1440x900 (card 272, bar 54px): tidak ada label terpotong.
+- Page Access Point (/BFCP Access Point Map) masih normal setelah API diubah: H1 "Access Point", H2
+  "BTCAP Access Point Map", 1 gambar plan, tanpa error alert.

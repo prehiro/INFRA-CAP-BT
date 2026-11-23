@@ -6,9 +6,9 @@
  * 1. How the access points are spread across the floor plans: one column per floor, the column's height is
  *    that floor's share of the busiest one, and the number above it is the count itself. A floor with none
  *    still gets its column, because "this floor has no AP" is an answer, not a gap.
- * 2. How many are MAIN and how many are BCP. That answer is printed, not left to the bars: a legend under
- *    the header carries both totals, every column is stacked (main at the bottom, BCP on top) and the
- *    tooltip repeats the pair for the floor under the pointer.
+ * 2. How many are MAIN and how many are BCP. That answer is drawn, not just told: every building gets TWO
+ *    bars side by side on one scale (HIRO: "bagi jadi 2 bar per gedung"), so the split is a comparison of
+ *    heights. A legend under the header carries both totals and the tooltip repeats the pair per building.
  *
  * WHY A BCP UNIT IS NOT JUST ANOTHER ACCESS POINT
  * A BCP unit is standby/failover capacity - amber diamond on the floor plan, amber band here - so it is
@@ -17,8 +17,13 @@
  *
  * WHY COLUMNS AND NOT ANOTHER ROW OF BARS
  * Every other card in this row is horizontal - the UPS ribbon, the rack card's rows. A column chart is
- * the one shape in the row that reads at a glance as "per floor, tallest first", and it is the only one
- * that leaves the card's width free for the floor names underneath.
+ * the one shape in the row that reads at a glance as "per building, tallest first", and it is the only
+ * one that leaves the card's width free for the building names underneath.
+
+ * TWO BARS, NOT A STACK
+ * A stacked band shows the split as one height to measure; two bars side by side show it as two heights to
+ * compare, which is the question. The scale is the tallest SINGLE bar, not the tallest total: a building
+ * whose access points are all BCP must still be able to draw a full-height bar.
  *
  * WHY THE COUNT SITS ABOVE THE COLUMN
  * The height already carries the comparison; the number carries the value. Without it the reader has to
@@ -61,28 +66,31 @@ defineOptions({ inheritAttrs: false })
 /** SIX columns is what stays readable in a one-column card; the rest are counted in the footer. */
 const MAX_COLUMNS = 6
 
-/** Ranked floors, tallest first, with the height each column should take (0-100% of the tallest). */
+/** Ranked buildings, most access points first, each with the height of its two bars (0-100% of the
+ *  tallest single bar anywhere in the card). */
 const columns = computed(() => {
   const rows = [...props.floors].sort((a, b) => b.aps - a.aps || a.name.localeCompare(b.name))
   const shown = rows.slice(0, MAX_COLUMNS)
-  const peak = shown.reduce((n, f) => Math.max(n, f.aps), 0) || 1
+  const peak = shown.reduce((n, f) => Math.max(n, f.main, f.bcp), 0) || 1
   return shown.map((f, i) => {
-    const aps = Math.max(0, f.aps)
-    // Never let the parts exceed the whole: one bad row must not push the BCP band outside its column.
-    const main = Math.max(0, Math.min(f.main, aps))
-    const bcp = Math.max(0, Math.min(f.bcp, aps - main))
+    // A negative or missing count is a bad payload, not a bar: clamp at zero rather than draw upwards
+    // from the baseline into the label.
+    const main = Math.max(0, f.main)
+    const bcp = Math.max(0, f.bcp)
     return {
       ...f,
-      aps,
+      index: i,
       main,
       bcp,
-      index: i,
-      pct: (aps / peak) * 100,
-      // The band is drawn INSIDE the fill, so its height is a share of its own column, not of the tallest.
-      bcpPct: aps ? (bcp / aps) * 100 : 0
+      mainPct: (main / peak) * 100,
+      bcpPct: (bcp / peak) * 100
     }
   })
 })
+
+/** A two-digit count needs about 14px, so a pair needs a ~40px group. Past four buildings the group is
+ *  narrower than that and the numbers move into the tooltip, where they are still one hover away. */
+const showValues = computed(() => columns.value.length <= 4)
 
 /** Floors beyond the sixth: the footer says how many, so the chart never lies about the total. */
 const hiddenCount = computed(() => Math.max(0, props.floors.length - MAX_COLUMNS))
@@ -183,7 +191,7 @@ const clearTip = () => { hover.value = null; tip.value = null }
         No access points yet.
       </div>
 
-      <!-- items-stretch + flex-1 on the track: every column is as tall as the tallest, so the
+      <!-- items-stretch + flex-1 on each track: the two bars of a building share one height, so the
            comparison is the FILL, never the box around it. -->
       <div v-else class="flex flex-1 items-stretch gap-1.5 sm:gap-2">
         <div
@@ -198,28 +206,40 @@ const clearTip = () => { hover.value = null; tip.value = null }
           @focus="enterRow(f.index, $event)"
           @blur="clearTip"
         >
-          <!-- The count: the height carries the comparison, this carries the value. -->
-          <span
-            class="text-[11px] font-semibold leading-none tabular-nums"
-            :class="f.aps === 0 ? 'text-muted' : (f.pct === 100 ? 'text-primary' : 'text-default')"
-          >{{ f.aps }}</span>
-
-          <!-- The track. overflow-hidden is what makes the fill's corners follow the track's. -->
-          <div class="relative w-full flex-1 overflow-hidden rounded-md bg-elevated/50">
-            <div
-              class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-primary/75"
-              :style="{ height: `${f.pct}%`, animationDelay: `${90 + f.index * 70}ms` }"
-            >
-              <!-- The BCP band sits ON TOP of the main units: standby capacity stacked over the
-                   network's own access points, in the same order the legend reads. Amber, like the BCP
-                   marker on the floor plan, so the two never look like the same thing. -->
+          <div class="flex w-full flex-1 items-end justify-center gap-1">
+            <!-- MAIN. The number sits above its own bar: the height carries the comparison, the number
+                 carries the value, and a reader must not have to measure against its neighbour. -->
+            <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
               <span
-                v-if="f.bcp > 0"
-                class="absolute inset-x-0 top-0 bg-amber-400/80"
-                :style="{ height: `${f.bcpPct}%` }"
-              />
-              <!-- The lit top edge: the "signal" line, so a short column still reads as a live one. -->
-              <span class="ap-cap" />
+                v-if="showValues"
+                class="text-[10px] font-semibold leading-none tabular-nums"
+                :class="f.main === 0 ? 'text-muted' : 'text-default'"
+              >{{ f.main }}</span>
+              <div class="relative w-full flex-1 overflow-hidden rounded-sm bg-elevated/50">
+                <div
+                  class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-primary/75"
+                  :style="{ height: `${f.mainPct}%`, animationDelay: `${90 + f.index * 70}ms` }"
+                >
+                  <span class="ap-cap" />
+                </div>
+              </div>
+            </div>
+
+            <!-- BCP. Amber, like the BCP marker on the floor plan, so the two series never read as one. -->
+            <div class="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-1">
+              <span
+                v-if="showValues"
+                class="text-[10px] font-semibold leading-none tabular-nums"
+                :class="f.bcp === 0 ? 'text-muted' : 'text-default'"
+              >{{ f.bcp }}</span>
+              <div class="relative w-full flex-1 overflow-hidden rounded-sm bg-elevated/50">
+                <div
+                  class="ap-fill absolute inset-x-0 bottom-0 rounded-t-sm bg-amber-400/80"
+                  :style="{ height: `${f.bcpPct}%`, animationDelay: `${130 + f.index * 70}ms` }"
+                >
+                  <span class="ap-cap" />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -269,8 +289,9 @@ const clearTip = () => { hover.value = null; tip.value = null }
 </template>
 
 <style scoped>
-/* Each column grows from the baseline; the height IS the data, so the entrance only scales the box and
-   never changes the ratio. `both` keeps a column collapsed through its stagger delay. */
+/* Each bar grows from the baseline; the height IS the data, so the entrance only scales the box and never
+   changes the ratio. `both` keeps a bar collapsed through its stagger delay. The COLOUR is not set here -
+   each series passes its own `bg-*`, so the two can never fight over the same declaration. */
 .ap-fill {
   transform-origin: bottom center;
   animation: ap-rise 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
