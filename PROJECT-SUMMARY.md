@@ -8810,3 +8810,63 @@ tidak konflik dengan `title-boot` dan tidak saya sentuh (beda permukaan, beda an
 
 Caller `title-boot` sekarang 11: PC Ledger, Standby PC, Dispose, Factory PC, UPS, Access Point, Network
 Rack, CCTV Access, Handover, Issued Form, NOA.
+
+### UPS: field Asset Type (Fixed / Non Fixed) + redesign form (2026-11-22)
+
+HIRO memilih: "Tambahkan section Fixed Asset / Non Fixed Asset ke form UPS (butuh kolom baru di DB +
+migration) lalu redesign formnya"
+
+## 1. Database + API
+
+- `api/Domain/UpsUnit.cs`: properti baru `AssetType` (string, `[MaxLength(40)]`, default "Fixed Asset").
+- Migration `20261124124822_AddUpsAssetType`: `AssetType` nvarchar(40) NOT NULL **defaultValue "Fixed
+  Asset"** -> 20 baris lama langsung terisi "Fixed Asset" (tanpa backfill manual).
+- `UpsController`: `UpsInput` + `AssetType`; List/Get/ToDto ikut mengirim `assetType`; `Validate()`
+  menolak nilai selain dua itu ("Asset type must be either "Fixed Asset" or "Non Fixed Asset".");
+  `NormalizeAssetType()` -> kosong = "Fixed Asset", nilai valid dinormalkan (case/ spasi).
+- Migration sudah di-apply ke DB dev (`dotnet ef database update`, env Development).
+
+Catatan proses: `ef migrations remove` sempat gagal ("AddSwitchSerialNumber has already been
+applied") dan model sempat punya pending changes karena EF TIDAK membaca C# property initializer
+sebagai default kolom - jadi `.HasDefaultValue(...)` di snapshot saya hapus (default tetap ada di
+migration). `migrations has-pending-model-changes` sekarang bersih.
+
+## 2. Form (redesign)
+
+Sebelum: Brand | Model (2 kolom), lalu S/N full width, lalu Location full width -> 4 baris input.
+
+Sesudah:
+- **Asset classification** di paling atas, dua kartu radio (idiom yang sama dengan "Access point type"
+  di form AP): ikon + label + hint ("Capitalised and tracked in the asset register" / "Expensed or
+  consumed, not capitalised"). Input radio asli (sr-only) di dalam label -> navigasi panah + focus ring
+  gratis. Default terpilih Fixed Asset.
+- **Unit details** jadi 2x2: Brand | Model, S/N | Location (S/N & Location nilainya pendek, jadi
+  dialog tidak perlu 4 baris).
+- Error line tetap reserved (`min-h-5`) -> dialog tidak berubah ukuran saat error muncul.
+- Details dialog (read-only) dapat baris "Asset type" dengan badge (primary untuk Fixed, amber untuk
+  Non Fixed).
+- Search ikut mencocokkan asset type.
+- Ikon `lucide:landmark`, `lucide:receipt`, `lucide:tag` didaftarkan di nuxt.config clientBundle
+  (dipakai lewat `:name` dinamis -> scanner template tidak menemukannya).
+
+## VERIFIKASI
+
+API:
+- List: 20 row, semua `assetType: "Fixed Asset"` (backfill migration ✓), key `assetType` ada.
+- POST "Non Fixed Asset" -> tersimpan ✓; POST tanpa assetType -> "Fixed Asset" ✓;
+  POST "Leased" -> ditolak dengan pesan ✓.
+- PUT (edit) -> assetType ikut berubah ✓.
+
+Browser (1440x900):
+- Dialog 672x486, top 207 (muat), 2 radio: Fixed Asset / Non Fixed Asset, terpilih Fixed Asset.
+- 5 ikon ter-render (mask data URL) - landmark, receipt, tag, battery-charging, dll.
+- Klik "Non Fixed Asset" -> highlight pindah (Fixed idle, Non Fixed ACTIVE) ✓.
+- Submit kosong -> "Brand is required." dan tinggi dialog TETAP 486 (reserved space bekerja) ✓.
+- Isi + Add UPS -> dialog tertutup, row masuk (21 -> ...), API balik `assetType: "Non Fixed Asset"` ✓.
+- Details dialog: "Asset type = Non Fixed Asset" ✓.
+- Edit -> radio terbaca "Non Fixed Asset" ✓, ganti ke Fixed Asset + Save -> API "Fixed Asset" ✓.
+- Row QA (id 26) sudah dihapus: 20 row, tidak ada sisa QA ✓.
+- Build web rc=0 0 ERROR, build API 0 error.
+
+Catatan: production pakai `db.Database.MigrateAsync()` saat start, jadi migration ikut jalan sendiri
+saat deploy - tidak perlu langkah manual di server.

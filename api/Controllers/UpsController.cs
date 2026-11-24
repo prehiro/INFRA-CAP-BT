@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Controllers;
 
-public record UpsInput(string? Brand, string? Model, string? SerialNumber, string? Location);
+public record UpsInput(string? Brand, string? Model, string? SerialNumber, string? Location, string? AssetType);
 
 /// <summary>The UPS register: list, add, edit, delete.</summary>
 [ApiController]
@@ -19,13 +19,18 @@ public class UpsController(AppDbContext db) : ControllerBase
     private const int MaxSerialLength = 60;
     private const int MaxLocationLength = 160;
 
+    /// <summary>The only two values the asset-classification field accepts. A UPS is a fixed asset by
+    /// default; "Non Fixed Asset" exists for units that are expensed/consumable rather than capitalised.</summary>
+    private const string FixedAsset = "Fixed Asset";
+    private const string NonFixedAsset = "Non Fixed Asset";
+
     [HttpGet]
     public async Task<IActionResult> List(CancellationToken ct)
     {
         var units = await db.UpsUnits
             .AsNoTracking()
             .OrderBy(x => x.Id)
-            .Select(x => new { x.Id, x.Brand, x.Model, x.SerialNumber, x.Location, x.CreatedAt })
+            .Select(x => new { x.Id, x.Brand, x.Model, x.SerialNumber, x.Location, x.AssetType, x.CreatedAt })
             .ToListAsync(ct);
         return Ok(units);
     }
@@ -35,7 +40,7 @@ public class UpsController(AppDbContext db) : ControllerBase
     {
         var unit = await db.UpsUnits.AsNoTracking()
             .Where(x => x.Id == id)
-            .Select(x => new { x.Id, x.Brand, x.Model, x.SerialNumber, x.Location, x.CreatedAt })
+            .Select(x => new { x.Id, x.Brand, x.Model, x.SerialNumber, x.Location, x.AssetType, x.CreatedAt })
             .SingleOrDefaultAsync(ct);
         return unit is null ? NotFound() : Ok(unit);
     }
@@ -52,7 +57,8 @@ public class UpsController(AppDbContext db) : ControllerBase
             Brand = input.Brand!.Trim(),
             Model = input.Model!.Trim(),
             SerialNumber = input.SerialNumber!.Trim(),
-            Location = input.Location!.Trim()
+            Location = input.Location!.Trim(),
+            AssetType = NormalizeAssetType(input.AssetType)
         };
         db.UpsUnits.Add(unit);
         await db.SaveChangesAsync(ct);
@@ -73,6 +79,7 @@ public class UpsController(AppDbContext db) : ControllerBase
         unit.Model = input.Model!.Trim();
         unit.SerialNumber = input.SerialNumber!.Trim();
         unit.Location = input.Location!.Trim();
+        unit.AssetType = NormalizeAssetType(input.AssetType);
         await db.SaveChangesAsync(ct);
         return Ok(ToDto(unit));
     }
@@ -102,6 +109,13 @@ public class UpsController(AppDbContext db) : ControllerBase
         if (string.IsNullOrWhiteSpace(input.Location)) return "Location is required.";
         if (input.Location.Trim().Length > MaxLocationLength) return $"Location is too long (maximum {MaxLocationLength} characters).";
 
+        // Anything other than the two known values is a typo from a caller that is not our form, so it
+        // is refused rather than stored - a third spelling would silently split every filter on this.
+        if (!string.IsNullOrWhiteSpace(input.AssetType)
+            && !string.Equals(input.AssetType.Trim(), FixedAsset, StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(input.AssetType.Trim(), NonFixedAsset, StringComparison.OrdinalIgnoreCase))
+            return $"Asset type must be either \"{FixedAsset}\" or \"{NonFixedAsset}\".";
+
         // The serial is the sheet's natural key: two rows for one unit would let an edit silently
         // fork the register, so a duplicate is a friendly refusal rather than a database error.
         var serial = input.SerialNumber.Trim();
@@ -118,6 +132,16 @@ public class UpsController(AppDbContext db) : ControllerBase
         x.Model,
         x.SerialNumber,
         x.Location,
+        x.AssetType,
         x.CreatedAt
     };
+
+    /// <summary>Missing means the default; a known value is canonicalised so the stored spelling never
+    /// drifts by case or spacing.</summary>
+    private static string NormalizeAssetType(string? value)
+    {
+        var trimmed = value?.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed)) return FixedAsset;
+        return string.Equals(trimmed, NonFixedAsset, StringComparison.OrdinalIgnoreCase) ? NonFixedAsset : FixedAsset;
+    }
 }

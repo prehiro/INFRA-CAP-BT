@@ -20,7 +20,18 @@ const query = ref('')
 const showEditor = ref(false)
 const editingId = ref<number | null>(null)
 const formError = ref('')
-const draft = reactive<UpsInput>({ brand: '', model: '', serialNumber: '', location: '' })
+const draft = reactive<UpsInput>({ brand: '', model: '', serialNumber: '', location: '', assetType: ASSET_FIXED })
+
+/**
+ * The two asset classifications, in the order the form offers them. Kept as constants so the radio
+ * group, the empty-draft default and the details dialog cannot drift apart on the spelling.
+ */
+const ASSET_FIXED = 'Fixed Asset'
+const ASSET_NON_FIXED = 'Non Fixed Asset'
+const ASSET_TYPES = [
+  { value: ASSET_FIXED, label: 'Fixed Asset', hint: 'Capitalised and tracked in the asset register', icon: 'i-lucide-landmark' },
+  { value: ASSET_NON_FIXED, label: 'Non Fixed Asset', hint: 'Expensed or consumed, not capitalised', icon: 'i-lucide-receipt' }
+] as const
 
 const showDelete = ref(false)
 const deleteTarget = ref<UpsUnit | null>(null)
@@ -39,7 +50,7 @@ const visible = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (!q) return units.value
   return units.value.filter((u) =>
-    [u.brand, u.model, u.serialNumber, u.location].some((v) => v.toLowerCase().includes(q))
+    [u.brand, u.model, u.serialNumber, u.location, u.assetType].some((v) => (v || '').toLowerCase().includes(q))
   )
 })
 
@@ -65,7 +76,7 @@ async function load() {
 function openAdd() {
   if (!isAdmin.value) return
   editingId.value = null
-  Object.assign(draft, { brand: '', model: '', serialNumber: '', location: '' })
+  Object.assign(draft, { brand: '', model: '', serialNumber: '', location: '', assetType: ASSET_FIXED })
   formError.value = ''
   showEditor.value = true
 }
@@ -77,7 +88,10 @@ function openEdit(unit: UpsUnit) {
     brand: unit.brand,
     model: unit.model,
     serialNumber: unit.serialNumber,
-    location: unit.location
+    location: unit.location,
+    // Rows saved before the column existed come back empty; treat those as the default rather than
+    // leaving the radio group with nothing selected.
+    assetType: unit.assetType || ASSET_FIXED
   })
   formError.value = ''
   showEditor.value = true
@@ -97,7 +111,8 @@ async function save() {
       brand: draft.brand.trim(),
       model: draft.model.trim(),
       serialNumber: draft.serialNumber.trim(),
-      location: draft.location.trim()
+      location: draft.location.trim(),
+      assetType: draft.assetType
     }
     if (editingId.value === null) {
       const saved = await apiCreateUps(payload)
@@ -314,11 +329,48 @@ onMounted(load)
             </div>
 
             <form @submit.prevent="save">
-              <div class="space-y-4 px-5 pb-4 pt-4">
+              <div class="space-y-5 px-5 pb-4 pt-4">
+                <!-- Classification leads the form: it decides how the unit is carried, and each card
+                     says what the choice MEANS rather than leaving two bare labels to guess between.
+                     Same two-card radio idiom as the Access Point type picker, so it reads as the app's
+                     own rather than a new invention. Real radio inputs (sr-only) inside their labels keep
+                     arrow-key navigation and the focus ring free. -->
+                <fieldset :disabled="busy">
+                  <legend class="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    <UIcon name="i-lucide-tag" class="size-3.5" />
+                    Asset classification
+                  </legend>
+                  <div class="grid gap-2 sm:grid-cols-2">
+                    <label
+                      v-for="opt in ASSET_TYPES"
+                      :key="opt.value"
+                      class="flex min-w-0 items-start gap-3 rounded-xl border p-3 transition-colors focus-within:ring-2 focus-within:ring-primary/40"
+                      :class="[
+                        draft.assetType === opt.value ? 'border-primary/60 bg-primary/10' : 'border-default bg-elevated/40 hover:bg-elevated',
+                        busy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      ]"
+                    >
+                      <input v-model="draft.assetType" type="radio" name="ups-asset-type" :value="opt.value" class="sr-only" />
+                      <span
+                        class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg ring-1 ring-inset transition-colors"
+                        :class="draft.assetType === opt.value ? 'bg-primary/15 text-primary ring-primary/30' : 'bg-default/60 text-muted ring-default'"
+                      >
+                        <UIcon :name="opt.icon" class="size-4" />
+                      </span>
+                      <span class="min-w-0">
+                        <span class="block text-sm font-semibold leading-tight" :class="draft.assetType === opt.value ? 'text-primary' : 'text-highlighted'">{{ opt.label }}</span>
+                        <span class="mt-0.5 block text-xs leading-snug text-muted">{{ opt.hint }}</span>
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+
                 <p class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   <UIcon name="i-lucide-battery-charging" class="size-3.5" />
                   Unit details
                 </p>
+                <!-- 2x2 rather than two full-width rows: S/N and Location are short values, so pairing
+                     them keeps the dialog two rows of inputs instead of four. -->
                 <div class="grid gap-3 sm:grid-cols-2">
                   <fieldset :disabled="busy">
                     <legend class="mb-1.5 text-sm font-medium text-highlighted">Brand</legend>
@@ -328,15 +380,15 @@ onMounted(load)
                     <legend class="mb-1.5 text-sm font-medium text-highlighted">Model</legend>
                     <UInput v-model="draft.model" class="w-full" maxlength="120" placeholder="e.g. Smart-UPS SRT 5000VA 230V" :disabled="busy" />
                   </fieldset>
+                  <fieldset :disabled="busy">
+                    <legend class="mb-1.5 text-sm font-medium text-highlighted">S/N</legend>
+                    <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :disabled="busy" />
+                  </fieldset>
+                  <fieldset :disabled="busy">
+                    <legend class="mb-1.5 text-sm font-medium text-highlighted">Location</legend>
+                    <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :disabled="busy" />
+                  </fieldset>
                 </div>
-                <fieldset :disabled="busy">
-                  <legend class="mb-1.5 text-sm font-medium text-highlighted">S/N</legend>
-                  <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :disabled="busy" />
-                </fieldset>
-                <fieldset :disabled="busy">
-                  <legend class="mb-1.5 text-sm font-medium text-highlighted">Location</legend>
-                  <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :disabled="busy" />
-                </fieldset>
 
                 <!-- Reserved, so a validation message never makes the dialog grow. -->
                 <p role="alert" class="min-h-5 text-xs text-error">{{ formError }}</p>
@@ -398,6 +450,13 @@ onMounted(load)
                 <dd class="truncate font-mono tabular-nums">{{ viewTarget.serialNumber }}</dd>
                 <dt class="text-muted">Location</dt>
                 <dd class="truncate">{{ viewTarget.location }}</dd>
+                <dt class="text-muted">Asset type</dt>
+                <dd class="truncate">
+                  <span class="rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
+                    :class="viewTarget.assetType === ASSET_NON_FIXED ? 'bg-amber-400/10 text-amber-500 ring-amber-400/25' : 'bg-primary/10 text-primary ring-primary/25'">
+                    {{ viewTarget.assetType || ASSET_FIXED }}
+                  </span>
+                </dd>
                 <dt class="text-muted">Registered</dt>
                 <dd class="truncate tabular-nums">{{ formatStamp(viewTarget.createdAt) }}</dd>
               </dl>

@@ -198,6 +198,8 @@ export interface UpsUnit {
   model: string
   serialNumber: string
   location: string
+  /** 'Fixed Asset' | 'Non Fixed Asset' - how the unit is carried in the asset register. */
+  assetType: string
   createdAt: string
 }
 

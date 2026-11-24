@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Api.Domain;
 
 /// <summary>One UPS in the register: what it is, its serial, and where it stands.</summary>
@@ -17,6 +19,15 @@ public class UpsUnit
 
     /// <summary>Where the unit stands, e.g. "CAP Server Room B2L2".</summary>
     public string Location { get; set; } = string.Empty;
+
+    /// <summary>
+    /// How the unit is carried in the asset register: "Fixed Asset" or "Non Fixed Asset".
+    /// Kept as a plain string with a default rather than an enum/lookup table: it is a two-value
+    /// classification that the register writes and filters on, and a lookup would add a join to the
+    /// one screen that has to stay instant.
+    /// </summary>
+    [MaxLength(40)]
+    public string AssetType { get; set; } = "Fixed Asset";
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
