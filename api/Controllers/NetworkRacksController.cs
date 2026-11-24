@@ -183,8 +183,14 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
         await db.SaveChangesAsync(ct);
 
         var serial = UpsRackSync.SerialOf(settings);
-        if (serial is not null && !string.Equals(serial, previousSerial, StringComparison.OrdinalIgnoreCase))
-            await UpsRackSync.SyncAsync(db, serial, UpsRackSync.LocationFor(rack.FloorMap?.Name, rack.Name), ct);
+        if (!string.Equals(serial, previousSerial, StringComparison.OrdinalIgnoreCase))
+        {
+            // Both directions: the serial it held until now is released (its row goes back to the
+            // location it had before, or to Unassigned), and the one it declares now is claimed.
+            await UpsRackSync.MoveAsync(
+                db, rack, previousSerial, serial,
+                UpsRackSync.LocationFor(rack.FloorMap?.Name, rack.Name), ct);
+        }
 
         return NoContent();
     }

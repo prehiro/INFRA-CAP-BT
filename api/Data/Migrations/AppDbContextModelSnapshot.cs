@@ -403,6 +403,9 @@ namespace Api.Data.Migrations
                     b.Property<int>("SizeU")
                         .HasColumnType("int");
 
+                    b.Property<string>("UpsPrevLocation")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<double>("X")
                         .HasColumnType("float");
 

@@ -16,6 +16,13 @@ public class NetworkRack
     // side-panel state, traffic simulation, orbit, intensity). The HUD settings used to live only in
     // the component, so every close/reopen of the modal silently reset them.
     public string HudSettings { get; set; } = string.Empty;
+    /// <summary>
+    /// The register location this rack displaced when it claimed its UPS. Kept outside HudSettings
+    /// because the 3D panel rewrites that whole blob from its own state on every save, which would
+    /// erase anything we stored there. Used to put the old location back when the rack lets the unit
+    /// go (upsModel none, or the serial cleared).
+    /// </summary>
+    public string? UpsPrevLocation { get; set; }
     // Fraction of image width/height (0..1), independent of screen size.
     public double X { get; set; }
     public double Y { get; set; }

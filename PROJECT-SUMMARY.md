@@ -8953,3 +8953,56 @@ nilai itu dipakai; yang menimpa hanya perubahan serial di panel rack.
 - Kolom/sn di tabel belum jadi link yang bisa diklik ke halaman rack: page network-rack belum punya
   deep-link (tidak ada `route.query`), jadi link-nya belum bisa mendarat tepat di rack-nya.
 - Format location masih `{floor} - Rack {nama}`. Kalau mau nama rack saja ("C"), bilang.
+
+### UPS <-> Rack: pelepasan (none / hapus SN) tidak meninggalkan nama rack (2026-11-22)
+
+HIRO: "saya pilih none ups atau hapus sn, tapi record lama masih tetap namanya tolong atur bagaimana
+bagusnya"
+
+Ini benar: rilis belum ada. Rack hanya bisa MENEMPEL (claim), tidak bisa MELEPAS. Jadi begitu panel
+dipilih none atau SN dihapus, baris register tetap memakai nama rack - register-nya bohong.
+
+## Aturan yang saya pilih (dan alasannya)
+
+Rack mengingat location yang dia tukar, lalu mengembalikannya saat melepas.
+
+1. Kolom baru `NetworkRack.UpsPrevLocation` (nvarchar(max), nullable) + migration
+   `20261124142718_AddRackUpsPrevLocation`.
+   Kenapa bukan disimpan di `HudSettings`: panel 3D menulis ULANG seluruh blob itu dari state-nya
+   sendiri tiap save, jadi apa pun yang kita titipkan di sana akan terhapus pada save berikutnya.
+2. `UpsRackSync.SerialOf()` sekarang mengembalikan null kalau `upsModel == "none"` ATAU `upsSerial`
+   kosong. Dua-duanya adalah cara melepas, jadi dua-duanya harus membaca "tidak ada serial" -
+   kalau tidak, ganti 3000 -> none dengan serial lama masih di kotak akan terlihat seperti tidak ada
+   perubahan dan register tetap menahan nama rack.
+3. `MoveAsync()`: melepas serial lama + mengklaim serial baru.
+   - Yang dilepas: hanya baris yang location-nya MASIH alamat rack ini (artinya belum dikoreksi
+     manual) -> dikembalikan ke `UpsPrevLocation`, atau `Unassigned` kalau tidak ada yang tersimpan.
+   - Yang diklaim: location baris itu disimpan dulu ke `UpsPrevLocation`, lalu ditimpa alamat rack.
+4. Kenapa "Unassigned" dan bukan dikosongkan: sel kosong di tabel terbaca seperti bug render, dan
+   field Location wajib diisi. Jadi keadaan tidak-dicatat-kan dapat kata sendiri. Kalau mau kosong,
+   bilang - satu baris.
+
+## VERIFIKASI (live, siklus penuh di rack 11 / BUILDING 1 / UPS id 5)
+
+    a. UPS5 dikembalikan ke nilai ketiknya  -> "CAP Prod B2 - Rack C"
+    b. serial rack -> QA-NONE (rilis)       -> UPS5 TIDAK disentuh (location-nya bukan alamat rack)
+       serial rack -> AS2420144435 (klaim)  -> "BUILDING 1 - Rack D-B1"
+    c. pilih NONE (model none, SN tetap)    -> "CAP Prod B2 - Rack C"   <-- kasus HIRO #1
+    d. klaim lagi (3000)                    -> "BUILDING 1 - Rack D-B1"
+    e. hapus SN (model 3000, SN "")         -> "CAP Prod B2 - Rack C"   <-- kasus HIRO #2
+    f. restore                              -> "BUILDING 1 - Rack D-B1"
+    g. baris yang tidak punya pendahuluan (location-nya sudah alamat rack) -> dilepas jadi
+       "Unassigned"
+
+Data akhir: rack 11 dikembalikan PERSIS ke setting HIRO sebelum test
+(`{"upsModel":"none","upsSerial":"AS242014443","doorOpen":true,...}`), UPS5 = "CAP Prod B2 - Rack C",
+20 row, tidak ada sisa QA.
+
+## DUA TEMUAN SISI LAIN
+
+1. Serial di panel rack 11 terbaca `AS242014443` - 11 karakter, kurang angka 5 terakhir
+   (yang benar `AS2420144435`). Karena model-nya sekarang "none", nilai itu tidak dipakai, tapi
+   kalau nanti dikembalikan ke 3000 dia tidak akan mengklaim apa pun. Mau saya betulkan?
+2. Panel menyimpan serial setiap 400ms setelah ada perubahan, jadi menghapus kolom lalu mengetik
+   ulang akan menyimpan serial separuh dulu (mis. "A"). Dengan aturan sekarang itu aman (tidak akan
+   match siapa pun), cuma bikin location berkedip dua kali saat ganti unit.
