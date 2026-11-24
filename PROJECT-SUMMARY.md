@@ -8870,3 +8870,29 @@ Browser (1440x900):
 
 Catatan: production pakai `db.Database.MigrateAsync()` saat start, jadi migration ikut jalan sendiri
 saat deploy - tidak perlu langkah manual di server.
+
+### UPS: kolom Asset type di tabel register (2026-11-22)
+
+HIRO: "di tabelnya tambah kolom nya juga"
+
+- Header baru "Asset type" (`w-32`) antara Location dan Actions, colspan baris loading/kosong 6 -> 7.
+- Isi sel: badge yang sama dengan details dialog - primary untuk Fixed Asset, amber untuk Non Fixed
+  Asset - `text-[11px]`, tinggi 20px, tidak wrap.
+- Komentar di kode menyebut kenapa badge-nya sama dengan dialog (biar warna tidak drift) dan kenapa
+  kolomnya dikasih lebar tetap ("Non Fixed Asset" adalah nilai terlebar; kalau wrap, semua baris jadi
+  lebih tinggi cuma untuk satu nilai).
+
+## VERIFIKASI
+
+- Header: NO | BRAND | MODEL | SN | LOCATION | ASSET TYPE | ACTIONS (7 kolom); 21 baris semuanya
+  punya 7 `<td>`.
+- Lebar: 1440x900 -> tabel 1166px, wrapper scrollWidth == clientWidth (tidak ada scroll), halaman
+  1440 == 1440. 1280x720 -> 991 == 991, tidak ada scroll.
+- 1024x768 -> wrapper scroll 880 vs 735 (overflowX auto). Ini BUKAN dari kolom baru: tabelnya
+  `min-w-[880px]`, dan A/B hide kolom Asset type tetap 880px -> register memang sudah scroll di 1024
+  sebelum perubahan ini.
+- Badge: baris QA (Non Fixed Asset) = amber `oklch(0.769 0.188 70.08)` tinggi 20px; baris lain (Fixed
+  Asset) = primary `rgb(0, 220, 130)` tinggi 20px; tinggi baris 43px seragam (tidak ada yang wrap).
+- Baris QA (id 27) dihapus lagi: 20 row, tidak ada sisa data QA.
+
+Build web rc=0, 0 ERROR.

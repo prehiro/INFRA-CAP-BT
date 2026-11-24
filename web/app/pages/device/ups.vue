@@ -224,6 +224,9 @@ onMounted(load)
                   <th class="px-3 py-2.5 text-left font-semibold">Model</th>
                   <th class="px-3 py-2.5 text-left font-semibold">SN</th>
                   <th class="px-3 py-2.5 text-left font-semibold">Location</th>
+                  <!-- Sized, not wrapping: the badge is the widest thing in the row and a two-line
+                       "Non Fixed Asset" would make every row taller to fit one value. -->
+                  <th class="w-32 px-3 py-2.5 text-left font-semibold">Asset type</th>
                   <th class="w-28 px-3 py-2.5 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
@@ -238,6 +241,16 @@ onMounted(load)
                   <td class="px-3 py-2.5 text-default">{{ unit.model }}</td>
                   <td class="px-3 py-2.5 font-mono text-xs text-default">{{ unit.serialNumber }}</td>
                   <td class="px-3 py-2.5 text-default">{{ unit.location }}</td>
+                  <!-- Same badge as the details dialog, so the register and the dialog cannot drift on
+                       colour: primary for capitalised units, amber for the expensed ones. Rows saved
+                       before the column existed render as Fixed Asset, which is what the migration
+                       backfilled them to. -->
+                  <td class="px-3 py-2.5">
+                    <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ring-1 ring-inset"
+                      :class="unit.assetType === ASSET_NON_FIXED ? 'bg-amber-400/10 text-amber-500 ring-amber-400/25' : 'bg-primary/10 text-primary ring-primary/25'">
+                      {{ unit.assetType || ASSET_FIXED }}
+                    </span>
+                  </td>
                   <td class="px-3 py-1.5">
                     <div class="flex justify-end gap-1">
                       <!-- Native xs ghost buttons, the same construction (and icon animations) as the PC
@@ -285,10 +298,10 @@ onMounted(load)
                 </tr>
 
                 <tr v-if="loading">
-                  <td :colspan="6" class="px-3 py-12 text-center text-sm text-muted">Loading UPS register…</td>
+                  <td :colspan="7" class="px-3 py-12 text-center text-sm text-muted">Loading UPS register…</td>
                 </tr>
                 <tr v-else-if="!visible.length">
-                  <td :colspan="6" class="px-3 py-12 text-center text-sm text-muted">
+                  <td :colspan="7" class="px-3 py-12 text-center text-sm text-muted">
                     {{ query ? `No UPS matches "${query}".` : 'No UPS registered yet.' }}
                   </td>
                 </tr>
