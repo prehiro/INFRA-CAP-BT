@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Api.Data;
+using Api.Services;
 using Api.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -164,15 +165,27 @@ public class NetworkRacksController(AppDbContext db) : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> SaveHudSettings(int floorId, int id, RackHudSettingsInput input, CancellationToken ct)
     {
-        var rack = await db.NetworkRacks.SingleOrDefaultAsync(x => x.Id == id && x.FloorMapId == floorId, ct);
+        var rack = await db.NetworkRacks
+            .Include(x => x.FloorMap)
+            .SingleOrDefaultAsync(x => x.Id == id && x.FloorMapId == floorId, ct);
         if (rack is null) return NotFound();
 
         var settings = input.Settings?.Trim() ?? string.Empty;
         if (settings.Length > MaxHudSettingsLength)
             return BadRequest(new { message = $"HUD settings must be at most {MaxHudSettingsLength} characters." });
 
+        // Read before overwriting: the register is only touched when the declared serial CHANGES, so
+        // nudging the 3D view (which saves its whole settings blob every time) cannot keep stomping a
+        // location somebody corrected by hand in the register.
+        var previousSerial = UpsRackSync.SerialOf(rack.HudSettings);
+
         rack.HudSettings = settings;
         await db.SaveChangesAsync(ct);
+
+        var serial = UpsRackSync.SerialOf(settings);
+        if (serial is not null && !string.Equals(serial, previousSerial, StringComparison.OrdinalIgnoreCase))
+            await UpsRackSync.SyncAsync(db, serial, UpsRackSync.LocationFor(rack.FloorMap?.Name, rack.Name), ct);
+
         return NoContent();
     }
 

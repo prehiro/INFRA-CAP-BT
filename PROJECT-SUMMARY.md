@@ -8896,3 +8896,60 @@ HIRO: "di tabelnya tambah kolom nya juga"
 - Baris QA (id 27) dihapus lagi: 20 row, tidak ada sisa data QA.
 
 Build web rc=0, 0 ERROR.
+
+### UPS <-> Network Rack: SN rack otomatis mengisi Location UPS (2026-11-22)
+
+HIRO: "sya mau page ups list serialnumber nya nge link dengan rack network yang ada. jadi jika ada
+rack UPS SN nya ada di dalam ups record, otomatis update location ups list sesuai nama rack nya"
+
+## Cara kerja
+
+Rack adalah sumber kebenaran. Panel 3D rack sudah menyimpan UPS yang terpasang di dalamnya
+(`hudSettings` JSON: `upsModel` + `upsSerial`). Jadi begitu sebuah rack menyimpan settings-nya dengan
+serial yang ada di register UPS, baris UPS dengan serial itu otomatis pindah location-nya ke nama rack.
+
+- `api/Services/UpsRackSync.cs` (baru): `SerialOf(hudSettings)` (parse `upsSerial`, tahan JSON rusak
+  seperti `UpsUnits()`), `LocationFor(floorName, rackName)` -> `"{floor} - Rack {name}"`, dan
+  `SyncAsync(db, serial, location, ct)` yang mencari baris `UpsUnits` dengan SN sama (case-insensitive,
+  karena SN diketik tangan di dua panel berbeda) lalu menimpa Location-nya.
+- `NetworkRacksController.SaveHudSettings`: sekarang `Include(x => x.FloorMap)`, membaca serial LAMA
+  sebelum ditimpa, simpan, lalu sync HANYA kalau serial-nya berubah.
+
+Kenapa hanya kalau serial berubah: panel 3D menyimpan seluruh blob settings-nya tiap kali ada perubahan
+(debounce 400ms). Kalau sync jalan di setiap save, location yang sudah dikoreksi manual di register
+akan terus ditimpa tiap kali user menggeser view. Dengan syarat "serial berubah", koreksi manual
+selamat - sudah diuji.
+
+## Keputusan: satu arah
+
+Rack -> register saja. Tidak ada yang menulis balik ke rack, jadi mengedit register tidak bisa
+memindahkan unit keluar dari rack tempat ia digambar. Serial yang dirujuk rack tapi belum ada di
+register bukan error - unit bisa dipasang sebelum dicatat.
+
+Sync TIDAK dipasang di jalur create/update UPS. Jadi kalau user mengetik location manual di form UPS,
+nilai itu dipakai; yang menimpa hanya perubahan serial di panel rack.
+
+## VERIFIKASI (live, API :5099)
+
+1. Rack 11 (D-B1, BUILDING 1) di-mount QA-LINK-1 -> location QA-LINK-1 jadi
+   `BUILDING 1 - Rack D-B1` ✓
+2. Location QA-LINK-1 dikoreksi manual jadi "Manual QA Room", lalu hud rack yang SAMA disimpan lagi ->
+   location tetap "Manual QA Room" ✓ (tidak ditimpa)
+3. Serial rack diganti QA-LINK-2 -> QA-LINK-2 yang pindah, QA-LINK-1 tetap ✓
+4. Serial ditulis huruf kecil `qa-link-1` -> tetap match (case-insensitive) ✓
+5. Rack 11 dikembalikan ke hud aslinya, 2 record QA dihapus -> 20 row, tidak ada sisa QA ✓
+
+## DUA HAL YANG PERLU DIKETAHUI
+
+1. Saat test, saya sempat menimpa `hudSettings` rack 11 dengan `""` dan mengembalikannya lagi ke nilai
+   asli. Sudah dipulihkan PERSIS: `{"upsModel":"3000","upsSerial":"AS2420144435","doorOpen":true,
+   "sidesVisible":false,"traffic":true,"autoRotate":false,"intensity":75}` ✓
+2. Efek samping yang BENAR sesuai fitur: UPS id 5 (SN `AS2420144435`, sebelumnya location
+   "CAP Prod B2 - Rack C") sekarang jadi **"BUILDING 1 - Rack D-B1"**, karena rack D-B1 mendeklarasikan
+   SN itu. Kalau bukan itu yang dimaksud, tinggal bilang - saya kembalikan.
+
+## BELUM
+
+- Kolom/sn di tabel belum jadi link yang bisa diklik ke halaman rack: page network-rack belum punya
+  deep-link (tidak ada `route.query`), jadi link-nya belum bisa mendarat tepat di rack-nya.
+- Format location masih `{floor} - Rack {nama}`. Kalau mau nama rack saja ("C"), bilang.
