@@ -9006,3 +9006,42 @@ Data akhir: rack 11 dikembalikan PERSIS ke setting HIRO sebelum test
 2. Panel menyimpan serial setiap 400ms setelah ada perubahan, jadi menghapus kolom lalu mengetik
    ulang akan menyimpan serial separuh dulu (mis. "A"). Dengan aturan sekarang itu aman (tidak akan
    match siapa pun), cuma bikin location berkedip dua kali saat ganti unit.
+
+### Modal Add/Edit UPS: smart-fill (SuggestInput) di Brand + Model (2026-11-22)
+
+HIRO: "OK SEKARANG PADA MODAL ADD UPS BUAT SMARTFILL PADA TEXTBOX BRAND,MODEL"
+
+Brand dan Model sekarang pakai `SuggestInput` - komponen yang sama dengan form Access Point
+("Brand/Model already in the register") - jadi pilih ejaan yang sudah ada, bukan ketik ulang.
+
+- `brandSuggestions`: brand unik dari 20 unit, terbanyak dulu, meta "used 17 times".
+- `modelSuggestions`: model unik, terbanyak dulu. Begitu brand diisi, daftar model MENYEMPIT ke brand
+  itu saja (model brand lain cuma jadi noise); meta-nya ganti jadi jumlah pemakaian. Kalau brand masih
+  kosong, meta-nya "APC · 4×" (brand + jumlah).
+- `modelHeader` / `modelPlaceholder` ikut brand: header jadi "APC models already in the register",
+  placeholder jadi model pertama milik brand itu.
+- Select/Enter/click semua jalan (SuggestInput sudah handle) + chip "Selected from existing records"
+  di bawah box (bahasa yang sama dengan filter badge, dan ruangnya sudah di-reserve).
+
+## Dua hal yang disesuaikan supaya rapi
+
+1. Tinggi input: SuggestInput memakai `h-9` (36px) sedangkan UInput default 32px. Di grid 2x2 itu bikin
+   baris Brand/Model 4px lebih tinggi dari baris S/N + Location. S/N + Location saya samakan ke `h-9`
+   (cuma di dialog ini), jadi keempatnya rata 36px.
+2. Dialog jadi 486 -> 518px (tinggi tetap, tidak melebar): +24px dari baris chip yang di-reserve
+   (memang harus, biar tidak loncat saat chip muncul) + 8px dari input yang lebih tinggi.
+
+## VERIFIKASI (browser, 1440x900 dan 1280x720)
+
+- Dialog 672x518, scrollH == clientH (tidak ada scroll internal); di 1280x720 top=101, sisa 619 < 720 ✓.
+- Brand: ketik "a" -> dropdown "BRAND ALREADY IN THE REGISTER" + "APC used 17 times" -> klik -> nilai
+  "APC" + chip "Selected from existing records" muncul.
+- Model: header "APC MODELS ALREADY IN THE REGISTER", isinya 4 model APC saja (Smart-UPS
+  SMT3000RMI2UC used 5x, Smart-UPS SRT 5000VA used 2x, SRT used once, Back UPS Pro 1500 used 9x) -
+  model PowerPlus tidak muncul ✓ (filter brand bekerja).
+- Tinggi keempat input 36px seragam ✓.
+- Simpan masih jalan: isi 4 field -> Add UPS -> dialog tertutup, row masuk ✓ (row QA sudah dihapus).
+- Build `npx nuxt build` rc=0, 0 ERROR.
+
+Catatan: waktu pembersihan, ada 1 row milik lu sendiri di register (id 31: APC / SRT / SN "1" /
+"BUILDING 1 - Rack S") - itu hasil tes lu, tidak saya hapus.

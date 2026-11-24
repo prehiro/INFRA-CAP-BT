@@ -33,6 +33,62 @@ const ASSET_TYPES = [
   { value: ASSET_NON_FIXED, label: 'Non Fixed Asset', hint: 'Expensed or consumed, not capitalised', icon: 'i-lucide-receipt' }
 ] as const
 
+/**
+ * Brand and Model are typed by hand today, and the register already holds 20 units from the same
+ * handful of manufacturers - so the two fields get the same SuggestInput treatment the Access Point
+ * form gives Brand/Model: pick an existing spelling instead of retyping it, and the models narrow to
+ * the brand being typed because that is the only thing the user knows at that point.
+ */
+const brandSuggestions = computed(() => {
+  const counts = new Map<string, number>()
+  for (const unit of units.value) {
+    const brand = unit.brand.trim()
+    if (brand) counts.set(brand, (counts.get(brand) ?? 0) + 1)
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([value, n]) => ({
+      value,
+      label: value,
+      meta: n === 1 ? 'used once' : `used ${n} times`,
+      hint: 'Selected from existing records'
+    }))
+})
+
+const modelSuggestions = computed(() => {
+  const brand = draft.brand.trim().toLowerCase()
+  const counts = new Map<string, { n: number; brand: string }>()
+  for (const unit of units.value) {
+    const model = unit.model.trim()
+    if (!model) continue
+    // Once a brand is on the field, another brand's models are noise - the list is short enough that
+    // showing them would bury the right one.
+    if (brand && !unit.brand.trim().toLowerCase().includes(brand)) continue
+    const seen = counts.get(model)
+    if (seen) seen.n++
+    else counts.set(model, { n: 1, brand: unit.brand.trim() })
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1].n - a[1].n || a[0].localeCompare(b[0]))
+    .map(([value, v]) => ({
+      value,
+      label: value,
+      meta: brand ? (v.n === 1 ? 'used once' : `used ${v.n} times`) : `${v.brand} · ${v.n}×`,
+      hint: 'Selected from existing records'
+    }))
+})
+
+/** When a brand is on the field, its own first model makes a better example than a generic one. */
+const modelPlaceholder = computed(() => {
+  const brand = draft.brand.trim().toLowerCase()
+  const hit = units.value.find((u) => u.brand.trim().toLowerCase() === brand)
+  return hit?.model.trim() || 'Smart-UPS SRT 5000VA 230V'
+})
+
+const modelHeader = computed(() =>
+  draft.brand.trim() ? `${draft.brand.trim()} models already in the register` : 'Models already in the register'
+)
+
 const showDelete = ref(false)
 const deleteTarget = ref<UpsUnit | null>(null)
 
@@ -385,21 +441,38 @@ onMounted(load)
                 <!-- 2x2 rather than two full-width rows: S/N and Location are short values, so pairing
                      them keeps the dialog two rows of inputs instead of four. -->
                 <div class="grid gap-3 sm:grid-cols-2">
-                  <fieldset :disabled="busy">
-                    <legend class="mb-1.5 text-sm font-medium text-highlighted">Brand</legend>
-                    <UInput v-model="draft.brand" class="w-full" maxlength="60" placeholder="e.g. APC" :disabled="busy" />
-                  </fieldset>
-                  <fieldset :disabled="busy">
-                    <legend class="mb-1.5 text-sm font-medium text-highlighted">Model</legend>
-                    <UInput v-model="draft.model" class="w-full" maxlength="120" placeholder="e.g. Smart-UPS SRT 5000VA 230V" :disabled="busy" />
-                  </fieldset>
+                  <!-- Brand and Model are pickers, not free text: the register already holds 20 units
+                       from the same few manufacturers, so an existing spelling is one keystroke away.
+                       Still inside the fieldset, so the busy state disables them through it. -->
+                  <div>
+                    <label class="mb-1.5 block text-sm font-medium text-highlighted">Brand</label>
+                    <SuggestInput
+                      v-model="draft.brand"
+                      :suggestions="brandSuggestions"
+                      placeholder="e.g. APC"
+                      header="Brand already in the register"
+                      header-bottom-gap
+                    />
+                  </div>
+                  <div>
+                    <label class="mb-1.5 block text-sm font-medium text-highlighted">Model</label>
+                    <SuggestInput
+                      v-model="draft.model"
+                      :suggestions="modelSuggestions"
+                      :placeholder="draft.brand.trim() ? `e.g. ${modelPlaceholder}` : 'e.g. Smart-UPS SRT 5000VA 230V'"
+                      :header="modelHeader"
+                      header-bottom-gap
+                    />
+                  </div>
+                  <!-- h-9 to match SuggestInput's own height: the two rows of the grid have to line up,
+                       and a 4px difference between them reads as sloppy rather than as a style. -->
                   <fieldset :disabled="busy">
                     <legend class="mb-1.5 text-sm font-medium text-highlighted">S/N</legend>
-                    <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :disabled="busy" />
+                    <UInput v-model="draft.serialNumber" class="w-full" maxlength="60" placeholder="e.g. AS2143171426" :ui="{ base: 'h-9' }" :disabled="busy" />
                   </fieldset>
                   <fieldset :disabled="busy">
                     <legend class="mb-1.5 text-sm font-medium text-highlighted">Location</legend>
-                    <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :disabled="busy" />
+                    <UInput v-model="draft.location" class="w-full" maxlength="160" placeholder="e.g. CAP Server Room B2L2" :ui="{ base: 'h-9' }" :disabled="busy" />
                   </fieldset>
                 </div>
 
